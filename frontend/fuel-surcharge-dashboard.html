@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4A Express — Επίναυλος Καυσίμων DHL</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+  .topbar { background: #FFCC00; padding: 12px 24px; display: flex; align-items: center; gap: 12px; border-bottom: 2px solid #D4A800; }
+  .topbar-logo { font-size: 18px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; }
+  .topbar-sub { font-size: 12px; color: #555; }
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+  .page-title { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: #666; margin-bottom: 24px; }
+  .refresh-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #FFCC00; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; color: #1a1a1a; }
+  .refresh-btn:hover { background: #D4A800; }
+  .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .grid3 { display: grid; gap: 12px; margin-bottom: 24px; align-items: start; }
+  .metric { background: white; border-radius: 10px; padding: 14px 16px; border: 1px solid #e8e8e0; }
+  .metric-label { font-size: 11px; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .metric-value { font-size: 26px; font-weight: 600; line-height: 1; }
+  .metric-sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+  .metric.next { background: #f5f5f0; border: 1px solid #ddd; }
+  .air  { color: #1565c0; }
+  .road { color: #4a4a4a; }
+  .cy   { color: #c17a00; }
+  .warn { color: #b57a00; }
+  .section-title { font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e8e8e0; }
+  .services { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 24px; }
+  .svc { background: white; border: 1px solid #e8e8e0; border-radius: 10px; padding: 12px 14px; }
+  .svc.highlight { border: 2px solid #FFCC00; background: #fffdf0; }
+  .svc-name { font-size: 10px; color: #888; margin-bottom: 2px; }
+  .svc-code { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .svc-pct  { font-size: 20px; font-weight: 600; }
+  .svc-type { font-size: 10px; color: #aaa; margin-top: 3px; }
+  .svc-note { font-size: 10px; color: #c17a00; margin-top: 3px; font-weight: 600; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .tab { padding: 6px 14px; font-size: 12px; border: 1px solid #ddd; border-radius: 20px; background: white; cursor: pointer; color: #555; }
+  .tab.active { background: #1a6eb5; color: white; border-color: #1a6eb5; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; background: white; border-radius: 10px; overflow: hidden; border: 1px solid #e8e8e0; margin-bottom: 24px; }
+  th { text-align: left; padding: 10px 14px; background: #f8f8f4; color: #666; font-weight: 600; font-size: 12px; border-bottom: 1px solid #e8e8e0; }
+  td { padding: 10px 14px; border-bottom: 1px solid #f0f0e8; }
+  tr:last-child td { border-bottom: none; }
+  tr.current td { background: #eef5ff; }
+  tr.current td:first-child { border-left: 3px solid #1a6eb5; }
+  tr.next-row td { background: #f8f8f4; }
+  tr.next-row td:first-child { border-left: 3px solid #ccc; }
+  .badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 600; }
+  .badge.up   { background: #ffe8e8; color: #c0392b; }
+  .badge.down { background: #e8f5e9; color: #1a8a4a; }
+  .badge.curr { background: #ddeeff; color: #1a6eb5; }
+  .badge.nxt  { background: #fff3cc; color: #c17a00; }
+  .note { font-size: 11px; color: #888; padding: 8px 12px; background: #f8f8f4; border-radius: 8px; margin-bottom: 24px; border: 1px solid #e8e8e0; }
+  .source { font-size: 11px; color: #aaa; margin-top: 16px; text-align: center; }
+  .last-update { font-size: 11px; color: #aaa; }
+  .section { margin-bottom: 28px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">4A Express</div>
+  <div class="topbar-sub">Επίναυλος Καυσίμων DHL</div>
+</div>
+
+<div class="container">
+
+  <div class="header-row">
+    <div>
+      <h1 class="page-title">Επίναυλος Καυσίμων DHL</h1>
+      <p class="page-sub">Πηγή: mydhl.express.dhl — εβδομαδιαία ενημέρωση<br>
+      <span class="last-update" id="last-update"></span></p>
+    </div>
+    <button class="refresh-btn" onclick="window.open('https://mydhl.express.dhl/gr/el/ship/surcharges.html#/fuel_surcharge','_blank')">
+      ↗ Άνοιγμα DHL site
+    </button>
+  </div>
+
+  <div class="section">
+    <div style="overflow-x: auto;">
+      <div style="display: flex; gap: 12px; min-width: 700px;">
+        <div class="metric" style="flex: 1;">
+          <div class="metric-label">AIR — τρέχουσα εβδ.</div>
+          <div class="metric-value air" id="air-curr">47.00%</div>
+          <div class="metric-sub">Μάιος 4-10, 2026</div>
+        </div>
+        <div class="metric" style="flex: 1;">
+          <div class="metric-label">ROAD — τρέχουσα εβδ.</div>
+          <div class="metric-value road" id="road-curr">35.25%</div>
+          <div class="metric-sub">Μάιος 4-10, 2026</div>
+        </div>
+        <div class="metric" style="flex: 1;">
+          <div class="metric-label">Air Cyprus S1027</div>
+          <div class="metric-value cy" id="cy-curr">49.82%</div>
+          <div class="metric-sub">47.00% × 1.06</div>
+          <div class="metric-sub" style="color:#888; font-style:italic; margin-top:2px;">Valuable goods</div>
+        </div>
+        <div class="metric next" style="flex: 1;">
+          <div class="metric-label">AIR — επόμενη εβδ.</div>
+          <div class="metric-value warn">46.75%</div>
+          <div class="metric-sub">Μάιος 11-17 <span class="badge down">-0.25%</span></div>
+        </div>
+        <div class="metric next" style="flex: 1;">
+          <div class="metric-label">ROAD — επόμενη εβδ.</div>
+          <div class="metric-value warn">34.50%</div>
+          <div class="metric-sub">Μάιος 11-17 <span class="badge down">-0.75%</span></div>
+        </div>
+        <div class="metric next" style="flex: 1;">
+          <div class="metric-label">Air Cyprus — επόμενη</div>
+          <div class="metric-value warn">49.56%</div>
+          <div class="metric-sub">Μάιος 11-17 <span class="badge down">-0.26%</span></div>
+          <div class="metric-sub" style="color:#888; font-style:italic; margin-top:2px;">Valuable goods</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Ανά service — εβδομάδα 4-10 Μαΐου 2026</div>
+    <div class="services">
+      <div class="svc">
+        <div class="svc-name">Express Export</div>
+        <div class="svc-code">S1003</div>
+        <div class="svc-pct air">47.00%</div>
+        <div class="svc-type">AIR / Διεθνής</div>
+      </div>
+      <div class="svc">
+        <div class="svc-name">Express Import</div>
+        <div class="svc-code">S1012</div>
+        <div class="svc-pct air">47.00%</div>
+        <div class="svc-type">AIR / Διεθνής</div>
+      </div>
+      <div class="svc highlight">
+        <div class="svc-name">Air Cyprus</div>
+        <div class="svc-code">S1027</div>
+        <div class="svc-pct cy">49.82%</div>
+        <div class="svc-type">AIR / Κύπρος</div>
+        <div class="svc-note">× 1.06 πάντα</div>
+        <div class="svc-note" style="color:#888; font-weight:400;">Valuable goods</div>
+      </div>
+      <div class="svc">
+        <div class="svc-name">Economy Export</div>
+        <div class="svc-code">S1010</div>
+        <div class="svc-pct road">35.25%</div>
+        <div class="svc-type">ROAD / Εσωτερικό</div>
+      </div>
+      <div class="svc">
+        <div class="svc-name">Economy Import</div>
+        <div class="svc-code">S1041</div>
+        <div class="svc-pct road">35.25%</div>
+        <div class="svc-type">ROAD / Εσωτερικό</div>
+      </div>
+    </div>
+    <div class="note">S1027 Air Cyprus: επίναυλος = AIR × 1.06 — ισχύει πάντα ανεξάρτητα από εβδομάδα</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Ιστορικό εβδομάδων</div>
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('air',this)">AIR (S1003/S1012)</button>
+      <button class="tab" onclick="showTab('cy',this)">Air Cyprus (S1027)</button>
+      <button class="tab" onclick="showTab('road',this)">ROAD (S1010/S1041)</button>
+    </div>
+
+    <table id="tab-air">
+      <thead><tr><th>Εβδομάδα</th><th>Επίναυλος</th><th>Μεταβολή</th></tr></thead>
+      <tbody>
+        <tr class="next-row"><td>Μάιος 11-17, 2026 <span class="badge nxt">επόμενη</span></td><td>46.75%</td><td><span class="badge down">-0.25%</span></td></tr>
+        <tr class="current"><td>Μάιος 4-10, 2026 <span class="badge curr">τρέχουσα</span></td><td><strong>47.00%</strong></td><td><span class="badge down">-1.00%</span></td></tr>
+        <tr><td>Απρίλιος 27 - Μάιος 3, 2026</td><td>48.00%</td><td><span class="badge up">+0.25%</span></td></tr>
+        <tr><td>Απρίλιος 20-26, 2026</td><td>47.75%</td><td><span class="badge up">+1.75%</span></td></tr>
+        <tr><td>Απρίλιος 13-19, 2026</td><td>46.00%</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <table id="tab-cy" style="display:none;">
+      <thead><tr><th>Εβδομάδα</th><th>AIR βάση</th><th>× 1.06 = S1027</th><th>Μεταβολή</th></tr></thead>
+      <tbody>
+        <tr class="next-row"><td>Μάιος 11-17, 2026 <span class="badge nxt">επόμενη</span></td><td>46.75%</td><td><strong>49.56%</strong></td><td><span class="badge down">-0.26%</span></td></tr>
+        <tr class="current"><td>Μάιος 4-10, 2026 <span class="badge curr">τρέχουσα</span></td><td>47.00%</td><td><strong>49.82%</strong></td><td><span class="badge down">-1.06%</span></td></tr>
+        <tr><td>Απρίλιος 27 - Μάιος 3, 2026</td><td>48.00%</td><td>50.88%</td><td><span class="badge up">+0.27%</span></td></tr>
+        <tr><td>Απρίλιος 20-26, 2026</td><td>47.75%</td><td>50.62%</td><td><span class="badge up">+1.86%</span></td></tr>
+        <tr><td>Απρίλιος 13-19, 2026</td><td>46.00%</td><td>48.76%</td><td>—</td></tr>
+      </tbody>
+    </table>
+
+    <table id="tab-road" style="display:none;">
+      <thead><tr><th>Εβδομάδα</th><th>Επίναυλος</th><th>Μεταβολή</th></tr></thead>
+      <tbody>
+        <tr class="next-row"><td>Μάιος 11-17, 2026 <span class="badge nxt">επόμενη</span></td><td>34.50%</td><td><span class="badge down">-0.75%</span></td></tr>
+        <tr class="current"><td>Μάιος 4-10, 2026 <span class="badge curr">τρέχουσα</span></td><td><strong>35.25%</strong></td><td><span class="badge down">-1.50%</span></td></tr>
+        <tr><td>Απρίλιος 27 - Μάιος 3, 2026</td><td>36.75%</td><td><span class="badge up">+0.25%</span></td></tr>
+        <tr><td>Απρίλιος 20-26, 2026</td><td>36.50%</td><td><span class="badge up">+2.00%</span></td></tr>
+        <tr><td>Απρίλιος 13-19, 2026</td><td>34.50%</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="source">Πηγή: mydhl.express.dhl/gr/el/ship/surcharges.html — AIR: USGC Jet Fuel / ROAD: USGC Diesel / S1027: AIR × 1.06</p>
+</div>
+
+<script>
+// Αυτόματη ημερομηνία + ώρα κατά το άνοιγμα
+(function() {
+  const now = new Date();
+  const opts = { day: 'numeric', month: 'long', year: 'numeric',
+                 hour: '2-digit', minute: '2-digit' };
+  document.getElementById('last-update').textContent =
+    'Τελευταία φόρτωση: ' + now.toLocaleString('el-GR', opts);
+})();
+
+function showTab(tab, btn) {
+  ['air','cy','road'].forEach(t => document.getElementById('tab-'+t).style.display = 'none');
+  document.getElementById('tab-'+tab).style.display = '';
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+</script>
+
+</body>
+</html>
