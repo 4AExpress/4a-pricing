@@ -1,187 +1,111 @@
-"""
-generate_cms_import.py — Phase 3a v5
-- AddWeight υπολογίζεται από το βήμα βάρους του JSON (R12)
-- Markup στο incremental rate (R12)
-- Συμπύκνωση min/max ομάδας με ανοχή 0.01 (R4)
-- Χωρίς scientific notation
-"""
-import json, argparse, os
-from decimal import Decimal, ROUND_HALF_UP
-from datetime import datetime
+# docs/cms-import-format.md — CMS Slab Rate Import Format
 
-DATA_DIR   = '/mnt/user-data/outputs'
-OUTPUT_DIR = '/home/claude/output'
-VALID_FROM = '01-JAN-2026'
-TOLERANCE  = 0.01
+> Τελευταία ενημέρωση: 2026-05-05
+> Βασίζεται σε πραγματικό CMS import αρχείο (S1003, 2026)
 
-SERVICE_MIN_WEIGHT = {'S1003':0.5,'S1012':0.5,'S1010':1.0,'S1041':1.0}
+## 1. Μορφή αρχείου
 
-def r2(v):
-    return float(Decimal(str(v)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+- Τύπος: **TSV** (Tab-Separated Values) — διαχωριστικό: tab `\t`
+- Κωδικοποίηση: UTF-8
+- Πρώτη γραμμή: επικεφαλίδες (headers)
+- Επέκταση αρχείου: `.txt` ή `.tsv`
 
-def r3(v):
-    return float(Decimal(str(v)).quantize(Decimal('0.001'), rounding=ROUND_HALF_UP))
+## 2. Πεδία (columns)
 
-def fmt(v):
-    s = format(float(v), '.3f').rstrip('0').rstrip('.')
-    return s if '.' in s else s + '.0'
+| # | Πεδίο | Τύπος | Παράδειγμα | Περιγραφή |
+|---|-------|-------|------------|-----------|
+| 1 | AccountNo | integer | 30004041 | Αριθμός λογαριασμού πελάτη στο CMS |
+| 2 | StationCountry | string | GR | Χώρα γραφείου (GR ή CY) |
+| 3 | RateType | string | Slab Rate | Πάντα "Slab Rate" |
+| 4 | MinWeight | float | 0.5 | Ελάχιστο χρεώσιμο βάρος (0.5 ή 1.0) |
+| 5 | WEFrom | date | 01-JAN-2026 | Ημερομηνία έναρξης ισχύος (DD-MON-YYYY) |
+| 6 | ShipmentType | string | Normal | Πάντα "Normal" |
+| 7 | OriginType | string | COUNTRY | Πάντα "COUNTRY" |
+| 8 | DestinationType | string | ZONE | Πάντα "ZONE" |
+| 9 | Origin | string | GR | Χώρα αποστολής |
+| 10 | Destination | string | z1 | Zone προορισμού (z1..z7) |
+| 11 | Service | string | S1003 | Κωδικός service στο CMS |
+| 12 | DocsType | string | non docs | "docs" ή "non docs" |
+| 13 | FromWeight | float | 0.001 | Από βάρος bracket (πάντα x.001) |
+| 14 | ToWeight | float | 0.5 | Έως βάρος bracket |
+| 15 | Rate | float | 8.48 | Τιμή bracket (βλ. λογική παρακάτω) |
+| 16 | AddWeight | float | 0.5 | Βήμα επιπλέον βάρους (0.5 ή 1.0) |
+| 17 | AddRate | float | 8.48 | Πάντα ίσο με Rate |
+| 18 | UptoWeight | float | 0.5 | Μέγιστο βάρος εντός bracket (βλ. παρακάτω) |
 
-def build_brackets(prices_flat, markup_pct):
-    """
-    R3+R12: markup στο incremental rate
-    R4: συμπύκνωση min/max ομάδας ανοχή 0.01
-    AddWeight = βήμα βάρους από το JSON (0.5 ή 1 ή 5)
-    """
-    if not prices_flat:
-        return []
+## 3. Λογική Rate (ΚΡΙΣΙΜΟ)
 
-    raw = []
-    prev_cost = 0.0
-    for i, (w, cost) in enumerate(prices_flat):
-        raw_rate    = r2(cost - prev_cost)
-        marked_rate = r2(raw_rate * (1 + markup_pct / 100))
-        from_w      = r3(0.001) if i == 0 else r3(prices_flat[i-1][0] + 0.001)
-        # AddWeight = βήμα βάρους από το JSON
-        add_w = r3(w) if i == 0 else r3(w - prices_flat[i-1][0])
-        raw.append({'from_w':from_w, 'to_w':w, 'rate':marked_rate,
-                    'add_weight':add_w, 'upto_weight':w})
-        prev_cost = cost
+### 3.1 Rate = διαφορά τιμών (incremental)
 
-    # R4 — Συμπύκνωση min/max ομάδας
-    # ΚΡΙΣΙΜΟ: αλλαγή AddWeight = νέο bracket ακόμα και αν rate παρόμοιο
-    compressed = []
-    i = 0
-    while i < len(raw):
-        cur = dict(raw[i])
-        group_rates = [raw[i]['rate']]
-        base_add_w  = raw[i]['add_weight']
-        j = i + 1
-        while j < len(raw):
-            # Νέο bracket αν αλλάξει AddWeight
-            if raw[j]['add_weight'] != base_add_w:
-                break
-            candidate = raw[j]['rate']
-            new_group = group_rates + [candidate]
-            if max(new_group) - min(new_group) <= TOLERANCE:
-                group_rates.append(candidate)
-                cur['upto_weight'] = raw[j]['to_w']
-                j += 1
-            else:
-                break
-        compressed.append(cur)
-        i = j
+Το `Rate` δεν είναι η συνολική τιμή — είναι η **διαφορά** μεταξύ της τιμής του
+τρέχοντος βάρους και του προηγούμενου bracket.
 
-    return compressed
+```
+Rate[bracket_n] = price[ToWeight_n] - price[ToWeight_{n-1}]
+```
 
-def check_monotonicity(by_zone, service_id):
-    violations = []
-    for zone in sorted(by_zone.keys(), reverse=True):
-        prices = by_zone[zone]
-        for i in range(1, len(prices)):
-            if prices[i][1] < prices[i-1][1]:
-                violations.append(
-                    f"  ΠΑΡΑΒΙΑΣΗ {service_id} {zone}: "
-                    f"{prices[i-1][0]}kg={prices[i-1][1]} > "
-                    f"{prices[i][0]}kg={prices[i][1]}"
-                )
-    return violations
+**Παράδειγμα Z1 S1003 (raw DHL, χωρίς markup):**
 
-def generate_cms_rows(tariff_data, markup_pct, account_no):
-    service_id = tariff_data['tariff']['service_id']
-    entries    = tariff_data['entries']
-    min_weight = SERVICE_MIN_WEIGHT.get(service_id, 0.5)
+| FromWeight | ToWeight | Rate | Λογική |
+|------------|----------|------|--------|
+| 0.001 | 0.5 | 8.48 | Πλήρης τιμή πρώτου bracket |
+| 0.501 | 1.0 | 0.00 | 8.48 - 8.48 = 0.00 |
+| 1.001 | 1.5 | 1.07 | 9.55 - 8.48 = 1.07 |
+| 1.501 | 2.0 | 1.07 | 10.62 - 9.55 = 1.07 |
+| 2.001 | 2.5 | 1.07 | 11.69 - 10.62 = 1.07 |
 
-    by_zone = {}
-    for e in entries:
-        z = e['zone_code']
-        if z not in by_zone: by_zone[z] = []
-        by_zone[z].append((e['weight_kg'], e['cost']))
+### 3.2 AddRate = Rate (πάντα ίσα)
 
-    violations = check_monotonicity(by_zone, service_id)
-    if violations:
-        for v in violations: print(v)
-        return None
+Το `AddRate` είναι πάντα ίσο με το `Rate` στο ίδιο bracket.
 
-    rows = []
-    for zone in sorted(by_zone.keys()):
-        prices   = [(w,p) for w,p in by_zone[zone] if w >= min_weight]
-        brackets = build_brackets(prices, markup_pct)
-        for docs_type in ['non docs', 'docs']:
-            for b in brackets:
-                rows.append({
-                    'AccountNo':       account_no,
-                    'StationCountry':  'GR',
-                    'RateType':        'Slab Rate',
-                    'MinWeight':       min_weight,
-                    'WEFrom':          VALID_FROM,
-                    'ShipmentType':    'Normal',
-                    'OriginType':      'COUNTRY',
-                    'DestinationType': 'ZONE',
-                    'Origin':          'GR',
-                    'Destination':     zone,
-                    'Service':         service_id,
-                    'DocsType':        docs_type,
-                    'FromWeight':      b['from_w'],
-                    'ToWeight':        b['to_w'],
-                    'Rate':            b['rate'],
-                    'AddWeight':       b['add_weight'],
-                    'AddRate':         b['rate'],
-                    'UptoWeight':      b['upto_weight'],
-                })
-    return rows
+## 4. Λογική UptoWeight (ΚΡΙΣΙΜΟ)
 
-def write_tsv(rows, filepath):
-    headers = ['AccountNo','StationCountry','RateType','MinWeight','WEFrom',
-               'ShipmentType','OriginType','DestinationType','Origin','Destination',
-               'Service','DocsType','FromWeight','ToWeight','Rate','AddWeight','AddRate','UptoWeight']
-    float_f = {'MinWeight','FromWeight','ToWeight','Rate','AddWeight','AddRate','UptoWeight'}
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.write('\t'.join(headers) + '\n')
-        for row in rows:
-            vals = [fmt(row[h]) if h in float_f else str(row[h]) for h in headers]
-            f.write('\t'.join(vals) + '\n')
+Το `UptoWeight` **δεν είναι πάντα ίσο με το `ToWeight`**.
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--service')
-    parser.add_argument('--all', action='store_true')
-    parser.add_argument('--markup', type=float, required=True)
-    parser.add_argument('--account', default='30004041')
-    parser.add_argument('--label', default='')
-    args = parser.parse_args()
+Όταν πολλά συνεχόμενα brackets έχουν το ίδιο AddRate, το CMS τα συμπτύσσει:
+το πρώτο bracket παίρνει `UptoWeight` = το τελευταίο `ToWeight` της ομάδας.
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    services = ['S1003','S1012','S1010','S1041'] if args.all else [args.service]
-    if not services or services == [None]:
-        print("Dose --service i --all"); return
+**Παράδειγμα:**
 
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    label = f"_{args.label}" if args.label else ''
-    all_rows = []
+```
+FromWeight=6.501  ToWeight=7    Rate=1.35  UptoWeight=10   <- συμπτύσσει 7.0-10.0
+FromWeight=10.001 ToWeight=10.5 Rate=4.00  UptoWeight=10.5 <- νέο rate
+FromWeight=10.501 ToWeight=11   Rate=1.70  UptoWeight=20   <- συμπτύσσει 11.0-20.0
+FromWeight=20.001 ToWeight=20.5 Rate=2.98  UptoWeight=30   <- συμπτύσσει 20.5-30.0
+FromWeight=30.001 ToWeight=31   Rate=5.97  UptoWeight=70   <- συμπτύσσει 31-70
+```
 
-    print(f"\n=== CMS Import Generator v5 — Markup: {args.markup}% — Account: {args.account} ===\n")
+**Κανόνας συμπύκνωσης:**
+Αν `Rate[n] == Rate[n+1] == ... == Rate[n+k]` τότε:
+- Γράφεται μία γραμμή με `FromWeight[n]`, `ToWeight[n]`, `Rate[n]`
+- `UptoWeight = ToWeight[n+k]` (το τελευταίο της ομάδας)
 
-    for service_id in services:
-        print(f"Επεξεργασία: {service_id}")
-        path = os.path.join(DATA_DIR, f'dhl_tariff_2026_{service_id}.json')
-        if not os.path.exists(path):
-            print(f"  Δεν βρέθηκε: {path}"); continue
-        with open(path, encoding='utf-8') as f:
-            tariff = json.load(f)
-        rows = generate_cms_rows(tariff, args.markup, args.account)
-        if rows is None:
-            print(f"  Αποτυχία"); continue
-        fname = f"cms_import_{service_id}_markup{int(args.markup)}{label}_{timestamp}.txt"
-        write_tsv(rows, os.path.join(OUTPUT_DIR, fname))
-        print(f"  OK {len(rows)} γραμμές → {fname}")
-        all_rows.extend(rows)
+## 5. Σειρά εγγραφών
 
-    if len(services) > 1 and all_rows:
-        fname_all = f"cms_import_ALL_markup{int(args.markup)}{label}_{timestamp}.txt"
-        write_tsv(all_rows, os.path.join(OUTPUT_DIR, fname_all))
-        print(f"\n  OK συνολικό: {len(all_rows)} γραμμές → {fname_all}")
+Για κάθε service, οι εγγραφές γράφονται με αυτή τη σειρά:
+1. Ανά zone (z1 → z7 για TD, z1 → z3 για DD)
+2. Εντός κάθε zone: πρώτα `non docs`, μετά `docs`
+3. Εντός κάθε docs_type: αύξουσα σειρά βάρους
 
-    print("\nΟλοκληρώθηκε.")
+## 6. Σταθερά πεδία ανά γραφείο
 
-if __name__ == '__main__':
-    main()
+| Πεδίο | Αθήνα (GR) | Κύπρος (CY) |
+|-------|-----------|-------------|
+| AccountNo | 30004041 | (να συμπληρωθεί) |
+| StationCountry | GR | CY |
+| Origin | GR | CY |
+
+## 7. Μορφή ημερομηνίας WEFrom
+
+```
+DD-MON-YYYY  όπου MON = JAN, FEB, MAR, APR, MAY, JUN,
+                         JUL, AUG, SEP, OCT, NOV, DEC
+Παράδειγμα: 01-JAN-2026
+```
+
+## 8. Παράδειγμα πλήρους γραμμής
+
+```
+AccountNo	StationCountry	RateType	MinWeight	WEFrom	ShipmentType	OriginType	DestinationType	Origin	Destination	Service	DocsType	FromWeight	ToWeight	Rate	AddWeight	AddRate	UptoWeight
+30004041	GR	Slab Rate	0.5	01-JAN-2026	Normal	COUNTRY	ZONE	GR	z1	S1003	non docs	0.001	0.5	8.48	0.5	8.48	0.5
+```
