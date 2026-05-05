@@ -1,0 +1,106 @@
+# CLAUDE.md — Instructions for AI assistants
+
+> Read this FIRST in every new session. The rules here exist because we've already
+> been bitten. Ignore them and you will reproduce the regressions we abandoned Excel for.
+
+## Read order (every session)
+
+1. `README.md` — project purpose & status
+2. `SPEC.md` — entity model & open questions
+3. `docs/business-rules.md` — invariants that cannot be violated
+4. `docs/cms-mapping.md` — CMS ↔ engine entity mapping
+5. `docs/cms-import-format.md` — Slab Rate format (cumulative!)
+6. `docs/glossary.md` — EN/EL terminology
+7. The relevant module under `backend/`, `poc/`, or `data/`
+
+## Hard rules (regressions to prevent)
+
+### R-Excel-1: Validation must check ALL zones, not just Z1
+Past regression in `Z1-Z8 2026.xlsm`: column D validation only compared E15→E16 (Zone 1).
+Pricelist showed ✓ while Z3-Z7 silently broke monotonicity.
+**Engine equivalent**: any monotonicity check must iterate across all (origin, destination) pairs.
+
+### R-Excel-2: Never modify a shared function without listing every caller first
+Past regression: `GetServiceInfo` FC mapping changed → broke 4 unrelated places.
+**Rule**: before editing any shared function, grep for all call sites and list them. If editing affects > 1 caller, prefer a NEW function over modifying the existing one.
+
+### R-Excel-3: Greek strings must use UTF-8 source files, never copy-paste from chat
+Past regression: Greek characters corrupted (`τιμή` → `ôéìÞ`) when pasted from chat into VBA.
+**Rule**: store Greek strings in code/data files committed to git. Never reconstruct them from chat. Use `ChrW` literals if pasting into VBA is unavoidable.
+
+### R-Excel-4: Tariffs are versioned. Never overwrite an old tariff
+New year → new `Tariff` record with new `valid_from`. Never edit costs of an active tariff.
+
+### R-Excel-5: No business assumption hardcoded in formulas
+Tax rates, FC values, surcharges, divisors → always referenced from named cells / config tables.
+
+## Domain quirks (easy to forget)
+
+### CMS Slab Rate is CUMULATIVE
+`Rate` is the price ADDED at this bracket, not the total price.
+For 2kg: `total = bracket1.rate + bracket2.add_rate × Δw`.
+Example: 50.81 + 0.42 = **51.23** (not 0.42).
+
+### FC is per-customer override-able
+Lookup order: `CustomerFuelChargeOverride(customer, service, date)` → `FuelChargeMaster(service, date, default)`.
+If `customer.is_fuel_charge_applicable = false` → FC = 0.
+Confirmed example: AESTHETIC TEAM gets 19.50% on S1041 instead of default.
+
+### Cyprus surcharge specifics
+- €1.20/kg, **actual weight only** (never volumetric)
+- **No min charge**
+- COMBI services only (S1048-S1060)
+- Applies on CY↔international leg, NOT on direct CY↔GR
+- Greek islands: NO surcharge (already embedded)
+
+### Excel ↔ CMS service mapping (memorize)
+| Excel | CMS | Mode |
+|---|---|---|
+| ExpExp | S1003 | AIR |
+| ExpImp | S1012 | AIR |
+| RoadExp | S1010 | SURFACE |
+| RoadImp | S1041 | SURFACE |
+
+S1027 "Air Cyprus" = valuable goods, NOT the regular Cyprus office service.
+
+### Volumetric divisors (per service)
+- Default: 5000
+- Air Freight (S1002): **6000**
+- Cargo services (S1016, S1024, S1025, S1045, S1052): **3000**
+- Always: `chargeable = max(actual, volumetric)`
+
+### Zone monotonicity quirk (DHL)
+Z1 (closest) has the LARGEST weight-bracket cost jumps (≈ +11% per bracket step).
+Z7 (furthest) has the SMALLEST (≈ +5%).
+**Implication**: Z7 is most likely to break monotonicity when markups are tightened.
+Always check Z7 first when validating.
+
+## Workflow rules
+
+1. Before any edit: state what changes AND what depends on the changed thing.
+2. Reference business rules by ID (R1, R5, R-Excel-2) when explaining decisions.
+3. After edit: run tests if they exist, or describe expected effect on a known sample.
+4. If a previously-passing test now fails → ROLLBACK. Don't "fix forward".
+5. Open Questions in `SPEC.md` are NOT to be guessed. Ask the user before deciding.
+
+## Greek (EL) usage
+
+- The user is Greek. UI text should be in Greek (Modern Greek, polytonic NOT used).
+- Code, comments, identifiers, file names: **English**.
+- Commit messages: English (for tooling consistency).
+- User-facing strings: Greek, stored in i18n files when we get to web app.
+
+## What this engine is NOT
+
+- Not a CMS replacement. CMS stays for shipments, AWBs, COD, invoicing, tracking.
+- Not a financial accounting system.
+- Not a customer-facing portal (yet).
+
+The engine is **strictly** about:
+- Managing pricing data (tariffs, pricelists, FC, surcharges, charge types)
+- Generating CMS Client Rate imports
+- Auditing pricing changes
+
+## When in doubt
+
+Re-read `docs/business-rules.md`. If the rule isn't there but should be, propose adding it before writing code that depends on it.
