@@ -1,7 +1,182 @@
-# Business Rules
+# docs/business-rules.md — Κανόνες Επιχειρησιακής Λογικής
 
-> Rules the pricing engine MUST enforce. A violation = bug.
+> Τελευταία ενημέρωση: 2026-05-05
+> Κάθε κανόνας έχει ID. Αναφέρετε πάντα το ID στον κώδικα.
 
-## R1 — Weight monotonicity (within a zone)
+## R1 — Μονοτονικότητα τιμών (Monotonicity)
 
-For any pricelist P, origin O, destination D, the cumulative price must be **non-decreasing** as weight increases:
+**Κανόνας:** Σε κάθε zone, η τιμή ανά βάρος πρέπει να είναι
+μεγαλύτερη ή ίση με την τιμή του προηγούμενου βάρους.
+
+```
+price[weight_n] >= price[weight_{n-1}]  για κάθε n
+```
+
+**Παράδειγμα παραβίασης:**
+```
+0.5kg = 8.50€  ✅
+1.0kg = 8.49€  ❌ — ΑΠΑΓΟΡΕΥΕΤΑΙ
+```
+
+**Εφαρμογή:** Σε ΟΛΕΣ τις zones, όχι μόνο Z1.
+**Έλεγχος Z7 πρώτα** — είναι η zone που σπάει πιο εύκολα.
+**Πηγή:** R-Excel-1 στο CLAUDE.md
+
+---
+
+## R2 — Versioning Tariff (Εκδόσεις Τιμοκαταλόγου)
+
+**Κανόνας:** Κάθε νέος χρόνος = νέο `Tariff` record με νέο `valid_from`.
+Ποτέ δεν τροποποιούνται οι τιμές ενεργού tariff.
+
+**Παράδειγμα:**
+```
+DHL 2025: valid_from=2025-01-01, valid_to=2025-12-31
+DHL 2026: valid_from=2026-01-01, valid_to=null  ← ενεργό
+```
+
+**Πηγή:** R-Excel-4 στο CLAUDE.md
+
+---
+
+## R3 — Λογική Slab Rate (Cumulative)
+
+**Κανόνας:** Το `Rate` στο CMS import είναι η **διαφορά** (incremental)
+μεταξύ συνεχόμενων τιμών — ΟΧΙ η συνολική τιμή.
+
+```
+Rate[bracket_n] = price[weight_n] - price[weight_{n-1}]
+```
+
+Η συνολική τιμή για ένα βάρος = SUM όλων των Rate μέχρι εκείνο το bracket.
+
+**Πηγή:** docs/cms-import-format.md §3
+
+---
+
+## R4 — UptoWeight Συμπύκνωση
+
+**Κανόνας:** Όταν συνεχόμενα brackets έχουν το ίδιο Rate,
+συμπτύσσονται σε μία γραμμή με `UptoWeight` = τελευταίο ToWeight της ομάδας.
+
+**Πηγή:** docs/cms-import-format.md §4
+
+---
+
+## R5 — DOCS vs NON_DOCS
+
+**Κανόνας:** Κάθε service εισάγεται στο CMS δύο φορές:
+μία ως `docs` και μία ως `non docs`.
+
+Για DHL 2026: οι τιμές DOCS και NON_DOCS είναι **ίδιες**.
+Εισάγονται και οι δύο για μελλοντική ευελιξία (μπορεί να αλλάξουν σε επόμενο έτος).
+
+---
+
+## R6 — Προσαύξηση (Markup) Γνωστοποίησης Τιμών
+
+**Κανόνας:** Το CMS import για γνωστοποίηση τιμών πελάτη
+παράγεται από τον raw DHL tariff + ποσοστό προσαύξησης.
+
+```
+price_client[weight] = price_dhl[weight] × (1 + markup_pct / 100)
+```
+
+**Προσαύξηση ορίζεται ανά service** (όχι ανά zone ή βάρος).
+
+**Παράδειγμα:**
+```
+S1003 markup = 180%
+DHL Z1 0.5kg = 8.48€
+Τιμή πελάτη  = 8.48 × 2.80 = 23.74€  (στρογγυλοποίηση 2 δεκαδικά)
+```
+
+---
+
+## R7 — Envelope (Φάκελος έως 300g)
+
+**Κανόνας:** Το bracket Envelope (0.3kg) του DHL **δεν χρησιμοποιείται**.
+Η 4A Express δεν πουλά αυτή την υπηρεσία.
+Ο τιμοκατάλογος ξεκινά από **0.5kg**.
+
+---
+
+## R8 — Μέγιστο Βάρος
+
+**Κανόνας:** Μέγιστο βάρος που επεξεργάζεται η 4A Express με DHL: **1000kg**.
+
+---
+
+## R9 — Κυπριακό Surcharge
+
+**Κανόνας:**
+- €1.20/kg, μόνο **πραγματικό βάρος** (ποτέ volumetric)
+- Χωρίς ελάχιστη χρέωση
+- Μόνο COMBI services (S1048-S1060)
+- Ισχύει για CY↔international — ΟΧΙ για CY↔GR άμεσα
+- Ελληνικά νησιά: ΔΕΝ εφαρμόζεται (ήδη ενσωματωμένο)
+
+**Πηγή:** CLAUDE.md §Domain quirks
+
+---
+
+## R10 — Volumetric Διαιρέτες
+
+**Κανόνας:** `chargeable_weight = max(actual_weight, volumetric_weight)`
+
+| Service | Διαιρέτης |
+|---------|-----------|
+| Default (S1003, S1010, S1012, S1041) | 5000 |
+| Air Freight (S1002) | 6000 |
+| Cargo (S1016, S1024, S1025, S1045, S1052) | 3000 |
+
+**Πηγή:** CLAUDE.md §Volumetric divisors
+
+---
+
+## R12 — Σειρά Εφαρμογής Markup στο CMS Import (ΚΡΙΣΙΜΟ)
+
+**Κανόνας:** Το markup εφαρμόζεται στο **incremental rate** (διαφορά τιμών),
+ΟΧΙ στις flat τιμές.
+
+**Λάθος ροή (προκαλεί εναλλαγή 2.96/2.97):**
+```
+flat_price[n] × (1 + markup)  →  diff(marked_flat[n], marked_flat[n-1])  →  Rate
+```
+
+**Σωστή ροή:**
+```
+diff(flat[n], flat[n-1])  →  raw_rate  →  raw_rate × (1 + markup)  →  Rate
+```
+
+**Παράδειγμα Z1 S1003, markup 180%:**
+```
+DHL raw rate 10.1-20kg = 1.06€ per 0.5kg
+1.06 × 2.80 = 2.968 → στρογγυλοποίηση = 2.97 (πάντα σταθερό)
+
+Αν markup στη flat τιμή:
+  marked[10.5] = 29.80 × 2.80 = 83.44
+  marked[11.0] = 30.86 × 2.80 = 86.41
+  diff = 86.41 - 83.44 = 2.97 ✅ (τυχαία)
+  marked[12.0] = 32.98 × 2.80 = 92.34
+  marked[11.5] = 31.92 × 2.80 = 89.38 (στρογγυλοποίηση!)
+  diff = 92.34 - 89.38 = 2.96 ❌ (λόγω σωρευτικής στρογγυλοποίησης)
+```
+
+**Αποτέλεσμα σωστής ροής:** Σταθερό rate → μέγιστη συμπύκνωση brackets.
+Λάθος ροή: εναλλαγή 2.96/2.97 → αδυναμία συμπύκνωσης → 35× περισσότερες εγγραφές.
+
+**Πηγή:** Phase 3a — generate_cms_import.py
+
+---
+
+## R11 — Fuel Charge (FC)
+
+**Κανόνας:** Lookup order:
+1. `CustomerFuelChargeOverride(customer, service, date)` — αν υπάρχει
+2. `FuelChargeMaster(service, date, default)` — αν όχι
+3. Αν `customer.is_fuel_charge_applicable = false` → FC = 0
+
+**Γνωστή εξαίρεση:** AESTHETIC TEAM → 19.50% στο S1041 αντί default.
+
+**Πηγή:** CLAUDE.md §FC is per-customer override-able
