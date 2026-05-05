@@ -1,0 +1,3862 @@
+{
+  "tariff": {
+    "carrier_id": "DHL",
+    "service_id": "S1041",
+    "service_name": "DHL Economy Select Import",
+    "mode": "SURFACE",
+    "region": "International",
+    "valid_from": "2026-01-01",
+    "valid_to": null,
+    "max_weight_kg": 1000.0,
+    "notes": "DHL Greece 2026 — GRD01QFIE/ORFANIDIS APOSTOLOS_v2 — GR DD Imp Economy"
+  },
+  "docs_types": [
+    "DOCS",
+    "NON_DOCS"
+  ],
+  "note_docs": "DOCS και NON_DOCS έχουν ίδιες τιμές στο DHL 2026. Εισάγονται και τα δύο για μελλοντική ευελιξία.",
+  "zones_count": 3,
+  "entries_count": 768,
+  "entries": [
+    {
+      "zone_code": "z1",
+      "weight_kg": 1.0,
+      "cost": 18.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 1.0,
+      "cost": 19.35
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 1.0,
+      "cost": 22.24
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 2.0,
+      "cost": 23.83
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 2.0,
+      "cost": 24.67
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 2.0,
+      "cost": 28.36
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 3.0,
+      "cost": 25.36
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 3.0,
+      "cost": 26.21
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 3.0,
+      "cost": 30.13
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 4.0,
+      "cost": 26.89
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 4.0,
+      "cost": 27.75
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 4.0,
+      "cost": 31.9
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 5.0,
+      "cost": 28.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 5.0,
+      "cost": 29.29
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 5.0,
+      "cost": 33.67
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 6.0,
+      "cost": 29.3
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 6.0,
+      "cost": 30.46
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 6.0,
+      "cost": 35.03
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 7.0,
+      "cost": 30.18
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 7.0,
+      "cost": 31.63
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 7.0,
+      "cost": 36.39
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 8.0,
+      "cost": 31.06
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 8.0,
+      "cost": 32.8
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 8.0,
+      "cost": 37.75
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 9.0,
+      "cost": 31.94
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 9.0,
+      "cost": 33.97
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 9.0,
+      "cost": 39.11
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 10.0,
+      "cost": 32.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 10.0,
+      "cost": 35.14
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 10.0,
+      "cost": 40.47
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 11.0,
+      "cost": 33.3
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 11.0,
+      "cost": 35.74
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 11.0,
+      "cost": 41.13
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 12.0,
+      "cost": 33.78
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 12.0,
+      "cost": 36.34
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 12.0,
+      "cost": 41.79
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 13.0,
+      "cost": 34.26
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 13.0,
+      "cost": 36.94
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 13.0,
+      "cost": 42.45
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 14.0,
+      "cost": 34.74
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 14.0,
+      "cost": 37.54
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 14.0,
+      "cost": 43.11
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 15.0,
+      "cost": 35.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 15.0,
+      "cost": 38.14
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 15.0,
+      "cost": 43.77
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 16.0,
+      "cost": 35.7
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 16.0,
+      "cost": 38.74
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 16.0,
+      "cost": 44.43
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 17.0,
+      "cost": 36.18
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 17.0,
+      "cost": 39.34
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 17.0,
+      "cost": 45.09
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 18.0,
+      "cost": 36.66
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 18.0,
+      "cost": 39.94
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 18.0,
+      "cost": 45.75
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 19.0,
+      "cost": 37.14
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 19.0,
+      "cost": 40.54
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 19.0,
+      "cost": 46.41
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 20.0,
+      "cost": 37.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 20.0,
+      "cost": 41.14
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 20.0,
+      "cost": 47.07
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 21.0,
+      "cost": 38.08
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 21.0,
+      "cost": 41.68
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 21.0,
+      "cost": 47.7
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 22.0,
+      "cost": 38.54
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 22.0,
+      "cost": 42.22
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 22.0,
+      "cost": 48.33
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 23.0,
+      "cost": 39.0
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 23.0,
+      "cost": 42.76
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 23.0,
+      "cost": 48.96
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 24.0,
+      "cost": 39.46
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 24.0,
+      "cost": 43.3
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 24.0,
+      "cost": 49.59
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 25.0,
+      "cost": 39.92
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 25.0,
+      "cost": 43.84
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 25.0,
+      "cost": 50.22
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 26.0,
+      "cost": 40.38
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 26.0,
+      "cost": 44.38
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 26.0,
+      "cost": 50.85
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 27.0,
+      "cost": 40.84
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 27.0,
+      "cost": 44.92
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 27.0,
+      "cost": 51.48
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 28.0,
+      "cost": 41.3
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 28.0,
+      "cost": 45.46
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 28.0,
+      "cost": 52.11
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 29.0,
+      "cost": 41.76
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 29.0,
+      "cost": 46.0
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 29.0,
+      "cost": 52.74
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 30.0,
+      "cost": 42.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 30.0,
+      "cost": 46.54
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 30.0,
+      "cost": 53.37
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 31.0,
+      "cost": 42.87
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 31.0,
+      "cost": 47.25
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 31.0,
+      "cost": 54.19
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 32.0,
+      "cost": 43.52
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 32.0,
+      "cost": 47.96
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 32.0,
+      "cost": 55.01
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 33.0,
+      "cost": 44.17
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 33.0,
+      "cost": 48.67
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 33.0,
+      "cost": 55.83
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 34.0,
+      "cost": 44.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 34.0,
+      "cost": 49.38
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 34.0,
+      "cost": 56.65
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 35.0,
+      "cost": 45.47
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 35.0,
+      "cost": 50.09
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 35.0,
+      "cost": 57.47
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 36.0,
+      "cost": 46.12
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 36.0,
+      "cost": 50.8
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 36.0,
+      "cost": 58.29
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 37.0,
+      "cost": 46.77
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 37.0,
+      "cost": 51.51
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 37.0,
+      "cost": 59.11
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 38.0,
+      "cost": 47.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 38.0,
+      "cost": 52.22
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 38.0,
+      "cost": 59.93
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 39.0,
+      "cost": 48.07
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 39.0,
+      "cost": 52.93
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 39.0,
+      "cost": 60.75
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 40.0,
+      "cost": 48.72
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 40.0,
+      "cost": 53.64
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 40.0,
+      "cost": 61.57
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 41.0,
+      "cost": 49.37
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 41.0,
+      "cost": 54.35
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 41.0,
+      "cost": 62.39
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 42.0,
+      "cost": 50.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 42.0,
+      "cost": 55.06
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 42.0,
+      "cost": 63.21
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 43.0,
+      "cost": 50.67
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 43.0,
+      "cost": 55.77
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 43.0,
+      "cost": 64.03
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 44.0,
+      "cost": 51.32
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 44.0,
+      "cost": 56.48
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 44.0,
+      "cost": 64.85
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 45.0,
+      "cost": 51.97
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 45.0,
+      "cost": 57.19
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 45.0,
+      "cost": 65.67
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 46.0,
+      "cost": 52.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 46.0,
+      "cost": 57.9
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 46.0,
+      "cost": 66.49
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 47.0,
+      "cost": 53.27
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 47.0,
+      "cost": 58.61
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 47.0,
+      "cost": 67.31
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 48.0,
+      "cost": 53.92
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 48.0,
+      "cost": 59.32
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 48.0,
+      "cost": 68.13
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 49.0,
+      "cost": 54.57
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 49.0,
+      "cost": 60.03
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 49.0,
+      "cost": 68.95
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 50.0,
+      "cost": 55.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 50.0,
+      "cost": 60.74
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 50.0,
+      "cost": 69.77
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 51.0,
+      "cost": 55.87
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 51.0,
+      "cost": 61.45
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 51.0,
+      "cost": 70.59
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 52.0,
+      "cost": 56.52
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 52.0,
+      "cost": 62.16
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 52.0,
+      "cost": 71.41
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 53.0,
+      "cost": 57.17
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 53.0,
+      "cost": 62.87
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 53.0,
+      "cost": 72.23
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 54.0,
+      "cost": 57.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 54.0,
+      "cost": 63.58
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 54.0,
+      "cost": 73.05
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 55.0,
+      "cost": 58.47
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 55.0,
+      "cost": 64.29
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 55.0,
+      "cost": 73.87
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 56.0,
+      "cost": 59.12
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 56.0,
+      "cost": 65.0
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 56.0,
+      "cost": 74.69
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 57.0,
+      "cost": 59.77
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 57.0,
+      "cost": 65.71
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 57.0,
+      "cost": 75.51
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 58.0,
+      "cost": 60.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 58.0,
+      "cost": 66.42
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 58.0,
+      "cost": 76.33
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 59.0,
+      "cost": 61.07
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 59.0,
+      "cost": 67.13
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 59.0,
+      "cost": 77.15
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 60.0,
+      "cost": 61.72
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 60.0,
+      "cost": 67.84
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 60.0,
+      "cost": 77.97
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 61.0,
+      "cost": 62.37
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 61.0,
+      "cost": 68.55
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 61.0,
+      "cost": 78.79
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 62.0,
+      "cost": 63.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 62.0,
+      "cost": 69.26
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 62.0,
+      "cost": 79.61
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 63.0,
+      "cost": 63.67
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 63.0,
+      "cost": 69.97
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 63.0,
+      "cost": 80.43
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 64.0,
+      "cost": 64.32
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 64.0,
+      "cost": 70.68
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 64.0,
+      "cost": 81.25
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 65.0,
+      "cost": 64.97
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 65.0,
+      "cost": 71.39
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 65.0,
+      "cost": 82.07
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 66.0,
+      "cost": 65.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 66.0,
+      "cost": 72.1
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 66.0,
+      "cost": 82.89
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 67.0,
+      "cost": 66.27
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 67.0,
+      "cost": 72.81
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 67.0,
+      "cost": 83.71
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 68.0,
+      "cost": 66.92
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 68.0,
+      "cost": 73.52
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 68.0,
+      "cost": 84.53
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 69.0,
+      "cost": 67.57
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 69.0,
+      "cost": 74.23
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 69.0,
+      "cost": 85.35
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 70.0,
+      "cost": 68.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 70.0,
+      "cost": 74.94
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 70.0,
+      "cost": 86.17
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 75.0,
+      "cost": 71.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 75.0,
+      "cost": 78.6
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 75.0,
+      "cost": 90.34
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 80.0,
+      "cost": 75.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 80.0,
+      "cost": 82.26
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 80.0,
+      "cost": 94.51
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 85.0,
+      "cost": 78.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 85.0,
+      "cost": 85.92
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 85.0,
+      "cost": 98.68
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 90.0,
+      "cost": 81.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 90.0,
+      "cost": 89.58
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 90.0,
+      "cost": 102.85
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 95.0,
+      "cost": 85.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 95.0,
+      "cost": 93.24
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 95.0,
+      "cost": 107.02
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 100.0,
+      "cost": 88.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 100.0,
+      "cost": 96.9
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 100.0,
+      "cost": 111.19
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 105.0,
+      "cost": 92.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 105.0,
+      "cost": 100.56
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 105.0,
+      "cost": 115.36
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 110.0,
+      "cost": 95.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 110.0,
+      "cost": 104.22
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 110.0,
+      "cost": 119.53
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 115.0,
+      "cost": 98.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 115.0,
+      "cost": 107.88
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 115.0,
+      "cost": 123.7
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 120.0,
+      "cost": 102.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 120.0,
+      "cost": 111.54
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 120.0,
+      "cost": 127.87
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 125.0,
+      "cost": 105.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 125.0,
+      "cost": 115.2
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 125.0,
+      "cost": 132.04
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 130.0,
+      "cost": 109.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 130.0,
+      "cost": 118.86
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 130.0,
+      "cost": 136.21
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 135.0,
+      "cost": 112.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 135.0,
+      "cost": 122.52
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 135.0,
+      "cost": 140.38
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 140.0,
+      "cost": 115.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 140.0,
+      "cost": 126.18
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 140.0,
+      "cost": 144.55
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 145.0,
+      "cost": 119.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 145.0,
+      "cost": 129.84
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 145.0,
+      "cost": 148.72
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 150.0,
+      "cost": 122.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 150.0,
+      "cost": 133.5
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 150.0,
+      "cost": 152.89
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 155.0,
+      "cost": 126.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 155.0,
+      "cost": 137.16
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 155.0,
+      "cost": 157.06
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 160.0,
+      "cost": 129.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 160.0,
+      "cost": 140.82
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 160.0,
+      "cost": 161.23
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 165.0,
+      "cost": 132.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 165.0,
+      "cost": 144.48
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 165.0,
+      "cost": 165.4
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 170.0,
+      "cost": 136.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 170.0,
+      "cost": 148.14
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 170.0,
+      "cost": 169.57
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 175.0,
+      "cost": 139.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 175.0,
+      "cost": 151.8
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 175.0,
+      "cost": 173.74
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 180.0,
+      "cost": 143.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 180.0,
+      "cost": 155.46
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 180.0,
+      "cost": 177.91
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 185.0,
+      "cost": 146.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 185.0,
+      "cost": 159.12
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 185.0,
+      "cost": 182.08
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 190.0,
+      "cost": 149.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 190.0,
+      "cost": 162.78
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 190.0,
+      "cost": 186.25
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 195.0,
+      "cost": 153.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 195.0,
+      "cost": 166.44
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 195.0,
+      "cost": 190.42
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 200.0,
+      "cost": 156.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 200.0,
+      "cost": 170.1
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 200.0,
+      "cost": 194.59
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 205.0,
+      "cost": 160.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 205.0,
+      "cost": 173.76
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 205.0,
+      "cost": 198.76
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 210.0,
+      "cost": 163.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 210.0,
+      "cost": 177.42
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 210.0,
+      "cost": 202.93
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 215.0,
+      "cost": 166.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 215.0,
+      "cost": 181.08
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 215.0,
+      "cost": 207.1
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 220.0,
+      "cost": 170.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 220.0,
+      "cost": 184.74
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 220.0,
+      "cost": 211.27
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 225.0,
+      "cost": 173.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 225.0,
+      "cost": 188.4
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 225.0,
+      "cost": 215.44
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 230.0,
+      "cost": 177.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 230.0,
+      "cost": 192.06
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 230.0,
+      "cost": 219.61
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 235.0,
+      "cost": 180.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 235.0,
+      "cost": 195.72
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 235.0,
+      "cost": 223.78
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 240.0,
+      "cost": 183.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 240.0,
+      "cost": 199.38
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 240.0,
+      "cost": 227.95
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 245.0,
+      "cost": 187.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 245.0,
+      "cost": 203.04
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 245.0,
+      "cost": 232.12
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 250.0,
+      "cost": 190.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 250.0,
+      "cost": 206.7
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 250.0,
+      "cost": 236.29
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 255.0,
+      "cost": 194.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 255.0,
+      "cost": 210.36
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 255.0,
+      "cost": 240.46
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 260.0,
+      "cost": 197.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 260.0,
+      "cost": 214.02
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 260.0,
+      "cost": 244.63
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 265.0,
+      "cost": 200.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 265.0,
+      "cost": 217.68
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 265.0,
+      "cost": 248.8
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 270.0,
+      "cost": 204.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 270.0,
+      "cost": 221.34
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 270.0,
+      "cost": 252.97
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 275.0,
+      "cost": 207.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 275.0,
+      "cost": 225.0
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 275.0,
+      "cost": 257.14
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 280.0,
+      "cost": 211.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 280.0,
+      "cost": 228.66
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 280.0,
+      "cost": 261.31
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 285.0,
+      "cost": 214.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 285.0,
+      "cost": 232.32
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 285.0,
+      "cost": 265.48
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 290.0,
+      "cost": 217.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 290.0,
+      "cost": 235.98
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 290.0,
+      "cost": 269.65
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 295.0,
+      "cost": 221.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 295.0,
+      "cost": 239.64
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 295.0,
+      "cost": 273.82
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 300.0,
+      "cost": 224.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 300.0,
+      "cost": 243.3
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 300.0,
+      "cost": 277.99
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 305.0,
+      "cost": 228.53
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 305.0,
+      "cost": 247.54
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 305.0,
+      "cost": 282.86
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 310.0,
+      "cost": 232.44
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 310.0,
+      "cost": 251.78
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 310.0,
+      "cost": 287.73
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 315.0,
+      "cost": 236.35
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 315.0,
+      "cost": 256.02
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 315.0,
+      "cost": 292.6
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 320.0,
+      "cost": 240.26
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 320.0,
+      "cost": 260.26
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 320.0,
+      "cost": 297.47
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 325.0,
+      "cost": 244.17
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 325.0,
+      "cost": 264.5
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 325.0,
+      "cost": 302.34
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 330.0,
+      "cost": 248.08
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 330.0,
+      "cost": 268.74
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 330.0,
+      "cost": 307.21
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 335.0,
+      "cost": 251.99
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 335.0,
+      "cost": 272.98
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 335.0,
+      "cost": 312.08
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 340.0,
+      "cost": 255.9
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 340.0,
+      "cost": 277.22
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 340.0,
+      "cost": 316.95
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 345.0,
+      "cost": 259.81
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 345.0,
+      "cost": 281.46
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 345.0,
+      "cost": 321.82
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 350.0,
+      "cost": 263.72
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 350.0,
+      "cost": 285.7
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 350.0,
+      "cost": 326.69
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 355.0,
+      "cost": 267.63
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 355.0,
+      "cost": 289.94
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 355.0,
+      "cost": 331.56
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 360.0,
+      "cost": 271.54
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 360.0,
+      "cost": 294.18
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 360.0,
+      "cost": 336.43
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 365.0,
+      "cost": 275.45
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 365.0,
+      "cost": 298.42
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 365.0,
+      "cost": 341.3
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 370.0,
+      "cost": 279.36
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 370.0,
+      "cost": 302.66
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 370.0,
+      "cost": 346.17
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 375.0,
+      "cost": 283.27
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 375.0,
+      "cost": 306.9
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 375.0,
+      "cost": 351.04
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 380.0,
+      "cost": 287.18
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 380.0,
+      "cost": 311.14
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 380.0,
+      "cost": 355.91
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 385.0,
+      "cost": 291.09
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 385.0,
+      "cost": 315.38
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 385.0,
+      "cost": 360.78
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 390.0,
+      "cost": 295.0
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 390.0,
+      "cost": 319.62
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 390.0,
+      "cost": 365.65
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 395.0,
+      "cost": 298.91
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 395.0,
+      "cost": 323.86
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 395.0,
+      "cost": 370.52
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 400.0,
+      "cost": 302.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 400.0,
+      "cost": 328.1
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 400.0,
+      "cost": 375.39
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 405.0,
+      "cost": 306.73
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 405.0,
+      "cost": 332.34
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 405.0,
+      "cost": 380.26
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 410.0,
+      "cost": 310.64
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 410.0,
+      "cost": 336.58
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 410.0,
+      "cost": 385.13
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 415.0,
+      "cost": 314.55
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 415.0,
+      "cost": 340.82
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 415.0,
+      "cost": 390.0
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 420.0,
+      "cost": 318.46
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 420.0,
+      "cost": 345.06
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 420.0,
+      "cost": 394.87
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 425.0,
+      "cost": 322.37
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 425.0,
+      "cost": 349.3
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 425.0,
+      "cost": 399.74
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 430.0,
+      "cost": 326.28
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 430.0,
+      "cost": 353.54
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 430.0,
+      "cost": 404.61
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 435.0,
+      "cost": 330.19
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 435.0,
+      "cost": 357.78
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 435.0,
+      "cost": 409.48
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 440.0,
+      "cost": 334.1
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 440.0,
+      "cost": 362.02
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 440.0,
+      "cost": 414.35
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 445.0,
+      "cost": 338.01
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 445.0,
+      "cost": 366.26
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 445.0,
+      "cost": 419.22
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 450.0,
+      "cost": 341.92
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 450.0,
+      "cost": 370.5
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 450.0,
+      "cost": 424.09
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 455.0,
+      "cost": 345.83
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 455.0,
+      "cost": 374.74
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 455.0,
+      "cost": 428.96
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 460.0,
+      "cost": 349.74
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 460.0,
+      "cost": 378.98
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 460.0,
+      "cost": 433.83
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 465.0,
+      "cost": 353.65
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 465.0,
+      "cost": 383.22
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 465.0,
+      "cost": 438.7
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 470.0,
+      "cost": 357.56
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 470.0,
+      "cost": 387.46
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 470.0,
+      "cost": 443.57
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 475.0,
+      "cost": 361.47
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 475.0,
+      "cost": 391.7
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 475.0,
+      "cost": 448.44
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 480.0,
+      "cost": 365.38
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 480.0,
+      "cost": 395.94
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 480.0,
+      "cost": 453.31
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 485.0,
+      "cost": 369.29
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 485.0,
+      "cost": 400.18
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 485.0,
+      "cost": 458.18
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 490.0,
+      "cost": 373.2
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 490.0,
+      "cost": 404.42
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 490.0,
+      "cost": 463.05
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 495.0,
+      "cost": 377.11
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 495.0,
+      "cost": 408.66
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 495.0,
+      "cost": 467.92
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 500.0,
+      "cost": 381.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 500.0,
+      "cost": 412.9
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 500.0,
+      "cost": 472.79
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 505.0,
+      "cost": 384.93
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 505.0,
+      "cost": 417.14
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 505.0,
+      "cost": 477.66
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 510.0,
+      "cost": 388.84
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 510.0,
+      "cost": 421.38
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 510.0,
+      "cost": 482.53
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 515.0,
+      "cost": 392.75
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 515.0,
+      "cost": 425.62
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 515.0,
+      "cost": 487.4
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 520.0,
+      "cost": 396.66
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 520.0,
+      "cost": 429.86
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 520.0,
+      "cost": 492.27
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 525.0,
+      "cost": 400.57
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 525.0,
+      "cost": 434.1
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 525.0,
+      "cost": 497.14
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 530.0,
+      "cost": 404.48
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 530.0,
+      "cost": 438.34
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 530.0,
+      "cost": 502.01
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 535.0,
+      "cost": 408.39
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 535.0,
+      "cost": 442.58
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 535.0,
+      "cost": 506.88
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 540.0,
+      "cost": 412.3
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 540.0,
+      "cost": 446.82
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 540.0,
+      "cost": 511.75
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 545.0,
+      "cost": 416.21
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 545.0,
+      "cost": 451.06
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 545.0,
+      "cost": 516.62
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 550.0,
+      "cost": 420.12
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 550.0,
+      "cost": 455.3
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 550.0,
+      "cost": 521.49
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 555.0,
+      "cost": 424.03
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 555.0,
+      "cost": 459.54
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 555.0,
+      "cost": 526.36
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 560.0,
+      "cost": 427.94
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 560.0,
+      "cost": 463.78
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 560.0,
+      "cost": 531.23
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 565.0,
+      "cost": 431.85
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 565.0,
+      "cost": 468.02
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 565.0,
+      "cost": 536.1
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 570.0,
+      "cost": 435.76
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 570.0,
+      "cost": 472.26
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 570.0,
+      "cost": 540.97
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 575.0,
+      "cost": 439.67
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 575.0,
+      "cost": 476.5
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 575.0,
+      "cost": 545.84
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 580.0,
+      "cost": 443.58
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 580.0,
+      "cost": 480.74
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 580.0,
+      "cost": 550.71
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 585.0,
+      "cost": 447.49
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 585.0,
+      "cost": 484.98
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 585.0,
+      "cost": 555.58
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 590.0,
+      "cost": 451.4
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 590.0,
+      "cost": 489.22
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 590.0,
+      "cost": 560.45
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 595.0,
+      "cost": 455.31
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 595.0,
+      "cost": 493.46
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 595.0,
+      "cost": 565.32
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 600.0,
+      "cost": 459.22
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 600.0,
+      "cost": 497.7
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 600.0,
+      "cost": 570.19
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 605.0,
+      "cost": 463.13
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 605.0,
+      "cost": 501.94
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 605.0,
+      "cost": 575.06
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 610.0,
+      "cost": 467.04
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 610.0,
+      "cost": 506.18
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 610.0,
+      "cost": 579.93
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 615.0,
+      "cost": 470.95
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 615.0,
+      "cost": 510.42
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 615.0,
+      "cost": 584.8
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 620.0,
+      "cost": 474.86
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 620.0,
+      "cost": 514.66
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 620.0,
+      "cost": 589.67
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 625.0,
+      "cost": 478.77
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 625.0,
+      "cost": 518.9
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 625.0,
+      "cost": 594.54
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 630.0,
+      "cost": 482.68
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 630.0,
+      "cost": 523.14
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 630.0,
+      "cost": 599.41
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 635.0,
+      "cost": 486.59
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 635.0,
+      "cost": 527.38
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 635.0,
+      "cost": 604.28
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 640.0,
+      "cost": 490.5
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 640.0,
+      "cost": 531.62
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 640.0,
+      "cost": 609.15
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 645.0,
+      "cost": 494.41
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 645.0,
+      "cost": 535.86
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 645.0,
+      "cost": 614.02
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 650.0,
+      "cost": 498.32
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 650.0,
+      "cost": 540.1
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 650.0,
+      "cost": 618.89
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 655.0,
+      "cost": 502.23
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 655.0,
+      "cost": 544.34
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 655.0,
+      "cost": 623.76
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 660.0,
+      "cost": 506.14
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 660.0,
+      "cost": 548.58
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 660.0,
+      "cost": 628.63
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 665.0,
+      "cost": 510.05
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 665.0,
+      "cost": 552.82
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 665.0,
+      "cost": 633.5
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 670.0,
+      "cost": 513.96
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 670.0,
+      "cost": 557.06
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 670.0,
+      "cost": 638.37
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 675.0,
+      "cost": 517.87
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 675.0,
+      "cost": 561.3
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 675.0,
+      "cost": 643.24
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 680.0,
+      "cost": 521.78
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 680.0,
+      "cost": 565.54
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 680.0,
+      "cost": 648.11
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 685.0,
+      "cost": 525.69
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 685.0,
+      "cost": 569.78
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 685.0,
+      "cost": 652.98
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 690.0,
+      "cost": 529.6
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 690.0,
+      "cost": 574.02
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 690.0,
+      "cost": 657.85
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 695.0,
+      "cost": 533.51
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 695.0,
+      "cost": 578.26
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 695.0,
+      "cost": 662.72
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 700.0,
+      "cost": 537.42
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 700.0,
+      "cost": 582.5
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 700.0,
+      "cost": 667.59
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 705.0,
+      "cost": 541.33
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 705.0,
+      "cost": 586.74
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 705.0,
+      "cost": 672.46
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 710.0,
+      "cost": 545.24
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 710.0,
+      "cost": 590.98
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 710.0,
+      "cost": 677.33
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 715.0,
+      "cost": 549.15
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 715.0,
+      "cost": 595.22
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 715.0,
+      "cost": 682.2
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 720.0,
+      "cost": 553.06
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 720.0,
+      "cost": 599.46
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 720.0,
+      "cost": 687.07
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 725.0,
+      "cost": 556.97
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 725.0,
+      "cost": 603.7
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 725.0,
+      "cost": 691.94
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 730.0,
+      "cost": 560.88
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 730.0,
+      "cost": 607.94
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 730.0,
+      "cost": 696.81
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 735.0,
+      "cost": 564.79
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 735.0,
+      "cost": 612.18
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 735.0,
+      "cost": 701.68
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 740.0,
+      "cost": 568.7
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 740.0,
+      "cost": 616.42
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 740.0,
+      "cost": 706.55
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 745.0,
+      "cost": 572.61
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 745.0,
+      "cost": 620.66
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 745.0,
+      "cost": 711.42
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 750.0,
+      "cost": 576.52
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 750.0,
+      "cost": 624.9
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 750.0,
+      "cost": 716.29
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 755.0,
+      "cost": 580.43
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 755.0,
+      "cost": 629.14
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 755.0,
+      "cost": 721.16
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 760.0,
+      "cost": 584.34
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 760.0,
+      "cost": 633.38
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 760.0,
+      "cost": 726.03
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 765.0,
+      "cost": 588.25
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 765.0,
+      "cost": 637.62
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 765.0,
+      "cost": 730.9
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 770.0,
+      "cost": 592.16
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 770.0,
+      "cost": 641.86
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 770.0,
+      "cost": 735.77
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 775.0,
+      "cost": 596.07
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 775.0,
+      "cost": 646.1
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 775.0,
+      "cost": 740.64
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 780.0,
+      "cost": 599.98
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 780.0,
+      "cost": 650.34
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 780.0,
+      "cost": 745.51
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 785.0,
+      "cost": 603.89
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 785.0,
+      "cost": 654.58
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 785.0,
+      "cost": 750.38
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 790.0,
+      "cost": 607.8
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 790.0,
+      "cost": 658.82
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 790.0,
+      "cost": 755.25
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 795.0,
+      "cost": 611.71
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 795.0,
+      "cost": 663.06
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 795.0,
+      "cost": 760.12
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 800.0,
+      "cost": 615.62
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 800.0,
+      "cost": 667.3
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 800.0,
+      "cost": 764.99
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 805.0,
+      "cost": 619.53
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 805.0,
+      "cost": 671.54
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 805.0,
+      "cost": 769.86
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 810.0,
+      "cost": 623.44
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 810.0,
+      "cost": 675.78
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 810.0,
+      "cost": 774.73
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 815.0,
+      "cost": 627.35
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 815.0,
+      "cost": 680.02
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 815.0,
+      "cost": 779.6
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 820.0,
+      "cost": 631.26
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 820.0,
+      "cost": 684.26
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 820.0,
+      "cost": 784.47
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 825.0,
+      "cost": 635.17
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 825.0,
+      "cost": 688.5
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 825.0,
+      "cost": 789.34
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 830.0,
+      "cost": 639.08
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 830.0,
+      "cost": 692.74
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 830.0,
+      "cost": 794.21
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 835.0,
+      "cost": 642.99
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 835.0,
+      "cost": 696.98
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 835.0,
+      "cost": 799.08
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 840.0,
+      "cost": 646.9
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 840.0,
+      "cost": 701.22
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 840.0,
+      "cost": 803.95
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 845.0,
+      "cost": 650.81
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 845.0,
+      "cost": 705.46
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 845.0,
+      "cost": 808.82
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 850.0,
+      "cost": 654.72
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 850.0,
+      "cost": 709.7
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 850.0,
+      "cost": 813.69
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 855.0,
+      "cost": 658.63
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 855.0,
+      "cost": 713.94
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 855.0,
+      "cost": 818.56
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 860.0,
+      "cost": 662.54
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 860.0,
+      "cost": 718.18
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 860.0,
+      "cost": 823.43
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 865.0,
+      "cost": 666.45
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 865.0,
+      "cost": 722.42
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 865.0,
+      "cost": 828.3
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 870.0,
+      "cost": 670.36
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 870.0,
+      "cost": 726.66
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 870.0,
+      "cost": 833.17
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 875.0,
+      "cost": 674.27
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 875.0,
+      "cost": 730.9
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 875.0,
+      "cost": 838.04
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 880.0,
+      "cost": 678.18
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 880.0,
+      "cost": 735.14
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 880.0,
+      "cost": 842.91
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 885.0,
+      "cost": 682.09
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 885.0,
+      "cost": 739.38
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 885.0,
+      "cost": 847.78
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 890.0,
+      "cost": 686.0
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 890.0,
+      "cost": 743.62
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 890.0,
+      "cost": 852.65
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 895.0,
+      "cost": 689.91
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 895.0,
+      "cost": 747.86
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 895.0,
+      "cost": 857.52
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 900.0,
+      "cost": 693.82
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 900.0,
+      "cost": 752.1
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 900.0,
+      "cost": 862.39
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 905.0,
+      "cost": 697.73
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 905.0,
+      "cost": 756.34
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 905.0,
+      "cost": 867.26
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 910.0,
+      "cost": 701.64
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 910.0,
+      "cost": 760.58
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 910.0,
+      "cost": 872.13
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 915.0,
+      "cost": 705.55
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 915.0,
+      "cost": 764.82
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 915.0,
+      "cost": 877.0
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 920.0,
+      "cost": 709.46
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 920.0,
+      "cost": 769.06
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 920.0,
+      "cost": 881.87
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 925.0,
+      "cost": 713.37
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 925.0,
+      "cost": 773.3
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 925.0,
+      "cost": 886.74
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 930.0,
+      "cost": 717.28
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 930.0,
+      "cost": 777.54
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 930.0,
+      "cost": 891.61
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 935.0,
+      "cost": 721.19
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 935.0,
+      "cost": 781.78
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 935.0,
+      "cost": 896.48
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 940.0,
+      "cost": 725.1
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 940.0,
+      "cost": 786.02
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 940.0,
+      "cost": 901.35
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 945.0,
+      "cost": 729.01
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 945.0,
+      "cost": 790.26
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 945.0,
+      "cost": 906.22
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 950.0,
+      "cost": 732.92
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 950.0,
+      "cost": 794.5
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 950.0,
+      "cost": 911.09
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 955.0,
+      "cost": 736.83
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 955.0,
+      "cost": 798.74
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 955.0,
+      "cost": 915.96
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 960.0,
+      "cost": 740.74
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 960.0,
+      "cost": 802.98
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 960.0,
+      "cost": 920.83
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 965.0,
+      "cost": 744.65
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 965.0,
+      "cost": 807.22
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 965.0,
+      "cost": 925.7
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 970.0,
+      "cost": 748.56
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 970.0,
+      "cost": 811.46
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 970.0,
+      "cost": 930.57
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 975.0,
+      "cost": 752.47
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 975.0,
+      "cost": 815.7
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 975.0,
+      "cost": 935.44
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 980.0,
+      "cost": 756.38
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 980.0,
+      "cost": 819.94
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 980.0,
+      "cost": 940.31
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 985.0,
+      "cost": 760.29
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 985.0,
+      "cost": 824.18
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 985.0,
+      "cost": 945.18
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 990.0,
+      "cost": 764.2
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 990.0,
+      "cost": 828.42
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 990.0,
+      "cost": 950.05
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 995.0,
+      "cost": 768.11
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 995.0,
+      "cost": 832.66
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 995.0,
+      "cost": 954.92
+    },
+    {
+      "zone_code": "z1",
+      "weight_kg": 1000.0,
+      "cost": 772.02
+    },
+    {
+      "zone_code": "z2",
+      "weight_kg": 1000.0,
+      "cost": 836.9
+    },
+    {
+      "zone_code": "z3",
+      "weight_kg": 1000.0,
+      "cost": 959.79
+    }
+  ]
+}
