@@ -20,7 +20,8 @@
   .page-sub { font-size: 12px; color: #888; }
   .section-header { background: #00BCD4; color: white; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 4px 4px 0 0; }
   .section-body { background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; padding: 16px; margin-bottom: 20px; }
-  .metrics-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; }
+  .metrics-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+  .metrics-row.next-row { grid-template-columns: repeat(3, 1fr); }
   .metric { flex: 1; min-width: 130px; background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px 14px; }
   .metric.next { background: #f0f0f0; border-color: #d0d0d0; }
   .metric-label { font-size: 10px; color: #888; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
@@ -186,20 +187,22 @@ function renderDashboard(data) {
           <div class="metric-sub">${currAir ? currAir.week : '—'}</div>
           <div class="metric-note">Valuable goods</div>
         </div>
+      </div>
+      <div class="metrics-row next-row">
         <div class="metric next">
           <div class="metric-label">AIR — επόμενη</div>
           <div class="metric-value warn">${typeof nextAirPct === 'number' ? nextAirPct.toFixed(2)+'%' : nextAirPct}</div>
-          <div class="metric-sub">${nextAir ? nextAir.week : '—'} ${badge(diffAir ? -diffAir : null)}</div>
+          <div class="metric-sub">${nextAir ? nextAir.week : '—'} ${diffAir !== null ? badge(-diffAir) : ''}</div>
         </div>
         <div class="metric next">
           <div class="metric-label">ROAD — επόμενη</div>
           <div class="metric-value warn">${typeof nextRoadPct === 'number' ? nextRoadPct.toFixed(2)+'%' : nextRoadPct}</div>
-          <div class="metric-sub">${nextRoad ? nextRoad.week : '—'} ${badge(diffRoad ? -diffRoad : null)}</div>
+          <div class="metric-sub">${nextRoad ? nextRoad.week : '—'} ${diffRoad !== null ? badge(-diffRoad) : ''}</div>
         </div>
         <div class="metric next">
           <div class="metric-label">Valuable — επόμενη</div>
           <div class="metric-value warn">${nextValuable !== '—' ? nextValuable+'%' : '—'}</div>
-          <div class="metric-sub">${nextAir ? nextAir.week : '—'} ${badge(diffValuable ? -diffValuable : null)}</div>
+          <div class="metric-sub">${nextAir ? nextAir.week : '—'} ${diffValuable !== null ? badge(-diffValuable) : ''}</div>
           <div class="metric-note">Valuable goods</div>
         </div>
       </div>
