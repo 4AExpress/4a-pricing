@@ -92,8 +92,8 @@ def fetch_from_claude():
     print("Ανακτώ επίναυλο καυσίμων από DHL μέσω Claude API...")
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1000,
+        model="claude-sonnet-4-5",
+        max_tokens=2000,
         tools=[{
             "type": "web_search_20250305",
             "name": "web_search"
@@ -102,19 +102,37 @@ def fetch_from_claude():
         messages=[{"role": "user", "content": USER_PROMPT}]
     )
 
-    # Εξαγωγή JSON από response
+    # Debug: εμφάνιση όλων των blocks
     raw_text = ""
     for block in response.content:
+        print(f"  Block type: {block.type}")
         if block.type == "text":
             raw_text += block.text
+            print(f"  Text preview: {block.text[:200]}")
 
-    # Καθαρισμός markdown αν υπάρχει
+    if not raw_text.strip():
+        raise ValueError("Κενή απάντηση από Claude API — δεν βρέθηκε text block")
+
+    # Καθαρισμός markdown
     raw_text = raw_text.strip()
-    if raw_text.startswith("```"):
-        raw_text = raw_text.split("```")[1]
-        if raw_text.startswith("json"):
-            raw_text = raw_text[4:]
+    if "```" in raw_text:
+        parts = raw_text.split("```")
+        for part in parts:
+            part = part.strip()
+            if part.startswith("json"):
+                part = part[4:].strip()
+            if part.startswith("{"):
+                raw_text = part
+                break
 
+    # Εύρεση JSON αν υπάρχει κείμενο γύρω
+    if not raw_text.startswith("{"):
+        start = raw_text.find("{")
+        end   = raw_text.rfind("}") + 1
+        if start != -1 and end > start:
+            raw_text = raw_text[start:end]
+
+    print(f"  JSON preview: {raw_text[:300]}")
     parsed = json.loads(raw_text.strip())
     return parsed
 
