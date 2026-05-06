@@ -232,7 +232,7 @@
 
 <script>
 // === URLS ===
-const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/';
+const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 const SERVICES = [
   { id:'S1003', name:'Express Export', mode:'AIR / Διεθνής',   file:'dhl_tariff_2026_S1003.json' },
   { id:'S1012', name:'Express Import', mode:'AIR / Διεθνής',   file:'dhl_tariff_2026_S1012.json' },
@@ -268,7 +268,7 @@ async function loadDHL() {
 
 async function loadFuel() {
   try {
-    const r = await fetch(BASE + 'fuel_surcharge_cache.json');
+    const r = await fetch(BASE + 'data/fuel_surcharge_cache.json');
     fuelData = await r.json();
     const currAir  = fuelData.current_air  || '—';
     const currRoad = fuelData.current_road || '—';
@@ -665,4 +665,3 @@ init();
 </script>
 </body>
 </html>
-
