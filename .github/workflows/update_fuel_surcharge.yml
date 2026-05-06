@@ -1,0 +1,35 @@
+name: Καθημερινή Ενημέρωση Επίναυλου Καυσίμων
+
+on:
+  schedule:
+    - cron: '0 5 * * *'  # Κάθε μέρα 07:00 EET (05:00 UTC)
+  workflow_dispatch:       # Χειροκίνητη εκτέλεση αν χρειαστεί
+
+jobs:
+  update-fuel-surcharge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install anthropic
+
+      - name: Run fetch script
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python poc/fetch_fuel_surcharge.py --output data/fuel_surcharge_cache.json
+
+      - name: Commit αν άλλαξαν τα δεδομένα
+        run: |
+          git config user.name  "4A Automation"
+          git config user.email "automation@4aexpress.com"
+          git add data/fuel_surcharge_cache.json
+          git diff --staged --quiet || git commit -m "Auto: ενημέρωση επίναυλου καυσίμων $(date +'%Y-%m-%d')"
+          git push
