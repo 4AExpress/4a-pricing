@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4A Express — Τιμοκατάλογος S1003</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #1a1a1a; }
+
+  .topbar { background: #cc0000; padding: 0 20px; display: flex; align-items: center; height: 42px; gap: 12px; }
+  .topbar-logo-box { background: white; color: #cc0000; font-size: 13px; font-weight: 800; padding: 2px 6px; border-radius: 3px; }
+  .topbar-logo-text { color: white; font-size: 10px; font-weight: 600; line-height: 1.2; }
+  .topbar-title { color: white; font-size: 13px; font-weight: 500; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 12px; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px 16px; }
+
+  .section-header { background: #00BCD4; color: white; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
+  .section-body { background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; padding: 16px; margin-bottom: 20px; }
+
+  /* CONTROLS */
+  .controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .ctrl-group { display: flex; align-items: center; gap: 6px; }
+  .ctrl-label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; }
+  .ctrl-input { padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-weight: 600; width: 90px; text-align: center; }
+  .ctrl-input:focus { outline: none; border-color: #00BCD4; }
+  .btn { padding: 7px 14px; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .btn-cyan    { background: #00BCD4; color: white; }
+  .btn-red     { background: #cc0000; color: white; }
+  .btn-gray    { background: #f0f0f0; color: #555; }
+  .btn-green   { background: #43a047; color: white; }
+  .btn:hover   { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .fc-badge { font-size: 11px; background: #e3f2fd; color: #1565c0; padding: 3px 8px; border-radius: 10px; }
+
+  /* STATS BAR */
+  .stats-bar { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+  .stat { font-size: 11px; color: #888; }
+  .stat strong { color: #333; }
+  .stat.errors strong { color: #c62828; }
+  .stat.ok strong { color: #2e7d32; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; border: 1px solid #e0e0e0; border-radius: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
+  thead th { background: #f8f8f8; padding: 8px 6px; text-align: center; font-weight: 600; color: #555; border-bottom: 2px solid #e0e0e0; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+  thead th.weight-col { text-align: left; min-width: 65px; }
+  thead th.markup-col { background: #fff8e1; min-width: 80px; }
+  thead th.zone-col   { min-width: 75px; }
+  thead th.valid-col  { min-width: 35px; }
+
+  tbody tr { border-bottom: 1px solid #f0f0f0; }
+  tbody tr:hover { background: #fafafa; }
+  tbody tr.has-error { background: #fff8f8; }
+  tbody tr.has-error:hover { background: #ffefef; }
+  tbody tr.group-start td { border-top: 2px solid #e0e0e0; }
+
+  td { padding: 4px 6px; text-align: center; vertical-align: middle; }
+  td.weight-cell { text-align: left; font-weight: 600; color: #555; font-size: 11px; white-space: nowrap; }
+  td.markup-cell { background: #fffdf0; }
+  td.zone-cell { color: #333; font-size: 11px; }
+  td.valid-cell { font-size: 14px; }
+
+  .markup-field { width: 70px; padding: 3px 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; font-weight: 600; text-align: center; background: white; }
+  .markup-field:focus { outline: none; border-color: #00BCD4; background: #f0fbff; }
+  .markup-field.changed { border-color: #ff9800; background: #fff8f0; }
+
+  .zone-val { font-size: 11px; }
+  .zone-val.error { color: #c62828; font-weight: 600; }
+
+  /* LEGEND */
+  .legend { display: flex; gap: 12px; font-size: 11px; color: #888; margin-bottom: 12px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+
+  .save-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px solid #eee; flex-wrap: wrap; gap: 8px; }
+  .save-info { font-size: 12px; color: #888; }
+
+  .loading { text-align: center; padding: 40px; color: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:6px;">
+    <div class="topbar-logo-box">4A</div>
+    <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
+  </div>
+  <span class="topbar-title">Τιμοκατάλογος — S1003 Express Export</span>
+</div>
+
+<div class="container">
+
+  <div class="section-header">
+    <span>S1003 — Express Export · AIR · Z1–Z7 · έως 80kg</span>
+    <span class="fc-badge" id="fc-badge">FC AIR: —%</span>
+  </div>
+  <div class="section-body">
+
+    <!-- CONTROLS -->
+    <div class="controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label">Γενικό Markup</span>
+        <input class="ctrl-input" type="number" id="global-markup" placeholder="π.χ. 140" min="0" max="999" step="0.5" />
+        <span style="font-size:13px;color:#888;">%</span>
+        <button class="btn btn-cyan" onclick="applyGlobal()">→ Εφαρμογή σε όλα</button>
+      </div>
+      <div class="ctrl-group">
+        <button class="btn btn-gray" onclick="expandTable()" id="expand-btn">▶ Ανάπτυξη πίνακα</button>
+      </div>
+      <div class="ctrl-group" id="save-group" style="margin-left:auto;">
+        <button class="btn btn-green" id="save-btn" onclick="savePricelist()" disabled>💾 Αποθήκευση στο Ράφι</button>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-bar" id="stats-bar" style="display:none;">
+      <div class="stat">Γραμμές: <strong id="stat-rows">0</strong></div>
+      <div class="stat ok">✅ Έγκυρες: <strong id="stat-ok">0</strong></div>
+      <div class="stat errors">🔴 Σφάλματα: <strong id="stat-err">0</strong></div>
+      <div class="stat">Markup εύρος: <strong id="stat-range">—</strong></div>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend" id="legend" style="display:none;">
+      <div class="legend-item">🟡 <span>Τροποποιημένο markup</span></div>
+      <div class="legend-item">✅ <span>Μονοτονικότητα OK</span></div>
+      <div class="legend-item">🔴 <span>Παραβίαση — αύξησε το %</span></div>
+      <div class="legend-item"><span style="color:#1565c0">■</span> <span>Κόστος DHL</span></div>
+      <div class="legend-item"><span style="color:#cc0000">■</span> <span>Τιμή πελάτη</span></div>
+    </div>
+
+    <!-- TABLE -->
+    <div id="table-container">
+      <div class="loading">Φόρτωση τιμών DHL... Πατήστε "Ανάπτυξη" για εμφάνιση πίνακα.</div>
+    </div>
+
+    <!-- SAVE BAR -->
+    <div class="save-bar" id="save-bar" style="display:none;">
+      <div class="save-info" id="save-info"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-gray" onclick="resetMarkups()">↺ Reset σε γενικό markup</button>
+        <button class="btn btn-green" id="save-btn2" onclick="savePricelist()" disabled>💾 Αποθήκευση στο Ράφι S1003</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:100;">
+  <div style="background:white;border-radius:8px;padding:24px;width:360px;box-shadow:0 4px 20px rgba(0,0,0,0.2);">
+    <div style="font-size:15px;font-weight:600;margin-bottom:16px;">Αποθήκευση στο Ράφι S1003</div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;display:block;margin-bottom:4px;">Όνομα Τιμοκαταλόγου</label>
+      <input type="text" id="modal-name" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="π.χ. Standard 140%" />
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;display:block;margin-bottom:4px;">AccountNo (προαιρετικό)</label>
+      <input type="text" id="modal-account" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="π.χ. 30004041" />
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn btn-gray" onclick="closeModal()">Ακύρωση</button>
+      <button class="btn btn-red" onclick="confirmSave()">💾 Αποθήκευση</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const BASE       = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
+const SERVICE_ID = 'S1003';
+const MAX_WEIGHT = 80;   // AIR έως 80kg
+const ZONES      = ['z1','z2','z3','z4','z5','z6','z7'];
+const ZONE_LABELS= ['Z1','Z2','Z3','Z4','Z5','Z6','Z7'];
+
+let dhlData    = null;
+let fuelFc     = 47.0; // default
+let markupData = [];   // [{weight, markup, dhl_costs:[z1..z7], prices:[z1..z7], valid}]
+let tableVisible = false;
+let globalMarkup = 140;
+
+// === LOAD ===
+async function loadData() {
+  try {
+    // DHL tariff
+    const r1 = await fetch(BASE + 'dhl_tariff_2026_S1003.json');
+    dhlData = await r1.json();
+
+    // Fuel surcharge
+    try {
+      const r2 = await fetch(BASE + 'data/fuel_surcharge_cache.json');
+      const fc = await r2.json();
+      fuelFc   = fc.current_air || 47.0;
+    } catch(e) {}
+
+    document.getElementById('fc-badge').textContent = `FC AIR: ${fuelFc}%`;
+    document.getElementById('table-container').innerHTML =
+      '<div class="loading">✅ Δεδομένα φορτώθηκαν — Πατήστε "Ανάπτυξη πίνακα"</div>';
+
+  } catch(e) {
+    document.getElementById('table-container').innerHTML =
+      `<div class="loading" style="color:#c62828">❌ Σφάλμα φόρτωσης: ${e.message}</div>`;
+  }
+}
+
+// === BUILD MARKUP DATA ===
+function buildMarkupData(defaultMarkup) {
+  if (!dhlData?.entries) return;
+
+  // Ομαδοποίηση ανά βάρος για κάθε zone
+  const byWeight = {};
+  for (const e of dhlData.entries) {
+    if (e.weight_kg > MAX_WEIGHT) continue;
+    if (!byWeight[e.weight_kg]) byWeight[e.weight_kg] = {};
+    byWeight[e.weight_kg][e.zone_code] = e.cost;
+  }
+
+  const weights = Object.keys(byWeight).map(Number).sort((a,b) => a-b);
+
+  markupData = weights.map(w => {
+    const dhl_costs = ZONES.map(z => byWeight[w][z] || 0);
+    const mu = defaultMarkup;
+    const prices = dhl_costs.map(c => parseFloat((c * (1 + mu/100)).toFixed(2)));
+    return { weight: w, markup: mu, dhl_costs, prices, valid: true, changed: false };
+  });
+
+  validateAll();
+}
+
+// === VALIDATE ===
+function validateAll() {
+  // R1: μονοτονικότητα ανά zone
+  for (let zi = 0; zi < ZONES.length; zi++) {
+    let prevPrice = 0;
+    for (let i = 0; i < markupData.length; i++) {
+      const price = markupData[i].prices[zi];
+      if (price < prevPrice) {
+        markupData[i].valid = false;
+        markupData[i].error_zones = markupData[i].error_zones || [];
+        if (!markupData[i].error_zones.includes(zi)) markupData[i].error_zones.push(zi);
+      }
+      prevPrice = price;
+    }
+  }
+  // mark valid rows
+  for (const row of markupData) {
+    if (!row.error_zones || row.error_zones.length === 0) row.valid = true;
+  }
+}
+
+// === APPLY GLOBAL ===
+function applyGlobal() {
+  const val = parseFloat(document.getElementById('global-markup').value);
+  if (!val || val <= 0) { alert('Εισάγετε έγκυρο ποσοστό > 0'); return; }
+  globalMarkup = val;
+
+  if (markupData.length) {
+    for (const row of markupData) {
+      row.markup   = val;
+      row.changed  = false;
+      row.prices   = row.dhl_costs.map(c => parseFloat((c * (1 + val/100)).toFixed(2)));
+      row.valid    = true;
+      row.error_zones = [];
+    }
+    validateAll();
+    renderTable();
+  }
+}
+
+// === EXPAND TABLE ===
+function expandTable() {
+  if (!dhlData) { alert('Φόρτωση...'); return; }
+
+  if (!tableVisible) {
+    const val = parseFloat(document.getElementById('global-markup').value) || globalMarkup;
+    globalMarkup = val;
+    buildMarkupData(val);
+    renderTable();
+    tableVisible = true;
+    document.getElementById('expand-btn').textContent = '▼ Απόκρυψη πίνακα';
+    document.getElementById('stats-bar').style.display = 'flex';
+    document.getElementById('legend').style.display    = 'flex';
+    document.getElementById('save-bar').style.display  = 'flex';
+  } else {
+    document.getElementById('table-container').innerHTML =
+      '<div class="loading">Πατήστε "Ανάπτυξη" για εμφάνιση.</div>';
+    tableVisible = false;
+    document.getElementById('expand-btn').textContent = '▶ Ανάπτυξη πίνακα';
+    document.getElementById('stats-bar').style.display = 'none';
+    document.getElementById('legend').style.display    = 'none';
+    document.getElementById('save-bar').style.display  = 'none';
+  }
+}
+
+// === RENDER TABLE ===
+function renderTable() {
+  const okCount  = markupData.filter(r => r.valid).length;
+  const errCount = markupData.filter(r => !r.valid).length;
+  const markups  = markupData.map(r => r.markup);
+  const minMu    = Math.min(...markups);
+  const maxMu    = Math.max(...markups);
+
+  document.getElementById('stat-rows').textContent  = markupData.length;
+  document.getElementById('stat-ok').textContent    = okCount;
+  document.getElementById('stat-err').textContent   = errCount;
+  document.getElementById('stat-range').textContent = minMu === maxMu ? `${minMu}%` : `${minMu}% – ${maxMu}%`;
+
+  const saveOk = errCount === 0 && okCount > 0;
+  document.getElementById('save-btn').disabled  = !saveOk;
+  document.getElementById('save-btn2').disabled = !saveOk;
+  document.getElementById('save-info').textContent =
+    saveOk ? `✅ ${okCount} γραμμές έγκυρες — έτοιμο για αποθήκευση` :
+             `🔴 ${errCount} παραβιάσεις μονοτονικότητας — διορθώστε πριν αποθηκεύσετε`;
+  document.getElementById('save-info').style.color = saveOk ? '#2e7d32' : '#c62828';
+
+  // Build table HTML
+  let prev_step = null;
+  let html = `
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="weight-col">Βάρος</th>
+          <th class="markup-col">Markup %</th>
+          ${ZONE_LABELS.map((z,i) => `<th class="zone-col">${z}<br><span style="font-size:9px;color:#aaa;font-weight:400">DHL · Τιμή</span></th>`).join('')}
+          <th class="valid-col">R1</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  for (let i = 0; i < markupData.length; i++) {
+    const row  = markupData[i];
+    const step = row.weight <= 30 ? 0.5 : 1;
+    const groupStart = prev_step !== null && step !== prev_step;
+    prev_step = step;
+
+    const rowClass = !row.valid ? 'has-error' : '';
+    const grpClass = groupStart ? 'group-start' : '';
+
+    html += `<tr class="${rowClass} ${grpClass}" id="row-${i}">
+      <td class="weight-cell">${row.weight.toFixed(1)} kg</td>
+      <td class="markup-cell">
+        <input class="markup-field ${row.changed ? 'changed' : ''}"
+          type="number" min="0" max="999" step="0.5"
+          value="${row.markup}"
+          data-idx="${i}"
+          onchange="onRowMarkup(${i}, this.value)"
+          onfocus="this.select()" />
+      </td>`;
+
+    for (let zi = 0; zi < ZONES.length; zi++) {
+      const dhl   = row.dhl_costs[zi];
+      const price = row.prices[zi];
+      const isErr = row.error_zones && row.error_zones.includes(zi);
+      html += `<td class="zone-cell">
+        <span style="color:#1565c0;font-size:10px">${dhl.toFixed(2)}</span>
+        <span style="color:#888;font-size:9px"> → </span>
+        <span class="${isErr ? 'zone-val error' : 'zone-val'}">${price.toFixed(2)}</span>
+      </td>`;
+    }
+
+    html += `<td class="valid-cell">${row.valid ? '✅' : '🔴'}</td>
+    </tr>`;
+  }
+
+  html += '</tbody></table></div>';
+  document.getElementById('table-container').innerHTML = html;
+}
+
+// === ROW MARKUP CHANGE ===
+function onRowMarkup(idx, value) {
+  const val = parseFloat(value);
+  if (!val || val <= 0) return;
+
+  markupData[idx].markup  = val;
+  markupData[idx].changed = val !== globalMarkup;
+  markupData[idx].prices  = markupData[idx].dhl_costs.map(c =>
+    parseFloat((c * (1 + val/100)).toFixed(2)));
+  markupData[idx].valid      = true;
+  markupData[idx].error_zones = [];
+
+  // Re-validate all
+  for (const r of markupData) { r.valid = true; r.error_zones = []; }
+  validateAll();
+  renderTable();
+
+  // Restore focus
+  setTimeout(() => {
+    const el = document.querySelector(`input[data-idx="${idx}"]`);
+    if (el) el.focus();
+  }, 50);
+}
+
+// === RESET ===
+function resetMarkups() {
+  for (const row of markupData) {
+    row.markup   = globalMarkup;
+    row.changed  = false;
+    row.prices   = row.dhl_costs.map(c => parseFloat((c * (1 + globalMarkup/100)).toFixed(2)));
+    row.valid    = true;
+    row.error_zones = [];
+  }
+  validateAll();
+  renderTable();
+}
+
+// === SAVE ===
+function savePricelist() {
+  const errCount = markupData.filter(r => !r.valid).length;
+  if (errCount > 0) { alert(`🔴 ${errCount} παραβιάσεις — δεν επιτρέπεται αποθήκευση (R1)`); return; }
+
+  const modal = document.getElementById('modal-bg');
+  document.getElementById('modal-name').value = `${SERVICE_ID} — ${globalMarkup}%`;
+  modal.style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('modal-bg').style.display = 'none';
+}
+
+function confirmSave() {
+  const name    = document.getElementById('modal-name').value.trim();
+  const account = document.getElementById('modal-account').value.trim();
+  if (!name) { alert('Εισάγετε όνομα'); return; }
+
+  // Αποθήκευση στο localStorage
+  const shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
+  if (!shelf[SERVICE_ID]) shelf[SERVICE_ID] = [];
+
+  shelf[SERVICE_ID].unshift({
+    id:          Date.now(),
+    name,
+    service_id:  SERVICE_ID,
+    account:     account || '—',
+    global_markup: globalMarkup,
+    rows:        markupData.map(r => ({ weight: r.weight, markup: r.markup })),
+    fc_air:      fuelFc,
+    date:        new Date().toISOString().split('T')[0],
+    created_at:  new Date().toISOString()
+  });
+
+  localStorage.setItem('4a_shelf', JSON.stringify(shelf));
+  closeModal();
+  alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι S1003!`);
+}
+
+// Init
+loadData();
+</script>
+</body>
+</html>
