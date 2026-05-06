@@ -3,144 +3,233 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>4A Express — Τιμοκατάλογος S1003</title>
+<title>4A Express — Γνωστοποίηση Τιμών</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #1a1a1a; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #1a1a1a; min-height: 100vh; }
 
-  .topbar { background: #cc0000; padding: 0 20px; display: flex; align-items: center; height: 42px; gap: 12px; }
+  /* TOPBAR */
+  .topbar { background: #cc0000; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 42px; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { display: flex; align-items: center; gap: 6px; }
   .topbar-logo-box { background: white; color: #cc0000; font-size: 13px; font-weight: 800; padding: 2px 6px; border-radius: 3px; }
-  .topbar-logo-text { color: white; font-size: 10px; font-weight: 600; line-height: 1.2; }
-  .topbar-title { color: white; font-size: 13px; font-weight: 500; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 12px; }
+  .topbar-logo-text { color: white; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; line-height: 1.2; }
+  .topbar-title { color: white; font-size: 13px; font-weight: 500; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 12px; margin-left: 4px; }
+  .topbar-user { color: white; font-size: 11px; opacity: 0.9; }
+  .topbar-logout { background: rgba(255,255,255,0.2); color: white; border: none; padding: 4px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; }
 
-  .container { max-width: 1200px; margin: 0 auto; padding: 20px 16px; }
+  /* LOGIN */
+  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f0f0f0; }
+  .login-box { background: white; border-radius: 8px; padding: 32px; width: 340px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+  .login-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; justify-content: center; }
+  .login-logo-box { background: #cc0000; color: white; font-size: 18px; font-weight: 800; padding: 4px 10px; border-radius: 4px; }
+  .login-logo-text { font-size: 12px; font-weight: 600; color: #333; line-height: 1.3; }
+  .login-title { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 6px; text-align: center; }
+  .login-sub { font-size: 12px; color: #888; margin-bottom: 24px; text-align: center; }
+  .login-label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; display: block; }
+  .login-select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; margin-bottom: 14px; }
+  .login-pin { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 20px; letter-spacing: 8px; text-align: center; margin-bottom: 6px; }
+  .login-error { font-size: 12px; color: #c62828; margin-bottom: 10px; text-align: center; min-height: 18px; }
+  .login-btn { width: 100%; padding: 10px; background: #cc0000; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .login-btn:hover { background: #aa0000; }
 
-  .section-header { background: #00BCD4; color: white; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
+  /* NAV */
+  .nav { background: white; border-bottom: 1px solid #ddd; display: flex; gap: 0; }
+  .nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer; color: #666; border-bottom: 2px solid transparent; }
+  .nav-btn.active { color: #cc0000; border-bottom-color: #cc0000; font-weight: 600; }
+  .nav-btn:hover { background: #f8f8f8; }
+
+  /* CONTAINER */
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
+  .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .page-title { font-size: 20px; font-weight: 600; color: #222; margin-bottom: 3px; }
+  .page-sub { font-size: 12px; color: #888; }
+
+  /* SECTIONS */
+  .section-header { background: #00BCD4; color: white; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 4px 4px 0 0; }
   .section-body { background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; padding: 16px; margin-bottom: 20px; }
 
-  /* CONTROLS */
-  .controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-  .ctrl-group { display: flex; align-items: center; gap: 6px; }
-  .ctrl-label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; }
-  .ctrl-input { padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-weight: 600; width: 90px; text-align: center; }
-  .ctrl-input:focus { outline: none; border-color: #00BCD4; }
-  .btn { padding: 7px 14px; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
-  .btn-cyan    { background: #00BCD4; color: white; }
-  .btn-red     { background: #cc0000; color: white; }
-  .btn-gray    { background: #f0f0f0; color: #555; }
-  .btn-green   { background: #43a047; color: white; }
-  .btn:hover   { opacity: 0.85; }
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  /* SERVICE CARDS */
+  .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .svc-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 14px; background: #fafafa; transition: all 0.2s; }
+  .svc-card.has-error { border-color: #e53935; background: #fff8f8; }
+  .svc-card.is-valid  { border-color: #43a047; background: #f8fff8; }
+  .svc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .svc-name { font-size: 13px; font-weight: 600; color: #333; }
+  .svc-code { font-size: 11px; color: #888; background: #f0f0f0; padding: 2px 6px; border-radius: 10px; }
+  .svc-mode { font-size: 10px; color: #aaa; margin-bottom: 10px; }
+  .markup-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .markup-input-wrap { position: relative; flex: 1; }
+  .markup-input { width: 100%; padding: 8px 30px 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 18px; font-weight: 700; color: #333; text-align: right; }
+  .markup-input:focus { outline: none; border-color: #00BCD4; }
+  .markup-pct { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #888; }
+  .markup-status { font-size: 20px; flex-shrink: 0; width: 28px; text-align: center; }
+  .min-markup { font-size: 11px; color: #aaa; margin-bottom: 6px; }
+  .validation-msg { font-size: 11px; padding: 4px 8px; border-radius: 3px; margin-bottom: 6px; min-height: 22px; }
+  .validation-msg.error { background: #ffebee; color: #c62828; }
+  .validation-msg.ok    { background: #e8f5e9; color: #2e7d32; }
+  .preview-row { display: flex; justify-content: space-between; border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px; }
+  .preview-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .preview-label { font-size: 9px; color: #bbb; text-transform: uppercase; }
+  .preview-value { font-size: 12px; font-weight: 600; }
+  .preview-value.cost   { color: #1565c0; }
+  .preview-value.price  { color: #cc0000; }
+  .preview-value.profit { color: #2e7d32; }
+  .save-svc-btn { width: 100%; margin-top: 10px; padding: 7px; background: #00BCD4; color: white; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; display: none; }
+  .save-svc-btn:hover { background: #0097a7; }
+  .save-svc-btn.visible { display: block; }
 
-  .fc-badge { font-size: 11px; background: #e3f2fd; color: #1565c0; padding: 3px 8px; border-radius: 10px; }
+  /* SHELF */
+  .shelf-tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
+  .shelf-tab { padding: 6px 14px; font-size: 12px; border: 1px solid #ddd; border-bottom: none; border-radius: 4px 4px 0 0; background: #f0f0f0; cursor: pointer; color: #666; }
+  .shelf-tab.active { background: #00BCD4; color: white; border-color: #00BCD4; }
+  .shelf-content { background: white; border: 1px solid #ddd; border-radius: 0 4px 4px 4px; min-height: 80px; }
+  .shelf-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
+  .shelf-item:last-child { border-bottom: none; }
+  .shelf-name { font-size: 13px; font-weight: 600; color: #333; }
+  .shelf-meta { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .shelf-actions { display: flex; gap: 6px; }
+  .btn-small { padding: 4px 10px; font-size: 11px; border: none; border-radius: 3px; cursor: pointer; font-weight: 500; }
+  .btn-export { background: #e8f5e9; color: #2e7d32; }
+  .btn-delete { background: #ffebee; color: #c62828; }
+  .shelf-empty { text-align: center; padding: 24px; color: #bbb; font-size: 13px; }
 
-  /* STATS BAR */
-  .stats-bar { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
-  .stat { font-size: 11px; color: #888; }
-  .stat strong { color: #333; }
-  .stat.errors strong { color: #c62828; }
-  .stat.ok strong { color: #2e7d32; }
+  /* CLIENTS */
+  .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-group input, .form-group select { padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: #00BCD4; }
 
-  /* TABLE */
-  .table-wrap { overflow-x: auto; border: 1px solid #e0e0e0; border-radius: 4px; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
-  thead th { background: #f8f8f8; padding: 8px 6px; text-align: center; font-weight: 600; color: #555; border-bottom: 2px solid #e0e0e0; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
-  thead th.weight-col { text-align: left; min-width: 65px; }
-  thead th.markup-col { background: #fff8e1; min-width: 80px; }
-  thead th.zone-col   { min-width: 75px; }
-  thead th.valid-col  { min-width: 35px; }
+  /* MODAL */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal { background: white; border-radius: 8px; padding: 24px; width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+  .modal-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 16px; }
+  .modal-field { margin-bottom: 12px; }
+  .modal-field label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; }
+  .modal-field input { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .btn { padding: 8px 16px; border: none; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-primary { background: #cc0000; color: white; }
+  .btn-secondary { background: #f0f0f0; color: #555; }
 
-  tbody tr { border-bottom: 1px solid #f0f0f0; }
-  tbody tr:hover { background: #fafafa; }
-  tbody tr.has-error { background: #fff8f8; }
-  tbody tr.has-error:hover { background: #ffefef; }
-  tbody tr.group-start td { border-top: 2px solid #e0e0e0; }
-
-  td { padding: 4px 6px; text-align: center; vertical-align: middle; }
-  td.weight-cell { text-align: left; font-weight: 600; color: #555; font-size: 11px; white-space: nowrap; }
-  td.markup-cell { background: #fffdf0; }
-  td.zone-cell { color: #333; font-size: 11px; }
-  td.valid-cell { font-size: 14px; }
-
-  .markup-field { width: 70px; padding: 3px 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; font-weight: 600; text-align: center; background: white; }
-  .markup-field:focus { outline: none; border-color: #00BCD4; background: #f0fbff; }
-  .markup-field.changed { border-color: #ff9800; background: #fff8f0; }
-
-  .zone-val { font-size: 11px; }
-  .zone-val.error { color: #c62828; font-weight: 600; }
-
-  /* LEGEND */
-  .legend { display: flex; gap: 12px; font-size: 11px; color: #888; margin-bottom: 12px; flex-wrap: wrap; }
-  .legend-item { display: flex; align-items: center; gap: 4px; }
-
-  .save-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 12px; border-top: 1px solid #eee; flex-wrap: wrap; gap: 8px; }
-  .save-info { font-size: 12px; color: #888; }
-
-  .loading { text-align: center; padding: 40px; color: #aaa; }
+  .fc-info { font-size: 11px; color: #888; background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px 12px; margin-bottom: 14px; }
+  .loading { text-align: center; padding: 30px; color: #aaa; }
+  .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div style="display:flex;align-items:center;gap:6px;">
-    <div class="topbar-logo-box">4A</div>
-    <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
+<!-- LOGIN -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-box">4A</div>
+      <div class="login-logo-text">WORLDWIDE<br>EXPRESS</div>
+    </div>
+    <div class="login-title">Γνωστοποίηση Τιμών</div>
+    <div class="login-sub">Εισάγετε τα στοιχεία σας για πρόσβαση</div>
+    <label class="login-label">Χρήστης</label>
+    <select class="login-select" id="login-user">
+      <option value="">— Επιλέξτε —</option>
+      <option value="Απόστολος Ορφανίδης|Αθήνα|manager">Απόστολος Ορφανίδης — Αθήνα</option>
+    </select>
+    <label class="login-label">PIN</label>
+    <input class="login-pin" type="password" id="login-pin" maxlength="4" placeholder="••••" />
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" onclick="doLogin()">Είσοδος</button>
   </div>
-  <span class="topbar-title">Τιμοκατάλογος — S1003 Express Export</span>
 </div>
 
-<div class="container">
-
-  <div class="section-header">
-    <span>S1003 — Express Export · AIR · Z1–Z7 · έως 80kg</span>
-    <span class="fc-badge" id="fc-badge">FC AIR: —%</span>
+<!-- APP -->
+<div id="app-screen" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        <div class="topbar-logo-box">4A</div>
+        <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
+      </div>
+      <span class="topbar-title">Γνωστοποίηση Τιμών</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span class="topbar-user" id="topbar-user"></span>
+      <button class="topbar-logout" onclick="doLogout()">Έξοδος</button>
+    </div>
   </div>
-  <div class="section-body">
 
-    <!-- CONTROLS -->
-    <div class="controls">
-      <div class="ctrl-group">
-        <span class="ctrl-label">Γενικό Markup</span>
-        <input class="ctrl-input" type="number" id="global-markup" placeholder="π.χ. 140" min="0" max="999" step="0.5" />
-        <span style="font-size:13px;color:#888;">%</span>
-        <button class="btn btn-cyan" onclick="applyGlobal()">→ Εφαρμογή σε όλα</button>
+  <div class="nav">
+    <button class="nav-btn active" onclick="showTab('editor', this)">+ Νέος Τιμοκατάλογος</button>
+    <button class="nav-btn" onclick="showTab('shelf', this)">📦 Ράφι</button>
+    <button class="nav-btn" onclick="showTab('clients', this)">👥 Πελάτες</button>
+  </div>
+
+  <div class="container">
+
+    <!-- EDITOR -->
+    <div id="tab-editor">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Νέος Τιμοκατάλογος</h1>
+          <p class="page-sub">Ορίστε ποσοστό προσαύξησης — κάθε service αποθηκεύεται ξεχωριστά στο ράφι του</p>
+        </div>
       </div>
-      <div class="ctrl-group">
-        <button class="btn btn-gray" onclick="expandTable()" id="expand-btn">▶ Ανάπτυξη πίνακα</button>
+      <div class="section-header">Προσαύξηση ανά Service</div>
+      <div class="section-body">
+        <div id="fc-info" class="fc-info">Φόρτωση επίναυλου...</div>
+        <div id="services-grid" class="services-grid">
+          <div class="loading">Φόρτωση τιμών DHL...</div>
+        </div>
       </div>
-      <div class="ctrl-group" id="save-group" style="margin-left:auto;">
-        <button class="btn btn-green" id="save-btn" onclick="savePricelist()" disabled>💾 Αποθήκευση στο Ράφι</button>
+    </div>
+
+    <!-- SHELF -->
+    <div id="tab-shelf" style="display:none;">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Ράφι Τιμοκαταλόγων</h1>
+          <p class="page-sub">Αποθηκευμένοι τιμοκατάλογοι ανά service</p>
+        </div>
       </div>
+      <div class="shelf-tabs" id="shelf-tabs"></div>
+      <div class="shelf-content" id="shelf-content"></div>
     </div>
 
-    <!-- STATS -->
-    <div class="stats-bar" id="stats-bar" style="display:none;">
-      <div class="stat">Γραμμές: <strong id="stat-rows">0</strong></div>
-      <div class="stat ok">✅ Έγκυρες: <strong id="stat-ok">0</strong></div>
-      <div class="stat errors">🔴 Σφάλματα: <strong id="stat-err">0</strong></div>
-      <div class="stat">Markup εύρος: <strong id="stat-range">—</strong></div>
-    </div>
-
-    <!-- LEGEND -->
-    <div class="legend" id="legend" style="display:none;">
-      <div class="legend-item">🟡 <span>Τροποποιημένο markup</span></div>
-      <div class="legend-item">✅ <span>Μονοτονικότητα OK</span></div>
-      <div class="legend-item">🔴 <span>Παραβίαση — αύξησε το %</span></div>
-      <div class="legend-item"><span style="color:#1565c0">■</span> <span>Κόστος DHL</span></div>
-      <div class="legend-item"><span style="color:#cc0000">■</span> <span>Τιμή πελάτη</span></div>
-    </div>
-
-    <!-- TABLE -->
-    <div id="table-container">
-      <div class="loading">Φόρτωση τιμών DHL... Πατήστε "Ανάπτυξη" για εμφάνιση πίνακα.</div>
-    </div>
-
-    <!-- SAVE BAR -->
-    <div class="save-bar" id="save-bar" style="display:none;">
-      <div class="save-info" id="save-info"></div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-gray" onclick="resetMarkups()">↺ Reset σε γενικό markup</button>
-        <button class="btn btn-green" id="save-btn2" onclick="savePricelist()" disabled>💾 Αποθήκευση στο Ράφι S1003</button>
+    <!-- CLIENTS -->
+    <div id="tab-clients" style="display:none;">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Πελάτες</h1>
+          <p class="page-sub">Δημιουργία πελατών και ανάθεση τιμοκαταλόγων</p>
+        </div>
+      </div>
+      <div class="section-header">Νέος Πελάτης</div>
+      <div class="section-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Επωνυμία</label>
+            <input type="text" id="cl-name" placeholder="Επωνυμία πελάτη" />
+          </div>
+          <div class="form-group">
+            <label>AccountNo</label>
+            <input type="text" id="cl-account" placeholder="π.χ. 30004041" />
+          </div>
+          <div class="form-group">
+            <label>Κατάσταση</label>
+            <select id="cl-status">
+              <option value="prospect">Υποψήφιος</option>
+              <option value="active">Ενεργός</option>
+            </select>
+          </div>
+        </div>
+        <div class="section-header" style="border-radius:4px; margin-bottom:10px;">Ανάθεση Τιμοκαταλόγων</div>
+        <div id="cl-pricelists" class="form-row"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="saveClient()">Αποθήκευση Πελάτη</button>
+        </div>
+      </div>
+      <div class="section-header">Λίστα Πελατών</div>
+      <div class="section-body" id="clients-list">
+        <div class="shelf-empty">Δεν υπάρχουν πελάτες</div>
       </div>
     </div>
 
@@ -148,274 +237,240 @@
 </div>
 
 <!-- MODAL -->
-<div id="modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:100;">
-  <div style="background:white;border-radius:8px;padding:24px;width:360px;box-shadow:0 4px 20px rgba(0,0,0,0.2);">
-    <div style="font-size:15px;font-weight:600;margin-bottom:16px;">Αποθήκευση στο Ράφι S1003</div>
-    <div style="margin-bottom:12px;">
-      <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;display:block;margin-bottom:4px;">Όνομα Τιμοκαταλόγου</label>
-      <input type="text" id="modal-name" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="π.χ. Standard 140%" />
+<div id="modal-bg" class="modal-bg" style="display:none;">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Αποθήκευση Τιμοκαταλόγου</div>
+    <div class="modal-field">
+      <label>Όνομα Τιμοκαταλόγου</label>
+      <input type="text" id="modal-name" placeholder="π.χ. Standard 180%" />
     </div>
-    <div style="margin-bottom:12px;">
-      <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;display:block;margin-bottom:4px;">AccountNo (προαιρετικό)</label>
-      <input type="text" id="modal-account" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="π.χ. 30004041" />
+    <div class="modal-field">
+      <label>AccountNo Πελάτη (προαιρετικό)</label>
+      <input type="text" id="modal-account" placeholder="π.χ. 30004041" />
     </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
-      <button class="btn btn-gray" onclick="closeModal()">Ακύρωση</button>
-      <button class="btn btn-red" onclick="confirmSave()">💾 Αποθήκευση</button>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal()">Ακύρωση</button>
+      <button class="btn btn-primary" onclick="confirmSave()">💾 Αποθήκευση</button>
     </div>
   </div>
 </div>
 
 <script>
-const BASE       = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
-const SERVICE_ID = 'S1003';
-const MAX_WEIGHT = 80;   // AIR έως 80kg
-const ZONES      = ['z1','z2','z3','z4','z5','z6','z7'];
-const ZONE_LABELS= ['Z1','Z2','Z3','Z4','Z5','Z6','Z7'];
+// === CONFIG ===
+const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
+const PIN  = '1111';
+const SERVICES = [
+  { id:'S1003', name:'Express Export', mode:'AIR / Διεθνής',    file:'dhl_tariff_2026_S1003.json' },
+  { id:'S1012', name:'Express Import', mode:'AIR / Διεθνής',    file:'dhl_tariff_2026_S1012.json' },
+  { id:'S1010', name:'Economy Export', mode:'ROAD / Εσωτερικό', file:'dhl_tariff_2026_S1010.json' },
+  { id:'S1041', name:'Economy Import', mode:'ROAD / Εσωτερικό', file:'dhl_tariff_2026_S1041.json' },
+];
 
-let dhlData    = null;
-let fuelFc     = 47.0; // default
-let markupData = [];   // [{weight, markup, dhl_costs:[z1..z7], prices:[z1..z7], valid}]
-let tableVisible = false;
-let globalMarkup = 140;
+// === STATE ===
+let currentUser  = null;
+let dhlData      = {};
+let fuelData     = null;
+let markups      = {};
+let pendingSvc   = null; // service που αποθηκεύεται
+let shelf        = JSON.parse(localStorage.getItem('4a_shelf')   || '{}'); // { S1003: [...], ... }
+let clients      = JSON.parse(localStorage.getItem('4a_clients') || '[]');
+let activeShelfTab = SERVICES[0].id;
 
-// === LOAD ===
-async function loadData() {
+// === LOGIN ===
+function doLogin() {
+  const sel = document.getElementById('login-user').value;
+  const pin = document.getElementById('login-pin').value;
+  const err = document.getElementById('login-error');
+
+  if (!sel) { err.textContent = 'Επιλέξτε χρήστη'; return; }
+  if (pin !== PIN) { err.textContent = 'Λάθος PIN'; return; }
+
+  const parts = sel.split('|');
+  currentUser = { name: parts[0], office: parts[1], role: parts[2] };
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display   = '';
+  document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
+  init();
+}
+
+document.getElementById('login-pin').addEventListener('keyup', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+function doLogout() {
+  currentUser = null;
+  markups     = {};
+  document.getElementById('login-screen').style.display = '';
+  document.getElementById('app-screen').style.display   = 'none';
+  document.getElementById('login-pin').value  = '';
+  document.getElementById('login-error').textContent = '';
+}
+
+// === INIT ===
+async function init() {
+  await Promise.all([loadDHL(), loadFuel()]);
+  renderServices();
+  renderShelf();
+  renderClientPricelists();
+  renderClientsList();
+}
+
+async function loadDHL() {
+  await Promise.all(SERVICES.map(async svc => {
+    const r = await fetch(BASE + svc.file);
+    dhlData[svc.id] = await r.json();
+  }));
+}
+
+async function loadFuel() {
   try {
-    // DHL tariff
-    const r1 = await fetch(BASE + 'dhl_tariff_2026_S1003.json');
-    dhlData = await r1.json();
-
-    // Fuel surcharge
-    try {
-      const r2 = await fetch(BASE + 'data/fuel_surcharge_cache.json');
-      const fc = await r2.json();
-      fuelFc   = fc.current_air || 47.0;
-    } catch(e) {}
-
-    document.getElementById('fc-badge').textContent = `FC AIR: ${fuelFc}%`;
-    document.getElementById('table-container').innerHTML =
-      '<div class="loading">✅ Δεδομένα φορτώθηκαν — Πατήστε "Ανάπτυξη πίνακα"</div>';
-
+    const r = await fetch(BASE + 'data/fuel_surcharge_cache.json');
+    fuelData = await r.json();
+    document.getElementById('fc-info').innerHTML =
+      `Επίναυλος τρέχουσας εβδομάδας: <strong>AIR ${fuelData.current_air}%</strong> · <strong>ROAD ${fuelData.current_road}%</strong> ` +
+      `<span style="color:#bbb">(${fuelData.fetched_at?.substring(0,10)})</span>`;
   } catch(e) {
-    document.getElementById('table-container').innerHTML =
-      `<div class="loading" style="color:#c62828">❌ Σφάλμα φόρτωσης: ${e.message}</div>`;
+    document.getElementById('fc-info').textContent = 'Επίναυλος: μη διαθέσιμος';
   }
 }
 
-// === BUILD MARKUP DATA ===
-function buildMarkupData(defaultMarkup) {
-  if (!dhlData?.entries) return;
-
-  // Ομαδοποίηση ανά βάρος για κάθε zone
-  const byWeight = {};
-  for (const e of dhlData.entries) {
-    if (e.weight_kg > MAX_WEIGHT) continue;
-    if (!byWeight[e.weight_kg]) byWeight[e.weight_kg] = {};
-    byWeight[e.weight_kg][e.zone_code] = e.cost;
-  }
-
-  const weights = Object.keys(byWeight).map(Number).sort((a,b) => a-b);
-
-  markupData = weights.map(w => {
-    const dhl_costs = ZONES.map(z => byWeight[w][z] || 0);
-    const mu = defaultMarkup;
-    const prices = dhl_costs.map(c => parseFloat((c * (1 + mu/100)).toFixed(2)));
-    return { weight: w, markup: mu, dhl_costs, prices, valid: true, changed: false };
-  });
-
-  validateAll();
+// === SERVICES ===
+function getFcPct(svc) {
+  if (!fuelData) return 0;
+  return svc.mode.includes('AIR') ? (fuelData.current_air||0) : (fuelData.current_road||0);
 }
 
-// === VALIDATE ===
-function validateAll() {
-  // R1: μονοτονικότητα ανά zone
-  for (let zi = 0; zi < ZONES.length; zi++) {
-    let prevPrice = 0;
-    for (let i = 0; i < markupData.length; i++) {
-      const price = markupData[i].prices[zi];
-      if (price < prevPrice) {
-        markupData[i].valid = false;
-        markupData[i].error_zones = markupData[i].error_zones || [];
-        if (!markupData[i].error_zones.includes(zi)) markupData[i].error_zones.push(zi);
-      }
-      prevPrice = price;
+function getSampleCost(serviceId) {
+  const d = dhlData[serviceId];
+  if (!d?.entries) return 0;
+  const z1 = d.entries.filter(e => e.zone_code === 'z1');
+  return z1[2]?.cost || z1[0]?.cost || 0;
+}
+
+function validate(serviceId, markup) {
+  if (!markup || isNaN(markup) || markup <= 0) return { ok: false, msg: 'Εισάγετε ποσοστό > 0%' };
+  const d = dhlData[serviceId];
+  if (!d?.entries) return { ok: true, msg: '✅ Έγκυρο' };
+  const zones = {};
+  for (const e of d.entries) {
+    if (!zones[e.zone_code]) zones[e.zone_code] = [];
+    zones[e.zone_code].push(e.cost);
+  }
+  for (const [zone, costs] of Object.entries(zones)) {
+    let prev = 0;
+    for (const cost of costs) {
+      const price = parseFloat((cost * (1 + markup/100)).toFixed(2));
+      if (price < prev) return { ok: false, msg: `⚠️ Παραβίαση μονοτονικότητας στη ${zone.toUpperCase()}` };
+      prev = price;
     }
   }
-  // mark valid rows
-  for (const row of markupData) {
-    if (!row.error_zones || row.error_zones.length === 0) row.valid = true;
+  return { ok: true, msg: '✅ Έγκυρο' };
+}
+
+function renderServices() {
+  const grid = document.getElementById('services-grid');
+  grid.innerHTML = SERVICES.map(svc => {
+    const fcPct = getFcPct(svc);
+    const cost  = getSampleCost(svc.id);
+    const mu    = markups[svc.id] || '';
+    const v     = mu ? validate(svc.id, parseFloat(mu)) : null;
+    const cls   = !mu ? '' : v?.ok ? 'is-valid' : 'has-error';
+    const icon  = !mu ? '○' : v?.ok ? '✅' : '🔴';
+    const calc  = mu && cost && v?.ok ? {
+      price:  (cost * (1 + parseFloat(mu)/100)).toFixed(2),
+      fc:     (cost * fcPct/100).toFixed(2),
+      profit: (cost * (1 + parseFloat(mu)/100) - cost - cost * fcPct/100).toFixed(2),
+      pct:    ((cost * (1 + parseFloat(mu)/100) - cost - cost * fcPct/100) / (cost + cost * fcPct/100) * 100).toFixed(1)
+    } : null;
+
+    return `
+    <div class="svc-card ${cls}" id="card-${svc.id}">
+      <div class="svc-header">
+        <span class="svc-name">${svc.name}</span>
+        <span class="svc-code">${svc.id}</span>
+      </div>
+      <div class="svc-mode">${svc.mode} · FC ${fcPct}%</div>
+      <div class="markup-row">
+        <div class="markup-input-wrap">
+          <input class="markup-input" type="number" min="0" max="999" step="0.5"
+            id="markup-${svc.id}" value="${mu}" placeholder="0"
+            oninput="onMarkup('${svc.id}', this.value)" />
+          <span class="markup-pct">%</span>
+        </div>
+        <span class="markup-status" id="icon-${svc.id}">${icon}</span>
+      </div>
+      <div class="min-markup">Ελάχιστο: 0% (ελεύθερο)</div>
+      <div class="validation-msg ${v ? (v.ok?'ok':'error') : ''}" id="msg-${svc.id}">${v?.msg||''}</div>
+      ${calc ? `
+      <div class="preview-row">
+        <div class="preview-item"><span class="preview-label">Κόστος DHL</span><span class="preview-value cost">${cost.toFixed(2)}€</span></div>
+        <div class="preview-item"><span class="preview-label">FC ${fcPct}%</span><span class="preview-value" style="color:#888">${calc.fc}€</span></div>
+        <div class="preview-item"><span class="preview-label">Τιμή πελάτη</span><span class="preview-value price">${calc.price}€</span></div>
+        <div class="preview-item"><span class="preview-label">Κέρδος</span><span class="preview-value profit">${calc.profit}€ (${calc.pct}%)</span></div>
+      </div>` : ''}
+      <button class="save-svc-btn ${v?.ok ? 'visible' : ''}" id="savebtn-${svc.id}"
+        onclick="openModal('${svc.id}')">
+        💾 Αποθήκευση στο Ράφι ${svc.id}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function onMarkup(serviceId, value) {
+  markups[serviceId] = value ? parseFloat(value) : null;
+  const svc  = SERVICES.find(s => s.id === serviceId);
+  const fcPct = getFcPct(svc);
+  const cost  = getSampleCost(serviceId);
+  const mu    = value ? parseFloat(value) : null;
+  const v     = mu ? validate(serviceId, mu) : null;
+
+  document.getElementById(`card-${serviceId}`).className = 'svc-card ' + (!mu ? '' : v?.ok ? 'is-valid' : 'has-error');
+  document.getElementById(`icon-${serviceId}`).textContent = !mu ? '○' : v?.ok ? '✅' : '🔴';
+  const msgEl = document.getElementById(`msg-${serviceId}`);
+  msgEl.className   = 'validation-msg ' + (v ? (v.ok?'ok':'error') : '');
+  msgEl.textContent = v?.msg || '';
+
+  const saveBtn = document.getElementById(`savebtn-${serviceId}`);
+  saveBtn.className = 'save-svc-btn ' + (v?.ok ? 'visible' : '');
+
+  // Preview update
+  const card = document.getElementById(`card-${serviceId}`);
+  const existing = card.querySelector('.preview-row');
+  if (mu && cost && v?.ok) {
+    const calc = {
+      price:  (cost * (1 + mu/100)).toFixed(2),
+      fc:     (cost * fcPct/100).toFixed(2),
+      profit: (cost * (1 + mu/100) - cost - cost * fcPct/100).toFixed(2),
+      pct:    ((cost * (1 + mu/100) - cost - cost * fcPct/100) / (cost + cost * fcPct/100) * 100).toFixed(1)
+    };
+    const html = `<div class="preview-row">
+      <div class="preview-item"><span class="preview-label">Κόστος DHL</span><span class="preview-value cost">${cost.toFixed(2)}€</span></div>
+      <div class="preview-item"><span class="preview-label">FC ${fcPct}%</span><span class="preview-value" style="color:#888">${calc.fc}€</span></div>
+      <div class="preview-item"><span class="preview-label">Τιμή πελάτη</span><span class="preview-value price">${calc.price}€</span></div>
+      <div class="preview-item"><span class="preview-label">Κέρδος</span><span class="preview-value profit">${calc.profit}€ (${calc.pct}%)</span></div>
+    </div>`;
+    if (existing) existing.outerHTML = html;
+    else saveBtn.insertAdjacentHTML('beforebegin', html);
+  } else if (existing) {
+    existing.remove();
   }
 }
 
-// === APPLY GLOBAL ===
-function applyGlobal() {
-  const val = parseFloat(document.getElementById('global-markup').value);
-  if (!val || val <= 0) { alert('Εισάγετε έγκυρο ποσοστό > 0'); return; }
-  globalMarkup = val;
-
-  if (markupData.length) {
-    for (const row of markupData) {
-      row.markup   = val;
-      row.changed  = false;
-      row.prices   = row.dhl_costs.map(c => parseFloat((c * (1 + val/100)).toFixed(2)));
-      row.valid    = true;
-      row.error_zones = [];
-    }
-    validateAll();
-    renderTable();
-  }
-}
-
-// === EXPAND TABLE ===
-function expandTable() {
-  if (!dhlData) { alert('Φόρτωση...'); return; }
-
-  if (!tableVisible) {
-    const val = parseFloat(document.getElementById('global-markup').value) || globalMarkup;
-    globalMarkup = val;
-    buildMarkupData(val);
-    renderTable();
-    tableVisible = true;
-    document.getElementById('expand-btn').textContent = '▼ Απόκρυψη πίνακα';
-    document.getElementById('stats-bar').style.display = 'flex';
-    document.getElementById('legend').style.display    = 'flex';
-    document.getElementById('save-bar').style.display  = 'flex';
-  } else {
-    document.getElementById('table-container').innerHTML =
-      '<div class="loading">Πατήστε "Ανάπτυξη" για εμφάνιση.</div>';
-    tableVisible = false;
-    document.getElementById('expand-btn').textContent = '▶ Ανάπτυξη πίνακα';
-    document.getElementById('stats-bar').style.display = 'none';
-    document.getElementById('legend').style.display    = 'none';
-    document.getElementById('save-bar').style.display  = 'none';
-  }
-}
-
-// === RENDER TABLE ===
-function renderTable() {
-  const okCount  = markupData.filter(r => r.valid).length;
-  const errCount = markupData.filter(r => !r.valid).length;
-  const markups  = markupData.map(r => r.markup);
-  const minMu    = Math.min(...markups);
-  const maxMu    = Math.max(...markups);
-
-  document.getElementById('stat-rows').textContent  = markupData.length;
-  document.getElementById('stat-ok').textContent    = okCount;
-  document.getElementById('stat-err').textContent   = errCount;
-  document.getElementById('stat-range').textContent = minMu === maxMu ? `${minMu}%` : `${minMu}% – ${maxMu}%`;
-
-  const saveOk = errCount === 0 && okCount > 0;
-  document.getElementById('save-btn').disabled  = !saveOk;
-  document.getElementById('save-btn2').disabled = !saveOk;
-  document.getElementById('save-info').textContent =
-    saveOk ? `✅ ${okCount} γραμμές έγκυρες — έτοιμο για αποθήκευση` :
-             `🔴 ${errCount} παραβιάσεις μονοτονικότητας — διορθώστε πριν αποθηκεύσετε`;
-  document.getElementById('save-info').style.color = saveOk ? '#2e7d32' : '#c62828';
-
-  // Build table HTML
-  let prev_step = null;
-  let html = `
-    <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th class="weight-col">Βάρος</th>
-          <th class="markup-col">Markup %</th>
-          ${ZONE_LABELS.map((z,i) => `<th class="zone-col">${z}<br><span style="font-size:9px;color:#aaa;font-weight:400">DHL · Τιμή</span></th>`).join('')}
-          <th class="valid-col">R1</th>
-        </tr>
-      </thead>
-      <tbody>`;
-
-  for (let i = 0; i < markupData.length; i++) {
-    const row  = markupData[i];
-    const step = row.weight <= 30 ? 0.5 : 1;
-    const groupStart = prev_step !== null && step !== prev_step;
-    prev_step = step;
-
-    const rowClass = !row.valid ? 'has-error' : '';
-    const grpClass = groupStart ? 'group-start' : '';
-
-    html += `<tr class="${rowClass} ${grpClass}" id="row-${i}">
-      <td class="weight-cell">${row.weight.toFixed(1)} kg</td>
-      <td class="markup-cell">
-        <input class="markup-field ${row.changed ? 'changed' : ''}"
-          type="number" min="0" max="999" step="0.5"
-          value="${row.markup}"
-          data-idx="${i}"
-          onchange="onRowMarkup(${i}, this.value)"
-          onfocus="this.select()" />
-      </td>`;
-
-    for (let zi = 0; zi < ZONES.length; zi++) {
-      const dhl   = row.dhl_costs[zi];
-      const price = row.prices[zi];
-      const isErr = row.error_zones && row.error_zones.includes(zi);
-      html += `<td class="zone-cell">
-        <span style="color:#1565c0;font-size:10px">${dhl.toFixed(2)}</span>
-        <span style="color:#888;font-size:9px"> → </span>
-        <span class="${isErr ? 'zone-val error' : 'zone-val'}">${price.toFixed(2)}</span>
-      </td>`;
-    }
-
-    html += `<td class="valid-cell">${row.valid ? '✅' : '🔴'}</td>
-    </tr>`;
-  }
-
-  html += '</tbody></table></div>';
-  document.getElementById('table-container').innerHTML = html;
-}
-
-// === ROW MARKUP CHANGE ===
-function onRowMarkup(idx, value) {
-  const val = parseFloat(value);
-  if (!val || val <= 0) return;
-
-  markupData[idx].markup  = val;
-  markupData[idx].changed = val !== globalMarkup;
-  markupData[idx].prices  = markupData[idx].dhl_costs.map(c =>
-    parseFloat((c * (1 + val/100)).toFixed(2)));
-  markupData[idx].valid      = true;
-  markupData[idx].error_zones = [];
-
-  // Re-validate all
-  for (const r of markupData) { r.valid = true; r.error_zones = []; }
-  validateAll();
-  renderTable();
-
-  // Restore focus
-  setTimeout(() => {
-    const el = document.querySelector(`input[data-idx="${idx}"]`);
-    if (el) el.focus();
-  }, 50);
-}
-
-// === RESET ===
-function resetMarkups() {
-  for (const row of markupData) {
-    row.markup   = globalMarkup;
-    row.changed  = false;
-    row.prices   = row.dhl_costs.map(c => parseFloat((c * (1 + globalMarkup/100)).toFixed(2)));
-    row.valid    = true;
-    row.error_zones = [];
-  }
-  validateAll();
-  renderTable();
-}
-
-// === SAVE ===
-function savePricelist() {
-  const errCount = markupData.filter(r => !r.valid).length;
-  if (errCount > 0) { alert(`🔴 ${errCount} παραβιάσεις — δεν επιτρέπεται αποθήκευση (R1)`); return; }
-
-  const modal = document.getElementById('modal-bg');
-  document.getElementById('modal-name').value = `${SERVICE_ID} — ${globalMarkup}%`;
-  modal.style.display = 'flex';
+// === MODAL ===
+function openModal(serviceId) {
+  pendingSvc = serviceId;
+  const svc  = SERVICES.find(s => s.id === serviceId);
+  const mu   = markups[serviceId];
+  document.getElementById('modal-title').textContent = `Αποθήκευση — ${svc.name} (${serviceId})`;
+  document.getElementById('modal-name').value    = `${svc.name} ${mu}%`;
+  document.getElementById('modal-account').value = '';
+  document.getElementById('modal-bg').style.display = 'flex';
+  setTimeout(() => document.getElementById('modal-name').select(), 100);
 }
 
 function closeModal() {
   document.getElementById('modal-bg').style.display = 'none';
+  pendingSvc = null;
 }
 
 function confirmSave() {
@@ -423,29 +478,172 @@ function confirmSave() {
   const account = document.getElementById('modal-account').value.trim();
   if (!name) { alert('Εισάγετε όνομα'); return; }
 
-  // Αποθήκευση στο localStorage
-  const shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
-  if (!shelf[SERVICE_ID]) shelf[SERVICE_ID] = [];
+  const svcId = pendingSvc;
+  const svc   = SERVICES.find(s => s.id === svcId);
+  const mu    = markups[svcId];
 
-  shelf[SERVICE_ID].unshift({
-    id:          Date.now(),
+  if (!shelf[svcId]) shelf[svcId] = [];
+  shelf[svcId].unshift({
+    id:         Date.now(),
     name,
-    service_id:  SERVICE_ID,
-    account:     account || '—',
-    global_markup: globalMarkup,
-    rows:        markupData.map(r => ({ weight: r.weight, markup: r.markup })),
-    fc_air:      fuelFc,
-    date:        new Date().toISOString().split('T')[0],
-    created_at:  new Date().toISOString()
+    service_id: svcId,
+    service_name: svc.name,
+    markup:     mu,
+    account:    account || '—',
+    user:       currentUser.name,
+    office:     currentUser.office,
+    date:       new Date().toISOString().split('T')[0],
+    created_at: new Date().toISOString()
   });
 
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
   closeModal();
-  alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι S1003!`);
+
+  // Reset markup για αυτό το service
+  markups[svcId] = null;
+  document.getElementById(`markup-${svcId}`).value = '';
+  onMarkup(svcId, '');
+
+  renderClientPricelists();
+  alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${svcId}!`);
 }
 
-// Init
-loadData();
+// === SHELF ===
+function renderShelf() {
+  const tabsEl = document.getElementById('shelf-tabs');
+  tabsEl.innerHTML = SERVICES.map(svc => `
+    <button class="shelf-tab ${svc.id === activeShelfTab ? 'active' : ''}"
+      onclick="switchShelfTab('${svc.id}', this)">
+      ${svc.id} <span style="font-size:10px;opacity:0.8">(${(shelf[svc.id]||[]).length})</span>
+    </button>`).join('');
+  renderShelfContent();
+}
+
+function switchShelfTab(id, btn) {
+  activeShelfTab = id;
+  document.querySelectorAll('.shelf-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderShelfContent();
+}
+
+function renderShelfContent() {
+  const items = shelf[activeShelfTab] || [];
+  const el    = document.getElementById('shelf-content');
+  if (!items.length) {
+    el.innerHTML = '<div class="shelf-empty">Δεν υπάρχουν τιμοκατάλογοι για ' + activeShelfTab + '</div>';
+    return;
+  }
+  el.innerHTML = items.map(p => `
+    <div class="shelf-item">
+      <div>
+        <div class="shelf-name">${p.name}</div>
+        <div class="shelf-meta">${p.date} · ${p.user} · ${p.office} · Markup: ${p.markup}% · AccountNo: ${p.account}</div>
+      </div>
+      <div class="shelf-actions">
+        <button class="btn-small btn-export" onclick="exportCMS('${activeShelfTab}', ${p.id})">↓ CMS Export</button>
+        <button class="btn-small btn-delete" onclick="deleteShelfItem('${activeShelfTab}', ${p.id})">Διαγραφή</button>
+      </div>
+    </div>`).join('');
+}
+
+function deleteShelfItem(svcId, id) {
+  if (!confirm('Διαγραφή;')) return;
+  shelf[svcId] = (shelf[svcId]||[]).filter(p => p.id !== id);
+  localStorage.setItem('4a_shelf', JSON.stringify(shelf));
+  renderShelf();
+  renderClientPricelists();
+}
+
+function exportCMS(svcId, id) {
+  const item = (shelf[svcId]||[]).find(p => p.id === id);
+  if (!item) return;
+  alert(`CMS Export: "${item.name}" — ${svcId} markup ${item.markup}%\nΘα υλοποιηθεί στο επόμενο βήμα (σύνδεση με generate_cms_import.py)`);
+}
+
+// === CLIENTS ===
+function renderClientPricelists() {
+  const el = document.getElementById('cl-pricelists');
+  if (!el) return;
+  el.innerHTML = SERVICES.map(svc => {
+    const options = (shelf[svc.id]||[]).map(p =>
+      `<option value="${p.id}">${p.name} (${p.markup}%)</option>`).join('');
+    return `
+    <div class="form-group">
+      <label>${svc.id} — ${svc.name}</label>
+      <select id="cl-pl-${svc.id}">
+        <option value="">— Χωρίς —</option>
+        ${options}
+      </select>
+    </div>`;
+  }).join('');
+}
+
+function saveClient() {
+  const name    = document.getElementById('cl-name').value.trim();
+  const account = document.getElementById('cl-account').value.trim();
+  const status  = document.getElementById('cl-status').value;
+  if (!name || !account) { alert('Συμπληρώστε επωνυμία και AccountNo'); return; }
+
+  const assigned = {};
+  SERVICES.forEach(svc => {
+    const val = document.getElementById(`cl-pl-${svc.id}`)?.value;
+    if (val) {
+      const item = (shelf[svc.id]||[]).find(p => p.id === parseInt(val));
+      if (item) assigned[svc.id] = { id: item.id, name: item.name, markup: item.markup };
+    }
+  });
+
+  clients.unshift({
+    id: Date.now(), name, account, status,
+    assigned,
+    user:       currentUser.name,
+    created_at: new Date().toISOString().split('T')[0]
+  });
+  localStorage.setItem('4a_clients', JSON.stringify(clients));
+  alert(`✅ Πελάτης "${name}" αποθηκεύτηκε!`);
+  renderClientsList();
+}
+
+function renderClientsList() {
+  const el = document.getElementById('clients-list');
+  if (!clients.length) { el.innerHTML = '<div class="shelf-empty">Δεν υπάρχουν πελάτες</div>'; return; }
+  el.innerHTML = clients.map(c => {
+    const svcs = Object.entries(c.assigned||{}).map(([k,v]) => `${k}(${v.markup}%)`).join(', ') || '—';
+    return `
+    <div class="shelf-item">
+      <div>
+        <div class="shelf-name">${c.name} <span style="font-size:11px;color:#aaa">(${c.account})</span></div>
+        <div class="shelf-meta">${c.status==='active'?'🟢 Ενεργός':'🟡 Υποψήφιος'} · ${c.created_at} · ${c.user} · Τιμοκατάλογοι: ${svcs}</div>
+      </div>
+      <div class="shelf-actions">
+        <button class="btn-small btn-export" onclick="exportClientCMS(${c.id})">↓ CMS Export</button>
+        <button class="btn-small btn-delete" onclick="deleteClient(${c.id})">Διαγραφή</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteClient(id) {
+  if (!confirm('Διαγραφή πελάτη;')) return;
+  clients = clients.filter(c => c.id !== id);
+  localStorage.setItem('4a_clients', JSON.stringify(clients));
+  renderClientsList();
+}
+
+function exportClientCMS(id) {
+  const c = clients.find(cl => cl.id === id);
+  if (!c) return;
+  const svcs = Object.entries(c.assigned||{}).map(([k,v]) => `${k}:${v.markup}%`).join(', ');
+  alert(`CMS Export για "${c.name}" (${c.account})\nServices: ${svcs}\n\nΘα υλοποιηθεί στο επόμενο βήμα.`);
+}
+
+function showTab(name, btn) {
+  ['editor','shelf','clients'].forEach(t => document.getElementById('tab-'+t).style.display = t===name?'':'none');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'shelf')   renderShelf();
+  if (name === 'clients') { renderClientPricelists(); renderClientsList(); }
+}
 </script>
 </body>
 </html>
