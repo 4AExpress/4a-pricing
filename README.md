@@ -43,7 +43,16 @@ Current Excel has accumulated regressions:
 - [ ] **Phase 5**: Multi-office rollout — users, roles, audit log
 - [ ] **Phase 6**: Migrate active customers from Excel to web app
 
-## Stack (planned)
+## Infrastructure
+
+- **GitHub Pages**: Ενεργοποιημένο στο repo `4a-training` (4aexpress.github.io)
+  - Το dashboard `fuel-surcharge-dashboard.html` θα hosted εκεί
+  - Δεν χρειάζεται ξεχωριστός server
+- **GitHub Actions**: Αυτόματη εκτέλεση `fetch_fuel_surcharge.py` κάθε Δευτέρα (R13)
+  - Ενημερώνει `data/fuel_surcharge_cache.json`
+  - Το dashboard διαβάζει το JSON αυτόματα
+
+
 
 - **Backend**: Python 3.11 + FastAPI + Pydantic
 - **Database**: PostgreSQL
