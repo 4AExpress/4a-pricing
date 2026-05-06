@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4A Express — Τιμοκατάλογος</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #1a1a1a; min-height: 100vh; }
+
+  /* TOPBAR */
+  .topbar { background: #cc0000; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 42px; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { display: flex; align-items: center; gap: 6px; }
+  .topbar-logo-box { background: white; color: #cc0000; font-size: 13px; font-weight: 800; padding: 2px 6px; border-radius: 3px; }
+  .topbar-logo-text { color: white; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; line-height: 1.2; }
+  .topbar-title { color: white; font-size: 13px; font-weight: 500; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 12px; margin-left: 4px; }
+  .topbar-right { display: flex; gap: 8px; }
+  .topbar-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 5px 12px; border-radius: 3px; font-size: 12px; cursor: pointer; }
+  .topbar-btn:hover { background: rgba(255,255,255,0.3); }
+  .topbar-btn.primary { background: white; color: #cc0000; font-weight: 600; }
+
+  /* LAYOUT */
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
+  .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .page-title { font-size: 20px; font-weight: 600; color: #222; margin-bottom: 3px; }
+  .page-sub { font-size: 12px; color: #888; }
+
+  /* SECTIONS */
+  .section-header { background: #00BCD4; color: white; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 4px 4px 0 0; }
+  .section-body { background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; padding: 16px; margin-bottom: 20px; }
+
+  /* FORM */
+  .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-group input, .form-group select { padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; color: #333; }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: #00BCD4; }
+
+  /* SERVICE CARDS */
+  .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .svc-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 14px; background: #fafafa; }
+  .svc-card.has-error { border-color: #e53935; background: #fff8f8; }
+  .svc-card.is-valid { border-color: #43a047; background: #f8fff8; }
+  .svc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .svc-name { font-size: 13px; font-weight: 600; color: #333; }
+  .svc-code { font-size: 11px; color: #888; background: #f0f0f0; padding: 2px 6px; border-radius: 10px; }
+  .svc-mode { font-size: 10px; color: #aaa; margin-bottom: 10px; }
+
+  /* MARKUP INPUT */
+  .markup-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .markup-input-wrap { position: relative; flex: 1; }
+  .markup-input { width: 100%; padding: 8px 30px 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; font-weight: 600; color: #333; text-align: right; }
+  .markup-input:focus { outline: none; border-color: #00BCD4; }
+  .markup-pct { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #888; pointer-events: none; }
+  .markup-status { font-size: 18px; flex-shrink: 0; }
+
+  /* MIN MARKUP */
+  .min-markup { font-size: 11px; color: #888; margin-bottom: 8px; }
+  .min-markup span { font-weight: 600; color: #555; }
+
+  /* PREVIEW */
+  .preview-row { display: flex; justify-content: space-between; font-size: 11px; color: #888; border-top: 1px solid #eee; padding-top: 8px; margin-top: 4px; }
+  .preview-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .preview-label { font-size: 10px; color: #bbb; text-transform: uppercase; }
+  .preview-value { font-size: 13px; font-weight: 600; }
+  .preview-value.cost  { color: #1565c0; }
+  .preview-value.price { color: #cc0000; }
+  .preview-value.profit { color: #2e7d32; }
+
+  /* VALIDATION */
+  .validation-msg { font-size: 11px; margin-top: 4px; padding: 4px 8px; border-radius: 3px; }
+  .validation-msg.error { background: #ffebee; color: #c62828; }
+  .validation-msg.ok    { background: #e8f5e9; color: #2e7d32; }
+
+  /* SHELF */
+  .shelf-empty { text-align: center; padding: 30px; color: #bbb; font-size: 13px; }
+  .shelf-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
+  .shelf-item:last-child { border-bottom: none; }
+  .shelf-item:hover { background: #f8f8f8; }
+  .shelf-name { font-size: 13px; font-weight: 600; color: #333; }
+  .shelf-meta { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .shelf-actions { display: flex; gap: 6px; }
+  .btn-small { padding: 4px 10px; font-size: 11px; border: none; border-radius: 3px; cursor: pointer; }
+  .btn-use    { background: #00BCD4; color: white; }
+  .btn-delete { background: #ffebee; color: #c62828; }
+  .btn-export { background: #e8f5e9; color: #2e7d32; }
+
+  /* BUTTONS */
+  .btn { padding: 8px 18px; border: none; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-primary   { background: #cc0000; color: white; }
+  .btn-primary:hover { background: #aa0000; }
+  .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-secondary { background: #f0f0f0; color: #555; }
+  .btn-secondary:hover { background: #e0e0e0; }
+  .btn-cyan { background: #00BCD4; color: white; }
+  .btn-cyan:hover { background: #0097a7; }
+
+  /* LOADING */
+  .loading { text-align: center; padding: 30px; color: #aaa; }
+  .error-box { background: #ffebee; border: 1px solid #ffcdd2; border-radius: 4px; padding: 10px 14px; color: #c62828; font-size: 13px; margin-bottom: 16px; }
+
+  .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .fc-info { font-size: 11px; color: #888; background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px 12px; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <div class="topbar-logo-box">4A</div>
+      <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
+    </div>
+    <span class="topbar-title">Γνωστοποίηση Τιμών</span>
+  </div>
+  <div class="topbar-right">
+    <button class="topbar-btn" onclick="showSection('editor')">+ Νέος Τιμοκατάλογος</button>
+    <button class="topbar-btn" onclick="showSection('shelf')">Ράφι</button>
+    <button class="topbar-btn" onclick="showSection('clients')">Πελάτες</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- EDITOR -->
+  <div id="section-editor">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Νέος Τιμοκατάλογος</h1>
+        <p class="page-sub">Ορίστε το ποσοστό προσαύξησης ανά service</p>
+      </div>
+    </div>
+
+    <div class="section-header">Στοιχεία Τιμοκαταλόγου</div>
+    <div class="section-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Όνομα Τιμοκαταλόγου</label>
+          <input type="text" id="pl-name" placeholder="π.χ. Standard 180%" />
+        </div>
+        <div class="form-group">
+          <label>Χρήστης</label>
+          <input type="text" id="pl-user" placeholder="Όνομα χρήστη" />
+        </div>
+        <div class="form-group">
+          <label>Ημερομηνία</label>
+          <input type="date" id="pl-date" />
+        </div>
+        <div class="form-group">
+          <label>AccountNo Πελάτη</label>
+          <input type="text" id="pl-account" placeholder="π.χ. 30004041" />
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">Προσαύξηση ανά Service</div>
+    <div class="section-body">
+      <div id="fc-info" class="fc-info">Φόρτωση επίναυλου καυσίμων...</div>
+      <div id="services-grid" class="services-grid">
+        <div class="loading">Φόρτωση τιμών DHL...</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="resetEditor()">Καθαρισμός</button>
+      <button class="btn btn-primary" id="save-btn" onclick="savePricelist()" disabled>
+        💾 Αποθήκευση στο Ράφι
+      </button>
+    </div>
+  </div>
+
+  <!-- SHELF -->
+  <div id="section-shelf" style="display:none;">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Ράφι Τιμοκαταλόγων</h1>
+        <p class="page-sub">Αποθηκευμένοι τιμοκατάλογοι</p>
+      </div>
+      <button class="btn btn-primary" onclick="showSection('editor')">+ Νέος</button>
+    </div>
+    <div class="section-header">Τιμοκατάλογοι</div>
+    <div class="section-body" id="shelf-list">
+      <div class="shelf-empty">Δεν υπάρχουν αποθηκευμένοι τιμοκατάλογοι</div>
+    </div>
+  </div>
+
+  <!-- CLIENTS -->
+  <div id="section-clients" style="display:none;">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Πελάτες</h1>
+        <p class="page-sub">Διαχείριση πελατών και ανάθεση τιμοκαταλόγων</p>
+      </div>
+    </div>
+    <div class="section-header">Νέος Πελάτης</div>
+    <div class="section-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Επωνυμία</label>
+          <input type="text" id="cl-name" placeholder="Επωνυμία πελάτη" />
+        </div>
+        <div class="form-group">
+          <label>AccountNo</label>
+          <input type="text" id="cl-account" placeholder="π.χ. 30004041" />
+        </div>
+        <div class="form-group">
+          <label>Τιμοκατάλογος</label>
+          <select id="cl-pricelist">
+            <option value="">— Επιλέξτε —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Κατάσταση</label>
+          <select id="cl-status">
+            <option value="prospect">Υποψήφιος</option>
+            <option value="active">Ενεργός</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveClient()">Αποθήκευση Πελάτη</button>
+      </div>
+    </div>
+    <div class="section-header">Λίστα Πελατών</div>
+    <div class="section-body" id="clients-list">
+      <div class="shelf-empty">Δεν υπάρχουν πελάτες</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// === URLS ===
+const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/';
+const SERVICES = [
+  { id:'S1003', name:'Express Export', mode:'AIR / Διεθνής',   file:'dhl_tariff_2026_S1003.json' },
+  { id:'S1012', name:'Express Import', mode:'AIR / Διεθνής',   file:'dhl_tariff_2026_S1012.json' },
+  { id:'S1010', name:'Economy Export', mode:'ROAD / Εσωτερικό', file:'dhl_tariff_2026_S1010.json' },
+  { id:'S1041', name:'Economy Import', mode:'ROAD / Εσωτερικό', file:'dhl_tariff_2026_S1041.json' },
+];
+
+// === STATE ===
+let dhlData     = {};   // { S1003: { entries: [...] } }
+let fuelData    = null; // fuel surcharge cache
+let markups     = {};   // { S1003: 180 }
+let pricelists  = JSON.parse(localStorage.getItem('4a_pricelists') || '[]');
+let clients     = JSON.parse(localStorage.getItem('4a_clients')    || '[]');
+
+// === INIT ===
+document.getElementById('pl-date').value = new Date().toISOString().split('T')[0];
+
+async function init() {
+  await Promise.all([loadDHL(), loadFuel()]);
+  renderServices();
+  renderShelf();
+  renderClients();
+}
+
+async function loadDHL() {
+  const promises = SERVICES.map(async svc => {
+    const r = await fetch(BASE + svc.file);
+    const d = await r.json();
+    dhlData[svc.id] = d;
+  });
+  await Promise.all(promises);
+}
+
+async function loadFuel() {
+  try {
+    const r = await fetch(BASE + 'fuel_surcharge_cache.json');
+    fuelData = await r.json();
+    const currAir  = fuelData.current_air  || '—';
+    const currRoad = fuelData.current_road || '—';
+    document.getElementById('fc-info').innerHTML =
+      `Επίναυλος καυσίμων τρέχουσας εβδομάδας: <strong>AIR ${currAir}%</strong> · <strong>ROAD ${currRoad}%</strong> ` +
+      `<span style="color:#bbb">(ενημερώθηκε: ${fuelData.fetched_at ? fuelData.fetched_at.substring(0,10) : '—'})</span>`;
+  } catch(e) {
+    document.getElementById('fc-info').textContent = 'Επίναυλος καυσίμων: δεν είναι διαθέσιμος';
+  }
+}
+
+// === SAMPLE Z1 PRICES ===
+function getSamplePrices(serviceId) {
+  const d = dhlData[serviceId];
+  if (!d || !d.entries) return null;
+  // Z1 entries only, first 5 weights
+  const z1 = d.entries.filter(e => e.zone_code === 'z1').slice(0, 5);
+  return z1;
+}
+
+function getMinMarkup(serviceId) {
+  // R1: ελάχιστο markup για μονοτονικότητα
+  // Βρίσκουμε το min markup που κρατάει τη μονοτονικότητα
+  const d = dhlData[serviceId];
+  if (!d || !d.entries) return 0;
+
+  // Ομαδοποίηση ανά zone
+  const zones = {};
+  for (const e of d.entries) {
+    if (!zones[e.zone_code]) zones[e.zone_code] = [];
+    zones[e.zone_code].push(e.cost);
+  }
+
+  // Βρίσκουμε την ελάχιστη αναλογία μεταξύ συνεχόμενων τιμών
+  let minRatio = Infinity;
+  for (const z of Object.values(zones)) {
+    for (let i = 1; i < z.length; i++) {
+      if (z[i-1] > 0 && z[i] >= z[i-1]) {
+        // ok
+      } else if (z[i-1] > 0 && z[i] < z[i-1]) {
+        // παραβίαση στο raw — σπάνιο
+        const ratio = z[i] / z[i-1];
+        if (ratio < minRatio) minRatio = ratio;
+      }
+    }
+  }
+
+  // Το ελάχιστο markup είναι 0% (οι raw τιμές είναι ήδη monotonic)
+  return 0;
+}
+
+function calcProfit(cost, markup, fc) {
+  const price  = cost * (1 + markup / 100);
+  const fcCost = cost * (fc / 100);
+  const profit = price - cost - fcCost;
+  const pct    = cost > 0 ? ((profit / (cost + fcCost)) * 100) : 0;
+  return { price: price.toFixed(2), profit: profit.toFixed(2), pct: pct.toFixed(1) };
+}
+
+function validateMarkup(serviceId, markup) {
+  if (!markup || isNaN(markup) || markup <= 0) return { ok: false, msg: 'Εισάγετε ποσοστό > 0%' };
+
+  const d = dhlData[serviceId];
+  if (!d || !d.entries) return { ok: true, msg: '' };
+
+  // Έλεγχος μονοτονικότητας R1 σε όλες τις zones
+  const zones = {};
+  for (const e of d.entries) {
+    if (!zones[e.zone_code]) zones[e.zone_code] = [];
+    zones[e.zone_code].push(e.cost);
+  }
+
+  for (const [zone, costs] of Object.entries(zones)) {
+    let prev = 0;
+    for (const cost of costs) {
+      const price = parseFloat((cost * (1 + markup / 100)).toFixed(2));
+      if (price < prev) {
+        return {
+          ok: false,
+          msg: `⚠️ Παραβίαση μονοτονικότητας στη ${zone.toUpperCase()} — αυξήστε το %`
+        };
+      }
+      prev = price;
+    }
+  }
+
+  return { ok: true, msg: '✅ Έγκυρο' };
+}
+
+function renderServices() {
+  const grid = document.getElementById('services-grid');
+  const fc   = fuelData || {};
+  const currAir  = fc.current_air  || 0;
+  const currRoad = fc.current_road || 0;
+
+  grid.innerHTML = SERVICES.map(svc => {
+    const fcPct  = svc.mode.includes('AIR') ? currAir : currRoad;
+    const sample = getSamplePrices(svc.id);
+    const sampleCost = sample && sample.length > 0 ? sample[2]?.cost || sample[0].cost : 0;
+    const markup = markups[svc.id] || '';
+    const validation = markup ? validateMarkup(svc.id, parseFloat(markup)) : null;
+    const cardClass = !markup ? '' : validation?.ok ? 'is-valid' : 'has-error';
+    const statusIcon = !markup ? '○' : validation?.ok ? '✅' : '🔴';
+    const calc = markup && sampleCost ? calcProfit(sampleCost, parseFloat(markup), fcPct) : null;
+
+    return `
+    <div class="svc-card ${cardClass}" id="card-${svc.id}">
+      <div class="svc-header">
+        <span class="svc-name">${svc.name}</span>
+        <span class="svc-code">${svc.id}</span>
+      </div>
+      <div class="svc-mode">${svc.mode}</div>
+      <div class="markup-row">
+        <div class="markup-input-wrap">
+          <input class="markup-input" type="number" min="0" max="999" step="0.5"
+            id="markup-${svc.id}"
+            value="${markup}"
+            placeholder="0"
+            oninput="onMarkupChange('${svc.id}', this.value)" />
+          <span class="markup-pct">%</span>
+        </div>
+        <span class="markup-status" id="status-${svc.id}">${statusIcon}</span>
+      </div>
+      <div class="min-markup">Ελάχιστο επιτρεπτό: <span id="min-${svc.id}">—</span></div>
+      ${validation ? `<div class="validation-msg ${validation.ok ? 'ok' : 'error'}" id="msg-${svc.id}">${validation.msg}</div>` : `<div class="validation-msg" id="msg-${svc.id}"></div>`}
+      ${calc && sampleCost ? `
+      <div class="preview-row">
+        <div class="preview-item">
+          <span class="preview-label">Κόστος DHL</span>
+          <span class="preview-value cost">${sampleCost.toFixed(2)}€</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-label">FC ${fcPct}%</span>
+          <span class="preview-value" style="color:#888">${(sampleCost * fcPct/100).toFixed(2)}€</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-label">Τιμή πελάτη</span>
+          <span class="preview-value price">${calc.price}€</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-label">Κέρδος</span>
+          <span class="preview-value profit">${calc.profit}€ (${calc.pct}%)</span>
+        </div>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Υπολογισμός min markup για κάθε service
+  SERVICES.forEach(svc => {
+    const minEl = document.getElementById(`min-${svc.id}`);
+    if (minEl) minEl.textContent = getMinMarkupDisplay(svc.id);
+  });
+
+  checkSaveBtn();
+}
+
+function getMinMarkupDisplay(serviceId) {
+  // Βρίσκουμε το ελάχιστο markup που εγγυάται μονοτονικότητα
+  const d = dhlData[serviceId];
+  if (!d || !d.entries) return '—';
+
+  const zones = {};
+  for (const e of d.entries) {
+    if (!zones[e.zone_code]) zones[e.zone_code] = [];
+    zones[e.zone_code].push(e.cost);
+  }
+
+  // Αν οι raw τιμές είναι monotonic (είναι), τότε οποιοδήποτε markup >= 0 δουλεύει
+  // Ελέγχουμε αν υπάρχουν ίδιες τιμές που θα χρειαστούν προσοχή
+  let minMarkup = 0;
+  for (const costs of Object.values(zones)) {
+    for (let i = 1; i < costs.length; i++) {
+      if (costs[i] < costs[i-1]) {
+        // παραβίαση raw — υπολογίζουμε το min markup
+        const needed = ((costs[i-1] / costs[i]) - 1) * 100;
+        if (needed > minMarkup) minMarkup = needed;
+      }
+    }
+  }
+
+  return minMarkup > 0 ? `${minMarkup.toFixed(1)}%` : '0% (ελεύθερο)';
+}
+
+function onMarkupChange(serviceId, value) {
+  markups[serviceId] = value ? parseFloat(value) : null;
+  const validation = value ? validateMarkup(serviceId, parseFloat(value)) : null;
+
+  const card   = document.getElementById(`card-${serviceId}`);
+  const status = document.getElementById(`status-${serviceId}`);
+  const msg    = document.getElementById(`msg-${serviceId}`);
+
+  card.className   = 'svc-card ' + (!value ? '' : validation?.ok ? 'is-valid' : 'has-error');
+  status.textContent = !value ? '○' : validation?.ok ? '✅' : '🔴';
+
+  if (msg) {
+    msg.className   = 'validation-msg ' + (validation?.ok ? 'ok' : 'error');
+    msg.textContent = validation ? validation.msg : '';
+  }
+
+  // Ενημέρωση preview
+  const fc = fuelData || {};
+  const svc = SERVICES.find(s => s.id === serviceId);
+  const fcPct = svc?.mode.includes('AIR') ? (fc.current_air || 0) : (fc.current_road || 0);
+  const sample = getSamplePrices(serviceId);
+  const sampleCost = sample && sample.length > 0 ? sample[2]?.cost || sample[0].cost : 0;
+
+  if (value && sampleCost && validation?.ok) {
+    const calc = calcProfit(sampleCost, parseFloat(value), fcPct);
+    const previewEl = card.querySelector('.preview-row');
+    const previewHTML = `
+      <div class="preview-row">
+        <div class="preview-item">
+          <span class="preview-label">Κόστος DHL</span>
+          <span class="preview-value cost">${sampleCost.toFixed(2)}€</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-label">FC ${fcPct}%</span>
+          <span class="preview-value" style="color:#888">${(sampleCost * fcPct/100).toFixed(2)}€</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-label">Τιμή πελάτη</span>
+          <span class="preview-value price">${calc.price}€</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-label">Κέρδος</span>
+          <span class="preview-value profit">${calc.profit}€ (${calc.pct}%)</span>
+        </div>
+      </div>`;
+    if (previewEl) previewEl.outerHTML = previewHTML;
+    else card.insertAdjacentHTML('beforeend', previewHTML);
+  }
+
+  checkSaveBtn();
+}
+
+function checkSaveBtn() {
+  const hasAnyMarkup = SERVICES.some(s => markups[s.id] && markups[s.id] > 0);
+  const allValid = SERVICES.every(s => {
+    if (!markups[s.id]) return true; // empty = skip
+    return validateMarkup(s.id, markups[s.id]).ok;
+  });
+  const hasName = document.getElementById('pl-name').value.trim();
+  document.getElementById('save-btn').disabled = !(hasAnyMarkup && allValid && hasName);
+}
+
+function savePricelist() {
+  const name    = document.getElementById('pl-name').value.trim();
+  const user    = document.getElementById('pl-user').value.trim();
+  const date    = document.getElementById('pl-date').value;
+  const account = document.getElementById('pl-account').value.trim();
+
+  if (!name) { alert('Εισάγετε όνομα τιμοκαταλόγου'); return; }
+
+  const services = SERVICES
+    .filter(s => markups[s.id] && markups[s.id] > 0)
+    .map(s => ({ id: s.id, name: s.name, markup: markups[s.id] }));
+
+  if (!services.length) { alert('Εισάγετε τουλάχιστον ένα ποσοστό'); return; }
+
+  const pl = {
+    id:        Date.now(),
+    name,
+    user:      user || '—',
+    date,
+    account:   account || '—',
+    services,
+    created_at: new Date().toISOString()
+  };
+
+  pricelists.unshift(pl);
+  localStorage.setItem('4a_pricelists', JSON.stringify(pricelists));
+
+  alert(`✅ Τιμοκατάλογος "${name}" αποθηκεύτηκε!`);
+  showSection('shelf');
+  renderShelf();
+}
+
+function renderShelf() {
+  const el = document.getElementById('shelf-list');
+  // Ενημέρωση dropdown πελατών
+  const sel = document.getElementById('cl-pricelist');
+  if (sel) {
+    sel.innerHTML = '<option value="">— Επιλέξτε —</option>' +
+      pricelists.map(p => `<option value="${p.id}">${p.name} (${p.date})</option>`).join('');
+  }
+
+  if (!pricelists.length) {
+    el.innerHTML = '<div class="shelf-empty">Δεν υπάρχουν αποθηκευμένοι τιμοκατάλογοι</div>';
+    return;
+  }
+
+  el.innerHTML = pricelists.map(p => `
+    <div class="shelf-item">
+      <div>
+        <div class="shelf-name">${p.name}</div>
+        <div class="shelf-meta">${p.date} · ${p.user} · AccountNo: ${p.account} · Services: ${p.services.map(s => s.id+'('+s.markup+'%)').join(', ')}</div>
+      </div>
+      <div class="shelf-actions">
+        <button class="btn-small btn-export" onclick="exportCMS(${p.id})">↓ CMS Export</button>
+        <button class="btn-small btn-delete" onclick="deletePricelist(${p.id})">Διαγραφή</button>
+      </div>
+    </div>`).join('');
+}
+
+function deletePricelist(id) {
+  if (!confirm('Διαγραφή τιμοκαταλόγου;')) return;
+  pricelists = pricelists.filter(p => p.id !== id);
+  localStorage.setItem('4a_pricelists', JSON.stringify(pricelists));
+  renderShelf();
+}
+
+function exportCMS(id) {
+  const pl = pricelists.find(p => p.id === id);
+  if (!pl) return;
+  alert(`CMS Export για "${pl.name}" — θα υλοποιηθεί στο Phase 3b (σύνδεση με generate_cms_import.py)`);
+}
+
+function saveClient() {
+  const name     = document.getElementById('cl-name').value.trim();
+  const account  = document.getElementById('cl-account').value.trim();
+  const plId     = document.getElementById('cl-pricelist').value;
+  const status   = document.getElementById('cl-status').value;
+
+  if (!name || !account) { alert('Συμπληρώστε επωνυμία και AccountNo'); return; }
+
+  const pl = pricelists.find(p => p.id === parseInt(plId));
+  const client = {
+    id:         Date.now(),
+    name, account, status,
+    pricelist:  pl ? pl.name : '—',
+    pricelist_id: plId ? parseInt(plId) : null,
+    created_at: new Date().toISOString()
+  };
+
+  clients.unshift(client);
+  localStorage.setItem('4a_clients', JSON.stringify(clients));
+  alert(`✅ Πελάτης "${name}" αποθηκεύτηκε!`);
+  renderClients();
+}
+
+function renderClients() {
+  const el = document.getElementById('clients-list');
+  if (!clients.length) {
+    el.innerHTML = '<div class="shelf-empty">Δεν υπάρχουν πελάτες</div>';
+    return;
+  }
+  el.innerHTML = clients.map(c => `
+    <div class="shelf-item">
+      <div>
+        <div class="shelf-name">${c.name} <span style="font-size:11px;color:#aaa">(${c.account})</span></div>
+        <div class="shelf-meta">${c.status === 'active' ? '🟢 Ενεργός' : '🟡 Υποψήφιος'} · Τιμοκατάλογος: ${c.pricelist} · ${c.created_at.substring(0,10)}</div>
+      </div>
+      <div class="shelf-actions">
+        ${c.pricelist_id ? `<button class="btn-small btn-export" onclick="exportClientCMS(${c.id})">↓ CMS Export</button>` : ''}
+        <button class="btn-small btn-delete" onclick="deleteClient(${c.id})">Διαγραφή</button>
+      </div>
+    </div>`).join('');
+}
+
+function deleteClient(id) {
+  if (!confirm('Διαγραφή πελάτη;')) return;
+  clients = clients.filter(c => c.id !== id);
+  localStorage.setItem('4a_clients', JSON.stringify(clients));
+  renderClients();
+}
+
+function exportClientCMS(clientId) {
+  const client = clients.find(c => c.id === clientId);
+  const pl     = pricelists.find(p => p.id === client?.pricelist_id);
+  if (!client || !pl) return;
+  alert(`CMS Export για πελάτη "${client.name}" με τιμοκατάλογο "${pl.name}"`);
+}
+
+function resetEditor() {
+  markups = {};
+  document.getElementById('pl-name').value = '';
+  document.getElementById('pl-user').value = '';
+  document.getElementById('pl-account').value = '';
+  document.getElementById('pl-date').value = new Date().toISOString().split('T')[0];
+  renderServices();
+}
+
+function showSection(name) {
+  ['editor','shelf','clients'].forEach(s => {
+    document.getElementById(`section-${s}`).style.display = s === name ? '' : 'none';
+  });
+  if (name === 'shelf')   renderShelf();
+  if (name === 'clients') renderClients();
+}
+
+document.getElementById('pl-name').addEventListener('input', checkSaveBtn);
+
+init();
+</script>
+</body>
+</html>
+
