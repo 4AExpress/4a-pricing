@@ -580,7 +580,18 @@ function confirmSave() {
 
   const isCustom = markupData.some(r => r.markup !== globalMarkup);
 
-  // Αποθήκευση στο localStorage
+  // Παίρνουμε τον χρήστη από το localStorage (αποθηκεύτηκε κατά το login)
+  const savedUser = JSON.parse(localStorage.getItem('4a_current_user') || 'null');
+  const userName  = savedUser?.name   || '—';
+  const userOffice= savedUser?.office || '—';
+
+  // Ημερομηνία σε DD-MM-YYYY
+  const now   = new Date();
+  const day   = String(now.getDate()).padStart(2,'0');
+  const month = String(now.getMonth()+1).padStart(2,'0');
+  const year  = now.getFullYear();
+  const dateFormatted = `${day}-${month}-${year}`;
+
   const shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
   if (!shelf[SERVICE_ID]) shelf[SERVICE_ID] = [];
 
@@ -593,8 +604,10 @@ function confirmSave() {
     is_custom:     isCustom,
     type_emoji:    isCustom ? '⚙️' : '📌',
     rows:          markupData.map(r => ({ weight: r.weight, markup: r.markup })),
-    fc_air:        fuelFc,
-    date:          new Date().toISOString().split('T')[0],
+    fc:            fuelFc,
+    user:          userName,
+    office:        userOffice,
+    date:          dateFormatted,
     created_at:    new Date().toISOString()
   });
 
