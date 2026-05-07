@@ -287,6 +287,7 @@ function doLogin() {
 
   const parts = sel.split('|');
   currentUser = { name: parts[0], office: parts[1], role: parts[2] };
+  localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display   = '';
   document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
@@ -550,7 +551,7 @@ function renderShelfContent() {
     <div class="shelf-item">
       <div>
         <div class="shelf-name">${p.name}</div>
-        <div class="shelf-meta">${p.date} · ${p.user} · ${p.office} · Markup: ${p.markup}% · AccountNo: ${p.account}</div>
+        <div class="shelf-meta">${p.date} · ${p.user || '—'} · ${p.office || '—'} · Markup: ${p.markup || p.global_markup || '—'}% · AccountNo: ${p.account}</div>
       </div>
       <div class="shelf-actions">
         <button class="btn-small btn-export" onclick="exportCMS('${activeShelfTab}', ${p.id})">↓ CMS Export</button>
