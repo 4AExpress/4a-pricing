@@ -338,29 +338,37 @@ function renderTable() {
     const rowClass = !row.valid ? 'has-error' : '';
     const grpClass = groupStart ? 'group-start' : '';
 
-    // Υπολογισμός Min% — ελάχιστο markup για μονοτονικότητα βάσει προηγούμενης γραμμής
+
+    // Υπολογισμός Min% — ελάχιστο markup για μονοτονικότητα
+    // Κανόνας: price[n] >= price[n-1] → επιτρέπεται ίδια τιμή (όχι μόνο αύξηση)
     let minPct = 0;
     if (i > 0) {
       const prevRow = markupData[i-1];
-      // Για κάθε zone: min markup = (prevPrice / dhlCost - 1) * 100
       let maxNeeded = 0;
       for (let zi = 0; zi < ZONES.length; zi++) {
         const prevPrice = prevRow.prices[zi];
         const dhlCost   = row.dhl_costs[zi];
         if (dhlCost > 0) {
+          // Ελάχιστο markup ώστε price >= prevPrice
           const needed = ((prevPrice / dhlCost) - 1) * 100;
           if (needed > maxNeeded) maxNeeded = needed;
         }
       }
-      minPct = Math.ceil(maxNeeded * 10) / 10; // στρογγυλοποίηση άνω
+      // Στρογγυλοποίηση ΚΑΤΩ στο 1 δεκαδικό — αν 140.00 αρκεί, δείχνουμε 140.0%
+      minPct = Math.floor(maxNeeded * 10) / 10;
     }
+    // Αποθήκευση minPct στο row για χρήση από double-click
+    row.minPct = minPct;
+
     const minPctDisplay = minPct > 0 ? `${minPct.toFixed(1)}%` : '0%';
-    const minPctColor   = row.markup < minPct ? '#c62828' : '#2e7d32';
+    const minPctColor   = row.markup < minPct - 0.05 ? '#c62828' : '#2e7d32';
 
     html += `<tr class="${rowClass} ${grpClass}" id="row-${i}">
       <td class="weight-cell">${row.weight.toFixed(1)} kg</td>
       <td class="valid-cell">${row.valid ? '✅' : '🔴'}</td>
-      <td class="markup-cell" style="background:#f1f8f1;font-size:11px;font-weight:600;color:${minPctColor};">${minPctDisplay}</td>
+      <td class="markup-cell" style="background:#f1f8f1;font-size:11px;font-weight:600;color:${minPctColor};cursor:pointer;"
+          title="Διπλό κλικ → εφαρμογή Min% από εδώ και κάτω"
+          ondblclick="applyMinCascade(${i})">${minPctDisplay}</td>
       <td class="markup-cell">
         <input class="markup-field ${row.changed ? 'changed' : ''}"
           type="number" min="0" max="999" step="0.5"
@@ -410,6 +418,27 @@ function onRowMarkup(idx, value) {
     const el = document.querySelector(`input[data-idx="${idx}"]`);
     if (el) el.focus();
   }, 50);
+}
+
+// === APPLY MIN CASCADE (double-click) ===
+// Από τη γραμμή idx και κάτω → εφαρμόζει το Min% κάθε γραμμής
+function applyMinCascade(startIdx) {
+  for (let i = startIdx; i < markupData.length; i++) {
+    const row    = markupData[i];
+    const minPct = row.minPct || 0;
+    // Εφαρμόζουμε το Min% μόνο αν είναι μεγαλύτερο από το τρέχον markup
+    const newMarkup = Math.max(minPct, 0.1);
+    row.markup   = parseFloat(newMarkup.toFixed(1));
+    row.changed  = row.markup !== globalMarkup;
+    row.prices   = row.dhl_costs.map(c =>
+      parseFloat((c * (1 + row.markup/100)).toFixed(2)));
+    row.valid       = true;
+    row.error_zones = [];
+  }
+  // Επανυπολογισμός minPct για τις επόμενες γραμμές
+  for (const r of markupData) { r.valid = true; r.error_zones = []; }
+  validateAll();
+  renderTable();
 }
 
 // === RESET ===
