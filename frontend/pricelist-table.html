@@ -150,7 +150,8 @@
 <!-- MODAL -->
 <div id="modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:100;">
   <div style="background:white;border-radius:8px;padding:24px;width:360px;box-shadow:0 4px 20px rgba(0,0,0,0.2);">
-    <div style="font-size:15px;font-weight:600;margin-bottom:16px;">Αποθήκευση στο Ράφι S1003</div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Αποθήκευση στο Ράφι S1003</div>
+    <div id="modal-type" style="font-size:12px;margin-bottom:16px;padding:6px 10px;background:#f8f8f8;border-radius:4px;"></div>
     <div style="margin-bottom:12px;">
       <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;display:block;margin-bottom:4px;">Όνομα Τιμοκαταλόγου</label>
       <input type="text" id="modal-name" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="π.χ. Standard 140%" />
@@ -471,8 +472,18 @@ function savePricelist() {
   const errCount = markupData.filter(r => !r.valid).length;
   if (errCount > 0) { alert(`🔴 ${errCount} παραβιάσεις — δεν επιτρέπεται αποθήκευση (R1)`); return; }
 
+  // Έλεγχος αν είναι flat ή custom
+  const isCustom   = markupData.some(r => r.markup !== globalMarkup);
+  const typeEmoji  = isCustom ? '⚙️' : '📌';
+  const typeLabel  = isCustom ? 'custom' : 'flat';
+
   const modal = document.getElementById('modal-bg');
-  document.getElementById('modal-name').value = `${SERVICE_ID} — ${globalMarkup}%`;
+  document.getElementById('modal-name').value = `${SERVICE_ID} — ${globalMarkup}% ${typeEmoji}`;
+  document.getElementById('modal-type').textContent =
+    isCustom
+      ? `⚙️ Custom — διαφορετικό markup ανά βάρος`
+      : `📌 Flat — ενιαίο markup ${globalMarkup}% σε όλα τα βάρη`;
+  document.getElementById('modal-type').style.color = isCustom ? '#e65100' : '#1565c0';
   modal.style.display = 'flex';
 }
 
@@ -485,20 +496,24 @@ function confirmSave() {
   const account = document.getElementById('modal-account').value.trim();
   if (!name) { alert('Εισάγετε όνομα'); return; }
 
+  const isCustom = markupData.some(r => r.markup !== globalMarkup);
+
   // Αποθήκευση στο localStorage
   const shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
   if (!shelf[SERVICE_ID]) shelf[SERVICE_ID] = [];
 
   shelf[SERVICE_ID].unshift({
-    id:          Date.now(),
+    id:            Date.now(),
     name,
-    service_id:  SERVICE_ID,
-    account:     account || '—',
+    service_id:    SERVICE_ID,
+    account:       account || '—',
     global_markup: globalMarkup,
-    rows:        markupData.map(r => ({ weight: r.weight, markup: r.markup })),
-    fc_air:      fuelFc,
-    date:        new Date().toISOString().split('T')[0],
-    created_at:  new Date().toISOString()
+    is_custom:     isCustom,
+    type_emoji:    isCustom ? '⚙️' : '📌',
+    rows:          markupData.map(r => ({ weight: r.weight, markup: r.markup })),
+    fc_air:        fuelFc,
+    date:          new Date().toISOString().split('T')[0],
+    created_at:    new Date().toISOString()
   });
 
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
