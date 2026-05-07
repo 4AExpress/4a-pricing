@@ -412,6 +412,11 @@ function renderServices() {
         onclick="openModal('${svc.id}')">
         💾 Αποθήκευση στο Ράφι ${svc.id}
       </button>
+      <button class="save-svc-btn ${v?.ok ? 'visible' : ''}" id="tablebtn-${svc.id}"
+        style="background:#cc0000; margin-top:4px;"
+        onclick="openTable('${svc.id}')">
+        ▶ Ανάπτυξη Πίνακα ${svc.id}
+      </button>
     </div>`;
   }).join('');
 }
@@ -430,8 +435,10 @@ function onMarkup(serviceId, value) {
   msgEl.className   = 'validation-msg ' + (v ? (v.ok?'ok':'error') : '');
   msgEl.textContent = v?.msg || '';
 
-  const saveBtn = document.getElementById(`savebtn-${serviceId}`);
-  saveBtn.className = 'save-svc-btn ' + (v?.ok ? 'visible' : '');
+  const saveBtn  = document.getElementById(`savebtn-${serviceId}`);
+  const tableBtn = document.getElementById(`tablebtn-${serviceId}`);
+  saveBtn.className  = 'save-svc-btn ' + (v?.ok ? 'visible' : '');
+  if (tableBtn) tableBtn.className = 'save-svc-btn ' + (v?.ok ? 'visible' : '') + ' ';
 
   // Preview update
   const card = document.getElementById(`card-${serviceId}`);
@@ -457,6 +464,12 @@ function onMarkup(serviceId, value) {
 }
 
 // === MODAL ===
+function openTable(serviceId) {
+  const mu = markups[serviceId];
+  if (!mu) { alert('Εισάγετε πρώτα markup %'); return; }
+  window.location.href = `pricelist-table.html?service=${serviceId}&markup=${mu}`;
+}
+
 function openModal(serviceId) {
   pendingSvc = serviceId;
   const svc  = SERVICES.find(s => s.id === serviceId);
