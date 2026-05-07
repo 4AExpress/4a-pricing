@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>4A Express — Τιμοκατάλογος S1003</title>
+<title>4A Express — Τιμοκατάλογος</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #1a1a1a; }
@@ -86,13 +86,13 @@
     <div class="topbar-logo-box">4A</div>
     <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
   </div>
-  <span class="topbar-title">Τιμοκατάλογος — S1003 Express Export</span>
+  <span class="topbar-title" id="topbar-title">Τιμοκατάλογος</span>
 </div>
 
 <div class="container">
 
   <div class="section-header">
-    <span>S1003 — Express Export · AIR · Z1–Z7 · έως 80kg</span>
+    <span id="section-title">— </span>
     <div style="display:flex;align-items:center;gap:8px;">
       <button onclick="history.back()" style="background:rgba(255,255,255,0.2);color:white;border:none;padding:3px 10px;border-radius:3px;font-size:11px;cursor:pointer;">← Πίσω</button>
       <span class="fc-badge" id="fc-badge">FC AIR: —%</span>
@@ -196,9 +196,9 @@ let globalMarkup = URL_MARKUP;
 const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 
 // Ενημέρωση τίτλου από URL params
-document.querySelector('.topbar-title').textContent =
-  `Τιμοκατάλογος — ${SERVICE_ID} ${SVC_NAMES[SERVICE_ID]}`;
-document.querySelector('.section-header span').textContent =
+document.getElementById('topbar-title').textContent =
+  `Τιμοκατάλογος — ${SERVICE_ID} ${SVC_NAMES[SERVICE_ID] || ''}`;
+document.getElementById('section-title').textContent =
   `${SERVICE_ID} — ${SVC_NAMES[SERVICE_ID]} · ${SVC_MODE} · έως ${MAX_WEIGHT}kg`;
 document.getElementById('global-markup').value = URL_MARKUP;
 document.getElementById('save-btn-svc') && (document.getElementById('save-btn-svc').textContent = SERVICE_ID);
@@ -600,7 +600,7 @@ function confirmSave() {
 
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
   closeModal();
-  alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι S1003!`);
+  alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${SERVICE_ID}!`);
 }
 
 // Init
