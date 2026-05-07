@@ -321,9 +321,10 @@ function renderTable() {
       <thead>
         <tr>
           <th class="weight-col">Βάρος</th>
-          <th class="markup-col">Markup %</th>
-          ${ZONE_LABELS.map((z,i) => `<th class="zone-col">${z}<br><span style="font-size:9px;color:#aaa;font-weight:400">DHL · Τιμή</span></th>`).join('')}
           <th class="valid-col">R1</th>
+          <th class="markup-col" style="background:#e8f5e9;color:#2e7d32;">Min%</th>
+          <th class="markup-col">Markup %</th>
+          ${ZONE_LABELS.map(z => `<th class="zone-col">${z}<br><span style="font-size:9px;color:#aaa;font-weight:400">DHL · Τιμή</span></th>`).join('')}
         </tr>
       </thead>
       <tbody>`;
@@ -337,8 +338,29 @@ function renderTable() {
     const rowClass = !row.valid ? 'has-error' : '';
     const grpClass = groupStart ? 'group-start' : '';
 
+    // Υπολογισμός Min% — ελάχιστο markup για μονοτονικότητα βάσει προηγούμενης γραμμής
+    let minPct = 0;
+    if (i > 0) {
+      const prevRow = markupData[i-1];
+      // Για κάθε zone: min markup = (prevPrice / dhlCost - 1) * 100
+      let maxNeeded = 0;
+      for (let zi = 0; zi < ZONES.length; zi++) {
+        const prevPrice = prevRow.prices[zi];
+        const dhlCost   = row.dhl_costs[zi];
+        if (dhlCost > 0) {
+          const needed = ((prevPrice / dhlCost) - 1) * 100;
+          if (needed > maxNeeded) maxNeeded = needed;
+        }
+      }
+      minPct = Math.ceil(maxNeeded * 10) / 10; // στρογγυλοποίηση άνω
+    }
+    const minPctDisplay = minPct > 0 ? `${minPct.toFixed(1)}%` : '0%';
+    const minPctColor   = row.markup < minPct ? '#c62828' : '#2e7d32';
+
     html += `<tr class="${rowClass} ${grpClass}" id="row-${i}">
       <td class="weight-cell">${row.weight.toFixed(1)} kg</td>
+      <td class="valid-cell">${row.valid ? '✅' : '🔴'}</td>
+      <td class="markup-cell" style="background:#f1f8f1;font-size:11px;font-weight:600;color:${minPctColor};">${minPctDisplay}</td>
       <td class="markup-cell">
         <input class="markup-field ${row.changed ? 'changed' : ''}"
           type="number" min="0" max="999" step="0.5"
@@ -359,8 +381,7 @@ function renderTable() {
       </td>`;
     }
 
-    html += `<td class="valid-cell">${row.valid ? '✅' : '🔴'}</td>
-    </tr>`;
+    html += `</tr>`;
   }
 
   html += '</tbody></table></div>';
