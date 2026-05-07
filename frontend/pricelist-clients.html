@@ -24,6 +24,7 @@
   .nav-btn:hover { background: #f8f8f8; }
 
   .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
+
   .section-header { background: #00BCD4; color: white; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
   .section-body { background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; padding: 16px; margin-bottom: 20px; }
 
@@ -31,13 +32,13 @@
   .form-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px; }
   .form-group { display: flex; flex-direction: column; gap: 4px; }
   .form-group label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
-  .form-group input, .form-group select, .form-group textarea {
+  .form-group input, .form-group select {
     padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; color: #333; background: white;
   }
   .form-group input:focus, .form-group select:focus { outline: none; border-color: #00BCD4; }
 
   .status-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
-  .status-pill { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s; }
+  .status-pill { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s; user-select: none; }
   .status-pill.active { box-shadow: 0 0 0 2px #333; }
   .st-prospect  { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
   .st-negotiate { background: #fff8e1; color: #f57f17; border-color: #ffe082; }
@@ -53,49 +54,66 @@
 
   .surcharges-list { margin-top: 8px; }
   .surcharge-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
-  .surcharge-row input { padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+  .surcharge-row input, .surcharge-row select { padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
   .del-btn { background: #ffebee; color: #c62828; border: none; border-radius: 4px; padding: 5px 8px; cursor: pointer; font-size: 12px; }
   .add-surcharge-btn { padding: 6px 14px; background: #f0f0f0; border: 1px dashed #ddd; border-radius: 4px; font-size: 12px; cursor: pointer; color: #666; margin-top: 4px; }
   .add-surcharge-btn:hover { border-color: #00BCD4; color: #00BCD4; }
 
-  .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
   .btn { padding: 8px 18px; border: none; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; }
   .btn-primary   { background: #cc0000; color: white; }
   .btn-primary:hover { background: #aa0000; }
   .btn-secondary { background: #f0f0f0; color: #555; }
-  .btn-cyan      { background: #00BCD4; color: white; }
-  .btn-green     { background: #43a047; color: white; }
-  .btn-orange    { background: #ff9800; color: white; }
+  .btn-secondary:hover { background: #e0e0e0; }
+  .btn-green  { background: #43a047; color: white; }
+  .btn-green:hover { background: #388e3c; }
+  .btn-orange { background: #ff9800; color: white; }
+  .btn-orange:hover { background: #f57c00; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  .client-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; gap: 12px; }
-  .client-item:last-child { border-bottom: none; }
-  .client-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
-  .client-info { flex: 1; }
-  .client-name { font-size: 13px; font-weight: 600; color: #333; display: flex; align-items: center; gap: 8px; }
-  .client-meta { font-size: 11px; color: #aaa; margin-top: 3px; }
-  .client-pls  { font-size: 11px; color: #666; margin-top: 3px; }
-  .client-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
-  .action-btn { padding: 5px 10px; border-radius: 4px; font-size: 11px; border: 1px solid #ddd; background: white; cursor: pointer; color: #555; white-space: nowrap; }
-  .action-btn.send   { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
-  .action-btn.cms    { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
-  .action-btn.renew  { background: #fff3e0; color: #e65100; border-color: #ffcc80; }
-  .action-btn.edit   { background: #f8f8f8; color: #555; }
-
-  .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-  .filter-btn { padding: 5px 12px; border-radius: 20px; font-size: 11px; border: 1px solid #ddd; background: white; cursor: pointer; color: #666; }
-  .filter-btn.active { background: #cc0000; color: white; border-color: #cc0000; }
-  .search-input { padding: 6px 12px; border: 1px solid #ddd; border-radius: 20px; font-size: 12px; width: 200px; }
-
-  .empty { text-align: center; padding: 30px; color: #bbb; font-size: 13px; }
   .offer-terms { background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; margin-top: 12px; }
   .offer-terms-title { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
   .terms-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 
   .managers-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
   .manager-tag { padding: 4px 10px; background: #f0f0f0; border-radius: 20px; font-size: 11px; color: #555; display: flex; align-items: center; gap: 4px; }
-  .manager-tag button { background: none; border: none; cursor: pointer; color: #999; font-size: 12px; }
+  .manager-tag button { background: none; border: none; cursor: pointer; color: #999; font-size: 12px; padding: 0; }
 
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .filter-btn { padding: 5px 12px; border-radius: 20px; font-size: 11px; border: 1px solid #ddd; background: white; cursor: pointer; color: #666; }
+  .filter-btn.active { background: #cc0000; color: white; border-color: #cc0000; }
+  .search-input { padding: 6px 12px; border: 1px solid #ddd; border-radius: 20px; font-size: 12px; width: 240px; outline: none; }
+  .search-input:focus { border-color: #00BCD4; }
+
+  .client-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; gap: 12px; }
+  .client-item:last-child { border-bottom: none; }
+  .client-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .client-info { flex: 1; min-width: 0; }
+  .client-name { font-size: 13px; font-weight: 600; color: #333; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .client-meta { font-size: 11px; color: #aaa; margin-top: 3px; }
+  .client-pls  { font-size: 11px; color: #666; margin-top: 3px; }
+  .client-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+  .action-btn { padding: 5px 10px; border-radius: 4px; font-size: 11px; border: 1px solid #ddd; background: white; cursor: pointer; color: #555; white-space: nowrap; }
+  .action-btn.send { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+  .action-btn.cms  { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
+  .action-btn.edit { background: #f8f8f8; color: #555; }
+  .action-btn.del  { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
   .renewal-badge { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+  .offer-badge   { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; font-family: monospace; }
+
+  .empty { text-align: center; padding: 30px; color: #bbb; font-size: 13px; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: white; border-radius: 8px; padding: 24px; width: 440px; max-height: 80vh; overflow-y: auto; }
+  .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+  .modal-svc-title { font-size: 12px; font-weight: 600; color: #555; margin: 10px 0 6px; }
+  .modal-pl-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+  .modal-pl-name { font-size: 12px; }
+  .modal-pl-date { color: #aaa; font-size: 10px; margin-left: 4px; }
+  .modal-btn-add { padding: 3px 10px; border: 1px solid #90caf9; background: #e3f2fd; color: #1565c0; border-radius: 4px; font-size: 11px; cursor: pointer; }
+  .modal-btn-rem { padding: 3px 10px; border: 1px solid #ef9a9a; background: #ffebee; color: #c62828; border-radius: 4px; font-size: 11px; cursor: pointer; }
+  .modal-footer  { display: flex; justify-content: flex-end; margin-top: 16px; }
 </style>
 </head>
 <body>
@@ -122,14 +140,12 @@
 
 <div class="container">
 
-  <!-- ΦΟΡΜΑ ΠΕΛΑΤΗ -->
   <div class="section-header">
     <span id="form-title">Νέος Πελάτης</span>
     <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="resetForm()">✕ Καθαρισμός</button>
   </div>
   <div class="section-body">
 
-    <!-- Στοιχεία -->
     <div class="form-grid3">
       <div class="form-group">
         <label>Επωνυμία *</label>
@@ -167,17 +183,16 @@
       </div>
       <div class="form-group">
         <label>Κατάσταση</label>
-        <div class="status-pills" id="status-pills">
-          <span class="status-pill st-prospect active" onclick="setStatus('prospect', this)">Υποψήφιος</span>
-          <span class="status-pill st-negotiate" onclick="setStatus('negotiate', this)">Σε διαπραγμάτευση</span>
-          <span class="status-pill st-accepted" onclick="setStatus('accepted', this)">Αποδέχτηκε</span>
-          <span class="status-pill st-rejected" onclick="setStatus('rejected', this)">Αρνήθηκε</span>
-          <span class="status-pill st-active" onclick="setStatus('active', this)">Ενεργός</span>
+        <div class="status-pills">
+          <span class="status-pill st-prospect active" onclick="setStatus('prospect',this)">Υποψήφιος</span>
+          <span class="status-pill st-negotiate"       onclick="setStatus('negotiate',this)">Σε διαπραγμάτευση</span>
+          <span class="status-pill st-accepted"        onclick="setStatus('accepted',this)">Αποδέχτηκε</span>
+          <span class="status-pill st-rejected"        onclick="setStatus('rejected',this)">Αρνήθηκε</span>
+          <span class="status-pill st-active"          onclick="setStatus('active',this)">Ενεργός</span>
         </div>
       </div>
     </div>
 
-    <!-- Τιμοκατάλογοι -->
     <div class="form-group" style="margin-bottom:12px;">
       <label>Τιμοκατάλογοι από Ράφι</label>
       <div class="pricelist-tags" id="pl-tags">
@@ -185,9 +200,11 @@
       </div>
     </div>
 
-    <!-- Όροι Προσφοράς -->
     <div class="offer-terms">
-      <div class="offer-terms-title">Όροι Προσφοράς</div>
+      <div class="offer-terms-title">
+        Όροι Προσφοράς
+        <span id="offer-num-display" style="font-family:monospace;font-size:11px;color:#6a1b9a;font-weight:700;margin-left:10px;"></span>
+      </div>
       <div class="terms-grid">
         <div class="form-group">
           <label>Τρόπος Πληρωμής</label>
@@ -195,7 +212,6 @@
             <option value="10">10 ημέρες</option>
             <option value="30" selected>30 ημέρες</option>
             <option value="60">60 ημέρες</option>
-            <option value="custom">Άλλο...</option>
           </select>
         </div>
         <div class="form-group">
@@ -215,61 +231,57 @@
         </div>
       </div>
 
-      <!-- Επιπλέον χρεώσεις -->
-      <div style="margin-top:12px;">
+      <div style="margin-top:14px;">
         <div class="offer-terms-title">Επιπλέον Χρεώσεις</div>
         <div class="surcharges-list" id="surcharges-list"></div>
         <button class="add-surcharge-btn" onclick="addSurcharge()">+ Προσθήκη χρέωσης</button>
       </div>
 
-      <!-- Managers -->
-      <div style="margin-top:12px;">
+      <div style="margin-top:14px;">
         <div class="offer-terms-title">Ειδοποίηση Managers</div>
         <div class="managers-list" id="managers-list"></div>
-        <button class="add-surcharge-btn" onclick="addManager()">+ Προσθήκη email</button>
+        <button class="add-surcharge-btn" style="margin-top:6px;" onclick="addManager()">+ Προσθήκη email</button>
       </div>
     </div>
 
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="resetForm()">Ακύρωση</button>
-      <button class="btn btn-orange" id="preview-btn" onclick="previewPDF()" disabled>📄 Προεπισκόπηση PDF</button>
-      <button class="btn btn-green" id="send-btn" onclick="sendOffer()" disabled>✉️ Αποστολή Προσφοράς</button>
-      <button class="btn btn-primary" id="save-btn" onclick="saveClient()" disabled>💾 Αποθήκευση</button>
+      <button class="btn btn-orange"  id="preview-btn" onclick="previewPDF()" disabled>📄 Προεπισκόπηση PDF</button>
+      <button class="btn btn-green"   id="send-btn"    onclick="sendOffer()"  disabled>✉️ Αποστολή Προσφοράς</button>
+      <button class="btn btn-primary" id="save-btn"    onclick="saveClient()" disabled>💾 Αποθήκευση</button>
     </div>
   </div>
 
-  <!-- ΛΙΣΤΑ ΠΕΛΑΤΩΝ -->
   <div class="section-header">
     <span>Λίστα Πελατών (<span id="client-count">0</span>)</span>
   </div>
   <div class="section-body">
     <div class="filter-bar">
-      <input class="search-input" type="text" placeholder="🔍 Αναζήτηση..." oninput="filterClients(this.value)" />
-      <button class="filter-btn active" onclick="filterByStatus('all', this)">Όλοι</button>
-      <button class="filter-btn" onclick="filterByStatus('prospect', this)">🔵 Υποψήφιοι</button>
-      <button class="filter-btn" onclick="filterByStatus('negotiate', this)">🟡 Διαπραγμάτευση</button>
-      <button class="filter-btn" onclick="filterByStatus('active', this)">🟣 Ενεργοί</button>
-      <button class="filter-btn" onclick="filterByStatus('rejected', this)">🔴 Αρνήθηκαν</button>
+      <input class="search-input" type="text" placeholder="🔍 Αναζήτηση επωνυμία / ΑΦΜ / υπεύθυνος..." oninput="filterClients(this.value)" />
+      <button class="filter-btn active" onclick="filterByStatus('all',this)">Όλοι</button>
+      <button class="filter-btn" onclick="filterByStatus('prospect',this)">🔵 Υποψήφιοι</button>
+      <button class="filter-btn" onclick="filterByStatus('negotiate',this)">🟡 Διαπραγμάτευση</button>
+      <button class="filter-btn" onclick="filterByStatus('accepted',this)">🟢 Αποδέχτηκαν</button>
+      <button class="filter-btn" onclick="filterByStatus('active',this)">🟣 Ενεργοί</button>
+      <button class="filter-btn" onclick="filterByStatus('rejected',this)">🔴 Αρνήθηκαν</button>
     </div>
-    <div id="clients-list"><div class="empty">Δεν υπάρχουν πελάτες</div></div>
+    <div id="clients-list"><div class="empty">Δεν υπάρχουν πελάτες ακόμα</div></div>
   </div>
 
 </div>
 
-<!-- MODAL ΠΡΟΣΘΗΚΗ ΤΙΜΟΚΑΤΑΛΟΓΟΥ -->
-<div id="pl-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center;">
-  <div style="background:white;border-radius:8px;padding:24px;width:400px;max-height:80vh;overflow-y:auto;">
-    <div style="font-size:15px;font-weight:600;margin-bottom:16px;">Επιλογή από Ράφι</div>
+<!-- MODAL -->
+<div id="pl-modal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title">Επιλογή Τιμοκαταλόγου από Ράφι</div>
     <div id="pl-modal-content"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+    <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closePlModal()">Κλείσιμο</button>
     </div>
   </div>
 </div>
 
 <script>
-const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/';
-const SERVICES = ['S1003','S1012','S1010','S1041'];
 const SVC_NAMES = {
   S1003:'✈️↗️ Express Export', S1012:'✈️🇬🇷↙️ Express Import',
   S1010:'🚛↗️ Economy Export', S1041:'🚛🇬🇷↙️ Economy Import'
@@ -278,162 +290,107 @@ const STATUS_LABELS = {
   prospect:'Υποψήφιος', negotiate:'Σε διαπραγμάτευση',
   accepted:'Αποδέχτηκε', rejected:'Αρνήθηκε', active:'Ενεργός'
 };
-const STATUS_COLORS = {
-  prospect:'#1565c0', negotiate:'#f57f17',
-  accepted:'#2e7d32', rejected:'#c62828', active:'#6a1b9a'
-};
-const STATUS_BG = {
-  prospect:'#e3f2fd', negotiate:'#fff8e1',
-  accepted:'#e8f5e9', rejected:'#ffebee', active:'#f3e5f5'
-};
+const STATUS_BG    = { prospect:'#e3f2fd', negotiate:'#fff8e1', accepted:'#e8f5e9', rejected:'#ffebee', active:'#f3e5f5' };
+const STATUS_COLOR = { prospect:'#1565c0', negotiate:'#f57f17', accepted:'#2e7d32', rejected:'#c62828', active:'#6a1b9a' };
 
-let clients     = JSON.parse(localStorage.getItem('4a_clients') || '[]');
-let shelf       = JSON.parse(localStorage.getItem('4a_shelf')   || '{}');
-let currentUser = JSON.parse(localStorage.getItem('4a_current_user') || 'null');
-let editingId   = null;
-let currentStatus = 'prospect';
-let selectedPls   = [];
-let surcharges    = [];
-let managers      = [];
-let filterStatus  = 'all';
-let filterSearch  = '';
+let clients=[], shelf={}, currentUser=null;
+let editingId=null, currentStatus='prospect';
+let selectedPls=[], surcharges=[], managers=[];
+let filterStatus='all', filterSearch='';
 
-// Αρ. Προσφοράς
-function nextOfferNumber() {
-  const year = new Date().getFullYear();
-  const existing = clients.filter(c => c.offer_number).map(c => {
-    const m = (c.offer_number||'').match(/4A-\d{4}-(\d+)/);
-    return m ? parseInt(m[1]) : 0;
-  });
-  const max = existing.length ? Math.max(...existing) : 0;
-  return `4A-${year}-${String(max+1).padStart(4,'0')}`;
+function formatDate(iso){ const d=new Date(iso); if(isNaN(d))return iso; return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
+function todayFmt(){ return formatDate(new Date().toISOString()); }
+function initials(n){ return (n||'?').split(/\s+/).map(w=>w[0]||'').join('').substring(0,2).toUpperCase(); }
+function nextOfferNumber(){
+  const y=new Date().getFullYear();
+  const nums=clients.map(c=>{ const m=(c.offer_number||'').match(/4A-\d{4}-(\d+)/); return m?parseInt(m[1]):0; });
+  return `4A-${y}-${String((nums.length?Math.max(...nums):0)+1).padStart(4,'0')}`;
 }
 
-function formatDate(d) {
-  if (!d) return '—';
-  if (/^\d{2}-\d{2}-\d{4}$/.test(d)) return d;
-  const dt = new Date(d);
-  if (isNaN(dt)) return d;
-  return `${String(dt.getDate()).padStart(2,'0')}-${String(dt.getMonth()+1).padStart(2,'0')}-${dt.getFullYear()}`;
-}
-function todayFmt() { return formatDate(new Date().toISOString()); }
-
-// === INIT ===
-function init() {
-  if (!currentUser) {
-    window.location.href = 'pricelist-editor.html';
-    return;
-  }
-  document.getElementById('topbar-user').textContent = `${currentUser.name} · ${currentUser.office}`;
-  shelf   = JSON.parse(localStorage.getItem('4a_shelf')   || '{}');
-  clients = JSON.parse(localStorage.getItem('4a_clients') || '[]');
-  renderClients();
-  // Default managers
-  managers = currentUser.email ? [currentUser.email] : [];
-  renderManagers();
+function init(){
+  currentUser=JSON.parse(localStorage.getItem('4a_current_user')||'null');
+  if(!currentUser){ window.location.href='pricelist-editor.html'; return; }
+  document.getElementById('topbar-user').textContent=`${currentUser.name} · ${currentUser.office}`;
+  shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
+  clients=JSON.parse(localStorage.getItem('4a_clients')||'[]');
+  managers=currentUser.email?[currentUser.email]:[];
+  updateOfferNum(); renderManagers(); renderClients();
 }
 
-// === FORM ===
-function setStatus(status, el) {
-  currentStatus = status;
-  document.querySelectorAll('.status-pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  checkForm();
+function updateOfferNum(){
+  const n=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+  document.getElementById('offer-num-display').textContent=n;
 }
 
-function checkForm() {
-  const ok = document.getElementById('cl-name').value.trim() &&
-             document.getElementById('cl-afm').value.trim() &&
-             document.getElementById('cl-email').value.trim();
-  document.getElementById('save-btn').disabled    = !ok;
-  document.getElementById('preview-btn').disabled = !ok;
-  document.getElementById('send-btn').disabled    = !ok || selectedPls.length === 0;
+function setStatus(s,el){
+  currentStatus=s;
+  document.querySelectorAll('.status-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active'); checkForm();
 }
 
-function resetForm() {
-  editingId = null;
-  selectedPls = [];
-  surcharges  = [];
-  managers    = currentUser?.email ? [currentUser.email] : [];
-  currentStatus = 'prospect';
-  ['cl-name','cl-afm','cl-contact','cl-email','cl-phone','cl-website','cl-account'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('cl-payment').value  = '30';
-  document.getElementById('cl-invoice').value  = 'monthly';
-  document.getElementById('cl-validity').value = '30';
-  document.getElementById('form-title').textContent = 'Νέος Πελάτης';
-  document.querySelectorAll('.status-pill').forEach(p => p.classList.remove('active'));
+function checkForm(){
+  const ok=document.getElementById('cl-name').value.trim()&&
+           document.getElementById('cl-afm').value.trim()&&
+           document.getElementById('cl-email').value.trim();
+  document.getElementById('save-btn').disabled=!ok;
+  document.getElementById('preview-btn').disabled=!ok;
+  document.getElementById('send-btn').disabled=!(ok&&selectedPls.length>0);
+}
+
+function resetForm(){
+  editingId=null; selectedPls=[]; surcharges=[];
+  managers=currentUser?.email?[currentUser.email]:[];
+  currentStatus='prospect';
+  ['cl-name','cl-afm','cl-contact','cl-email','cl-phone','cl-website','cl-account'].forEach(id=>{ document.getElementById(id).value=''; });
+  document.getElementById('cl-payment').value='30';
+  document.getElementById('cl-invoice').value='monthly';
+  document.getElementById('cl-validity').value='30';
+  document.getElementById('form-title').textContent='Νέος Πελάτης';
+  document.querySelectorAll('.status-pill').forEach(p=>p.classList.remove('active'));
   document.querySelector('.st-prospect').classList.add('active');
-  renderPlTags();
-  renderSurcharges();
-  renderManagers();
-  checkForm();
+  renderPlTags(); renderSurcharges(); renderManagers(); updateOfferNum(); checkForm();
 }
 
-// === PRICELISTS ===
-function showPlModal() {
-  const el = document.getElementById('pl-modal-content');
-  let html = '';
-  SERVICES.forEach(svcId => {
-    const items = shelf[svcId] || [];
-    if (!items.length) return;
-    html += `<div style="font-size:12px;font-weight:600;color:#555;margin:10px 0 6px;">${SVC_NAMES[svcId]}</div>`;
-    items.forEach(p => {
-      const already = selectedPls.find(s => s.id === p.id);
-      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;">
-        <span style="font-size:12px;">${p.name} <span style="color:#aaa;font-size:10px;">${p.date}</span></span>
+function showPlModal(){
+  let html='';
+  Object.entries(SVC_NAMES).forEach(([svcId,svcName])=>{
+    const items=shelf[svcId]||[];
+    if(!items.length)return;
+    html+=`<div class="modal-svc-title">${svcName}</div>`;
+    items.forEach(p=>{
+      const already=selectedPls.find(s=>s.id===p.id);
+      html+=`<div class="modal-pl-row">
+        <span class="modal-pl-name">${p.name}<span class="modal-pl-date">${p.date||''}</span></span>
         ${already
-          ? `<button onclick="removePl(${p.id})" style="padding:3px 10px;border:1px solid #ef9a9a;background:#ffebee;color:#c62828;border-radius:4px;font-size:11px;cursor:pointer;">Αφαίρεση</button>`
-          : `<button onclick="addPl('${svcId}',${p.id})" style="padding:3px 10px;border:1px solid #90caf9;background:#e3f2fd;color:#1565c0;border-radius:4px;font-size:11px;cursor:pointer;">Προσθήκη</button>`
-        }
+          ?`<button class="modal-btn-rem" onclick="removePl(${p.id})">✕ Αφαίρεση</button>`
+          :`<button class="modal-btn-add" onclick="addPl('${svcId}',${p.id})">+ Προσθήκη</button>`}
       </div>`;
     });
   });
-  if (!html) html = '<div style="color:#aaa;text-align:center;padding:20px;">Δεν υπάρχουν τιμοκατάλογοι στο ράφι</div>';
-  el.innerHTML = html;
-  document.getElementById('pl-modal').style.display = 'flex';
+  if(!html)html='<div style="color:#aaa;text-align:center;padding:24px;">Δεν υπάρχουν τιμοκατάλογοι στο ράφι.<br>Δημιούργησε από τον Επεξεργαστή.</div>';
+  document.getElementById('pl-modal-content').innerHTML=html;
+  document.getElementById('pl-modal').classList.add('open');
 }
-
-function closePlModal() { document.getElementById('pl-modal').style.display = 'none'; checkForm(); }
-
-function addPl(svcId, plId) {
-  const item = (shelf[svcId]||[]).find(p => p.id === plId);
-  if (!item || selectedPls.find(s => s.id === plId)) return;
-  selectedPls.push({ ...item, service_id: svcId });
-  renderPlTags();
-  showPlModal();
+function closePlModal(){ document.getElementById('pl-modal').classList.remove('open'); checkForm(); }
+function addPl(svcId,plId){
+  const item=(shelf[svcId]||[]).find(p=>p.id===plId);
+  if(!item||selectedPls.find(s=>s.id===plId))return;
+  selectedPls.push({...item,service_id:svcId});
+  renderPlTags(); showPlModal();
 }
-
-function removePl(plId) {
-  selectedPls = selectedPls.filter(p => p.id !== plId);
-  renderPlTags();
-  showPlModal();
-}
-
-function renderPlTags() {
-  const el = document.getElementById('pl-tags');
-  el.innerHTML = selectedPls.map(p => `
-    <span class="pl-tag">${SVC_NAMES[p.service_id]} — ${p.name}
-      <button onclick="removePl(${p.id})">✕</button>
-    </span>`).join('') +
+function removePl(plId){ selectedPls=selectedPls.filter(p=>p.id!==plId); renderPlTags(); showPlModal(); }
+function renderPlTags(){
+  document.getElementById('pl-tags').innerHTML=
+    selectedPls.map(p=>`<span class="pl-tag">${SVC_NAMES[p.service_id]||p.service_id} — ${p.name}<button onclick="removePl(${p.id})">✕</button></span>`).join('')+
     `<button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>`;
 }
 
-// === SURCHARGES ===
-function addSurcharge() {
-  surcharges.push({ name: '', value: '', unit: '€/αποστολή' });
-  renderSurcharges();
-}
-
-function renderSurcharges() {
-  const el = document.getElementById('surcharges-list');
-  el.innerHTML = surcharges.map((s,i) => `
+function addSurcharge(){ surcharges.push({name:'',value:'',unit:'€/αποστολή'}); renderSurcharges(); }
+function renderSurcharges(){
+  document.getElementById('surcharges-list').innerHTML=surcharges.map((s,i)=>`
     <div class="surcharge-row">
-      <input type="text" value="${s.name}" placeholder="π.χ. Συσκευασία"
-        oninput="surcharges[${i}].name=this.value" />
-      <input type="text" value="${s.value}" placeholder="π.χ. 2.50"
-        oninput="surcharges[${i}].value=this.value" />
+      <input type="text" value="${s.name}" placeholder="π.χ. Συσκευασία" oninput="surcharges[${i}].name=this.value"/>
+      <input type="text" value="${s.value}" placeholder="2.50" oninput="surcharges[${i}].value=this.value"/>
       <select oninput="surcharges[${i}].unit=this.value">
         <option ${s.unit==='€/αποστολή'?'selected':''}>€/αποστολή</option>
         <option ${s.unit==='% επί αξίας'?'selected':''}>% επί αξίας</option>
@@ -444,193 +401,118 @@ function renderSurcharges() {
     </div>`).join('');
 }
 
-// === MANAGERS ===
-function addManager() {
-  const email = prompt('Email manager:');
-  if (email && email.includes('@')) {
-    managers.push(email.trim());
-    renderManagers();
-  }
+function addManager(){ const e=prompt('Email manager:'); if(e&&e.includes('@')){ managers.push(e.trim()); renderManagers(); } }
+function renderManagers(){
+  document.getElementById('managers-list').innerHTML=managers.map((m,i)=>`
+    <span class="manager-tag">${m}<button onclick="managers.splice(${i},1);renderManagers()">✕</button></span>`).join('');
 }
 
-function renderManagers() {
-  const el = document.getElementById('managers-list');
-  el.innerHTML = managers.map((m,i) => `
-    <span class="manager-tag">${m}
-      <button onclick="managers.splice(${i},1);renderManagers()">✕</button>
-    </span>`).join('');
-}
-
-// === SAVE ===
-function saveClient() {
-  const name    = document.getElementById('cl-name').value.trim();
-  const afm     = document.getElementById('cl-afm').value.trim();
-  const contact = document.getElementById('cl-contact').value.trim();
-  const email   = document.getElementById('cl-email').value.trim();
-  const phone   = document.getElementById('cl-phone').value.trim();
-  const website = document.getElementById('cl-website').value.trim();
-  const account = document.getElementById('cl-account').value.trim();
-
-  if (!name || !afm || !email) { alert('Συμπληρώστε Επωνυμία, ΑΦΜ και Email'); return; }
-
-  const offerNum = editingId
-    ? (clients.find(c => c.id === editingId)?.offer_number || nextOfferNumber())
-    : nextOfferNumber();
-
-  const client = {
-    id:           editingId || Date.now(),
-    name, afm, contact, email, phone, website,
-    account:      account || '—',
-    status:       currentStatus,
-    pricelists:   selectedPls.map(p => ({ id:p.id, name:p.name, service_id:p.service_id, markup:p.global_markup, type_emoji:p.type_emoji||'📌' })),
-    surcharges,
-    managers,
-    payment:      document.getElementById('cl-payment').value,
-    invoice:      document.getElementById('cl-invoice').value,
-    validity:     document.getElementById('cl-validity').value,
-    offer_number: offerNum,
-    user:         currentUser.name,
-    office:       currentUser.office,
-    date:         todayFmt(),
-    created_at:   new Date().toISOString()
+function saveClient(){
+  const name=document.getElementById('cl-name').value.trim();
+  const afm=document.getElementById('cl-afm').value.trim();
+  const email=document.getElementById('cl-email').value.trim();
+  if(!name||!afm||!email){ alert('Συμπλήρωσε Επωνυμία, ΑΦΜ και Email'); return; }
+  const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+  const client={
+    id:editingId||Date.now(),
+    name, afm,
+    contact:document.getElementById('cl-contact').value.trim(),
+    email,
+    phone:document.getElementById('cl-phone').value.trim(),
+    website:document.getElementById('cl-website').value.trim(),
+    account:document.getElementById('cl-account').value.trim()||'—',
+    status:currentStatus,
+    pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup||0})),
+    surcharges:[...surcharges], managers:[...managers],
+    payment:document.getElementById('cl-payment').value,
+    invoice:document.getElementById('cl-invoice').value,
+    validity:document.getElementById('cl-validity').value,
+    offer_number:offerNum,
+    user:currentUser.name, office:currentUser.office,
+    date:todayFmt(), created_at:new Date().toISOString()
   };
-
-  if (editingId) {
-    clients = clients.map(c => c.id === editingId ? client : c);
-  } else {
-    clients.unshift(client);
-  }
-
-  localStorage.setItem('4a_clients', JSON.stringify(clients));
-  alert(`✅ Πελάτης "${name}" αποθηκεύτηκε! Αρ. Προσφοράς: ${offerNum}`);
-  resetForm();
-  renderClients();
+  clients=editingId?clients.map(c=>c.id===editingId?client:c):[client,...clients];
+  localStorage.setItem('4a_clients',JSON.stringify(clients));
+  alert(`✅ "${name}" αποθηκεύτηκε\nΑρ. Προσφοράς: ${offerNum}`);
+  resetForm(); renderClients();
 }
 
-// === EDIT ===
-function editClient(id) {
-  const c = clients.find(cl => cl.id === id);
-  if (!c) return;
-  editingId = id;
-  document.getElementById('cl-name').value    = c.name    || '';
-  document.getElementById('cl-afm').value     = c.afm     || '';
-  document.getElementById('cl-contact').value = c.contact || '';
-  document.getElementById('cl-email').value   = c.email   || '';
-  document.getElementById('cl-phone').value   = c.phone   || '';
-  document.getElementById('cl-website').value = c.website || '';
-  document.getElementById('cl-account').value = c.account !== '—' ? c.account : '';
-  document.getElementById('cl-payment').value  = c.payment  || '30';
-  document.getElementById('cl-invoice').value  = c.invoice  || 'monthly';
-  document.getElementById('cl-validity').value = c.validity || '30';
-  currentStatus = c.status || 'prospect';
-  selectedPls   = c.pricelists ? [...c.pricelists] : [];
-  surcharges    = c.surcharges ? [...c.surcharges] : [];
-  managers      = c.managers   ? [...c.managers]   : [];
-  document.querySelectorAll('.status-pill').forEach(p => p.classList.remove('active'));
+function editClient(id){
+  const c=clients.find(cl=>cl.id===id); if(!c)return;
+  editingId=id;
+  document.getElementById('cl-name').value=c.name||'';
+  document.getElementById('cl-afm').value=c.afm||'';
+  document.getElementById('cl-contact').value=c.contact||'';
+  document.getElementById('cl-email').value=c.email||'';
+  document.getElementById('cl-phone').value=c.phone||'';
+  document.getElementById('cl-website').value=c.website||'';
+  document.getElementById('cl-account').value=(c.account!=='—')?c.account:'';
+  document.getElementById('cl-payment').value=c.payment||'30';
+  document.getElementById('cl-invoice').value=c.invoice||'monthly';
+  document.getElementById('cl-validity').value=c.validity||'30';
+  currentStatus=c.status||'prospect';
+  selectedPls=c.pricelists?[...c.pricelists]:[];
+  surcharges=c.surcharges?[...c.surcharges]:[];
+  managers=c.managers?[...c.managers]:[];
+  document.querySelectorAll('.status-pill').forEach(p=>p.classList.remove('active'));
   document.querySelector(`.st-${currentStatus}`)?.classList.add('active');
-  document.getElementById('form-title').textContent = `Επεξεργασία: ${c.name}`;
-  renderPlTags();
-  renderSurcharges();
-  renderManagers();
-  checkForm();
-  window.scrollTo(0, 0);
+  document.getElementById('form-title').textContent=`✏️ Επεξεργασία: ${c.name}`;
+  renderPlTags(); renderSurcharges(); renderManagers(); updateOfferNum(); checkForm();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function deleteClient(id) {
-  if (!confirm('Διαγραφή πελάτη;')) return;
-  clients = clients.filter(c => c.id !== id);
-  localStorage.setItem('4a_clients', JSON.stringify(clients));
+function deleteClient(id){
+  const c=clients.find(cl=>cl.id===id); if(!c)return;
+  if(!confirm(`Διαγραφή "${c.name}";`))return;
+  clients=clients.filter(cl=>cl.id!==id);
+  localStorage.setItem('4a_clients',JSON.stringify(clients));
+  if(editingId===id)resetForm();
   renderClients();
 }
 
-// === RENDER CLIENTS ===
-function renderClients() {
-  const el = document.getElementById('clients-list');
-  document.getElementById('client-count').textContent = clients.length;
-
-  let filtered = clients;
-  if (filterStatus !== 'all') filtered = filtered.filter(c => c.status === filterStatus);
-  if (filterSearch) {
-    const q = filterSearch.toLowerCase();
-    filtered = filtered.filter(c =>
-      (c.name||'').toLowerCase().includes(q) ||
-      (c.afm||'').includes(q) ||
-      (c.contact||'').toLowerCase().includes(q)
-    );
-  }
-
-  if (!filtered.length) { el.innerHTML = '<div class="empty">Δεν βρέθηκαν πελάτες</div>'; return; }
-
-  const initials = name => name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-
-  el.innerHTML = filtered.map(c => {
-    const plStr = (c.pricelists||[]).map(p => `${SVC_NAMES[p.service_id]||p.service_id} ${p.markup}% ${p.type_emoji||'📌'}`).join(' · ') || '—';
-    const isRenewal = c.status === 'active' || c.status === 'rejected';
-    return `
-    <div class="client-item">
-      <div class="client-avatar" style="background:${STATUS_BG[c.status]||'#f0f0f0'};color:${STATUS_COLORS[c.status]||'#555'};">
-        ${initials(c.name)}
-      </div>
+function renderClients(){
+  const el=document.getElementById('clients-list');
+  document.getElementById('client-count').textContent=clients.length;
+  let list=[...clients];
+  if(filterStatus!=='all')list=list.filter(c=>c.status===filterStatus);
+  if(filterSearch){ const q=filterSearch.toLowerCase(); list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.afm||'').includes(q)||(c.contact||'').toLowerCase().includes(q)); }
+  if(!list.length){ el.innerHTML='<div class="empty">Δεν βρέθηκαν πελάτες</div>'; return; }
+  el.innerHTML=list.map(c=>{
+    const plStr=(c.pricelists||[]).map(p=>`${SVC_NAMES[p.service_id]||p.service_id}${p.markup?' '+p.markup+'%':''}`).join(' · ')||'—';
+    const isRenewal=c.status==='active'||c.status==='rejected';
+    return `<div class="client-item">
+      <div class="client-avatar" style="background:${STATUS_BG[c.status]||'#f0f0f0'};color:${STATUS_COLOR[c.status]||'#555'};">${initials(c.name)}</div>
       <div class="client-info">
         <div class="client-name">
           ${c.name}
-          <span class="status-pill st-${c.status}" style="font-size:10px;padding:2px 8px;">${STATUS_LABELS[c.status]||c.status}</span>
-          ${isRenewal ? `<span class="renewal-badge">↻ Ανανέωση</span>` : ''}
+          <span class="status-pill st-${c.status}" style="font-size:10px;padding:2px 8px;cursor:default;">${STATUS_LABELS[c.status]||c.status}</span>
+          ${isRenewal?'<span class="renewal-badge">↻ Ανανέωση</span>':''}
+          <span class="offer-badge">${c.offer_number||'—'}</span>
         </div>
-        <div class="client-meta">
-          ΑΦΜ: ${c.afm||'—'} · ${c.contact||'—'} · ${c.email||'—'} ${c.phone?'· '+c.phone:''} ${c.website?'· '+c.website:''}
-          · ${c.date||'—'} · ${c.user||'—'} · ${c.office||'—'}
-          · Αρ: ${c.offer_number||'—'}
-        </div>
-        <div class="client-pls">Τιμοκατάλογοι: ${plStr}</div>
+        <div class="client-meta">ΑΦΜ: ${c.afm||'—'} · ${c.contact||'—'} · ${c.email||'—'}${c.phone?' · '+c.phone:''}${c.website?' · '+c.website:''} · ${c.date||'—'} · ${c.user||'—'} · ${c.office||'—'}</div>
+        <div class="client-pls">📋 ${plStr}</div>
       </div>
       <div class="client-actions">
-        ${c.status === 'active' ? `<button class="action-btn cms" onclick="exportCMS(${c.id})">↓ CMS Export</button>` : ''}
-        <button class="action-btn send" onclick="sendOffer(${c.id})">✉️ Προσφορά</button>
-        <button class="action-btn edit" onclick="editClient(${c.id})">✏️</button>
-        <button class="action-btn" style="color:#c62828;" onclick="deleteClient(${c.id})">🗑</button>
+        ${c.status==='active'?`<button class="action-btn cms" onclick="exportCMS(${c.id})">↓ CMS Export</button>`:''}
+        <button class="action-btn send" onclick="editClient(${c.id})">✉️ Προσφορά</button>
+        <button class="action-btn edit" onclick="editClient(${c.id})">✏️ Edit</button>
+        <button class="action-btn del"  onclick="deleteClient(${c.id})">🗑</button>
       </div>
     </div>`;
   }).join('');
 }
 
-function filterByStatus(status, btn) {
-  filterStatus = status;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderClients();
-}
+function filterByStatus(s,btn){ filterStatus=s; document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderClients(); }
+function filterClients(q){ filterSearch=q; renderClients(); }
+function exportCMS(id){ alert('CMS Export — επόμενο βήμα (TSV download)'); }
+function sendOffer(){ alert('Αποστολή Προσφοράς — επόμενο βήμα (SMTP + PDF)'); }
+function previewPDF(){ alert('Προεπισκόπηση PDF — επόμενο βήμα'); }
+function doLogout(){ window.location.href='pricelist-editor.html'; }
 
-function filterClients(q) {
-  filterSearch = q;
-  renderClients();
-}
-
-function exportCMS(id) {
-  const c = clients.find(cl => cl.id === id);
-  alert(`CMS Export για "${c.name}" — θα υλοποιηθεί στο επόμενο βήμα`);
-}
-
-function sendOffer(id) {
-  if (id) {
-    const c = clients.find(cl => cl.id === id);
-    if (c) { editClient(id); }
-  }
-  alert('Αποστολή Προσφοράς — θα υλοποιηθεί με SMTP + PDF στο επόμενο βήμα');
-}
-
-function previewPDF() {
-  alert('Προεπισκόπηση PDF — θα υλοποιηθεί στο επόμενο βήμα');
-}
-
-function doLogout() {
-  window.location.href = 'pricelist-editor.html';
-}
-
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    shelf   = JSON.parse(localStorage.getItem('4a_shelf')   || '{}');
-    clients = JSON.parse(localStorage.getItem('4a_clients') || '[]');
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){
+    shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
+    clients=JSON.parse(localStorage.getItem('4a_clients')||'[]');
     renderClients();
   }
 });
