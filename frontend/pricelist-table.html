@@ -354,8 +354,20 @@ function renderTable() {
           if (needed > maxNeeded) maxNeeded = needed;
         }
       }
-      // Στρογγυλοποίηση ΚΑΤΩ στο 1 δεκαδικό — αν 140.00 αρκεί, δείχνουμε 140.0%
-      minPct = Math.floor(maxNeeded * 10) / 10;
+      // Αν το ceil δίνει ακριβώς το ίδιο αποτέλεσμα με floor → χρησιμοποίησε floor
+      const withCeil  = Math.ceil(maxNeeded * 10) / 10;
+      const withFloor = Math.floor(maxNeeded * 10) / 10;
+      // Δοκίμασε αν floor αρκεί (price >= prevPrice για όλες τις zones)
+      let floorOk = true;
+      for (let zi = 0; zi < ZONES.length; zi++) {
+        const prevPrice = prevRow.prices[zi];
+        const dhlCost   = row.dhl_costs[zi];
+        if (dhlCost > 0) {
+          const testPrice = parseFloat((dhlCost * (1 + withFloor/100)).toFixed(2));
+          if (testPrice < prevPrice) { floorOk = false; break; }
+        }
+      }
+      minPct = floorOk ? withFloor : withCeil;
     }
     // Αποθήκευση minPct στο row για χρήση από double-click
     row.minPct = minPct;
