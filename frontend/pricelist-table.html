@@ -93,7 +93,10 @@
 
   <div class="section-header">
     <span>S1003 — Express Export · AIR · Z1–Z7 · έως 80kg</span>
-    <span class="fc-badge" id="fc-badge">FC AIR: —%</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button onclick="history.back()" style="background:rgba(255,255,255,0.2);color:white;border:none;padding:3px 10px;border-radius:3px;font-size:11px;cursor:pointer;">← Πίσω</button>
+      <span class="fc-badge" id="fc-badge">FC AIR: —%</span>
+    </div>
   </div>
   <div class="section-body">
 
@@ -168,33 +171,48 @@
 </div>
 
 <script>
-const BASE       = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
-const SERVICE_ID = 'S1003';
-const MAX_WEIGHT = 80;   // AIR έως 80kg
-const ZONES      = ['z1','z2','z3','z4','z5','z6','z7'];
-const ZONE_LABELS= ['Z1','Z2','Z3','Z4','Z5','Z6','Z7'];
+const PARAMS     = new URLSearchParams(window.location.search);
+const SERVICE_ID = PARAMS.get('service') || 'S1003';
+const URL_MARKUP = parseFloat(PARAMS.get('markup')) || 140;
+const MAX_WEIGHT = (SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041') ? 120 : 80;
+const ZONES      = SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041'
+  ? ['z1','z2','z3'] : ['z1','z2','z3','z4','z5','z6','z7'];
+const ZONE_LABELS= ZONES.map(z => z.toUpperCase());
+const SVC_NAMES  = {
+  S1003: 'Express Export', S1012: 'Express Import',
+  S1010: 'Economy Export', S1041: 'Economy Import'
+};
+const SVC_FILE   = `dhl_tariff_2026_${SERVICE_ID}.json`;
+const SVC_MODE   = (SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041') ? 'ROAD' : 'AIR';
 
 let dhlData    = null;
-let fuelFc     = 47.0; // default
-let markupData = [];   // [{weight, markup, dhl_costs:[z1..z7], prices:[z1..z7], valid}]
+let fuelFc     = SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041' ? 35.25 : 47.0;
+let markupData = [];
 let tableVisible = false;
-let globalMarkup = 140;
+let globalMarkup = URL_MARKUP;
+
+const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
+
+// Ενημέρωση τίτλου από URL params
+document.querySelector('.topbar-title').textContent =
+  `Τιμοκατάλογος — ${SERVICE_ID} ${SVC_NAMES[SERVICE_ID]}`;
+document.querySelector('.section-header span').textContent =
+  `${SERVICE_ID} — ${SVC_NAMES[SERVICE_ID]} · ${SVC_MODE} · έως ${MAX_WEIGHT}kg`;
+document.getElementById('global-markup').value = URL_MARKUP;
 
 // === LOAD ===
 async function loadData() {
   try {
-    // DHL tariff
-    const r1 = await fetch(BASE + 'dhl_tariff_2026_S1003.json');
+    const r1 = await fetch(BASE + SVC_FILE);
     dhlData = await r1.json();
 
-    // Fuel surcharge
     try {
       const r2 = await fetch(BASE + 'data/fuel_surcharge_cache.json');
       const fc = await r2.json();
-      fuelFc   = fc.current_air || 47.0;
+      fuelFc   = SVC_MODE === 'AIR' ? (fc.current_air||47.0) : (fc.current_road||35.25);
     } catch(e) {}
 
-    document.getElementById('fc-badge').textContent = `FC AIR: ${fuelFc}%`;
+    document.getElementById('fc-badge').textContent = `FC ${SVC_MODE}: ${fuelFc}%`;
     document.getElementById('table-container').innerHTML =
       '<div class="loading">✅ Δεδομένα φορτώθηκαν — Πατήστε "Ανάπτυξη πίνακα"</div>';
 
