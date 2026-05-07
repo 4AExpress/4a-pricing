@@ -145,7 +145,7 @@
       <div class="save-info" id="save-info"></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-gray" onclick="resetMarkups()">↺ Reset σε γενικό markup</button>
-        <button class="btn btn-green" id="save-btn2" onclick="savePricelist()" disabled>💾 Αποθήκευση στο Ράφι S1003</button>
+        <button class="btn btn-green" id="save-btn2" onclick="savePricelist()" disabled>💾 Αποθήκευση στο Ράφι <span id="save-btn-svc"></span></button>
       </div>
     </div>
 
@@ -155,7 +155,7 @@
 <!-- MODAL -->
 <div id="modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:100;">
   <div style="background:white;border-radius:8px;padding:24px;width:360px;box-shadow:0 4px 20px rgba(0,0,0,0.2);">
-    <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Αποθήκευση στο Ράφι S1003</div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Αποθήκευση στο Ράφι <span id="modal-service-id"></span></div>
     <div id="modal-type" style="font-size:12px;margin-bottom:16px;padding:6px 10px;background:#f8f8f8;border-radius:4px;"></div>
     <div style="margin-bottom:12px;">
       <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;display:block;margin-bottom:4px;">Όνομα Τιμοκαταλόγου</label>
@@ -201,6 +201,7 @@ document.querySelector('.topbar-title').textContent =
 document.querySelector('.section-header span').textContent =
   `${SERVICE_ID} — ${SVC_NAMES[SERVICE_ID]} · ${SVC_MODE} · έως ${MAX_WEIGHT}kg`;
 document.getElementById('global-markup').value = URL_MARKUP;
+document.getElementById('save-btn-svc') && (document.getElementById('save-btn-svc').textContent = SERVICE_ID);
 
 // === LOAD ===
 async function loadData() {
@@ -448,20 +449,22 @@ function renderTable() {
       <div style="background:#00BCD4;color:white;font-size:11px;font-weight:600;padding:4px 10px;">
         ${MAX_WEIGHT}kg+ — Κόστος ανά επιπλέον kg (markup: ${lastMarkup}%)
       </div>
-      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:900px;">
+      <div class="table-wrap">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px;">
         <tr style="background:#f0fdff;">
-          <td style="padding:6px 10px;font-weight:600;color:#555;min-width:65px;">${MAX_WEIGHT}+ kg</td>
-          <td style="padding:6px;text-align:center;color:#888;min-width:35px;">—</td>
-          <td style="padding:6px;text-align:center;background:#f1f8f1;font-size:11px;color:#555;min-width:80px;">ανά kg</td>
-          <td style="padding:6px;text-align:center;background:#fffdf0;font-weight:700;min-width:80px;">${lastMarkup}%</td>
+          <td class="weight-cell" style="padding:4px 6px;">${MAX_WEIGHT}+ kg</td>
+          <td class="valid-cell">—</td>
+          <td class="markup-cell" style="background:#f1f8f1;font-size:11px;color:#555;text-align:center;">ανά kg</td>
+          <td class="markup-cell" style="text-align:center;font-weight:700;">${lastMarkup}%</td>
           ${ZONES.map((z,zi) => `
-          <td style="padding:6px;text-align:center;min-width:75px;">
+          <td class="zone-cell">
             <span style="color:#1565c0;font-size:10px">${adderCosts[zi].toFixed(2)}</span>
             <span style="color:#888;font-size:9px"> → </span>
             <span style="color:#333;font-size:11px">${adderPrices[zi].toFixed(2)}</span>
           </td>`).join('')}
         </tr>
       </table>
+      </div>
     </div>`;
   }
 
@@ -555,6 +558,7 @@ function savePricelist() {
   const typeEmoji  = isCustom ? '⚙️' : '📌';
   const typeLabel  = isCustom ? 'custom' : 'flat';
 
+  document.getElementById('modal-service-id').textContent = SERVICE_ID;
   const modal = document.getElementById('modal-bg');
   document.getElementById('modal-name').value = `${SERVICE_ID} — ${globalMarkup}% ${typeEmoji}`;
   document.getElementById('modal-type').textContent =
