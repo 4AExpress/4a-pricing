@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>4A Express — Γνωστοποίηση Τιμών</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -306,6 +309,17 @@ function doLogout() {
   document.getElementById('login-pin').value  = '';
   document.getElementById('login-error').textContent = '';
 }
+
+// Ανανέωση ράφι όταν ο χρήστης επιστρέφει στη σελίδα (από πίνακα)
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible') {
+    shelf    = JSON.parse(localStorage.getItem('4a_shelf')   || '{}');
+    clients  = JSON.parse(localStorage.getItem('4a_clients') || '[]');
+    renderShelf();
+    renderClientPricelists();
+    renderClientsList();
+  }
+});
 
 // === DATE HELPERS ===
 function formatDate(isoStr) {
