@@ -131,6 +131,8 @@
       <div class="legend-item">🔴 <span>Παραβίαση — αύξησε το %</span></div>
       <div class="legend-item"><span style="color:#1565c0">■</span> <span>Κόστος DHL</span></div>
       <div class="legend-item"><span style="color:#cc0000">■</span> <span>Τιμή πελάτη</span></div>
+      <div class="legend-item">👆 <span>1 κλικ Min% → σταθερό από εδώ</span></div>
+      <div class="legend-item">👆👆 <span>2 κλικ Min% → cascade από εδώ</span></div>
     </div>
 
     <!-- TABLE -->
@@ -398,7 +400,8 @@ function renderTable() {
       <td class="weight-cell">${row.weight.toFixed(1)} kg</td>
       <td class="valid-cell">${row.valid ? '✅' : '🔴'}</td>
       <td class="markup-cell" style="background:#f1f8f1;font-size:11px;font-weight:600;color:${minPctColor};cursor:pointer;"
-          title="Διπλό κλικ → εφαρμογή Min% από εδώ και κάτω"
+          title="1 κλικ → σταθερό Min% από εδώ &#10;2 κλικ → cascade Min% από εδώ"
+          onclick="applyMinFlat(${i})"
           ondblclick="applyMinCascade(${i})">${minPctDisplay}</td>
       <td class="markup-cell">
         <input class="markup-field ${row.changed ? 'changed' : ''}"
@@ -424,6 +427,44 @@ function renderTable() {
   }
 
   html += '</tbody></table></div>';
+
+  // === ΓΡΑΜΜΗ 120+ (τελευταίο markup για επιπλέον kg) ===
+  if (markupData.length > 0) {
+    const lastRow    = markupData[markupData.length - 1];
+    const lastMarkup = lastRow.markup;
+    // Εύρεση adder cost από το JSON (τελευταία entries > MAX_WEIGHT)
+    const adderCosts = ZONES.map(z => {
+      const beyond = dhlData.entries
+        .filter(e => e.zone_code === z && e.weight_kg > MAX_WEIGHT)
+        .sort((a,b) => a.weight_kg - b.weight_kg);
+      if (beyond.length < 2) return 0;
+      return parseFloat((beyond[1].cost - beyond[0].cost).toFixed(2));
+    });
+    const adderPrices = adderCosts.map(c =>
+      parseFloat((c * (1 + lastMarkup/100)).toFixed(2)));
+
+    html += `
+    <div style="margin-top:8px;border:1px solid #00BCD4;border-radius:4px;overflow:hidden;">
+      <div style="background:#00BCD4;color:white;font-size:11px;font-weight:600;padding:4px 10px;">
+        ${MAX_WEIGHT}kg+ — Κόστος ανά επιπλέον kg (markup: ${lastMarkup}%)
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:900px;">
+        <tr style="background:#f0fdff;">
+          <td style="padding:6px 10px;font-weight:600;color:#555;min-width:65px;">${MAX_WEIGHT}+ kg</td>
+          <td style="padding:6px;text-align:center;color:#888;min-width:35px;">—</td>
+          <td style="padding:6px;text-align:center;background:#f1f8f1;font-size:11px;color:#555;min-width:80px;">ανά kg</td>
+          <td style="padding:6px;text-align:center;background:#fffdf0;font-weight:700;min-width:80px;">${lastMarkup}%</td>
+          ${ZONES.map((z,zi) => `
+          <td style="padding:6px;text-align:center;min-width:75px;">
+            <span style="color:#1565c0;font-size:10px">${adderCosts[zi].toFixed(2)}</span>
+            <span style="color:#888;font-size:9px"> → </span>
+            <span style="color:#333;font-size:11px">${adderPrices[zi].toFixed(2)}</span>
+          </td>`).join('')}
+        </tr>
+      </table>
+    </div>`;
+  }
+
   document.getElementById('table-container').innerHTML = html;
 }
 
@@ -449,6 +490,25 @@ function onRowMarkup(idx, value) {
     const el = document.querySelector(`input[data-idx="${idx}"]`);
     if (el) el.focus();
   }, 50);
+}
+
+// === APPLY MIN FLAT (single click) ===
+// Από τη γραμμή idx και κάτω → εφαρμόζει το Min% αυτής της γραμμής ως ΣΤΑΘΕΡΟ
+function applyMinFlat(startIdx) {
+  const flatMarkup = markupData[startIdx].minPct || 0;
+  if (flatMarkup <= 0) return;
+  for (let i = startIdx; i < markupData.length; i++) {
+    const row    = markupData[i];
+    row.markup   = parseFloat(flatMarkup.toFixed(1));
+    row.changed  = row.markup !== globalMarkup;
+    row.prices   = row.dhl_costs.map(c =>
+      parseFloat((c * (1 + row.markup/100)).toFixed(2)));
+    row.valid       = true;
+    row.error_zones = [];
+  }
+  for (const r of markupData) { r.valid = true; r.error_zones = []; }
+  validateAll();
+  renderTable();
 }
 
 // === APPLY MIN CASCADE (double-click) ===
