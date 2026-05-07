@@ -181,9 +181,22 @@ const ZONES      = SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041'
   ? ['z1','z2','z3'] : ['z1','z2','z3','z4','z5','z6','z7'];
 const ZONE_LABELS= ZONES.map(z => z.toUpperCase());
 const SVC_NAMES  = {
-  S1003: 'Express Export', S1012: 'Express Import',
-  S1010: 'Economy Export', S1041: 'Economy Import'
+  S1003: '✈️↗️ Express Export', S1012: '✈️🇬🇷↙️ Express Import',
+  S1010: '🚛↗️ Economy Export', S1041: '🚛🇬🇷↙️ Economy Import'
 };
+const SVC_EMOJI  = {
+  S1003: '✈️↗️', S1012: '✈️🇬🇷↙️',
+  S1010: '🚛↗️', S1041: '🚛🇬🇷↙️'
+};
+
+function formatDate(isoStr) {
+  if (!isoStr) return '—';
+  if (/^\d{2}-\d{2}-\d{4}$/.test(isoStr)) return isoStr;
+  const d = new Date(isoStr);
+  if (isNaN(d)) return isoStr;
+  return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+}
+function todayFormatted() { return formatDate(new Date().toISOString()); }
 const SVC_FILE   = `dhl_tariff_2026_${SERVICE_ID}.json`;
 const SVC_MODE   = (SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041') ? 'ROAD' : 'AIR';
 
@@ -607,7 +620,7 @@ function confirmSave() {
     fc:            fuelFc,
     user:          userName,
     office:        userOffice,
-    date:          dateFormatted,
+    date:          todayFormatted(),
     created_at:    new Date().toISOString()
   });
 
