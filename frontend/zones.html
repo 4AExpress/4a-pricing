@@ -1,4 +1,4 @@
-<!-- zones.html | v1.2 | 08-05-2026 -->
+<!-- zones.html | v1.3 | 08-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -126,10 +126,11 @@ let zonesData = null;
 let activeTab = 'air';
 let tableFilter = '';
 
-// Flag emoji από ISO code
-function flag(code) {
-  if (!code || code.length !== 2) return '🌐';
-  return String.fromCodePoint(...[...code.toUpperCase()].map(c => 0x1F1E6 - 65 + c.charCodeAt(0)));
+// Flag image από flagcdn.com
+function flag(code, lg=false) {
+  if (!code || code.length !== 2) return '';
+  const dim = lg ? 'width:40px;height:30px;' : 'width:20px;height:15px;';
+  return `<img src="https://flagcdn.com/16x12/${code.toLowerCase()}.png" style="${dim}border-radius:2px;object-fit:cover;" onerror="this.style.display='none'" />`;
 }
 
 async function loadZones() {
@@ -182,7 +183,7 @@ function selectCountry(code) {
   if (!air) return;
 
   document.getElementById('search').value = air.name;
-  document.getElementById('result-flag').textContent = flag(code);
+  document.getElementById('result-flag').innerHTML = flag(code, true);
   document.getElementById('result-country-name').textContent = air.name;
   document.getElementById('result-code').textContent = `(${code})`;
 
