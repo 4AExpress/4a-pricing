@@ -453,12 +453,14 @@ function confirmSave() {
     date: todayFormatted(), created_at: new Date().toISOString()
   });
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
+  const savedItem = {...shelf[svcId][0]};
   closeModal();
- fetch(`${API}/shelf.php`, {
-  method: 'POST',
-  headers: {'Content-Type':'application/json'},
-  body: JSON.stringify({action:'save', ...shelf[svcId][0]})
-});
+  fetch(`${API}/shelf.php`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action:'save', ...savedItem})
+  }).then(r=>r.json()).then(d=>console.log('API shelf save:', d))
+    .catch(e=>console.error('API shelf error:', e));
   markups[svcId] = null;
   document.getElementById(`markup-${svcId}`).value = '';
   onMarkup(svcId, '');
