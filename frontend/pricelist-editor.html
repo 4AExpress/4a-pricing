@@ -1,3 +1,4 @@
+<!-- pricelist-editor.html | v1.1 | 08-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -79,7 +80,6 @@
   .shelf-meta { font-size: 11px; color: #aaa; margin-top: 2px; }
   .shelf-actions { display: flex; gap: 6px; }
   .btn-small { padding: 4px 10px; font-size: 11px; border: none; border-radius: 3px; cursor: pointer; font-weight: 500; }
-  .btn-export { background: #e8f5e9; color: #2e7d32; }
   .btn-delete { background: #ffebee; color: #c62828; }
   .shelf-empty { text-align: center; padding: 24px; color: #bbb; font-size: 13px; }
   .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
@@ -220,6 +220,8 @@ function doLogin() {
 }
 
 document.getElementById('login-pin').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
+
+// Auto-login αν υπάρχει session
 (function() {
   const u = localStorage.getItem('4a_current_user');
   if (u) {
@@ -229,9 +231,10 @@ document.getElementById('login-pin').addEventListener('keyup', e => { if (e.key 
     document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
     init();
   }
-})(); 
+})();
 
 function doLogout() {
+  localStorage.removeItem('4a_current_user');
   currentUser = null; markups = {};
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-screen').style.display   = 'none';
@@ -448,6 +451,7 @@ function confirmSave() {
 
 function renderShelf() {
   const tabsEl = document.getElementById('shelf-tabs');
+  if (!tabsEl) return;
   tabsEl.innerHTML = SERVICES.map(svc => `
     <button class="shelf-tab ${svc.id === activeShelfTab ? 'active' : ''}"
       onclick="switchShelfTab('${svc.id}', this)">
