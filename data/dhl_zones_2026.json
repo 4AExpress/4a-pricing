@@ -1,0 +1,1363 @@
+{
+  "air": {
+    "services": [
+      "S1003",
+      "S1012"
+    ],
+    "zones": [
+      {
+        "name": "Afghanistan",
+        "code": "AF",
+        "zone": 7
+      },
+      {
+        "name": "Albania",
+        "code": "AL",
+        "zone": 3
+      },
+      {
+        "name": "Algeria",
+        "code": "DZ",
+        "zone": 5
+      },
+      {
+        "name": "American Samoa",
+        "code": "AS",
+        "zone": 7
+      },
+      {
+        "name": "Andorra",
+        "code": "AD",
+        "zone": 3
+      },
+      {
+        "name": "Angola",
+        "code": "AO",
+        "zone": 7
+      },
+      {
+        "name": "Anguilla",
+        "code": "AI",
+        "zone": 7
+      },
+      {
+        "name": "Antigua",
+        "code": "AG",
+        "zone": 7
+      },
+      {
+        "name": "Argentina",
+        "code": "AR",
+        "zone": 7
+      },
+      {
+        "name": "Armenia",
+        "code": "AM",
+        "zone": 7
+      },
+      {
+        "name": "Aruba",
+        "code": "AW",
+        "zone": 7
+      },
+      {
+        "name": "Australia",
+        "code": "AU",
+        "zone": 7
+      },
+      {
+        "name": "Austria",
+        "code": "AT",
+        "zone": 2
+      },
+      {
+        "name": "Azerbaijan",
+        "code": "AZ",
+        "zone": 7
+      },
+      {
+        "name": "Bahamas",
+        "code": "BS",
+        "zone": 7
+      },
+      {
+        "name": "Bahrain",
+        "code": "BH",
+        "zone": 5
+      },
+      {
+        "name": "Bangladesh",
+        "code": "BD",
+        "zone": 6
+      },
+      {
+        "name": "Barbados",
+        "code": "BB",
+        "zone": 7
+      },
+      {
+        "name": "Belarus",
+        "code": "BY",
+        "zone": 7
+      },
+      {
+        "name": "Belgium",
+        "code": "BE",
+        "zone": 1
+      },
+      {
+        "name": "Belize",
+        "code": "BZ",
+        "zone": 7
+      },
+      {
+        "name": "Benin",
+        "code": "BJ",
+        "zone": 7
+      },
+      {
+        "name": "Bermuda",
+        "code": "BM",
+        "zone": 7
+      },
+      {
+        "name": "Bhutan",
+        "code": "BT",
+        "zone": 6
+      },
+      {
+        "name": "Bolivia",
+        "code": "BO",
+        "zone": 7
+      },
+      {
+        "name": "Bonaire",
+        "code": "XB",
+        "zone": 7
+      },
+      {
+        "name": "Bosnia & Herzegovina",
+        "code": "BA",
+        "zone": 3
+      },
+      {
+        "name": "Botswana",
+        "code": "BW",
+        "zone": 7
+      },
+      {
+        "name": "Brazil",
+        "code": "BR",
+        "zone": 7
+      },
+      {
+        "name": "Brunei",
+        "code": "BN",
+        "zone": 6
+      },
+      {
+        "name": "Bulgaria",
+        "code": "BG",
+        "zone": 2
+      },
+      {
+        "name": "Burkina Faso",
+        "code": "BF",
+        "zone": 7
+      },
+      {
+        "name": "Burundi",
+        "code": "BI",
+        "zone": 7
+      },
+      {
+        "name": "Cambodia",
+        "code": "KH",
+        "zone": 6
+      },
+      {
+        "name": "Cameroon",
+        "code": "CM",
+        "zone": 7
+      },
+      {
+        "name": "Canada",
+        "code": "CA",
+        "zone": 4
+      },
+      {
+        "name": "Canary Islands, The",
+        "code": "IC",
+        "zone": 3
+      },
+      {
+        "name": "Cape Verde",
+        "code": "CV",
+        "zone": 7
+      },
+      {
+        "name": "Cayman Islands",
+        "code": "KY",
+        "zone": 7
+      },
+      {
+        "name": "Central African Rep",
+        "code": "CF",
+        "zone": 7
+      },
+      {
+        "name": "Chad",
+        "code": "TD",
+        "zone": 7
+      },
+      {
+        "name": "Chile",
+        "code": "CL",
+        "zone": 7
+      },
+      {
+        "name": "China",
+        "code": "CN",
+        "zone": 6
+      },
+      {
+        "name": "Colombia",
+        "code": "CO",
+        "zone": 7
+      },
+      {
+        "name": "Comoros",
+        "code": "KM",
+        "zone": 7
+      },
+      {
+        "name": "Congo",
+        "code": "CG",
+        "zone": 7
+      },
+      {
+        "name": "Congo, DPR",
+        "code": "CD",
+        "zone": 7
+      },
+      {
+        "name": "Cook Islands",
+        "code": "CK",
+        "zone": 7
+      },
+      {
+        "name": "Costa Rica",
+        "code": "CR",
+        "zone": 7
+      },
+      {
+        "name": "Cote D Ivoire",
+        "code": "CI",
+        "zone": 7
+      },
+      {
+        "name": "Croatia",
+        "code": "HR",
+        "zone": 2
+      },
+      {
+        "name": "Cuba",
+        "code": "CU",
+        "zone": 7
+      },
+      {
+        "name": "Curacao",
+        "code": "XC",
+        "zone": 7
+      },
+      {
+        "name": "Cyprus",
+        "code": "CY",
+        "zone": 1
+      },
+      {
+        "name": "Czech Rep., The",
+        "code": "CZ",
+        "zone": 2
+      },
+      {
+        "name": "Denmark",
+        "code": "DK",
+        "zone": 2
+      },
+      {
+        "name": "Djibouti",
+        "code": "DJ",
+        "zone": 7
+      },
+      {
+        "name": "Dominica",
+        "code": "DM",
+        "zone": 7
+      },
+      {
+        "name": "Dominican Rep.",
+        "code": "DO",
+        "zone": 7
+      },
+      {
+        "name": "Ecuador",
+        "code": "EC",
+        "zone": 7
+      },
+      {
+        "name": "Egypt",
+        "code": "EG",
+        "zone": 5
+      },
+      {
+        "name": "El Salvador",
+        "code": "SV",
+        "zone": 7
+      },
+      {
+        "name": "Eritrea",
+        "code": "ER",
+        "zone": 7
+      },
+      {
+        "name": "Estonia",
+        "code": "EE",
+        "zone": 2
+      },
+      {
+        "name": "Eswatini",
+        "code": "SZ",
+        "zone": 7
+      },
+      {
+        "name": "Ethiopia",
+        "code": "ET",
+        "zone": 7
+      },
+      {
+        "name": "Falkland Islands",
+        "code": "FK",
+        "zone": 7
+      },
+      {
+        "name": "Faroe Islands",
+        "code": "FO",
+        "zone": 3
+      },
+      {
+        "name": "Fiji",
+        "code": "FJ",
+        "zone": 7
+      },
+      {
+        "name": "Finland",
+        "code": "FI",
+        "zone": 2
+      },
+      {
+        "name": "France",
+        "code": "FR",
+        "zone": 1
+      },
+      {
+        "name": "French Guyana",
+        "code": "GF",
+        "zone": 7
+      },
+      {
+        "name": "Gabon",
+        "code": "GA",
+        "zone": 7
+      },
+      {
+        "name": "Gambia",
+        "code": "GM",
+        "zone": 7
+      },
+      {
+        "name": "Georgia",
+        "code": "GE",
+        "zone": 7
+      },
+      {
+        "name": "Germany",
+        "code": "DE",
+        "zone": 1
+      },
+      {
+        "name": "Ghana",
+        "code": "GH",
+        "zone": 7
+      },
+      {
+        "name": "Gibraltar",
+        "code": "GI",
+        "zone": 3
+      },
+      {
+        "name": "Greenland",
+        "code": "GL",
+        "zone": 3
+      },
+      {
+        "name": "Grenada",
+        "code": "GD",
+        "zone": 7
+      },
+      {
+        "name": "Guadeloupe",
+        "code": "GP",
+        "zone": 7
+      },
+      {
+        "name": "Guam",
+        "code": "GU",
+        "zone": 7
+      },
+      {
+        "name": "Guatemala",
+        "code": "GT",
+        "zone": 7
+      },
+      {
+        "name": "Guernsey",
+        "code": "GG",
+        "zone": 3
+      },
+      {
+        "name": "Guinea Rep.",
+        "code": "GN",
+        "zone": 7
+      },
+      {
+        "name": "Guinea-Bissau",
+        "code": "GW",
+        "zone": 7
+      },
+      {
+        "name": "Guinea-Equatorial",
+        "code": "GQ",
+        "zone": 7
+      },
+      {
+        "name": "Guyana (British)",
+        "code": "GY",
+        "zone": 7
+      },
+      {
+        "name": "Haiti",
+        "code": "HT",
+        "zone": 7
+      },
+      {
+        "name": "Honduras",
+        "code": "HN",
+        "zone": 7
+      },
+      {
+        "name": "Hong Kong SAR China",
+        "code": "HK",
+        "zone": 6
+      },
+      {
+        "name": "Hungary",
+        "code": "HU",
+        "zone": 2
+      },
+      {
+        "name": "Iceland",
+        "code": "IS",
+        "zone": 3
+      },
+      {
+        "name": "India",
+        "code": "IN",
+        "zone": 6
+      },
+      {
+        "name": "Indonesia",
+        "code": "ID",
+        "zone": 6
+      },
+      {
+        "name": "Iran",
+        "code": "IR",
+        "zone": 7
+      },
+      {
+        "name": "Iraq",
+        "code": "IQ",
+        "zone": 7
+      },
+      {
+        "name": "Ireland, Rep. Of",
+        "code": "IE",
+        "zone": 2
+      },
+      {
+        "name": "Israel",
+        "code": "IL",
+        "zone": 5
+      },
+      {
+        "name": "Italy",
+        "code": "IT",
+        "zone": 1
+      },
+      {
+        "name": "Jamaica",
+        "code": "JM",
+        "zone": 7
+      },
+      {
+        "name": "Japan",
+        "code": "JP",
+        "zone": 6
+      },
+      {
+        "name": "Jersey",
+        "code": "JE",
+        "zone": 3
+      },
+      {
+        "name": "Jordan",
+        "code": "JO",
+        "zone": 5
+      },
+      {
+        "name": "Kazakhstan",
+        "code": "KZ",
+        "zone": 7
+      },
+      {
+        "name": "Kenya",
+        "code": "KE",
+        "zone": 7
+      },
+      {
+        "name": "Kiribati",
+        "code": "KI",
+        "zone": 7
+      },
+      {
+        "name": "Korea, Rep. Of",
+        "code": "KR",
+        "zone": 6
+      },
+      {
+        "name": "Korea, D.P.R Of",
+        "code": "KP",
+        "zone": 6
+      },
+      {
+        "name": "Kosovo",
+        "code": "KV",
+        "zone": 3
+      },
+      {
+        "name": "Kuwait",
+        "code": "KW",
+        "zone": 5
+      },
+      {
+        "name": "Kyrgyzstan",
+        "code": "KG",
+        "zone": 7
+      },
+      {
+        "name": "Laos",
+        "code": "LA",
+        "zone": 6
+      },
+      {
+        "name": "Latvia",
+        "code": "LV",
+        "zone": 2
+      },
+      {
+        "name": "Lebanon",
+        "code": "LB",
+        "zone": 5
+      },
+      {
+        "name": "Lesotho",
+        "code": "LS",
+        "zone": 7
+      },
+      {
+        "name": "Liberia",
+        "code": "LR",
+        "zone": 7
+      },
+      {
+        "name": "Libya",
+        "code": "LY",
+        "zone": 5
+      },
+      {
+        "name": "Liechtenstein",
+        "code": "LI",
+        "zone": 3
+      },
+      {
+        "name": "Lithuania",
+        "code": "LT",
+        "zone": 2
+      },
+      {
+        "name": "Luxembourg",
+        "code": "LU",
+        "zone": 1
+      },
+      {
+        "name": "Macau SAR China",
+        "code": "MO",
+        "zone": 6
+      },
+      {
+        "name": "Madagascar",
+        "code": "MG",
+        "zone": 7
+      },
+      {
+        "name": "Malawi",
+        "code": "MW",
+        "zone": 7
+      },
+      {
+        "name": "Malaysia",
+        "code": "MY",
+        "zone": 6
+      },
+      {
+        "name": "Maldives",
+        "code": "MV",
+        "zone": 6
+      },
+      {
+        "name": "Mali",
+        "code": "ML",
+        "zone": 7
+      },
+      {
+        "name": "Malta",
+        "code": "MT",
+        "zone": 2
+      },
+      {
+        "name": "Marshall Islands",
+        "code": "MH",
+        "zone": 7
+      },
+      {
+        "name": "Martinique",
+        "code": "MQ",
+        "zone": 7
+      },
+      {
+        "name": "Mauritania",
+        "code": "MR",
+        "zone": 7
+      },
+      {
+        "name": "Mauritius",
+        "code": "MU",
+        "zone": 7
+      },
+      {
+        "name": "Mayotte",
+        "code": "YT",
+        "zone": 7
+      },
+      {
+        "name": "Mexico",
+        "code": "MX",
+        "zone": 4
+      },
+      {
+        "name": "Micronesia",
+        "code": "FM",
+        "zone": 7
+      },
+      {
+        "name": "Moldova, Rep. Of",
+        "code": "MD",
+        "zone": 7
+      },
+      {
+        "name": "Monaco",
+        "code": "MC",
+        "zone": 1
+      },
+      {
+        "name": "Mongolia",
+        "code": "MN",
+        "zone": 7
+      },
+      {
+        "name": "Montenegro, Rep Of",
+        "code": "ME",
+        "zone": 3
+      },
+      {
+        "name": "Montserrat",
+        "code": "MS",
+        "zone": 7
+      },
+      {
+        "name": "Morocco",
+        "code": "MA",
+        "zone": 5
+      },
+      {
+        "name": "Mozambique",
+        "code": "MZ",
+        "zone": 7
+      },
+      {
+        "name": "Myanmar",
+        "code": "MM",
+        "zone": 6
+      },
+      {
+        "name": "Namibia",
+        "code": "NA",
+        "zone": 7
+      },
+      {
+        "name": "Nauru, Rep. Of",
+        "code": "NR",
+        "zone": 7
+      },
+      {
+        "name": "Nepal",
+        "code": "NP",
+        "zone": 6
+      },
+      {
+        "name": "Netherlands, The",
+        "code": "NL",
+        "zone": 1
+      },
+      {
+        "name": "Nevis",
+        "code": "XN",
+        "zone": 7
+      },
+      {
+        "name": "New Caledonia",
+        "code": "NC",
+        "zone": 7
+      },
+      {
+        "name": "New Zealand",
+        "code": "NZ",
+        "zone": 7
+      },
+      {
+        "name": "Nicaragua",
+        "code": "NI",
+        "zone": 7
+      },
+      {
+        "name": "Niger",
+        "code": "NE",
+        "zone": 7
+      },
+      {
+        "name": "Nigeria",
+        "code": "NG",
+        "zone": 7
+      },
+      {
+        "name": "Niue",
+        "code": "NU",
+        "zone": 7
+      },
+      {
+        "name": "North Macedonia",
+        "code": "MK",
+        "zone": 3
+      },
+      {
+        "name": "Northern Mariana Islands",
+        "code": "MP",
+        "zone": 7
+      },
+      {
+        "name": "Norway",
+        "code": "NO",
+        "zone": 3
+      },
+      {
+        "name": "Oman",
+        "code": "OM",
+        "zone": 5
+      },
+      {
+        "name": "Pakistan",
+        "code": "PK",
+        "zone": 6
+      },
+      {
+        "name": "Palau",
+        "code": "PW",
+        "zone": 7
+      },
+      {
+        "name": "Panama",
+        "code": "PA",
+        "zone": 7
+      },
+      {
+        "name": "Papua New Guinea",
+        "code": "PG",
+        "zone": 7
+      },
+      {
+        "name": "Paraguay",
+        "code": "PY",
+        "zone": 7
+      },
+      {
+        "name": "Peru",
+        "code": "PE",
+        "zone": 7
+      },
+      {
+        "name": "Philippines, The",
+        "code": "PH",
+        "zone": 6
+      },
+      {
+        "name": "Poland",
+        "code": "PL",
+        "zone": 2
+      },
+      {
+        "name": "Portugal",
+        "code": "PT",
+        "zone": 2
+      },
+      {
+        "name": "Puerto Rico",
+        "code": "PR",
+        "zone": 7
+      },
+      {
+        "name": "Qatar",
+        "code": "QA",
+        "zone": 5
+      },
+      {
+        "name": "Reunion, Island Of",
+        "code": "RE",
+        "zone": 7
+      },
+      {
+        "name": "Romania",
+        "code": "RO",
+        "zone": 2
+      },
+      {
+        "name": "Russian Federation",
+        "code": "RU",
+        "zone": 7
+      },
+      {
+        "name": "Rwanda",
+        "code": "RW",
+        "zone": 7
+      },
+      {
+        "name": "Saint Helena",
+        "code": "SH",
+        "zone": 7
+      },
+      {
+        "name": "Samoa",
+        "code": "WS",
+        "zone": 7
+      },
+      {
+        "name": "San Marino",
+        "code": "SM",
+        "zone": 3
+      },
+      {
+        "name": "Sao Tome And Principe",
+        "code": "ST",
+        "zone": 7
+      },
+      {
+        "name": "Saudi Arabia",
+        "code": "SA",
+        "zone": 5
+      },
+      {
+        "name": "Senegal",
+        "code": "SN",
+        "zone": 7
+      },
+      {
+        "name": "Serbia, Rep. Of",
+        "code": "RS",
+        "zone": 3
+      },
+      {
+        "name": "Seychelles",
+        "code": "SC",
+        "zone": 7
+      },
+      {
+        "name": "Sierra Leone",
+        "code": "SL",
+        "zone": 7
+      },
+      {
+        "name": "Singapore",
+        "code": "SG",
+        "zone": 6
+      },
+      {
+        "name": "Slovakia",
+        "code": "SK",
+        "zone": 2
+      },
+      {
+        "name": "Slovenia",
+        "code": "SI",
+        "zone": 2
+      },
+      {
+        "name": "Solomon Islands",
+        "code": "SB",
+        "zone": 7
+      },
+      {
+        "name": "Somalia Hargeisa",
+        "code": "XS",
+        "zone": 7
+      },
+      {
+        "name": "Somalia Mogadishu",
+        "code": "SO",
+        "zone": 7
+      },
+      {
+        "name": "South Africa",
+        "code": "ZA",
+        "zone": 7
+      },
+      {
+        "name": "South Sudan",
+        "code": "SS",
+        "zone": 7
+      },
+      {
+        "name": "Spain",
+        "code": "ES",
+        "zone": 2
+      },
+      {
+        "name": "Sri Lanka",
+        "code": "LK",
+        "zone": 6
+      },
+      {
+        "name": "St. Barthelemy",
+        "code": "XY",
+        "zone": 7
+      },
+      {
+        "name": "St. Eustatius",
+        "code": "XE",
+        "zone": 7
+      },
+      {
+        "name": "St. Kitts",
+        "code": "KN",
+        "zone": 7
+      },
+      {
+        "name": "St. Lucia",
+        "code": "LC",
+        "zone": 7
+      },
+      {
+        "name": "St. Maarten",
+        "code": "XM",
+        "zone": 7
+      },
+      {
+        "name": "St. Vincent",
+        "code": "VC",
+        "zone": 7
+      },
+      {
+        "name": "Sudan",
+        "code": "SD",
+        "zone": 7
+      },
+      {
+        "name": "Suriname",
+        "code": "SR",
+        "zone": 7
+      },
+      {
+        "name": "Sweden",
+        "code": "SE",
+        "zone": 2
+      },
+      {
+        "name": "Switzerland",
+        "code": "CH",
+        "zone": 3
+      },
+      {
+        "name": "Syria",
+        "code": "SY",
+        "zone": 7
+      },
+      {
+        "name": "Tahiti",
+        "code": "PF",
+        "zone": 7
+      },
+      {
+        "name": "Taiwan",
+        "code": "TW",
+        "zone": 6
+      },
+      {
+        "name": "Tajikistan",
+        "code": "TJ",
+        "zone": 7
+      },
+      {
+        "name": "Tanzania",
+        "code": "TZ",
+        "zone": 7
+      },
+      {
+        "name": "Thailand",
+        "code": "TH",
+        "zone": 6
+      },
+      {
+        "name": "Timor-Leste",
+        "code": "TL",
+        "zone": 7
+      },
+      {
+        "name": "Togo",
+        "code": "TG",
+        "zone": 7
+      },
+      {
+        "name": "Tonga",
+        "code": "TO",
+        "zone": 7
+      },
+      {
+        "name": "Trinidad And Tobago",
+        "code": "TT",
+        "zone": 7
+      },
+      {
+        "name": "Tunisia",
+        "code": "TN",
+        "zone": 5
+      },
+      {
+        "name": "Turkey",
+        "code": "TR",
+        "zone": 3
+      },
+      {
+        "name": "Turkmenistan",
+        "code": "TM",
+        "zone": 7
+      },
+      {
+        "name": "Turks & Caicos",
+        "code": "TC",
+        "zone": 7
+      },
+      {
+        "name": "Tuvalu",
+        "code": "TV",
+        "zone": 7
+      },
+      {
+        "name": "USA",
+        "code": "US",
+        "zone": 4
+      },
+      {
+        "name": "Uganda",
+        "code": "UG",
+        "zone": 7
+      },
+      {
+        "name": "Ukraine",
+        "code": "UA",
+        "zone": 5
+      },
+      {
+        "name": "United Arab Emirates",
+        "code": "AE",
+        "zone": 5
+      },
+      {
+        "name": "United Kingdom",
+        "code": "GB",
+        "zone": 1
+      },
+      {
+        "name": "Uruguay",
+        "code": "UY",
+        "zone": 7
+      },
+      {
+        "name": "Uzbekistan",
+        "code": "UZ",
+        "zone": 7
+      },
+      {
+        "name": "Vanuatu",
+        "code": "VU",
+        "zone": 7
+      },
+      {
+        "name": "Vatican City",
+        "code": "VA",
+        "zone": 1
+      },
+      {
+        "name": "Venezuela",
+        "code": "VE",
+        "zone": 7
+      },
+      {
+        "name": "Vietnam",
+        "code": "VN",
+        "zone": 6
+      },
+      {
+        "name": "Virgin Islands-British",
+        "code": "VG",
+        "zone": 7
+      },
+      {
+        "name": "Virgin Islands-US",
+        "code": "VI",
+        "zone": 7
+      },
+      {
+        "name": "Yemen, Rep. Of",
+        "code": "YE",
+        "zone": 7
+      },
+      {
+        "name": "Zambia",
+        "code": "ZM",
+        "zone": 7
+      },
+      {
+        "name": "Zimbabwe",
+        "code": "ZW",
+        "zone": 7
+      }
+    ]
+  },
+  "road": {
+    "services": [
+      "S1010",
+      "S1041"
+    ],
+    "zones": [
+      {
+        "name": "Albania",
+        "code": "AL",
+        "zone": 3
+      },
+      {
+        "name": "Austria",
+        "code": "AT",
+        "zone": 2
+      },
+      {
+        "name": "Belgium",
+        "code": "BE",
+        "zone": 1
+      },
+      {
+        "name": "Bosnia & Herzegovina",
+        "code": "BA",
+        "zone": 3
+      },
+      {
+        "name": "Bulgaria",
+        "code": "BG",
+        "zone": 2
+      },
+      {
+        "name": "Croatia",
+        "code": "HR",
+        "zone": 2
+      },
+      {
+        "name": "Czech Rep., The",
+        "code": "CZ",
+        "zone": 2
+      },
+      {
+        "name": "Denmark",
+        "code": "DK",
+        "zone": 2
+      },
+      {
+        "name": "Estonia",
+        "code": "EE",
+        "zone": 2
+      },
+      {
+        "name": "Finland",
+        "code": "FI",
+        "zone": 2
+      },
+      {
+        "name": "France",
+        "code": "FR",
+        "zone": 1
+      },
+      {
+        "name": "Germany",
+        "code": "DE",
+        "zone": 1
+      },
+      {
+        "name": "Hungary",
+        "code": "HU",
+        "zone": 2
+      },
+      {
+        "name": "Ireland, Rep. Of",
+        "code": "IE",
+        "zone": 2
+      },
+      {
+        "name": "Italy",
+        "code": "IT",
+        "zone": 1
+      },
+      {
+        "name": "Latvia",
+        "code": "LV",
+        "zone": 2
+      },
+      {
+        "name": "Liechtenstein",
+        "code": "LI",
+        "zone": 3
+      },
+      {
+        "name": "Lithuania",
+        "code": "LT",
+        "zone": 2
+      },
+      {
+        "name": "Luxembourg",
+        "code": "LU",
+        "zone": 1
+      },
+      {
+        "name": "Monaco",
+        "code": "MC",
+        "zone": 1
+      },
+      {
+        "name": "Netherlands, The",
+        "code": "NL",
+        "zone": 1
+      },
+      {
+        "name": "North Macedonia",
+        "code": "MK",
+        "zone": 3
+      },
+      {
+        "name": "Norway",
+        "code": "NO",
+        "zone": 3
+      },
+      {
+        "name": "Poland",
+        "code": "PL",
+        "zone": 2
+      },
+      {
+        "name": "Portugal",
+        "code": "PT",
+        "zone": 2
+      },
+      {
+        "name": "Romania",
+        "code": "RO",
+        "zone": 2
+      },
+      {
+        "name": "San Marino",
+        "code": "SM",
+        "zone": 3
+      },
+      {
+        "name": "Serbia, Rep. Of",
+        "code": "RS",
+        "zone": 3
+      },
+      {
+        "name": "Slovakia",
+        "code": "SK",
+        "zone": 2
+      },
+      {
+        "name": "Slovenia",
+        "code": "SI",
+        "zone": 2
+      },
+      {
+        "name": "Spain",
+        "code": "ES",
+        "zone": 2
+      },
+      {
+        "name": "Sweden",
+        "code": "SE",
+        "zone": 2
+      },
+      {
+        "name": "Switzerland",
+        "code": "CH",
+        "zone": 3
+      },
+      {
+        "name": "Turkey",
+        "code": "TR",
+        "zone": 3
+      },
+      {
+        "name": "United Kingdom",
+        "code": "GB",
+        "zone": 1
+      },
+      {
+        "name": "Vatican City",
+        "code": "VA",
+        "zone": 1
+      }
+    ]
+  }
+}
