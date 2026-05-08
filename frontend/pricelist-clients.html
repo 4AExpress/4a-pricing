@@ -1,4 +1,4 @@
-<!-- pricelist-clients.html | v1.1 | 08-05-2026 -->
+<!-- pricelist-clients.html | v1.2 | 08-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -284,6 +284,7 @@
 </div>
 
 <script>
+const API = 'https://4aexpress.com/api';
 const SVC_NAMES = {
   S1003:'✈️↗️ Express Export', S1012:'✈️🇬🇷↙️ Express Import',
   S1010:'🚛↗️ Economy Export', S1041:'🚛🇬🇷↙️ Economy Import'
@@ -309,12 +310,23 @@ function nextOfferNumber(){
   return `4A-${y}-${String((nums.length?Math.max(...nums):0)+1).padStart(4,'0')}`;
 }
 
-function init(){
+async function init(){
   currentUser=JSON.parse(localStorage.getItem('4a_current_user')||'null');
   if(!currentUser){ window.location.href='pricelist-editor.html'; return; }
   document.getElementById('topbar-user').textContent=`${currentUser.name} · ${currentUser.office}`;
   shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
-  clients=JSON.parse(localStorage.getItem('4a_clients')||'[]');
+  try {
+    const rc = await fetch(`${API}/clients.php?v=${Date.now()}`);
+    const remote = await rc.json();
+    if (Array.isArray(remote) && remote.length > 0) {
+      clients = remote;
+      localStorage.setItem('4a_clients', JSON.stringify(clients));
+    } else {
+      clients = JSON.parse(localStorage.getItem('4a_clients')||'[]');
+    }
+  } catch(e) {
+    clients = JSON.parse(localStorage.getItem('4a_clients')||'[]');
+  }
   managers=currentUser.email?[currentUser.email]:[];
   updateOfferNum(); renderManagers(); renderClients();
 }
@@ -434,7 +446,13 @@ function saveClient(){
     date:todayFmt(), created_at:new Date().toISOString()
   };
   clients=editingId?clients.map(c=>c.id===editingId?client:c):[client,...clients];
-  localStorage.setItem('4a_clients',JSON.stringify(clients));
+   localStorage.setItem('4a_clients',JSON.stringify(clients));
+  fetch(`${API}/clients.php`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action:'save', ...client})
+  }).then(r=>r.json()).then(d=>console.log('API client save:', d))
+    .catch(e=>console.error('API client error:', e));
   alert(`✅ "${name}" αποθηκεύτηκε\nΑρ. Προσφοράς: ${offerNum}`);
   resetForm(); renderClients();
 }
@@ -462,16 +480,19 @@ function editClient(id){
   renderPlTags(); renderSurcharges(); renderManagers(); updateOfferNum(); checkForm();
   window.scrollTo({top:0,behavior:'smooth'});
 }
-
 function deleteClient(id){
   const c=clients.find(cl=>cl.id===id); if(!c)return;
   if(!confirm(`Διαγραφή "${c.name}";`))return;
   clients=clients.filter(cl=>cl.id!==id);
   localStorage.setItem('4a_clients',JSON.stringify(clients));
-  if(editingId===id)resetForm();
+  fetch(`${API}/clients.php`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action:'delete', id})
+  });
+   if(editingId===id)resetForm();
   renderClients();
 }
-
 function renderClients(){
   const el=document.getElementById('clients-list');
   document.getElementById('client-count').textContent=clients.length;
