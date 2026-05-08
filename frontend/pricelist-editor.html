@@ -10,8 +10,6 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #1a1a1a; min-height: 100vh; }
-
-  /* TOPBAR */
   .topbar { background: #cc0000; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 42px; }
   .topbar-left { display: flex; align-items: center; gap: 12px; }
   .topbar-logo { display: flex; align-items: center; gap: 6px; }
@@ -20,8 +18,6 @@
   .topbar-title { color: white; font-size: 13px; font-weight: 500; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 12px; margin-left: 4px; }
   .topbar-user { color: white; font-size: 11px; opacity: 0.9; }
   .topbar-logout { background: rgba(255,255,255,0.2); color: white; border: none; padding: 4px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; }
-
-  /* LOGIN */
   .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f0f0f0; }
   .login-box { background: white; border-radius: 8px; padding: 32px; width: 340px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
   .login-logo { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; justify-content: center; }
@@ -35,24 +31,16 @@
   .login-error { font-size: 12px; color: #c62828; margin-bottom: 10px; text-align: center; min-height: 18px; }
   .login-btn { width: 100%; padding: 10px; background: #cc0000; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer; }
   .login-btn:hover { background: #aa0000; }
-
-  /* NAV */
   .nav { background: white; border-bottom: 1px solid #ddd; display: flex; gap: 0; }
-  .nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer; color: #666; border-bottom: 2px solid transparent; }
+  .nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer; color: #666; border-bottom: 2px solid transparent; text-decoration: none; display: flex; align-items: center; }
   .nav-btn.active { color: #cc0000; border-bottom-color: #cc0000; font-weight: 600; }
   .nav-btn:hover { background: #f8f8f8; }
-
-  /* CONTAINER */
   .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
   .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
   .page-title { font-size: 20px; font-weight: 600; color: #222; margin-bottom: 3px; }
   .page-sub { font-size: 12px; color: #888; }
-
-  /* SECTIONS */
   .section-header { background: #00BCD4; color: white; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 4px 4px 0 0; }
   .section-body { background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; padding: 16px; margin-bottom: 20px; }
-
-  /* SERVICE CARDS */
   .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
   .svc-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 14px; background: #fafafa; transition: all 0.2s; }
   .svc-card.has-error { border-color: #e53935; background: #fff8f8; }
@@ -81,8 +69,6 @@
   .save-svc-btn { width: 100%; margin-top: 10px; padding: 7px; background: #00BCD4; color: white; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; display: none; }
   .save-svc-btn:hover { background: #0097a7; }
   .save-svc-btn.visible { display: block; }
-
-  /* SHELF */
   .shelf-tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
   .shelf-tab { padding: 6px 14px; font-size: 12px; border: 1px solid #ddd; border-bottom: none; border-radius: 4px 4px 0 0; background: #f0f0f0; cursor: pointer; color: #666; }
   .shelf-tab.active { background: #00BCD4; color: white; border-color: #00BCD4; }
@@ -96,15 +82,6 @@
   .btn-export { background: #e8f5e9; color: #2e7d32; }
   .btn-delete { background: #ffebee; color: #c62828; }
   .shelf-empty { text-align: center; padding: 24px; color: #bbb; font-size: 13px; }
-
-  /* CLIENTS */
-  .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
-  .form-group { display: flex; flex-direction: column; gap: 4px; }
-  .form-group label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
-  .form-group input, .form-group select { padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
-  .form-group input:focus, .form-group select:focus { outline: none; border-color: #00BCD4; }
-
-  /* MODAL */
   .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
   .modal { background: white; border-radius: 8px; padding: 24px; width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
   .modal-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 16px; }
@@ -115,15 +92,12 @@
   .btn { padding: 8px 16px; border: none; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; }
   .btn-primary { background: #cc0000; color: white; }
   .btn-secondary { background: #f0f0f0; color: #555; }
-
   .fc-info { font-size: 11px; color: #888; background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px 12px; margin-bottom: 14px; }
   .loading { text-align: center; padding: 30px; color: #aaa; }
-  .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen" class="login-wrap">
   <div class="login-box">
     <div class="login-logo">
@@ -144,7 +118,6 @@
   </div>
 </div>
 
-<!-- APP -->
 <div id="app-screen" style="display:none;">
   <div class="topbar">
     <div class="topbar-left">
@@ -163,12 +136,11 @@
   <div class="nav">
     <button class="nav-btn active" onclick="showTab('editor', this)">+ Νέος Τιμοκατάλογος</button>
     <button class="nav-btn" onclick="showTab('shelf', this)">📦 Ράφι</button>
-    <button class="nav-btn" onclick="showTab('clients', this)">👥 Πελάτες</button>
+    <a class="nav-btn" href="pricelist-clients.html">👥 Πελάτες</a>
   </div>
 
   <div class="container">
 
-    <!-- EDITOR -->
     <div id="tab-editor">
       <div class="page-header">
         <div>
@@ -185,7 +157,6 @@
       </div>
     </div>
 
-    <!-- SHELF -->
     <div id="tab-shelf" style="display:none;">
       <div class="page-header">
         <div>
@@ -197,49 +168,9 @@
       <div class="shelf-content" id="shelf-content"></div>
     </div>
 
-    <!-- CLIENTS -->
-    <div id="tab-clients" style="display:none;">
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">Πελάτες</h1>
-          <p class="page-sub">Δημιουργία πελατών και ανάθεση τιμοκαταλόγων</p>
-        </div>
-      </div>
-      <div class="section-header">Νέος Πελάτης</div>
-      <div class="section-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Επωνυμία</label>
-            <input type="text" id="cl-name" placeholder="Επωνυμία πελάτη" />
-          </div>
-          <div class="form-group">
-            <label>AccountNo</label>
-            <input type="text" id="cl-account" placeholder="π.χ. 30004041" />
-          </div>
-          <div class="form-group">
-            <label>Κατάσταση</label>
-            <select id="cl-status">
-              <option value="prospect">Υποψήφιος</option>
-              <option value="active">Ενεργός</option>
-            </select>
-          </div>
-        </div>
-        <div class="section-header" style="border-radius:4px; margin-bottom:10px;">Ανάθεση Τιμοκαταλόγων</div>
-        <div id="cl-pricelists" class="form-row"></div>
-        <div class="btn-row">
-          <button class="btn btn-primary" onclick="saveClient()">Αποθήκευση Πελάτη</button>
-        </div>
-      </div>
-      <div class="section-header">Λίστα Πελατών</div>
-      <div class="section-body" id="clients-list">
-        <div class="shelf-empty">Δεν υπάρχουν πελάτες</div>
-      </div>
-    </div>
-
   </div>
 </div>
 
-<!-- MODAL -->
 <div id="modal-bg" class="modal-bg" style="display:none;">
   <div class="modal">
     <div class="modal-title" id="modal-title">Αποθήκευση Τιμοκαταλόγου</div>
@@ -259,7 +190,6 @@
 </div>
 
 <script>
-// === CONFIG ===
 const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 const PIN  = '1111';
 const SERVICES = [
@@ -269,25 +199,17 @@ const SERVICES = [
   { id:'S1041', name:'🚛🇬🇷↙️ Economy Import', mode:'ROAD / Εσωτερικό', file:'dhl_tariff_2026_S1041.json' },
 ];
 
-// === STATE ===
-let currentUser  = null;
-let dhlData      = {};
-let fuelData     = null;
-let markups      = {};
-let pendingSvc   = null; // service που αποθηκεύεται
-let shelf        = JSON.parse(localStorage.getItem('4a_shelf')   || '{}'); // { S1003: [...], ... }
-let clients      = JSON.parse(localStorage.getItem('4a_clients') || '[]');
+let currentUser = null;
+let dhlData = {}, fuelData = null, markups = {}, pendingSvc = null;
+let shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
 let activeShelfTab = SERVICES[0].id;
 
-// === LOGIN ===
 function doLogin() {
   const sel = document.getElementById('login-user').value;
   const pin = document.getElementById('login-pin').value;
   const err = document.getElementById('login-error');
-
   if (!sel) { err.textContent = 'Επιλέξτε χρήστη'; return; }
   if (pin !== PIN) { err.textContent = 'Λάθος PIN'; return; }
-
   const parts = sel.split('|');
   currentUser = { name: parts[0], office: parts[1], role: parts[2] };
   localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
@@ -297,31 +219,23 @@ function doLogin() {
   init();
 }
 
-document.getElementById('login-pin').addEventListener('keyup', e => {
-  if (e.key === 'Enter') doLogin();
-});
+document.getElementById('login-pin').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
 
 function doLogout() {
-  currentUser = null;
-  markups     = {};
+  currentUser = null; markups = {};
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-screen').style.display   = 'none';
-  document.getElementById('login-pin').value  = '';
+  document.getElementById('login-pin').value = '';
   document.getElementById('login-error').textContent = '';
 }
 
-// Ανανέωση ράφι όταν ο χρήστης επιστρέφει στη σελίδα (από πίνακα)
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible') {
-    shelf    = JSON.parse(localStorage.getItem('4a_shelf')   || '{}');
-    clients  = JSON.parse(localStorage.getItem('4a_clients') || '[]');
+    shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
     renderShelf();
-    renderClientPricelists();
-    renderClientsList();
   }
 });
 
-// === DATE HELPERS ===
 function formatDate(isoStr) {
   if (!isoStr) return '—';
   if (/^\d{2}-\d{2}-\d{4}$/.test(isoStr)) return isoStr;
@@ -331,13 +245,10 @@ function formatDate(isoStr) {
 }
 function todayFormatted() { return formatDate(new Date().toISOString()); }
 
-// === INIT ===
 async function init() {
   await Promise.all([loadDHL(), loadFuel()]);
   renderServices();
   renderShelf();
-  renderClientPricelists();
-  renderClientsList();
 }
 
 async function loadDHL() {
@@ -359,7 +270,6 @@ async function loadFuel() {
   }
 }
 
-// === SERVICES ===
 function getFcPct(svc) {
   if (!fuelData) return 0;
   return svc.mode.includes('AIR') ? (fuelData.current_air||0) : (fuelData.current_road||0);
@@ -407,7 +317,6 @@ function renderServices() {
       profit: (cost * (1 + parseFloat(mu)/100) - cost - cost * fcPct/100).toFixed(2),
       pct:    ((cost * (1 + parseFloat(mu)/100) - cost - cost * fcPct/100) / (cost + cost * fcPct/100) * 100).toFixed(1)
     } : null;
-
     return `
     <div class="svc-card ${cls}" id="card-${svc.id}">
       <div class="svc-header">
@@ -433,13 +342,11 @@ function renderServices() {
         <div class="preview-item"><span class="preview-label">Τιμή πελάτη</span><span class="preview-value price">${calc.price}€</span></div>
         <div class="preview-item"><span class="preview-label">Κέρδος</span><span class="preview-value profit">${calc.profit}€ (${calc.pct}%)</span></div>
       </div>` : ''}
-      <button class="save-svc-btn ${v?.ok ? 'visible' : ''}" id="savebtn-${svc.id}"
-        onclick="openModal('${svc.id}')">
+      <button class="save-svc-btn ${v?.ok ? 'visible' : ''}" id="savebtn-${svc.id}" onclick="openModal('${svc.id}')">
         💾 Αποθήκευση στο Ράφι ${svc.id}
       </button>
       <button class="save-svc-btn ${v?.ok ? 'visible' : ''}" id="tablebtn-${svc.id}"
-        style="background:#cc0000; margin-top:4px;"
-        onclick="openTable('${svc.id}')">
+        style="background:#cc0000; margin-top:4px;" onclick="openTable('${svc.id}')">
         ▶ Ανάπτυξη Πίνακα ${svc.id}
       </button>
     </div>`;
@@ -448,24 +355,20 @@ function renderServices() {
 
 function onMarkup(serviceId, value) {
   markups[serviceId] = value ? parseFloat(value) : null;
-  const svc  = SERVICES.find(s => s.id === serviceId);
+  const svc   = SERVICES.find(s => s.id === serviceId);
   const fcPct = getFcPct(svc);
   const cost  = getSampleCost(serviceId);
   const mu    = value ? parseFloat(value) : null;
   const v     = mu ? validate(serviceId, mu) : null;
-
   document.getElementById(`card-${serviceId}`).className = 'svc-card ' + (!mu ? '' : v?.ok ? 'is-valid' : 'has-error');
   document.getElementById(`icon-${serviceId}`).textContent = !mu ? '○' : v?.ok ? '✅' : '🔴';
   const msgEl = document.getElementById(`msg-${serviceId}`);
   msgEl.className   = 'validation-msg ' + (v ? (v.ok?'ok':'error') : '');
   msgEl.textContent = v?.msg || '';
-
   const saveBtn  = document.getElementById(`savebtn-${serviceId}`);
   const tableBtn = document.getElementById(`tablebtn-${serviceId}`);
   saveBtn.className  = 'save-svc-btn ' + (v?.ok ? 'visible' : '');
-  if (tableBtn) tableBtn.className = 'save-svc-btn ' + (v?.ok ? 'visible' : '') + ' ';
-
-  // Preview update
+  if (tableBtn) tableBtn.className = 'save-svc-btn ' + (v?.ok ? 'visible' : '');
   const card = document.getElementById(`card-${serviceId}`);
   const existing = card.querySelector('.preview-row');
   if (mu && cost && v?.ok) {
@@ -483,12 +386,9 @@ function onMarkup(serviceId, value) {
     </div>`;
     if (existing) existing.outerHTML = html;
     else saveBtn.insertAdjacentHTML('beforebegin', html);
-  } else if (existing) {
-    existing.remove();
-  }
+  } else if (existing) { existing.remove(); }
 }
 
-// === MODAL ===
 function openTable(serviceId) {
   const mu = markups[serviceId];
   if (!mu) { alert('Εισάγετε πρώτα markup %'); return; }
@@ -515,38 +415,27 @@ function confirmSave() {
   const name    = document.getElementById('modal-name').value.trim();
   const account = document.getElementById('modal-account').value.trim();
   if (!name) { alert('Εισάγετε όνομα'); return; }
-
   const svcId = pendingSvc;
   const svc   = SERVICES.find(s => s.id === svcId);
   const mu    = markups[svcId];
-
   if (!shelf[svcId]) shelf[svcId] = [];
   shelf[svcId].unshift({
-    id:         Date.now(),
-    name,
-    service_id: svcId,
-    service_name: svc.name,
-    markup:     mu,
-    account:    account || '—',
-    user:       currentUser.name,
-    office:     currentUser.office,
-    date:       todayFormatted(),
-    created_at: new Date().toISOString()
+    id: Date.now(), name,
+    service_id: svcId, service_name: svc.name,
+    markup: mu, global_markup: mu,
+    account: account || '—',
+    user: currentUser.name, office: currentUser.office,
+    date: todayFormatted(), created_at: new Date().toISOString()
   });
-
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
   closeModal();
-
-  // Reset markup για αυτό το service
   markups[svcId] = null;
   document.getElementById(`markup-${svcId}`).value = '';
   onMarkup(svcId, '');
-
-  renderClientPricelists();
+  renderShelf();
   alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${svcId}!`);
 }
 
-// === SHELF ===
 function renderShelf() {
   const tabsEl = document.getElementById('shelf-tabs');
   tabsEl.innerHTML = SERVICES.map(svc => `
@@ -575,10 +464,9 @@ function renderShelfContent() {
     <div class="shelf-item">
       <div>
         <div class="shelf-name">${p.name}</div>
-        <div class="shelf-meta">${formatDate(p.date)} · ${p.user || '—'} · ${p.office || '—'} · Markup: ${p.markup || p.global_markup || '—'}% · AccountNo: ${p.account}</div>
+        <div class="shelf-meta">${formatDate(p.date)} · ${p.user||'—'} · ${p.office||'—'} · Markup: ${p.markup||p.global_markup||'—'}% · AccountNo: ${p.account}</div>
       </div>
       <div class="shelf-actions">
-        <button class="btn-small btn-export" onclick="exportCMS('${activeShelfTab}', ${p.id})">↓ CMS Export</button>
         <button class="btn-small btn-delete" onclick="deleteShelfItem('${activeShelfTab}', ${p.id})">Διαγραφή</button>
       </div>
     </div>`).join('');
@@ -589,98 +477,13 @@ function deleteShelfItem(svcId, id) {
   shelf[svcId] = (shelf[svcId]||[]).filter(p => p.id !== id);
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
   renderShelf();
-  renderClientPricelists();
-}
-
-function exportCMS(svcId, id) {
-  const item = (shelf[svcId]||[]).find(p => p.id === id);
-  if (!item) return;
-  alert(`CMS Export: "${item.name}" — ${svcId} markup ${item.markup}%\nΘα υλοποιηθεί στο επόμενο βήμα (σύνδεση με generate_cms_import.py)`);
-}
-
-// === CLIENTS ===
-function renderClientPricelists() {
-  const el = document.getElementById('cl-pricelists');
-  if (!el) return;
-  el.innerHTML = SERVICES.map(svc => {
-    const options = (shelf[svc.id]||[]).map(p =>
-      `<option value="${p.id}">${p.name} (${p.markup}%)</option>`).join('');
-    return `
-    <div class="form-group">
-      <label>${svc.id} — ${svc.name}</label>
-      <select id="cl-pl-${svc.id}">
-        <option value="">— Χωρίς —</option>
-        ${options}
-      </select>
-    </div>`;
-  }).join('');
-}
-
-function saveClient() {
-  const name    = document.getElementById('cl-name').value.trim();
-  const account = document.getElementById('cl-account').value.trim();
-  const status  = document.getElementById('cl-status').value;
-  if (!name || !account) { alert('Συμπληρώστε επωνυμία και AccountNo'); return; }
-
-  const assigned = {};
-  SERVICES.forEach(svc => {
-    const val = document.getElementById(`cl-pl-${svc.id}`)?.value;
-    if (val) {
-      const item = (shelf[svc.id]||[]).find(p => p.id === parseInt(val));
-      if (item) assigned[svc.id] = { id: item.id, name: item.name, markup: item.markup };
-    }
-  });
-
-  clients.unshift({
-    id: Date.now(), name, account, status,
-    assigned,
-    user:       currentUser.name,
-    created_at: todayFormatted()
-  });
-  localStorage.setItem('4a_clients', JSON.stringify(clients));
-  alert(`✅ Πελάτης "${name}" αποθηκεύτηκε!`);
-  renderClientsList();
-}
-
-function renderClientsList() {
-  const el = document.getElementById('clients-list');
-  if (!clients.length) { el.innerHTML = '<div class="shelf-empty">Δεν υπάρχουν πελάτες</div>'; return; }
-  el.innerHTML = clients.map(c => {
-    const svcs = Object.entries(c.assigned||{}).map(([k,v]) => `${k}(${v.markup}%)`).join(', ') || '—';
-    return `
-    <div class="shelf-item">
-      <div>
-        <div class="shelf-name">${c.name} <span style="font-size:11px;color:#aaa">(${c.account})</span></div>
-        <div class="shelf-meta">${c.status==='active'?'🟢 Ενεργός':'🟡 Υποψήφιος'} · ${formatDate(c.created_at)} · ${c.user} · Τιμοκατάλογοι: ${svcs}</div>
-      </div>
-      <div class="shelf-actions">
-        <button class="btn-small btn-export" onclick="exportClientCMS(${c.id})">↓ CMS Export</button>
-        <button class="btn-small btn-delete" onclick="deleteClient(${c.id})">Διαγραφή</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function deleteClient(id) {
-  if (!confirm('Διαγραφή πελάτη;')) return;
-  clients = clients.filter(c => c.id !== id);
-  localStorage.setItem('4a_clients', JSON.stringify(clients));
-  renderClientsList();
-}
-
-function exportClientCMS(id) {
-  const c = clients.find(cl => cl.id === id);
-  if (!c) return;
-  const svcs = Object.entries(c.assigned||{}).map(([k,v]) => `${k}:${v.markup}%`).join(', ');
-  alert(`CMS Export για "${c.name}" (${c.account})\nServices: ${svcs}\n\nΘα υλοποιηθεί στο επόμενο βήμα.`);
 }
 
 function showTab(name, btn) {
-  ['editor','shelf','clients'].forEach(t => document.getElementById('tab-'+t).style.display = t===name?'':'none');
+  ['editor','shelf'].forEach(t => document.getElementById('tab-'+t).style.display = t===name?'':'none');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  if (name === 'shelf')   renderShelf();
-  if (name === 'clients') { renderClientPricelists(); renderClientsList(); }
+  if (name === 'shelf') renderShelf();
 }
 </script>
 </body>
