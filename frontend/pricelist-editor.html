@@ -1,4 +1,4 @@
-<a class="nav-btn active" href="pricelist-clients.html">👥 Πελάτες</a>
+'<!-- pricelist-editor.html | v1.3 | 08-05-2026 -->'
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -192,6 +192,7 @@
 
 <script>
 const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
+const API  = 'https://4aexpress.com/api';
 const PIN  = '1111';
 const SERVICES = [
   { id:'S1003', name:'✈️↗️ Express Export',    mode:'AIR / Διεθνής',    file:'dhl_tariff_2026_S1003.json' },
@@ -202,7 +203,7 @@ const SERVICES = [
 
 let currentUser = null;
 let dhlData = {}, fuelData = null, markups = {}, pendingSvc = null;
-let shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
+let shelf = {};
 let activeShelfTab = SERVICES[0].id;
 
 function doLogin() {
@@ -261,6 +262,16 @@ function todayFormatted() { return formatDate(new Date().toISOString()); }
 
 async function init() {
   await Promise.all([loadDHL(), loadFuel()]);
+ try {
+  const r = await fetch(`${API}/shelf.php`);
+  const remote = await r.json();
+  if (Object.keys(remote).length > 0) {
+    shelf = remote;
+    localStorage.setItem('4a_shelf', JSON.stringify(shelf));
+  }
+} catch(e) {
+  shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
+}
   renderServices();
   renderShelf();
 }
@@ -443,6 +454,11 @@ function confirmSave() {
   });
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
   closeModal();
+ fetch(`${API}/shelf.php`, {
+  method: 'POST',
+  headers: {'Content-Type':'application/json'},
+  body: JSON.stringify({action:'save', ...shelf[svcId][0]})
+});
   markups[svcId] = null;
   document.getElementById(`markup-${svcId}`).value = '';
   onMarkup(svcId, '');
