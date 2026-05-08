@@ -1,0 +1,243 @@
+<!-- zones.html | v1.0 | 08-05-2026 -->
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4A Express — Ζώνες DHL</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #1a1a1a; min-height: 100vh; }
+  .topbar { background: #cc0000; padding: 0 20px; display: flex; align-items: center; height: 42px; gap: 12px; }
+  .topbar-logo-box { background: white; color: #cc0000; font-size: 13px; font-weight: 800; padding: 2px 6px; border-radius: 3px; }
+  .topbar-logo-text { color: white; font-size: 10px; font-weight: 600; line-height: 1.2; }
+  .topbar-title { color: white; font-size: 13px; font-weight: 500; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 12px; }
+  .nav { background: white; border-bottom: 1px solid #ddd; display: flex; }
+  .nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer; color: #666; border-bottom: 2px solid transparent; text-decoration: none; display: flex; align-items: center; }
+  .nav-btn.active { color: #cc0000; border-bottom-color: #cc0000; font-weight: 600; }
+  .nav-btn:hover { background: #f8f8f8; }
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+  .page-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .page-sub { font-size: 12px; color: #888; margin-bottom: 24px; }
+
+  .search-box {
+    background: white; border: 2px solid #00BCD4; border-radius: 8px;
+    padding: 16px; margin-bottom: 24px;
+    display: flex; gap: 12px; align-items: center;
+  }
+  .search-input {
+    flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px;
+    font-size: 16px; outline: none; transition: border-color .2s;
+  }
+  .search-input:focus { border-color: #00BCD4; }
+  .search-input::placeholder { color: #bbb; }
+
+  .result-card {
+    background: white; border-radius: 8px; border: 1px solid #ddd;
+    padding: 20px; margin-bottom: 16px; display: none;
+  }
+  .result-card.show { display: block; }
+  .result-country { font-size: 22px; font-weight: 700; color: #222; margin-bottom: 16px; }
+  .result-country span { font-size: 14px; font-weight: 400; color: #888; margin-left: 8px; }
+
+  .zone-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .zone-item {
+    border-radius: 8px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .zone-icon { font-size: 22px; }
+  .zone-info { flex: 1; }
+  .zone-service { font-size: 12px; color: #666; margin-bottom: 2px; }
+  .zone-badge {
+    display: inline-block; padding: 4px 14px; border-radius: 20px;
+    font-size: 18px; font-weight: 800; font-family: monospace;
+  }
+  .zone-name { font-size: 11px; color: #888; margin-top: 3px; }
+  .no-service { background: #f8f8f8; color: #aaa; font-size: 12px; padding: 10px; border-radius: 6px; text-align: center; }
+
+  /* Zone colors */
+  .z1 { background: #e8f5e9; } .z1 .zone-badge { background: #2e7d32; color: white; }
+  .z2 { background: #e3f2fd; } .z2 .zone-badge { background: #1565c0; color: white; }
+  .z3 { background: #fff8e1; } .z3 .zone-badge { background: #f57f17; color: white; }
+  .z4 { background: #fce4ec; } .z4 .zone-badge { background: #c62828; color: white; }
+  .z5 { background: #f3e5f5; } .z5 .zone-badge { background: #6a1b9a; color: white; }
+  .z6 { background: #e0f7fa; } .z6 .zone-badge { background: #00838f; color: white; }
+  .z7 { background: #fafafa; } .z7 .zone-badge { background: #555; color: white; }
+
+  .suggestions {
+    background: white; border: 1px solid #ddd; border-radius: 6px;
+    max-height: 220px; overflow-y: auto; margin-top: -20px; margin-bottom: 16px;
+    display: none;
+  }
+  .suggestions.show { display: block; }
+  .suggestion-item {
+    padding: 10px 16px; cursor: pointer; font-size: 13px;
+    border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:hover { background: #f0f9ff; }
+  .suggestion-zones { display: flex; gap: 4px; }
+  .szb { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; color: white; }
+
+  .all-table { background: white; border-radius: 8px; border: 1px solid #ddd; overflow: hidden; margin-top: 24px; }
+  .all-table-header { background: #00BCD4; color: white; padding: 10px 16px; font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+  .tab-btns { display: flex; gap: 4px; }
+  .tab-btn { padding: 4px 12px; border-radius: 4px; font-size: 12px; border: none; cursor: pointer; background: rgba(255,255,255,0.2); color: white; font-weight: 600; }
+  .tab-btn.active { background: white; color: #00BCD4; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #f8f8f8; padding: 8px 12px; text-align: left; font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #eee; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f5f5f5; }
+  tr:hover td { background: #fafafa; }
+  .zone-pill { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; color: white; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo-box">4A</div>
+  <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
+  <span class="topbar-title">Ζώνες DHL 2026</span>
+</div>
+
+<div class="nav">
+  <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
+  <a class="nav-btn" href="pricelist-editor.html#shelf">📦 Ράφι</a>
+  <a class="nav-btn" href="pricelist-clients.html">👥 Πελάτες</a>
+  <a class="nav-btn active" href="zones.html">🌍 Ζώνες</a>
+</div>
+
+<div class="container">
+  <h1 class="page-title">🌍 Αναζήτηση Ζώνης DHL</h1>
+  <p class="page-sub">Βρες σε ποια ζώνη ανήκει κάθε χώρα για κάθε service DHL — Ratecard 10-Feb-2026</p>
+
+  <div class="search-box">
+    <input class="search-input" id="search" type="text" placeholder="Πληκτρολόγησε χώρα... π.χ. Germany, France, Ελλάδα..." autocomplete="off" oninput="onSearch(this.value)" />
+  </div>
+
+  <div class="suggestions" id="suggestions"></div>
+
+  <div class="result-card" id="result-card">
+    <div class="result-country" id="result-country"></div>
+    <div class="zone-grid" id="zone-grid"></div>
+  </div>
+
+  <div class="all-table">
+    <div class="all-table-header">
+      <span>Όλες οι Χώρες</span>
+      <div class="tab-btns">
+        <button class="tab-btn active" onclick="switchTab('air',this)">✈️ AIR (S1003/S1012)</button>
+        <button class="tab-btn" onclick="switchTab('road',this)">🚛 ROAD (S1010/S1041)</button>
+      </div>
+    </div>
+    <div id="table-wrap"></div>
+  </div>
+</div>
+
+<script>
+const ZONE_COLORS = ['','#2e7d32','#1565c0','#f57f17','#c62828','#6a1b9a','#00838f','#555'];
+const ZONE_NAMES  = ['','Zone 1 — Κοντά','Zone 2 — Ευρώπη','Zone 3 — Περιφέρεια','Zone 4 — Αμερική','Zone 5 — Μ.Ανατολή/Αφρ.','Zone 6 — Ασία/Ωκεανία','Zone 7 — Μακρινές'];
+
+let zonesData = null;
+let activeTab = 'air';
+
+async function loadZones() {
+  const r = await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/dhl_zones_2026.json');
+  zonesData = await r.json();
+  renderTable();
+}
+
+function onSearch(q) {
+  const sug = document.getElementById('suggestions');
+  const card = document.getElementById('result-card');
+  if (!q || q.length < 2) { sug.classList.remove('show'); card.classList.remove('show'); return; }
+  if (!zonesData) return;
+
+  const ql = q.toLowerCase();
+  const airZones  = zonesData.air.zones;
+  const roadZones = zonesData.road.zones;
+  const all = airZones.map(z => z.name);
+  const matches = airZones
+    .filter(z => z.name.toLowerCase().includes(ql) || z.code.toLowerCase().includes(ql))
+    .slice(0, 8);
+
+  if (!matches.length) { sug.classList.remove('show'); return; }
+
+  sug.innerHTML = matches.map(m => {
+    const road = roadZones.find(r => r.code === m.code);
+    return `<div class="suggestion-item" onclick="selectCountry('${m.code}')">
+      <span>${m.name} <span style="color:#aaa;font-size:11px;">(${m.code})</span></span>
+      <div class="suggestion-zones">
+        <span class="szb" style="background:${ZONE_COLORS[m.zone]}">AIR Z${m.zone}</span>
+        ${road ? `<span class="szb" style="background:${ZONE_COLORS[road.zone]}">ROAD Z${road.zone}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  sug.classList.add('show');
+}
+
+function selectCountry(code) {
+  document.getElementById('suggestions').classList.remove('show');
+  if (!zonesData) return;
+  const air  = zonesData.air.zones.find(z => z.code === code);
+  const road = zonesData.road.zones.find(z => z.code === code);
+  if (!air) return;
+
+  document.getElementById('search').value = air.name;
+  document.getElementById('result-country').innerHTML = `${air.name} <span>(${code})</span>`;
+
+  const grid = document.getElementById('zone-grid');
+  const services = [
+    { id:'S1003', emoji:'✈️↗️', name:'Express Export', data: air },
+    { id:'S1012', emoji:'✈️🇬🇷↙️', name:'Express Import', data: air },
+    { id:'S1010', emoji:'🚛↗️', name:'Economy Export', data: road },
+    { id:'S1041', emoji:'🚛🇬🇷↙️', name:'Economy Import', data: road },
+  ];
+
+  grid.innerHTML = services.map(s => {
+    if (!s.data) return `<div class="no-service">${s.emoji} ${s.name}<br>Δεν εξυπηρετείται</div>`;
+    const z = s.data.zone;
+    return `<div class="zone-item z${z}">
+      <span class="zone-icon">${s.emoji}</span>
+      <div class="zone-info">
+        <div class="zone-service">${s.id} — ${s.name}</div>
+        <span class="zone-badge">Zone ${z}</span>
+        <div class="zone-name">${ZONE_NAMES[z]||''}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('result-card').classList.add('show');
+}
+
+function switchTab(tab, btn) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function renderTable() {
+  if (!zonesData) return;
+  const data = zonesData[activeTab].zones;
+  const wrap = document.getElementById('table-wrap');
+  wrap.innerHTML = `<table>
+    <thead><tr><th>Χώρα</th><th>Κωδ.</th><th>Ζώνη</th><th>Περιγραφή</th></tr></thead>
+    <tbody>${data.map(z => `<tr>
+      <td>${z.name}</td>
+      <td style="color:#aaa;font-size:11px;">${z.code}</td>
+      <td><span class="zone-pill" style="background:${ZONE_COLORS[z.zone]}">Zone ${z.zone}</span></td>
+      <td style="color:#888;font-size:11px;">${ZONE_NAMES[z.zone]||''}</td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#suggestions') && !e.target.closest('#search')) {
+    document.getElementById('suggestions').classList.remove('show');
+  }
+});
+
+loadZones();
+</script>
+</body>
+</html>
