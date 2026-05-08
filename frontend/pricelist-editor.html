@@ -215,6 +215,17 @@ function doLogin() {
   if (pin !== PIN) { err.textContent = 'Λάθος PIN'; return; }
   const parts = sel.split('|');
   currentUser = { name: parts[0], office: parts[1], role: parts[2] };
+// Φόρτωσε τον πραγματικό ρόλο από API
+fetch(`${API}/login.php`, {
+  method: 'POST',
+  headers: {'Content-Type':'application/json'},
+  body: JSON.stringify({name: parts[0], pin: pin})
+}).then(r=>r.json()).then(d=>{
+  if(d.ok){ 
+    currentUser = {...currentUser, ...d.user};
+    localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
+  }
+});
   localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display   = '';
