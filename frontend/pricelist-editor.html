@@ -220,6 +220,16 @@ function doLogin() {
 }
 
 document.getElementById('login-pin').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
+(function() {
+  const u = localStorage.getItem('4a_current_user');
+  if (u) {
+    currentUser = JSON.parse(u);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display   = '';
+    document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
+    init();
+  }
+})(); 
 
 function doLogout() {
   currentUser = null; markups = {};
