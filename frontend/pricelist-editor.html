@@ -263,7 +263,7 @@ function todayFormatted() { return formatDate(new Date().toISOString()); }
 async function init() {
   await Promise.all([loadDHL(), loadFuel()]);
  try {
-  const r = await fetch(`${API}/shelf.php`);
+  const r = await fetch(`${API}/shelf.php?v=${Date.now()}`);
   const remote = await r.json();
   if (Object.keys(remote).length > 0) {
     shelf = remote;
