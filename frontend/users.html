@@ -1,4 +1,4 @@
-<!-- users.html | v1.4 | 09-05-2026 -->
+<!-- users.html | v1.5 | 09-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -389,7 +389,10 @@ function renderUsers() {
   const ROLE_COLORS = { administrator:'#cc0000', manager:'#1565c0', user:'#555' };
   const initials = n => (n||'?').split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase();
 
-  el.innerHTML = users.map(u => {
+  const visibleUsers = users.filter(u => 
+  currentUser.role === 'administrator' || u.role !== 'administrator'
+);
+el.innerHTML = visibleUsers.map(u => {
     const stationBadges = (u.stations||'ATH').split(',')
       .map(s => `<span class="station-badge">${s}</span>`).join(' ');
     const perms = [
@@ -404,7 +407,8 @@ function renderUsers() {
       </div>
       <div class="user-info">
         <div class="user-name">
-          ${u.name} ${isMe?'<span style="font-size:10px;color:#888;">(εσύ)</span>':''}
+          <span style="font-family:monospace;font-size:11px;background:#f0f0f0;padding:2px 6px;border-radius:4px;color:#555;">${u.user_code||''}</span>
+${u.name} ${isMe?'<span style="font-size:10px;color:#888;">(εσύ)</span>':''}
           <span class="role-badge role-${u.role}">${ROLE_LABELS[u.role]||u.role}</span>
           ${stationBadges}
         </div>
