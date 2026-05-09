@@ -1,4 +1,4 @@
-'<!-- pricelist-editor.html | v1.7 | 08-05-2026 -->'
+'<!-- pricelist-editor.html | v1.14 | 08-05-2026 -->'
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -222,6 +222,7 @@ async function forgotPin() {
   if (d.ok) alert('✅ Νέο PIN στάλθηκε στο email σας!');
   else alert('❌ Δεν βρέθηκε χρήστης με αυτόν τον κωδικό.');
 }
+ async function doLogin() {
   const sel = document.getElementById('login-user').value;
   const pin = document.getElementById('login-pin').value;
   const err = document.getElementById('login-error');
