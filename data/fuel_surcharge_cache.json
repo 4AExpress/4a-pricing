@@ -1,18 +1,24 @@
 {
-  "fetched_at": "2026-05-08T06:29:16.053242",
+  "fetched_at": "2026-05-09T07:04:49.974863",
   "source": "https://mydhl.express.dhl/gr/el/ship/surcharges.html#/fuel_surcharge",
   "air": [
     {
-      "week": "Μάϊος 11-17, 2026",
-      "pct": 46.75,
+      "week": "Μάϊος 18-24, 2026",
+      "pct": 47.25,
       "is_next": true,
       "is_current": false
+    },
+    {
+      "week": "Μάϊος 11-17, 2026",
+      "pct": 46.75,
+      "is_next": false,
+      "is_current": true
     },
     {
       "week": "Μάϊος 4-10, 2026",
       "pct": 47.0,
       "is_next": false,
-      "is_current": true
+      "is_current": false
     },
     {
       "week": "Απρίλιος 27-Μάϊος 3, 2026",
@@ -25,26 +31,26 @@
       "pct": 47.75,
       "is_next": false,
       "is_current": false
-    },
-    {
-      "week": "Απρίλιος 13-19, 2026",
-      "pct": 46.0,
-      "is_next": false,
-      "is_current": false
     }
   ],
   "road": [
     {
-      "week": "Μάϊος 11-17, 2026",
-      "pct": 34.5,
+      "week": "Μάϊος 18-24, 2026",
+      "pct": 34.0,
       "is_next": true,
       "is_current": false
+    },
+    {
+      "week": "Μάϊος 11-17, 2026",
+      "pct": 34.5,
+      "is_next": false,
+      "is_current": true
     },
     {
       "week": "Μάϊος 4-10, 2026",
       "pct": 35.25,
       "is_next": false,
-      "is_current": true
+      "is_current": false
     },
     {
       "week": "Απρίλιος 27-Μάϊος 3, 2026",
@@ -57,17 +63,11 @@
       "pct": 36.5,
       "is_next": false,
       "is_current": false
-    },
-    {
-      "week": "Απρίλιος 13-19, 2026",
-      "pct": 34.5,
-      "is_next": false,
-      "is_current": false
     }
   ],
-  "current_air": 47.0,
-  "current_road": 35.25,
-  "changed": false,
+  "current_air": 46.75,
+  "current_road": 34.5,
+  "changed": true,
   "previous_air": 47.0,
   "previous_road": 35.25
 }
