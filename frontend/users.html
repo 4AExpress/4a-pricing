@@ -1,4 +1,4 @@
-<!-- users.html | v1.2 | 09-05-2026 -->
+<!-- users.html | v1.4 | 09-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -111,13 +111,18 @@
   </div>
   <div class="section-body" id="form-body">
 
-    <div class="form-grid3">
-      <div class="form-group">
-        <label>Ονοματεπώνυμο *</label>
-        <input type="text" id="u-name" placeholder="Νίκος Παπαδόπουλος" oninput="checkForm()" />
-      </div>
-      <div class="form-group">
-        <label>Email *</label>
+   <div class="form-grid3">
+  <div class="form-group">
+    <label>User Code *</label>
+    <input type="text" id="u-code" placeholder="E1003" maxlength="5" oninput="validateCode(this);checkForm()" />
+    <span id="code-msg" style="font-size:11px;color:#c62828;"></span>
+  </div>
+  <div class="form-group">
+    <label>Ονοματεπώνυμο *</label>
+    <input type="text" id="u-name" placeholder="Νίκος Παπαδόπουλος" oninput="checkForm()" />
+  </div>
+  <div class="form-group">
+    <label>Email *</label>
         <input type="email" id="u-email" placeholder="nikos@4aexpress.com" oninput="checkForm()" />
       </div>
       <div class="form-group">
@@ -214,7 +219,13 @@ async function loadUsers() {
   document.getElementById('user-count').textContent = users.length;
   renderUsers();
 }
-
+function validateCode(el) {
+  const v = el.value.toUpperCase();
+  el.value = v;
+  const ok = /^E\d{4}$/.test(v);
+  document.getElementById('code-msg').textContent = v && !ok ? 'Μορφή: E + 4 ψηφία (π.χ. E1003)' : '';
+  return ok;
+}
 function onRoleChange() {
   const role = document.getElementById('u-role').value;
   const d = ROLE_DEFAULTS[role];
@@ -263,7 +274,8 @@ function getSelectedStations() {
 }
 
 function checkForm() {
-  const ok = document.getElementById('u-name').value.trim() &&
+  const ok = /^E\d{4}$/.test(document.getElementById('u-code')?.value||'') &&
+             document.getElementById('u-name').value.trim() &&
              document.getElementById('u-email').value.trim() &&
              document.getElementById('u-pin').value.trim().length === 4;
   document.getElementById('save-btn').disabled = !ok;
@@ -271,7 +283,7 @@ function checkForm() {
 
 function resetForm() {
   editingId = null;
-  ['u-name','u-email','u-pin'].forEach(id => document.getElementById(id).value = '');
+  ['u-code','u-name','u-email','u-pin'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('u-role').value = 'user';
   document.getElementById('form-title').textContent = 'Νέος Χρήστης';
   // Reset stations
@@ -285,8 +297,8 @@ function resetForm() {
   onRoleChange();
   checkForm();
 }
-
 async function saveUser() {
+ const code  = document.getElementById('u-code').value.trim();
   const name  = document.getElementById('u-name').value.trim();
   const email = document.getElementById('u-email').value.trim();
   const pin   = document.getElementById('u-pin').value.trim();
@@ -295,12 +307,11 @@ async function saveUser() {
   // office = πρώτος σταθμός
   const firstStation = stations.split(',')[0];
   const office = STATIONS[firstStation] || 'Αθήνα';
-
   if (!name || !email || pin.length !== 4) { alert('Συμπλήρωσε όλα τα υποχρεωτικά πεδία'); return; }
-
   const payload = {
     action: editingId ? 'edit' : 'add',
     id: editingId,
+   user_code: code,
     name, email, pin, role, office, stations,
     can_view:   document.getElementById('p-view').checked   ? 1 : 0,
     can_add:    document.getElementById('p-add').checked    ? 1 : 0,
@@ -309,7 +320,6 @@ async function saveUser() {
     can_export: document.getElementById('p-export').checked ? 1 : 0,
     can_all:    document.getElementById('p-all').checked    ? 1 : 0,
   };
-
   try {
     const r = await fetch(`${API}/users.php`, {
       method: 'POST',
