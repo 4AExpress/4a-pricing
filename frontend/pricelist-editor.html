@@ -1,4 +1,4 @@
-'<!-- pricelist-editor.html | v1.6 | 08-05-2026 -->'
+'<!-- pricelist-editor.html | v1.7 | 08-05-2026 -->'
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -115,7 +115,10 @@
     <label class="login-label">PIN</label>
     <input class="login-pin" type="password" id="login-pin" maxlength="4" placeholder="••••" />
     <div class="login-error" id="login-error"></div>
-    <button class="login-btn" onclick="doLogin()">Είσοδος</button>
+<button class="login-btn" onclick="doLogin()">Είσοδος</button>
+<p style="text-align:center;margin-top:12px;font-size:12px;">
+  <a href="#" onclick="forgotPin()" style="color:#cc0000;">Ξέχασα το PIN</a>
+</p>
   </div>
 </div>
 
@@ -207,7 +210,18 @@ let currentUser = null;
 let dhlData = {}, fuelData = null, markups = {}, pendingSvc = null;
 let shelf = {};
 let activeShelfTab = SERVICES[0].id;
-async function doLogin() {
+async function forgotPin() {
+  const code = prompt('Εισάγετε τον κωδικό χρήστη σας (π.χ. E1001):');
+  if (!code) return;
+  const r = await fetch(`${API}/mailer.php`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action:'forgot_pin', user_code: code.trim()})
+  });
+  const d = await r.json();
+  if (d.ok) alert('✅ Νέο PIN στάλθηκε στο email σας!');
+  else alert('❌ Δεν βρέθηκε χρήστης με αυτόν τον κωδικό.');
+}
   const sel = document.getElementById('login-user').value;
   const pin = document.getElementById('login-pin').value;
   const err = document.getElementById('login-error');
