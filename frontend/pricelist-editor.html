@@ -1,4 +1,4 @@
-'<!-- pricelist-editor.html | v1.5 | 08-05-2026 -->'
+'<!-- pricelist-editor.html | v1.6 | 08-05-2026 -->'
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -108,9 +108,10 @@
     <div class="login-sub">Εισάγετε τα στοιχεία σας για πρόσβαση</div>
     <label class="login-label">Χρήστης</label>
     <select class="login-select" id="login-user">
-      <option value="">— Επιλέξτε —</option>
-      <option value="Απόστολος Ορφανίδης|Αθήνα|manager">Απόστολος Ορφανίδης — Αθήνα</option>
-    </select>
+  <option value="">— Επιλέξτε —</option>
+  <option value="E1001">E1001 — Απόστολος Ορφανίδης</option>
+  <option value="E1002">E1002 — Κατερίνα Τσαγκάνη</option>
+</select>
     <label class="login-label">PIN</label>
     <input class="login-pin" type="password" id="login-pin" maxlength="4" placeholder="••••" />
     <div class="login-error" id="login-error"></div>
@@ -206,24 +207,21 @@ let currentUser = null;
 let dhlData = {}, fuelData = null, markups = {}, pendingSvc = null;
 let shelf = {};
 let activeShelfTab = SERVICES[0].id;
-
 async function doLogin() {
   const sel = document.getElementById('login-user').value;
   const pin = document.getElementById('login-pin').value;
   const err = document.getElementById('login-error');
   if (!sel) { err.textContent = 'Επιλέξτε χρήστη'; return; }
-  if (pin !== PIN) { err.textContent = 'Λάθος PIN'; return; }
-  const parts = sel.split('|');
-currentUser = { name: parts[0], office: parts[1], role: parts[2] };
-try {
-  const r = await fetch(`${API}/login.php`, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({name: parts[0], pin: pin})
-  });
-  const d = await r.json();
-  if (d.ok) currentUser = {...currentUser, ...d.user};
-} catch(e) {}
+  try {
+    const r = await fetch(`${API}/login.php`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({user_code: sel, pin: pin})
+    });
+    const d = await r.json();
+    if (!d.ok) { err.textContent = 'Λάθος PIN'; return; }
+    currentUser = d.user;
+  } catch(e) { err.textContent = 'Σφάλμα σύνδεσης'; return; }
 localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
 document.getElementById('login-screen').style.display = 'none';
 document.getElementById('app-screen').style.display   = '';
