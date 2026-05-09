@@ -1,4 +1,4 @@
-<!-- users.html | v1.3 | 09-05-2026 -->
+<!-- users.html | v1.4 | 09-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -341,6 +341,7 @@ function editUser(id) {
   const u = users.find(x => x.id === id);
   if (!u) return;
   editingId = id;
+  document.getElementById('u-code').value  = u.user_code || '';
   document.getElementById('u-name').value  = u.name  || '';
   document.getElementById('u-email').value = u.email || '';
   document.getElementById('u-pin').value   = '';
