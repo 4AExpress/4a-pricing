@@ -1,4 +1,4 @@
-<!-- users.html | v1.4 | 09-05-2026 -->
+<!-- users.html | v1.3 | 09-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -274,7 +274,7 @@ function getSelectedStations() {
 }
 
 function checkForm() {
-  const ok = /^E\d{4}$/.test(document.getElementById('u-code')?.value||'') &&
+  const ok = (editingId || /^E\d{4}$/.test(document.getElementById('u-code')?.value||'')) &&
              document.getElementById('u-name').value.trim() &&
              document.getElementById('u-email').value.trim() &&
              document.getElementById('u-pin').value.trim().length === 4;
