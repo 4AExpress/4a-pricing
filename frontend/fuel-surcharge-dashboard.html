@@ -1,3 +1,4 @@
+<!-- fuel-surcharge-dashboard.html | v1.1 | 09-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -61,6 +62,10 @@
   .error-box { background: #ffebee; border: 1px solid #ffcdd2; border-radius: 4px; padding: 12px 16px; color: #c62828; font-size: 13px; margin-bottom: 20px; }
   .source { font-size: 11px; color: #bbb; margin-top: 16px; text-align: center; }
   .fetched-at { font-size: 11px; color: #aaa; margin-top: 4px; }
+ .nav { background: white; border-bottom: 1px solid #ddd; display: flex; }
+.nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer; color: #666; border-bottom: 2px solid transparent; text-decoration: none; display: flex; align-items: center; }
+.nav-btn.active { color: #cc0000; border-bottom-color: #cc0000; font-weight: 600; }
+.nav-btn:hover { background: #f8f8f8; }
 </style>
 </head>
 <body>
@@ -72,7 +77,17 @@
       <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
     </div>
     <span class="topbar-title">Επίναυλος Καυσίμων</span>
-  </div>
+ </div>
+  <div class="topbar-right" id="last-update"></div>
+</div>
+<div class="nav">
+  <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
+  <a class="nav-btn" href="pricelist-editor.html#shelf">📦 Ράφι</a>
+  <a class="nav-btn" href="pricelist-clients.html">👥 Πελάτες</a>
+  <a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
+  <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
+  <a class="nav-btn active" href="fuel-surcharge-dashboard.html">⛽ Επίναυλος</a>
+</div>
   <div class="topbar-right" id="last-update"></div>
 </div>
 
@@ -164,7 +179,7 @@ function renderDashboard(data) {
   }).join('');
 
   document.getElementById('fetched-at').textContent =
-    `Τελευταία ανάκτηση: ${data.fetched_at ? data.fetched_at.replace('T', ' ').substring(0, 16) : '—'}`;
+    `Τελευταία ανάκτηση: ${data.fetched_at ? data.fetched_at.substring(8,10)+'-'+data.fetched_at.substring(5,7)+'-'+data.fetched_at.substring(0,4)+' '+data.fetched_at.substring(11,16) : '—'}`;
 
   document.getElementById('content').innerHTML = `
 
