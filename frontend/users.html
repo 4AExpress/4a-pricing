@@ -1,4 +1,4 @@
-<!-- users.html | v1.1 | 09-05-2026 -->
+<!-- users.html | v1.2 | 09-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -405,7 +405,7 @@ function renderUsers() {
       <div class="user-actions">
         ${currentUser.role==='administrator'?`
           <button class="action-btn" onclick="editUser(${u.id})">✏️ Edit</button>
-          ${!isMe?`<button class="action-btn del" onclick="deleteUser(${u.id})">🗑</button>`:''}
+          ${!isMe?`<button class="action-btn del" onclick="deleteUser(${u.id})">Del</button>`:''}
         `:''}
       </div>
     </div>`;
