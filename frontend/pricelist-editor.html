@@ -1,4 +1,4 @@
-'<!-- pricelist-editor.html | v1.08 | 08-05-2026 -->'
+'<!-- pricelist-editor.html | v1.09 | 09-05-2026 -->'
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -106,19 +106,14 @@
     </div>
     <div class="login-title">Γνωστοποίηση Τιμών</div>
     <div class="login-sub">Εισάγετε τα στοιχεία σας για πρόσβαση</div>
-    <label class="login-label">Χρήστης</label>
-    <select class="login-select" id="login-user">
-  <option value="">— Επιλέξτε —</option>
-  <option value="E1001">E1001</option>
-<option value="E1002">E1002</option>
-</select>
-    <label class="login-label">PIN</label>
-    <input class="login-pin" type="password" id="login-pin" maxlength="4" placeholder="••••" />
-    <div class="login-error" id="login-error"></div>
-<button class="login-btn" onclick="doLogin()">Είσοδος</button>
-<p style="text-align:center;margin-top:12px;font-size:12px;">
-  <a href="#" onclick="forgotPin()" style="color:#cc0000;">Ξέχασα το PIN</a>
-</p>
+    <label class="login-label">User Code</label>
+<input class="login-pin" type="text" id="login-user" maxlength="5" placeholder="E1001" style="letter-spacing:4px;" />
+<div id="otp-section" style="display:none;">
+  <label class="login-label">Κωδικός OTP (6 ψηφία)</label>
+  <input class="login-pin" type="text" id="login-otp" maxlength="6" placeholder="••••••" style="letter-spacing:6px;" />
+</div>
+<div class="login-error" id="login-error"></div>
+<button class="login-btn" id="login-btn" onclick="doLogin()">Αποστολή OTP</button>
   </div>
 </div>
 
@@ -211,18 +206,56 @@ let dhlData = {}, fuelData = null, markups = {}, pendingSvc = null;
 let shelf = {};
 let activeShelfTab = SERVICES[0].id;
 async function forgotPin() {
-  const code = prompt('Εισάγετε τον κωδικό χρήστη σας (π.χ. E1001):');
-  if (!code) return;
-  const r = await fetch(`${API}/mailer.php`, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({action:'forgot_pin', user_code: code.trim()})
-  });
-  const d = await r.json();
-  if (d.ok) alert('✅ Νέο PIN στάλθηκε στο email σας!');
-  else alert('❌ Δεν βρέθηκε χρήστης με αυτόν τον κωδικό.');
+  const code = document.getElementById('login-user').value.trim();
+  if (!code) { alert('Εισάγετε πρώτα τον User Code σας'); return; }
+  doLogin();
 }
- async function doLogin() {
+
+async function doLogin() {
+  const code = document.getElementById('login-user').value.trim();
+  const otp  = document.getElementById('login-otp')?.value.trim();
+  const err  = document.getElementById('login-error');
+  err.textContent = '';
+
+  // Βήμα 1 — Αποστολή OTP
+  if (document.getElementById('otp-section').style.display === 'none') {
+    if (!code) { err.textContent = 'Εισάγετε User Code'; return; }
+    const r = await fetch(`${API}/login.php`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'send_otp', user_code: code})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('otp-section').style.display = '';
+      document.getElementById('login-btn').textContent = 'Είσοδος';
+      err.style.color = '#2e7d32';
+      err.textContent = '✅ OTP στάλθηκε στο email σας!';
+    } else {
+      err.style.color = '#c62828';
+      err.textContent = '❌ Δεν βρέθηκε χρήστης.';
+    }
+    return;
+  }
+
+  // Βήμα 2 — Επαλήθευση OTP
+  try {
+    const r = await fetch(`${API}/login.php`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'verify', user_code: code, otp: otp})
+    });
+    const d = await r.json();
+    if (!d.ok) { err.style.color='#c62828'; err.textContent = '❌ Λάθος ή ληγμένο OTP'; return; }
+    currentUser = d.user;
+  } catch(e) { err.textContent = 'Σφάλμα σύνδεσης'; return; }
+
+  localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display   = '';
+  document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
+  init();
+} {
   const sel = document.getElementById('login-user').value;
   const pin = document.getElementById('login-pin').value;
   const err = document.getElementById('login-error');
