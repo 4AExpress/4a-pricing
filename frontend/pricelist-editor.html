@@ -255,27 +255,7 @@ async function doLogin() {
   document.getElementById('app-screen').style.display   = '';
   document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
   init();
-} {
-  const sel = document.getElementById('login-user').value;
-  const pin = document.getElementById('login-pin').value;
-  const err = document.getElementById('login-error');
-  if (!sel) { err.textContent = 'Επιλέξτε χρήστη'; return; }
-  try {
-    const r = await fetch(`${API}/login.php`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({user_code: sel, pin: pin})
-    });
-    const d = await r.json();
-    if (!d.ok) { err.textContent = 'Λάθος PIN'; return; }
-    currentUser = d.user;
-  } catch(e) { err.textContent = 'Σφάλμα σύνδεσης'; return; }
-localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
-document.getElementById('login-screen').style.display = 'none';
-document.getElementById('app-screen').style.display   = '';
-document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
-init();
-}
+
 document.getElementById('login-pin').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
 
 // Auto-login αν υπάρχει session
