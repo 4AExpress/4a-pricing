@@ -255,7 +255,7 @@ async function doLogin() {
   document.getElementById('app-screen').style.display   = '';
   document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
   init();
-
+}
 document.getElementById('login-pin').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
 
 // Auto-login αν υπάρχει session
