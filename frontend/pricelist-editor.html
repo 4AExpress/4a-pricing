@@ -256,7 +256,7 @@ async function doLogin() {
   document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
   init();
 }
-document.getElementById('login-pin').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
 
 // Auto-login αν υπάρχει session
 (function() {
@@ -275,7 +275,9 @@ function doLogout() {
   currentUser = null; markups = {};
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-screen').style.display   = 'none';
-  document.getElementById('login-pin').value = '';
+  document.getElementById('login-user').value = '';
+document.getElementById('otp-section').style.display = 'none';
+document.getElementById('login-btn').textContent = 'Αποστολή OTP';
   document.getElementById('login-error').textContent = '';
 }
 
