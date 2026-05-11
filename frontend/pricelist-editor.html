@@ -204,6 +204,7 @@ const SERVICES = [
 let currentUser = null;
 let dhlData = {}, fuelData = null, markups = {}, pendingSvc = null;
 let shelf = {};
+let markups_z9 = {}; 
 let activeShelfTab = SERVICES[0].id;
 async function forgotPin() {
   const code = document.getElementById('login-user').value.trim();
@@ -462,6 +463,9 @@ function onMarkup(serviceId, value) {
     if (existing) existing.outerHTML = html;
     else saveBtn.insertAdjacentHTML('beforebegin', html);
   } else if (existing) { existing.remove(); }
+ function onMarkupZ9(serviceId, value) {
+  markups_z9[serviceId] = value ? parseFloat(value) : null;
+  document.getElementById(`icon-z9-${serviceId}`).textContent = value ? '✅' : '○';
 }
 
 function openTable(serviceId) {
@@ -498,6 +502,7 @@ function confirmSave() {
     id: Date.now(), name,
     service_id: svcId, service_name: svc.name,
     markup: mu, global_markup: mu,
+    markup_z9: markups_z9[svcId] || 0,
     account: account || '—',
     user: currentUser.name, office: currentUser.office,
     date: todayFormatted(), created_at: new Date().toISOString()
