@@ -199,8 +199,9 @@ function formatDate(isoStr) {
   return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
 function todayFormatted() { return formatDate(new Date().toISOString()); }
-const SVC_FILE   = `dhl_tariff_2026_${SERVICE_ID}.json`;
-const SVC_MODE   = (SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041') ? 'ROAD' : 'AIR';
+const BASE_SVC_ID = SERVICE_ID.replace('_CY','');
+const SVC_FILE   = `dhl_tariff_2026_${BASE_SVC_ID}.json`;
+const SVC_MODE   = (BASE_SVC_ID === 'S1010' || BASE_SVC_ID === 'S1041') ? 'ROAD' : 'AIR';
 
 let dhlData    = null;
 let fuelFc     = SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041' ? 35.25 : 47.0;
