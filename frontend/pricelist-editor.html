@@ -399,6 +399,16 @@ function renderServices() {
         <span class="markup-status" id="icon-${svc.id}">${icon}</span>
       </div>
       <div class="min-markup">Ελάχιστο: 0% (ελεύθερο)</div>
+      <div class="markup-row" style="margin-top:6px;">
+        <span style="font-size:10px;color:#888;min-width:70px;">🇨🇾 Z9</span>
+        <div class="markup-input-wrap">
+          <input class="markup-input" type="number" min="0" max="999" step="0.5"
+            id="markup-z9-${svc.id}" value="${markups_z9[svc.id]||''}" placeholder="0"
+            oninput="onMarkupZ9('${svc.id}', this.value)" />
+          <span class="markup-pct">%</span>
+        </div>
+        <span class="markup-status" id="icon-z9-${svc.id}">○</span>
+      </div>
       <div class="validation-msg ${v ? (v.ok?'ok':'error') : ''}" id="msg-${svc.id}">${v?.msg||''}</div>
       ${calc ? `
       <div class="preview-row">
