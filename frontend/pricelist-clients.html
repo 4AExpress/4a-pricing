@@ -530,7 +530,54 @@ function filterByStatus(s,btn){ filterStatus=s; document.querySelectorAll('.filt
 function filterClients(q){ filterSearch=q; renderClients(); }
 function exportCMS(id){ alert('CMS Export — επόμενο βήμα (TSV download)'); }
 function sendOffer(){ alert('Αποστολή Προσφοράς — επόμενο βήμα (SMTP + PDF)'); }
-function previewPDF(){ alert('Προεπισκόπηση PDF — επόμενο βήμα'); }
+async function previewPDF(){
+  const name=document.getElementById('cl-name').value.trim();
+  if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
+  if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
+  document.getElementById('preview-btn').textContent='⏳ Παράγεται...';
+  document.getElementById('preview-btn').disabled=true;
+  try {
+    if(!localStorage.getItem('dhl_all')){
+      const arr=await Promise.all(['S1003','S1012','S1010','S1041'].map(s=>
+        fetch(`https://raw.githubusercontent.com/4AExpress/4a-pricing/main/dhl_tariff_2026_${s}.json`)
+        .then(r=>r.json()).then(d=>({[s]:d.entries}))));
+      localStorage.setItem('dhl_all',JSON.stringify(Object.assign({},...arr)));
+    }
+    const fuel=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json());
+    const office=(currentUser?.stations||'ATH').split(',')[0];
+    const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+    const r=await fetch(`${API}/generate_pdf.php`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        offer:{
+          name, afm:document.getElementById('cl-afm').value.trim(),
+          email:document.getElementById('cl-email').value.trim(),
+          contact:document.getElementById('cl-contact').value.trim(),
+          phone:document.getElementById('cl-phone').value.trim(),
+          user:currentUser.name, office_code:office,
+          date:todayFmt(), validity:document.getElementById('cl-validity').value,
+          offer_number:offerNum,
+          pricelists:selectedPls.map(p=>({service_id:p.service_id,markup:p.markup||p.global_markup||0}))
+        },
+        dhl:JSON.parse(localStorage.getItem('dhl_all')),
+        fuel
+      })
+    });
+    const d=await r.json();
+    if(d.ok){
+      const bytes=atob(d.pdf);
+      const arr=new Uint8Array(bytes.length);
+      for(let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
+      const blob=new Blob([arr],{type:'application/pdf'});
+      window.open(URL.createObjectURL(blob));
+    } else { alert('Σφάλμα: '+(d.error||'Άγνωστο')); }
+  } catch(e){ alert('Σφάλμα: '+e.message); }
+  finally {
+    document.getElementById('preview-btn').textContent='📄 Προεπισκόπηση PDF';
+    document.getElementById('preview-btn').disabled=false;
+  }
+}
 function doLogout(){ window.location.href='pricelist-editor.html'; }
 
 document.addEventListener('visibilitychange',()=>{
