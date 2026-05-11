@@ -462,8 +462,9 @@ function onMarkup(serviceId, value) {
     </div>`;
     if (existing) existing.outerHTML = html;
     else saveBtn.insertAdjacentHTML('beforebegin', html);
-  } else if (existing) { existing.remove(); }
- function onMarkupZ9(serviceId, value) {
+ } else if (existing) { existing.remove(); }
+}
+function onMarkupZ9(serviceId, value) {
   markups_z9[serviceId] = value ? parseFloat(value) : null;
   document.getElementById(`icon-z9-${serviceId}`).textContent = value ? '✅' : '○';
 }
