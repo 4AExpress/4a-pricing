@@ -179,8 +179,11 @@ const PARAMS     = new URLSearchParams(window.location.search);
 const SERVICE_ID = PARAMS.get('service') || 'S1003';
 const URL_MARKUP = parseFloat(PARAMS.get('markup')) || 140;
 const MAX_WEIGHT = (SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041') ? 120 : 80;
-const ZONES      = SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041'
-  ? ['z1','z2','z3'] : ['z1','z2','z3','z4','z5','z6','z7'];
+const ZONES = (SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041')
+  ? ['z1','z2','z3']
+  : SERVICE_ID.endsWith('_CY')
+  ? ['z9']
+  : ['z1','z2','z3','z4','z5','z6','z7'];
 const ZONE_LABELS= ZONES.map(z => z.toUpperCase());
 const SVC_NAMES  = {
   S1003: '✈️↗️ Express Export', S1012: '✈️🇬🇷↙️ Express Import',
