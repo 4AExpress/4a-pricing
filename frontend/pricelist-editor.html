@@ -194,11 +194,15 @@
 const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 const API  = 'https://4aexpress.com/api';
 const PIN  = '1111';
-const SERVICES = [
+
+ const SERVICES = [
   { id:'S1003', name:'✈️↗️ Express Export',    mode:'AIR / Διεθνής',    file:'dhl_tariff_2026_S1003.json' },
   { id:'S1012', name:'✈️🇬🇷↙️ Express Import', mode:'AIR / Διεθνής',    file:'dhl_tariff_2026_S1012.json' },
   { id:'S1010', name:'🚛↗️ Economy Export',    mode:'ROAD / Εσωτερικό', file:'dhl_tariff_2026_S1010.json' },
   { id:'S1041', name:'🚛🇬🇷↙️ Economy Import', mode:'ROAD / Εσωτερικό', file:'dhl_tariff_2026_S1041.json' },
+  { id:'S1003_CY', name:'🇨🇾✈️↗️ Express Export Κύπρος', mode:'AIR / Κύπρος Z9', file:'dhl_tariff_2026_S1003.json', zone:'z9' },
+  { id:'S1012_CY', name:'🇨🇾✈️↙️ Express Import Κύπρος', mode:'AIR / Κύπρος Z9', file:'dhl_tariff_2026_S1012.json', zone:'z9' },
+
 ];
 
 let currentUser = null;
