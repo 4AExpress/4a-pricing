@@ -638,6 +638,13 @@ function confirmSave() {
   });
 
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
+  const API = 'https://4aexpress.com/api';
+  fetch(`${API}/shelf.php`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action:'save', ...shelf[SERVICE_ID][0]})
+  }).then(r=>r.json()).then(d=>console.log('API shelf save:', d))
+    .catch(e=>console.error('API shelf error:', e));
   closeModal();
   alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${SERVICE_ID}!`);
 }
