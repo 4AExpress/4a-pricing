@@ -1,4 +1,4 @@
-'<!-- pricelist-editor.html | v2.07 | 11-05-2026 -->'
+'<!-- pricelist-editor.html | v2.10 | 12-05-2026 -->'
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -565,11 +565,17 @@ function renderShelfContent() {
         <div class="shelf-meta">${formatDate(p.date)} · ${p.user||'—'} · ${p.office||'—'} · Markup: ${p.markup||p.global_markup||'—'}% · AccountNo: ${p.account}</div>
       </div>
       <div class="shelf-actions">
+      <button class="btn-small" onclick="viewShelfItem('${activeShelfTab}', ${p.id})">👁 Προβολή</button>
         <button class="btn-small btn-delete" onclick="deleteShelfItem('${activeShelfTab}', ${p.id})">Διαγραφή</button>
       </div>
     </div>`).join('');
 }
-
+function viewShelfItem(svcId, id) {
+  const item = (shelf[svcId]||[]).find(p => p.id === id);
+  if (!item) return;
+  const markup = item.markup || item.global_markup || 0;
+  window.open(`pricelist-table.html?service=${svcId}&markup=${markup}&readonly=1`, '_blank');
+}
 function deleteShelfItem(svcId, id) {
   if (!confirm('Διαγραφή;')) return;
   shelf[svcId] = (shelf[svcId]||[]).filter(p => p.id !== id);
