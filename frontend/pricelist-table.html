@@ -650,7 +650,20 @@ function confirmSave() {
   fetch(`${API}/shelf.php`, {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({action:'save', ...shelf[SERVICE_ID][0]})
+    body: JSON.stringify({
+  action:'save',
+  id: shelf[SERVICE_ID][0].id,
+  name: shelf[SERVICE_ID][0].name,
+  service_id: shelf[SERVICE_ID][0].service_id,
+  service_name: shelf[SERVICE_ID][0].service_name || '',
+  markup: shelf[SERVICE_ID][0].global_markup,
+  global_markup: shelf[SERVICE_ID][0].global_markup,
+  account: shelf[SERVICE_ID][0].account,
+  user: shelf[SERVICE_ID][0].user,
+  office: shelf[SERVICE_ID][0].office,
+  date: shelf[SERVICE_ID][0].date,
+  created_at: shelf[SERVICE_ID][0].created_at
+})
   }).then(r=>r.json()).then(d=>console.log('API shelf save:', d))
     .catch(e=>console.error('API shelf error:', e));
   closeModal();
