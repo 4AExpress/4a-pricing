@@ -1,4 +1,4 @@
-<!-- pricelist-table.html | v2.4 | 12-05-2026 -->
+<!-- pricelist-table.html | v2.5| 12-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -367,6 +367,7 @@ function renderTable() {
       <thead>
         <tr>
           <th class="weight-col">Βάρος</th>
+          ${SERVICE_ID.endsWith('_CY') ? '<th style="background:#e3f2fd;color:#1565c0;font-size:10px;padding:4px 6px;text-align:center;">+1kg</th>' : ''}
           <th class="valid-col">R1</th>
           <th class="markup-col" style="background:#e8f5e9;color:#2e7d32;">Min%</th>
           <th class="markup-col">Markup %</th>
@@ -423,6 +424,7 @@ function renderTable() {
 
     html += `<tr class="${rowClass} ${grpClass}" id="row-${i}">
       <td class="weight-cell">${row.weight.toFixed(1)} kg</td>
+      ${SERVICE_ID.endsWith('_CY') ? `<td style="background:#e3f2fd;color:#1565c0;font-size:11px;text-align:center;font-weight:600;cursor:pointer;" ondblclick="cascadeDiff(${i})">${i > 0 ? (row.prices[0] - markupData[i-1].prices[0]).toFixed(2) : '—'}</td>` : ''}
       <td class="valid-cell">${row.valid ? '✅' : '🔴'}</td>
       <td class="markup-cell" style="background:#f1f8f1;font-size:11px;font-weight:600;color:${minPctColor};cursor:pointer;"
           title="1 κλικ → σταθερό Min% από εδώ &#10;2 κλικ → cascade Min% από εδώ"
@@ -639,7 +641,24 @@ function confirmSave() {
   closeModal();
   alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${SERVICE_ID}!`);
 }
-
+function cascadeDiff(idx) {
+  if (idx === 0) return;
+  const diff = markupData[idx].prices[0] - markupData[idx-1].prices[0];
+  for (let i = idx; i < markupData.length; i++) {
+    const targetPrice = markupData[i-1].prices[0] + diff;
+    const dhlCost = markupData[i].dhl_costs[0];
+    if (dhlCost > 0) {
+      markupData[i].markup = parseFloat(((targetPrice/dhlCost - 1)*100).toFixed(1));
+      markupData[i].changed = true;
+      markupData[i].prices = markupData[i].dhl_costs.map(c => 
+        parseFloat((c*(1+markupData[i].markup/100)).toFixed(2)));
+    }
+  }
+  validateAll();
+  renderTable();
+}
+// Init
+loadData();
 // Init
 loadData();
 </script>
