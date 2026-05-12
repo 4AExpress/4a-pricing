@@ -648,7 +648,7 @@ function cascadeDiff(idx, diff) {
     const targetPrice = markupData[i-1].prices[0] + diff;
     const dhlCost = markupData[i].dhl_costs[0];
     if (dhlCost > 0) {
-      markupData[i].markup = parseFloat(((targetPrice/dhlCost - 1)*100).toFixed(1));
+      markupData[i].markup = parseFloat(((targetPrice/dhlCost - 1)*100).toFixed(4));
       markupData[i].changed = true;
       markupData[i].prices = markupData[i].dhl_costs.map(c => 
         parseFloat((c*(1+markupData[i].markup/100)).toFixed(2)));
@@ -662,7 +662,7 @@ function applyDiff(idx, diff) {
   const targetPrice = markupData[idx-1].prices[0] + diff;
   const dhlCost = markupData[idx].dhl_costs[0];
   if (dhlCost > 0) {
-    markupData[idx].markup = parseFloat(((targetPrice/dhlCost - 1)*100).toFixed(1));
+    markupData[idx].markup = parseFloat(((targetPrice/dhlCost - 1)*100).toFixed(4));
     markupData[idx].changed = true;
     markupData[idx].prices = markupData[idx].dhl_costs.map(c => 
       parseFloat((c*(1+markupData[idx].markup/100)).toFixed(2)));
