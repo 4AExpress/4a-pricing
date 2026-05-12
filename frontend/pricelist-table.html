@@ -261,10 +261,18 @@ function buildMarkupData(defaultMarkup) {
   const ROAD_W=[1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
   const target_w = SVC_MODE==='ROAD' ? ROAD_W : SERVICE_ID.endsWith('_CY') ? CY_W : AIR_W;
   const allWeights = Object.keys(byWeight).map(Number).sort((a,b) => a-b);
-  const weights = allWeights.filter(w => target_w.includes(w));
-  markupData = weights.map(w => {
-
-    const dhl_costs = ZONES.map(z => byWeight[w][z] || 0);
+  const weights = SERVICE_ID.endsWith('_CY') ? target_w : allWeights.filter(w => target_w.includes(w));
+  markupData = weights.map((w, idx) => {
+    const dhl_costs = ZONES.map(z => {
+      if (byWeight[w]?.[z]) return byWeight[w][z];
+      const prev = weights.slice(0,idx).reverse().find(pw => byWeight[pw]?.[z]);
+      const next = weights.slice(idx+1).find(pw => byWeight[pw]?.[z]);
+      if (!prev && !next) return 0;
+      if (!prev) return byWeight[next][z];
+      if (!next) return byWeight[prev][z];
+      const prevC = byWeight[prev][z], nextC = byWeight[next][z];
+      return parseFloat((prevC + (nextC-prevC)*(w-prev)/(next-prev)).toFixed(2));
+    });
     const mu = defaultMarkup;
     const prices = dhl_costs.map(c => parseFloat((c * (1 + mu/100)).toFixed(2)));
     return { weight: w, markup: mu, dhl_costs, prices, valid: true, changed: false };
