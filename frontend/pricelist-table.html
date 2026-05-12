@@ -1,4 +1,4 @@
-<!-- pricelist-table.html | v2.3 | 12-05-2026 -->
+<!-- pricelist-table.html | v2.4 | 12-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -256,7 +256,7 @@ function buildMarkupData(defaultMarkup) {
     if (!byWeight[e.weight_kg]) byWeight[e.weight_kg] = {};
     byWeight[e.weight_kg][e.zone_code] = e.cost;
   }
-  const CY_W=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,55,60,65,70];
+  const CY_W=[1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,55,60,65,70];
   const AIR_W=[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,55,60,65,70];
   const ROAD_W=[1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
   const target_w = SVC_MODE==='ROAD' ? ROAD_W : SERVICE_ID.endsWith('_CY') ? CY_W : AIR_W;
