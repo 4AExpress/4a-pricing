@@ -424,7 +424,7 @@ function renderTable() {
 
     html += `<tr class="${rowClass} ${grpClass}" id="row-${i}">
       <td class="weight-cell">${row.weight.toFixed(1)} kg</td>
-      ${SERVICE_ID.endsWith('_CY') ? `<td style="background:#e3f2fd;color:#1565c0;font-size:11px;text-align:center;font-weight:600;cursor:pointer;" ondblclick="cascadeDiff(${i})">${i > 0 ? (row.prices[0] - markupData[i-1].prices[0]).toFixed(2) : '—'}</td>` : ''}
+      ${SERVICE_ID.endsWith('_CY') ? `<td style="background:#e3f2fd;padding:2px;">   ${i > 0 ? `<input type="number" step="0.01" value="${(row.prices[0] - markupData[i-1].prices[0]).toFixed(2)}"     style="width:52px;border:1px solid #90caf9;border-radius:3px;font-size:11px;color:#1565c0;font-weight:600;text-align:center;padding:2px;"     onchange="applyDiff(${i}, parseFloat(this.value))"     ondblclick="cascadeDiff(${i}, parseFloat(this.value))" />` : '—'} </td>` : ''}
       <td class="valid-cell">${row.valid ? '✅' : '🔴'}</td>
       <td class="markup-cell" style="background:#f1f8f1;font-size:11px;font-weight:600;color:${minPctColor};cursor:pointer;"
           title="1 κλικ → σταθερό Min% από εδώ &#10;2 κλικ → cascade Min% από εδώ"
@@ -641,9 +641,9 @@ function confirmSave() {
   closeModal();
   alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${SERVICE_ID}!`);
 }
-function cascadeDiff(idx) {
+function cascadeDiff(idx, diff) {
   if (idx === 0) return;
-  const diff = markupData[idx].prices[0] - markupData[idx-1].prices[0];
+  if (!diff) diff = markupData[idx].prices[0] - markupData[idx-1].prices[0];
   for (let i = idx; i < markupData.length; i++) {
     const targetPrice = markupData[i-1].prices[0] + diff;
     const dhlCost = markupData[i].dhl_costs[0];
@@ -654,6 +654,22 @@ function cascadeDiff(idx) {
         parseFloat((c*(1+markupData[i].markup/100)).toFixed(2)));
     }
   }
+  validateAll();
+  renderTable();
+}
+function applyDiff(idx, diff) {
+  if (idx === 0 || !diff) return;
+  const targetPrice = markupData[idx-1].prices[0] + diff;
+  const dhlCost = markupData[idx].dhl_costs[0];
+  if (dhlCost > 0) {
+    markupData[idx].markup = parseFloat(((targetPrice/dhlCost - 1)*100).toFixed(1));
+    markupData[idx].changed = true;
+    markupData[idx].prices = markupData[idx].dhl_costs.map(c => 
+      parseFloat((c*(1+markupData[idx].markup/100)).toFixed(2)));
+  }
+  validateAll();
+  renderTable();
+}
   validateAll();
   renderTable();
 }
