@@ -1,4 +1,4 @@
-'<!-- pricelist-editor.html | v2.10 | 12-05-2026 -->'
+'<!-- pricelist-editor.html | v2.11 | 13-05-2026 -->'
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -153,6 +153,22 @@
       <div class="section-header">Προσαύξηση ανά Service</div>
       <div class="section-body">
         <div id="fc-info" class="fc-info">Φόρτωση επίναυλου...</div>
+       <!-- CY Surcharge Panel -->
+<div id="cy-surcharge-panel" style="background:#fffde7;border:1px solid #f0c040;border-radius:6px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:24px;">
+  <span style="font-size:12px;font-weight:700;color:#888;">🇨🇾 Surcharge Κύπρου</span>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span style="font-size:11px;color:#555;">GR→CY</span>
+    <input type="number" id="surcharge-gr-cy" step="0.10" min="0" max="10" style="width:60px;padding:4px;border:1px solid #f0c040;border-radius:4px;font-size:13px;font-weight:700;text-align:center;" />
+    <span style="font-size:11px;color:#555;">€/kg</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span style="font-size:11px;color:#555;">CY→GR</span>
+    <input type="number" id="surcharge-cy-gr" step="0.10" min="0" max="10" style="width:60px;padding:4px;border:1px solid #f0c040;border-radius:4px;font-size:13px;font-weight:700;text-align:center;" />
+    <span style="font-size:11px;color:#555;">€/kg</span>
+  </div>
+  <button id="surcharge-save-btn" onclick="saveCySettings()" style="background:#f0c040;border:none;padding:5px 14px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;">💾 Αποθήκευση</button>
+  <span id="surcharge-msg" style="font-size:11px;color:#2e7d32;"></span>
+</div>
         <div id="services-grid" class="services-grid">
           <div class="loading">Φόρτωση τιμών DHL...</div>
         </div>
@@ -310,6 +326,12 @@ function formatDate(isoStr) {
 function todayFormatted() { return formatDate(new Date().toISOString()); }
 
 async function init() {
+  // Φόρτωση CY surcharge settings
+  try {
+    const rs = await fetch(`${API}/settings.php?v=${Date.now()}`);
+    cySettings = await rs.json();
+  } catch(e) { console.warn('Settings load failed', e); }
+  
   await Promise.all([loadDHL(), loadFuel()]);
  try {
   const r = await fetch(`${API}/shelf.php?v=${Date.now()}`);
@@ -321,6 +343,7 @@ async function init() {
 } catch(e) {
   shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
 }
+  renderCyPanel();
   renderServices();
   renderShelf();
 }
@@ -379,7 +402,32 @@ function validate(serviceId, markup) {
   }
   return { ok: true, msg: '✅ Έγκυρο' };
 }
-
+function renderCyPanel() {
+  const isAdmin = currentUser?.role === 'administrator';
+  document.getElementById('surcharge-gr-cy').value = cySettings.surcharge_gr_cy || 1.50;
+  document.getElementById('surcharge-cy-gr').value = cySettings.surcharge_cy_gr || 1.50;
+  document.getElementById('surcharge-gr-cy').disabled = !isAdmin;
+  document.getElementById('surcharge-cy-gr').disabled = !isAdmin;
+  document.getElementById('surcharge-save-btn').style.display = isAdmin ? '' : 'none';
+}
+async function saveCySettings() {
+  const gr_cy = parseFloat(document.getElementById('surcharge-gr-cy').value);
+  const cy_gr = parseFloat(document.getElementById('surcharge-cy-gr').value);
+  cySettings.surcharge_gr_cy = gr_cy;
+  cySettings.surcharge_cy_gr = cy_gr;
+  try {
+    const r = await fetch(`${API}/settings.php`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({settings: {surcharge_gr_cy: gr_cy, surcharge_cy_gr: cy_gr}, user: currentUser.name})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('surcharge-msg').textContent = '✅ Αποθηκεύτηκε!';
+      setTimeout(() => document.getElementById('surcharge-msg').textContent = '', 3000);
+    }
+  } catch(e) { console.error(e); }
+}
 function renderServices() {
   const grid = document.getElementById('services-grid');
   grid.innerHTML = SERVICES.map(svc => {
