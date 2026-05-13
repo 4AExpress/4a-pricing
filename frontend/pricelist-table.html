@@ -274,7 +274,7 @@ function buildMarkupData(defaultMarkup) {
       const prevC = byWeight[prev][z], nextC = byWeight[next][z];
       return parseFloat((prevC + (nextC-prevC)*(w-prev)/(next-prev)).toFixed(2));
     });
-    const surcharge = URL_SURCHARGE;
+    const surcharge = (SERVICE_ID === 'S1053' || SERVICE_ID === 'S1055') ? URL_SURCHARGE : 0;
     const effective_costs = dhl_costs.map(c => c > 0 ? parseFloat((c + w * surcharge).toFixed(2)) : 0);
     const mu = defaultMarkup;
     const prices = effective_costs.map(c => parseFloat((c * (1 + mu/100)).toFixed(2)));
