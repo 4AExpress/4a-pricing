@@ -532,7 +532,8 @@ function onMarkupZ9(serviceId, value) {
 function openTable(serviceId) {
   const mu = markups[serviceId];
   if (!mu) { alert('Εισάγετε πρώτα markup %'); return; }
-  window.location.href = `pricelist-table.html?service=${serviceId}&markup=${mu}`;
+  const sur = cySettings[serviceId === 'S1053' ? 'surcharge_cy_gr' : 'surcharge_gr_cy'] || 1.50;
+window.location.href = `pricelist-table.html?service=${serviceId}&markup=${mu}&surcharge=${sur}`;
 }
 
 function openModal(serviceId) {
