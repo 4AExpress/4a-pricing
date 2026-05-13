@@ -1,4 +1,4 @@
-'<!-- pricelist-editor.html | v2.11 | 13-05-2026 -->'
+'<!-- pricelist-editor.html | v2.12 | 13-05-2026 -->'
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -460,7 +460,7 @@ function renderServices() {
         <span class="markup-status" id="icon-${svc.id}">${icon}</span>
       </div>
       <div class="min-markup">Ελάχιστο: 0% (ελεύθερο)</div>
-     ${!svc.zone && svc.mode.includes('AIR') ? `<div class="markup-row" style="margin-top:6px;">
+     ${!svc.zone && !svc.cy_surcharge && svc.mode.includes('AIR') ? `
         <span style="font-size:10px;color:#888;min-width:70px;">🇨🇾 Z9</span>
         <div class="markup-input-wrap">
           <input class="markup-input" type="number" min="0" max="999" step="0.5"
