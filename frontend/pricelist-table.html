@@ -203,6 +203,7 @@ function formatDate(isoStr) {
   return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
 function todayFormatted() { return formatDate(new Date().toISOString()); }
+const URL_SURCHARGE = parseFloat(PARAMS.get('surcharge')) || 0;
 const BASE_SVC_ID = SERVICE_ID.replace('_CY','').replace('S1053','S1003').replace('S1055','S1012');
 const SVC_FILE   = `dhl_tariff_2026_${BASE_SVC_ID}.json`;
 const SVC_MODE   = (BASE_SVC_ID === 'S1010' || BASE_SVC_ID === 'S1041') ? 'ROAD' : 'AIR';
