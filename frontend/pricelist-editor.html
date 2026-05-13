@@ -377,12 +377,15 @@ function getFcPct(svc) {
 }
 
 function getSampleCost(serviceId) {
-  const d = dhlData[serviceId];
+  const svc = SERVICES.find(s => s.id === serviceId);
+  const baseId = serviceId.replace('_CY','').replace('S1053','S1003').replace('S1055','S1012');
+  const d = dhlData[baseId] || dhlData[serviceId];
   if (!d?.entries) return 0;
   const z1 = d.entries.filter(e => e.zone_code === 'z1');
-  return z1[2]?.cost || z1[0]?.cost || 0;
+  const baseCost = z1[2]?.cost || z1[0]?.cost || 0;
+  const surcharge = svc?.cy_surcharge ? (cySettings.surcharge_cy_gr || 1.50) : 0;
+  return baseCost + surcharge;
 }
-
 function validate(serviceId, markup) {
   if (!markup || isNaN(markup) || markup <= 0) return { ok: false, msg: 'Εισάγετε ποσοστό > 0%' };
   const d = dhlData[serviceId];
