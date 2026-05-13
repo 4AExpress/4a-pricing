@@ -274,12 +274,11 @@ function buildMarkupData(defaultMarkup) {
       const prevC = byWeight[prev][z], nextC = byWeight[next][z];
       return parseFloat((prevC + (nextC-prevC)*(w-prev)/(next-prev)).toFixed(2));
     });
-   const surcharge = SERVICE_ID === 'S1053' ? parseFloat(localStorage.getItem('cy_surcharge_cy_gr') || 1.50) :
-                      SERVICE_ID === 'S1055' ? parseFloat(localStorage.getItem('cy_surcharge_gr_cy') || 1.50) : 0;
+    const surcharge = URL_SURCHARGE;
     const effective_costs = dhl_costs.map(c => c > 0 ? parseFloat((c + w * surcharge).toFixed(2)) : 0);
     const mu = defaultMarkup;
-    const prices = dhl_costs.map(c => parseFloat((c * (1 + mu/100)).toFixed(2)));
-    return { weight: w, markup: mu, dhl_costs, prices, valid: true, changed: false };
+    const prices = effective_costs.map(c => parseFloat((c * (1 + mu/100)).toFixed(2)));
+    return { weight: w, markup: mu, dhl_costs: effective_costs, prices, valid: true, changed: false };
   });
 
   validateAll();
