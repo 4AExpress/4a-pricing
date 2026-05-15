@@ -1,4 +1,4 @@
-<!-- pricelist-table.html | v2.15 | 13-05-2026 -->
+<!-- pricelist-table.html | v2.16 | 15-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -21,30 +21,28 @@
   .section-header { background: #00BCD4; color: white; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
   .section-body { background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; padding: 16px; margin-bottom: 20px; }
 
-  /* CONTROLS */
   .controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
   .ctrl-group { display: flex; align-items: center; gap: 6px; }
   .ctrl-label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; }
   .ctrl-input { padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-weight: 600; width: 90px; text-align: center; }
   .ctrl-input:focus { outline: none; border-color: #00BCD4; }
   .btn { padding: 7px 14px; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
-  .btn-cyan    { background: #00BCD4; color: white; }
-  .btn-red     { background: #cc0000; color: white; }
-  .btn-gray    { background: #f0f0f0; color: #555; }
-  .btn-green   { background: #43a047; color: white; }
-  .btn:hover   { opacity: 0.85; }
+  .btn-cyan  { background: #00BCD4; color: white; }
+  .btn-red   { background: #cc0000; color: white; }
+  .btn-gray  { background: #f0f0f0; color: #555; }
+  .btn-green { background: #43a047; color: white; }
+  .btn:hover { opacity: 0.85; }
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .fc-badge { font-size: 11px; background: #e3f2fd; color: #1565c0; padding: 3px 8px; border-radius: 10px; }
+  .combi-badge { font-size: 11px; background: #fffde7; color: #f57f17; padding: 3px 8px; border-radius: 10px; border: 1px solid #f0c040; }
 
-  /* STATS BAR */
   .stats-bar { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
   .stat { font-size: 11px; color: #888; }
   .stat strong { color: #333; }
   .stat.errors strong { color: #c62828; }
   .stat.ok strong { color: #2e7d32; }
 
-  /* TABLE */
   .table-wrap { overflow-x: auto; border: 1px solid #e0e0e0; border-radius: 4px; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
   thead th { background: #f8f8f8; padding: 8px 6px; text-align: center; font-weight: 600; color: #555; border-bottom: 2px solid #e0e0e0; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
@@ -72,7 +70,6 @@
   .zone-val { font-size: 11px; }
   .zone-val.error { color: #c62828; font-weight: 600; }
 
-  /* LEGEND */
   .legend { display: flex; gap: 12px; font-size: 11px; color: #888; margin-bottom: 12px; flex-wrap: wrap; }
   .legend-item { display: flex; align-items: center; gap: 4px; }
 
@@ -80,6 +77,9 @@
   .save-info { font-size: 12px; color: #888; }
 
   .loading { text-align: center; padding: 40px; color: #aaa; }
+
+  /* COMBI surcharge info box */
+  .surcharge-box { background: #fffde7; border: 1px solid #f0c040; border-radius: 4px; padding: 8px 14px; margin-bottom: 12px; font-size: 11px; color: #7c6d00; }
 </style>
 </head>
 <body>
@@ -98,10 +98,14 @@
     <span id="section-title">— </span>
     <div style="display:flex;align-items:center;gap:8px;">
       <button onclick="window.location.href='https://4aexpress.github.io/4a-pricing/frontend/pricelist-editor.html'" style="background:rgba(255,255,255,0.2);color:white;border:none;padding:3px 10px;border-radius:3px;font-size:11px;cursor:pointer;">← Πίσω</button>
-      <span class="fc-badge" id="fc-badge">FC AIR: —%</span>
+      <span class="fc-badge" id="fc-badge">FC: —%</span>
+      <span class="combi-badge" id="combi-badge" style="display:none;">🇨🇾 COMBI</span>
     </div>
   </div>
   <div class="section-body">
+
+    <!-- COMBI INFO -->
+    <div class="surcharge-box" id="surcharge-box" style="display:none;"></div>
 
     <!-- CONTROLS -->
     <div class="controls">
@@ -134,8 +138,6 @@
       <div class="legend-item">🔴 <span>Παραβίαση — αύξησε το %</span></div>
       <div class="legend-item"><span style="color:#1565c0">■</span> <span>Κόστος DHL</span></div>
       <div class="legend-item"><span style="color:#cc0000">■</span> <span>Τιμή πελάτη</span></div>
-      <div class="legend-item">👆 <span>1 κλικ Min% → σταθερό από εδώ</span></div>
-      <div class="legend-item">👆👆 <span>2 κλικ Min% → cascade από εδώ</span></div>
     </div>
 
     <!-- TABLE -->
@@ -156,7 +158,7 @@
 </div>
 
 <!-- MODAL -->
-<div id="modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:100;">
+<div id="modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;z-index:100;">
   <div style="background:white;border-radius:8px;padding:24px;width:360px;box-shadow:0 4px 20px rgba(0,0,0,0.2);">
     <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Αποθήκευση στο Ράφι <span id="modal-service-id"></span></div>
     <div id="modal-type" style="font-size:12px;margin-bottom:16px;padding:6px 10px;background:#f8f8f8;border-radius:4px;"></div>
@@ -176,25 +178,48 @@
 </div>
 
 <script>
-const PARAMS     = new URLSearchParams(window.location.search);
-const SERVICE_ID = PARAMS.get('service') || 'S1003';
-const URL_MARKUP = parseFloat(PARAMS.get('markup')) || 140;
-const MAX_WEIGHT = (SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041') ? 100 : 70;
-const ZONES = (SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041')
-  ? ['z1','z2','z3']
-  : SERVICE_ID.endsWith('_CY')
-  ? ['z9']
-  : ['z1','z2','z3','z4','z5','z6','z7'];
-const ZONE_LABELS= ZONES.map(z => z.toUpperCase());
-const SVC_NAMES  = {
-  S1003: '✈️↗️ Express Export', S1012: '✈️🇬🇷↙️ Express Import',
-  S1010: '🚛↗️ Economy Export', S1041: '🚛🇬🇷↙️ Economy Import'
-};
-const SVC_EMOJI  = {
-  S1003: '✈️↗️', S1012: '✈️🇬🇷↙️',
-  S1010: '🚛↗️', S1041: '🚛🇬🇷↙️'
+const PARAMS      = new URLSearchParams(window.location.search);
+const SERVICE_ID  = PARAMS.get('service') || 'S1003';
+const URL_MARKUP  = parseFloat(PARAMS.get('markup')) || 140;
+const URL_SURCHARGE = parseFloat(PARAMS.get('surcharge')) || 0;
+const IS_COMBI    = PARAMS.get('combi') === '1';
+
+// ─── Service metadata ────────────────────────────────────────────────────────
+const SVC_INFO = {
+  S1003:    { file: 'dhl_tariff_2026_S1003.json', mode: 'AIR',  maxW: 70,  zones: ['z1','z2','z3','z4','z5','z6','z7'], name: '✈️↗️ Express Export' },
+  S1012:    { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z1','z2','z3','z4','z5','z6','z7'], name: '✈️🇬🇷↙️ Express Import' },
+  S1010:    { file: 'dhl_tariff_2026_S1010.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🚛↗️ Economy Export' },
+  S1041:    { file: 'dhl_tariff_2026_S1041.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🚛🇬🇷↙️ Economy Import' },
+  S1003_CY: { file: 'dhl_tariff_2026_S1003.json', mode: 'AIR',  maxW: 70,  zones: ['z9'],                                name: '🇨🇾✈️↗️ Express Export CY' },
+  S1012_CY: { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z9'],                                name: '🇨🇾✈️↙️ Express Import CY' },
+  // COMBI: χρησιμοποιεί ROAD JSON + surcharge CY
+  S1050:    { file: 'dhl_tariff_2026_S1010.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🇨🇾 ✈️ 🇬🇷 🚛➡️ 🌍 Export CY→GR→World', combi: true, surcharge_label: 'CY→GR AIR surcharge' },
+  S1051:    { file: 'dhl_tariff_2026_S1041.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🌍 🚛⬅️ 🇬🇷 ✈️ 🇨🇾 Import World→GR→CY', combi: true, surcharge_label: 'GR→CY AIR surcharge' },
 };
 
+const svcMeta = SVC_INFO[SERVICE_ID] || SVC_INFO['S1003'];
+const MAX_WEIGHT = svcMeta.maxW;
+const ZONES      = svcMeta.zones;
+const ZONE_LABELS= ZONES.map(z => z.toUpperCase());
+const SVC_MODE   = svcMeta.mode;
+const SVC_FILE   = svcMeta.file;
+const IS_CY      = SERVICE_ID.endsWith('_CY');
+const IS_COMBI_SVC = svcMeta.combi || IS_COMBI;
+
+// ─── UI init ─────────────────────────────────────────────────────────────────
+document.getElementById('topbar-title').textContent = `Τιμοκατάλογος — ${SERVICE_ID} ${svcMeta.name}`;
+document.getElementById('section-title').textContent = `${SERVICE_ID} — ${svcMeta.name} · ${SVC_MODE} · έως ${MAX_WEIGHT}kg`;
+document.getElementById('global-markup').value = URL_MARKUP;
+document.getElementById('save-btn-svc').textContent = SERVICE_ID;
+
+if (IS_COMBI_SVC) {
+  document.getElementById('combi-badge').style.display = '';
+  document.getElementById('surcharge-box').style.display = '';
+  document.getElementById('surcharge-box').innerHTML =
+    `🇨🇾 <strong>COMBI Service</strong> — Κόστος = DHL ROAD τιμή + <strong>${svcMeta.surcharge_label}: ${URL_SURCHARGE} €/kg × βάρος</strong>`;
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatDate(isoStr) {
   if (!isoStr) return '—';
   if (/^\d{2}-\d{2}-\d{4}$/.test(isoStr)) return isoStr;
@@ -203,37 +228,26 @@ function formatDate(isoStr) {
   return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
 function todayFormatted() { return formatDate(new Date().toISOString()); }
-const URL_SURCHARGE = parseFloat(PARAMS.get('surcharge')) || 0;
-const BASE_SVC_ID = SERVICE_ID.replace('_CY','').replace('S1053','S1003').replace('S1055','S1012');
-const SVC_FILE   = `dhl_tariff_2026_${BASE_SVC_ID}.json`;
-const SVC_MODE   = (BASE_SVC_ID === 'S1010' || BASE_SVC_ID === 'S1041') ? 'ROAD' : 'AIR';
+
+const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 
 let dhlData    = null;
-let fuelFc     = SERVICE_ID === 'S1010' || SERVICE_ID === 'S1041' ? 35.25 : 47.0;
+let fuelFc     = SVC_MODE === 'ROAD' ? 35.25 : 47.0;
 let markupData = [];
 let tableVisible = false;
 let globalMarkup = URL_MARKUP;
 
-const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
-
-// Ενημέρωση τίτλου από URL params
-document.getElementById('topbar-title').textContent =
-  `Τιμοκατάλογος — ${SERVICE_ID} ${SVC_NAMES[SERVICE_ID] || ''}`;
-document.getElementById('section-title').textContent =
-  `${SERVICE_ID} — ${SVC_NAMES[SERVICE_ID]} · ${SVC_MODE} · έως ${MAX_WEIGHT}kg`;
-document.getElementById('global-markup').value = URL_MARKUP;
-document.getElementById('save-btn-svc') && (document.getElementById('save-btn-svc').textContent = SERVICE_ID);
-
-// === LOAD ===
+// ─── LOAD ─────────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
     const r1 = await fetch(BASE + SVC_FILE);
+    if (!r1.ok) throw new Error(`HTTP ${r1.status}`);
     dhlData = await r1.json();
 
     try {
       const r2 = await fetch(BASE + 'data/fuel_surcharge_cache.json');
       const fc = await r2.json();
-      fuelFc   = SVC_MODE === 'AIR' ? (fc.current_air||47.0) : (fc.current_road||35.25);
+      fuelFc = SVC_MODE === 'AIR' ? (fc.current_air||47.0) : (fc.current_road||35.25);
     } catch(e) {}
 
     document.getElementById('fc-badge').textContent = `FC ${SVC_MODE}: ${fuelFc}%`;
@@ -246,88 +260,87 @@ async function loadData() {
   }
 }
 
-// === BUILD MARKUP DATA ===
+// ─── BUILD MARKUP DATA ────────────────────────────────────────────────────────
 function buildMarkupData(defaultMarkup) {
   if (!dhlData?.entries) return;
 
-  // Ομαδοποίηση ανά βάρος για κάθε zone
   const byWeight = {};
   for (const e of dhlData.entries) {
     if (e.weight_kg > MAX_WEIGHT) continue;
     if (!byWeight[e.weight_kg]) byWeight[e.weight_kg] = {};
     byWeight[e.weight_kg][e.zone_code] = e.cost;
   }
-  const CY_W=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70];
-  const AIR_W=[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,55,60,65,70];
-  const ROAD_W=[1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
-  const target_w = SVC_MODE==='ROAD' ? ROAD_W : SERVICE_ID.endsWith('_CY') ? CY_W : AIR_W;
+
+  const AIR_W  = [0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,55,60,65,70];
+  const ROAD_W = [1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
+  const CY_W   = Array.from({length:70}, (_,i) => i+1);
+
+  const target_w = IS_CY ? CY_W : (SVC_MODE === 'ROAD' ? ROAD_W : AIR_W);
   const allWeights = Object.keys(byWeight).map(Number).sort((a,b) => a-b);
-  const weights = SERVICE_ID.endsWith('_CY') ? target_w : allWeights.filter(w => target_w.includes(w));
+  const weights = IS_CY ? target_w : allWeights.filter(w => target_w.includes(w));
+
   markupData = weights.map((w, idx) => {
     const dhl_costs = ZONES.map(z => {
-      if (byWeight[w]?.[z]) return byWeight[w][z];
-      const prev = weights.slice(0,idx).reverse().find(pw => byWeight[pw]?.[z]);
-      const next = weights.slice(idx+1).find(pw => byWeight[pw]?.[z]);
+      if (byWeight[w]?.[z] !== undefined) return byWeight[w][z];
+      const prev = weights.slice(0,idx).reverse().find(pw => byWeight[pw]?.[z] !== undefined);
+      const next = weights.slice(idx+1).find(pw => byWeight[pw]?.[z] !== undefined);
       if (!prev && !next) return 0;
       if (!prev) return byWeight[next][z];
       if (!next) return byWeight[prev][z];
       const prevC = byWeight[prev][z], nextC = byWeight[next][z];
       return parseFloat((prevC + (nextC-prevC)*(w-prev)/(next-prev)).toFixed(2));
     });
-    const surcharge = (SERVICE_ID === 'S1053' || SERVICE_ID === 'S1055') ? URL_SURCHARGE : 0;
-    const effective_costs = dhl_costs.map(c => c > 0 ? parseFloat((c + w * surcharge).toFixed(2)) : 0);
-    const mu = defaultMarkup;
-    const prices = effective_costs.map(c => parseFloat((c * (1 + mu/100)).toFixed(2)));
-    return { weight: w, markup: mu, dhl_costs: effective_costs, prices, valid: true, changed: false };
+
+    // COMBI: κόστος = DHL ROAD + surcharge × weight
+    // Παλιά (S1053/S1055 non-combi): κόστος = DHL + flat surcharge
+    const effective_costs = IS_COMBI_SVC
+      ? dhl_costs.map(c => c > 0 ? parseFloat((c + URL_SURCHARGE * w).toFixed(2)) : 0)
+      : (URL_SURCHARGE > 0
+          ? dhl_costs.map(c => c > 0 ? parseFloat((c + URL_SURCHARGE).toFixed(2)) : 0)
+          : dhl_costs);
+
+    const prices = effective_costs.map(c => parseFloat((c * (1 + defaultMarkup/100)).toFixed(2)));
+    return { weight: w, markup: defaultMarkup, dhl_costs: effective_costs, prices, valid: true, changed: false };
   });
 
   validateAll();
 }
 
-// === VALIDATE ===
+// ─── VALIDATE ─────────────────────────────────────────────────────────────────
 function validateAll() {
-  // R1: μονοτονικότητα ανά zone
+  for (const r of markupData) { r.valid = true; r.error_zones = []; }
   for (let zi = 0; zi < ZONES.length; zi++) {
     let prevPrice = 0;
     for (let i = 0; i < markupData.length; i++) {
       const price = markupData[i].prices[zi];
       if (price < prevPrice) {
         markupData[i].valid = false;
-        markupData[i].error_zones = markupData[i].error_zones || [];
         if (!markupData[i].error_zones.includes(zi)) markupData[i].error_zones.push(zi);
       }
       prevPrice = price;
     }
   }
-  // mark valid rows
-  for (const row of markupData) {
-    if (!row.error_zones || row.error_zones.length === 0) row.valid = true;
-  }
 }
 
-// === APPLY GLOBAL ===
+// ─── APPLY GLOBAL ─────────────────────────────────────────────────────────────
 function applyGlobal() {
   const val = parseFloat(document.getElementById('global-markup').value);
   if (!val || val <= 0) { alert('Εισάγετε έγκυρο ποσοστό > 0'); return; }
   globalMarkup = val;
-
   if (markupData.length) {
     for (const row of markupData) {
-      row.markup   = val;
-      row.changed  = false;
-      row.prices   = row.dhl_costs.map(c => parseFloat((c * (1 + val/100)).toFixed(2)));
-      row.valid    = true;
-      row.error_zones = [];
+      row.markup = val; row.changed = false; row.error_zones = [];
+      row.prices = row.dhl_costs.map(c => parseFloat((c * (1 + val/100)).toFixed(2)));
+      row.valid  = true;
     }
     validateAll();
     renderTable();
   }
 }
 
-// === EXPAND TABLE ===
+// ─── EXPAND TABLE ─────────────────────────────────────────────────────────────
 function expandTable() {
   if (!dhlData) { alert('Φόρτωση...'); return; }
-
   if (!tableVisible) {
     const val = parseFloat(document.getElementById('global-markup').value) || globalMarkup;
     globalMarkup = val;
@@ -339,8 +352,7 @@ function expandTable() {
     document.getElementById('legend').style.display    = 'flex';
     document.getElementById('save-bar').style.display  = 'flex';
   } else {
-    document.getElementById('table-container').innerHTML =
-      '<div class="loading">Πατήστε "Ανάπτυξη" για εμφάνιση.</div>';
+    document.getElementById('table-container').innerHTML = '<div class="loading">Πατήστε "Ανάπτυξη" για εμφάνιση.</div>';
     tableVisible = false;
     document.getElementById('expand-btn').textContent = '▶ Ανάπτυξη πίνακα';
     document.getElementById('stats-bar').style.display = 'none';
@@ -349,7 +361,7 @@ function expandTable() {
   }
 }
 
-// === RENDER TABLE ===
+// ─── RENDER TABLE ─────────────────────────────────────────────────────────────
 function renderTable() {
   const okCount  = markupData.filter(r => r.valid).length;
   const errCount = markupData.filter(r => !r.valid).length;
@@ -366,39 +378,28 @@ function renderTable() {
   document.getElementById('save-btn').disabled  = !saveOk;
   document.getElementById('save-btn2').disabled = !saveOk;
   document.getElementById('save-info').textContent =
-    saveOk ? `✅ ${okCount} γραμμές έγκυρες — έτοιμο για αποθήκευση` :
-             `🔴 ${errCount} παραβιάσεις μονοτονικότητας — διορθώστε πριν αποθηκεύσετε`;
+    saveOk ? `✅ ${okCount} γραμμές έγκυρες — έτοιμο για αποθήκευση`
+           : `🔴 ${errCount} παραβιάσεις μονοτονικότητας — διορθώστε πριν αποθηκεύσετε`;
   document.getElementById('save-info').style.color = saveOk ? '#2e7d32' : '#c62828';
 
-  // Build table HTML
   let prev_step = null;
-  let html = `
-    <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th class="weight-col">Βάρος</th>
-          ${SERVICE_ID.endsWith('_CY') ? '<th style="background:#e3f2fd;color:#1565c0;font-size:10px;padding:4px 6px;text-align:center;">+1kg</th>' : ''}
-          <th class="valid-col">R1</th>
-          <th class="markup-col" style="background:#e8f5e9;color:#2e7d32;">Min%</th>
-          <th class="markup-col">Markup %</th>
-          ${ZONE_LABELS.map(z => `<th class="zone-col">${z}<br><span style="font-size:9px;color:#aaa;font-weight:400">DHL · Τιμή</span></th>`).join('')}
-        </tr>
-      </thead>
-      <tbody>`;
+  let html = `<div class="table-wrap"><table>
+    <thead><tr>
+      <th class="weight-col">Βάρος</th>
+      ${IS_COMBI_SVC ? `<th style="background:#fffde7;color:#7c6d00;font-size:10px;">Surcharge<br>${URL_SURCHARGE}€/kg</th>` : ''}
+      <th class="valid-col">R1</th>
+      <th class="markup-col" style="background:#e8f5e9;color:#2e7d32;">Min%</th>
+      <th class="markup-col">Markup %</th>
+      ${ZONE_LABELS.map(z => `<th class="zone-col">${z}<br><span style="font-size:9px;color:#aaa;font-weight:400">DHL+Surch · Τιμή</span></th>`).join('')}
+    </tr></thead><tbody>`;
 
   for (let i = 0; i < markupData.length; i++) {
     const row  = markupData[i];
-    const step = row.weight <= 30 ? 0.5 : 1;
+    const step = row.weight <= 10 ? 1 : 5;
     const groupStart = prev_step !== null && step !== prev_step;
     prev_step = step;
 
-    const rowClass = !row.valid ? 'has-error' : '';
-    const grpClass = groupStart ? 'group-start' : '';
-
-
-    // Υπολογισμός Min% — ελάχιστο markup για μονοτονικότητα
-    // Κανόνας: price[n] >= price[n-1] → επιτρέπεται ίδια τιμή (όχι μόνο αύξηση)
+    // Min%
     let minPct = 0;
     if (i > 0) {
       const prevRow = markupData[i-1];
@@ -407,15 +408,12 @@ function renderTable() {
         const prevPrice = prevRow.prices[zi];
         const dhlCost   = row.dhl_costs[zi];
         if (dhlCost > 0) {
-          // Ελάχιστο markup ώστε price >= prevPrice
           const needed = ((prevPrice / dhlCost) - 1) * 100;
           if (needed > maxNeeded) maxNeeded = needed;
         }
       }
-      // Αν το ceil δίνει ακριβώς το ίδιο αποτέλεσμα με floor → χρησιμοποίησε floor
       const withCeil  = Math.ceil(maxNeeded * 10) / 10;
       const withFloor = Math.floor(maxNeeded * 10) / 10;
-      // Δοκίμασε αν floor αρκεί (price >= prevPrice για όλες τις zones)
       let floorOk = true;
       for (let zi = 0; zi < ZONES.length; zi++) {
         const prevPrice = prevRow.prices[zi];
@@ -427,25 +425,27 @@ function renderTable() {
       }
       minPct = floorOk ? withFloor : withCeil;
     }
-    // Αποθήκευση minPct στο row για χρήση από double-click
     row.minPct = minPct;
 
     const minPctDisplay = minPct > 0 ? `${minPct.toFixed(1)}%` : '0%';
     const minPctColor   = row.markup < minPct - 0.05 ? '#c62828' : '#2e7d32';
+    const rowClass      = !row.valid ? 'has-error' : '';
+    const grpClass      = groupStart ? 'group-start' : '';
+
+    // Surcharge column value για COMBI
+    const surchargeTotal = IS_COMBI_SVC ? (URL_SURCHARGE * row.weight).toFixed(2) : null;
 
     html += `<tr class="${rowClass} ${grpClass}" id="row-${i}">
       <td class="weight-cell">${row.weight.toFixed(1)} kg</td>
-      ${SERVICE_ID.endsWith('_CY') ? `<td style="background:#e3f2fd;padding:2px;">   ${i > 0 ? `<input type="number" step="0.01" value="${(row.prices[0] - markupData[i-1].prices[0]).toFixed(2)}"     style="width:52px;border:1px solid #90caf9;border-radius:3px;font-size:11px;color:#1565c0;font-weight:600;text-align:center;padding:2px;"     onchange="applyDiff(${i}, parseFloat(this.value))"     ondblclick="cascadeDiff(${i}, parseFloat(this.value))" />` : '—'} </td>` : ''}
+      ${IS_COMBI_SVC ? `<td style="background:#fffde7;font-size:10px;color:#7c6d00;font-weight:600;">${surchargeTotal}€</td>` : ''}
       <td class="valid-cell">${row.valid ? '✅' : '🔴'}</td>
       <td class="markup-cell" style="background:#f1f8f1;font-size:11px;font-weight:600;color:${minPctColor};cursor:pointer;"
-          title="1 κλικ → σταθερό Min% από εδώ &#10;2 κλικ → cascade Min% από εδώ"
-          onclick="applyMinFlat(${i})"
-          ondblclick="applyMinCascade(${i})">${minPctDisplay}</td>
+          title="1 κλικ → σταθερό Min% · 2 κλικ → cascade"
+          onclick="applyMinFlat(${i})" ondblclick="applyMinCascade(${i})">${minPctDisplay}</td>
       <td class="markup-cell">
         <input class="markup-field ${row.changed ? 'changed' : ''}"
           type="number" min="0" max="999" step="0.5"
-          value="${row.markup}"
-          data-idx="${i}"
+          value="${row.markup}" data-idx="${i}"
           onchange="onRowMarkup(${i}, this.value)"
           onfocus="this.select()" />
       </td>`;
@@ -460,17 +460,15 @@ function renderTable() {
         <span class="${isErr ? 'zone-val error' : 'zone-val'}">${price.toFixed(2)}</span>
       </td>`;
     }
-
     html += `</tr>`;
   }
 
   html += '</tbody></table></div>';
 
-  // === ΓΡΑΜΜΗ 120+ (τελευταίο markup για επιπλέον kg) ===
+  // Γραμμή +1kg
   if (markupData.length > 0) {
     const lastRow    = markupData[markupData.length - 1];
     const lastMarkup = lastRow.markup;
-    // Εύρεση adder cost από το JSON (τελευταία entries > MAX_WEIGHT)
     const adderCosts = ZONES.map(z => {
       const beyond = dhlData.entries
         .filter(e => e.zone_code === z && e.weight_kg > MAX_WEIGHT)
@@ -478,231 +476,147 @@ function renderTable() {
       if (beyond.length < 2) return 0;
       return parseFloat((beyond[1].cost - beyond[0].cost).toFixed(2));
     });
-    const adderPrices = adderCosts.map(c =>
-      parseFloat((c * (1 + lastMarkup/100)).toFixed(2)));
+    // COMBI: adder επίσης προσθέτει surcharge per kg
+    const adderEffective = IS_COMBI_SVC
+      ? adderCosts.map(c => parseFloat((c + URL_SURCHARGE).toFixed(2)))
+      : adderCosts;
+    const adderPrices = adderEffective.map(c => parseFloat((c * (1 + lastMarkup/100)).toFixed(2)));
 
-    html += `
-    <div style="margin-top:8px;border:1px solid #00BCD4;border-radius:4px;overflow:hidden;">
+    html += `<div style="margin-top:8px;border:1px solid #00BCD4;border-radius:4px;overflow:hidden;">
       <div style="background:#00BCD4;color:white;font-size:11px;font-weight:600;padding:4px 10px;">
         ${MAX_WEIGHT}kg+ — Κόστος ανά επιπλέον kg (markup: ${lastMarkup}%)
       </div>
-      <div class="table-wrap">
-      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px;">
+      <div class="table-wrap"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px;">
         <tr style="background:#f0fdff;">
           <td class="weight-cell" style="padding:4px 6px;">${MAX_WEIGHT}+ kg</td>
+          ${IS_COMBI_SVC ? `<td style="background:#fffde7;font-size:10px;color:#7c6d00;">+${URL_SURCHARGE}€</td>` : ''}
           <td class="valid-cell">—</td>
           <td class="markup-cell" style="background:#f1f8f1;font-size:11px;color:#555;text-align:center;">ανά kg</td>
           <td class="markup-cell" style="text-align:center;font-weight:700;">${lastMarkup}%</td>
-          ${ZONES.map((z,zi) => `
-          <td class="zone-cell">
-            <span style="color:#1565c0;font-size:10px">${adderCosts[zi].toFixed(2)}</span>
+          ${ZONES.map((z,zi) => `<td class="zone-cell">
+            <span style="color:#1565c0;font-size:10px">${adderEffective[zi].toFixed(2)}</span>
             <span style="color:#888;font-size:9px"> → </span>
             <span style="color:#333;font-size:11px">${adderPrices[zi].toFixed(2)}</span>
           </td>`).join('')}
         </tr>
-      </table>
-      </div>
+      </table></div>
     </div>`;
   }
 
   document.getElementById('table-container').innerHTML = html;
 }
 
-// === ROW MARKUP CHANGE ===
+// ─── ROW MARKUP ───────────────────────────────────────────────────────────────
 function onRowMarkup(idx, value) {
   const val = parseFloat(value);
   if (!val || val <= 0) return;
-
   markupData[idx].markup  = val;
   markupData[idx].changed = val !== globalMarkup;
-  markupData[idx].prices  = markupData[idx].dhl_costs.map(c =>
-    parseFloat((c * (1 + val/100)).toFixed(2)));
-  markupData[idx].valid      = true;
-  markupData[idx].error_zones = [];
-
-  // Re-validate all
+  markupData[idx].prices  = markupData[idx].dhl_costs.map(c => parseFloat((c * (1 + val/100)).toFixed(2)));
   for (const r of markupData) { r.valid = true; r.error_zones = []; }
   validateAll();
   renderTable();
-
-  // Restore focus
-  setTimeout(() => {
-    const el = document.querySelector(`input[data-idx="${idx}"]`);
-    if (el) el.focus();
-  }, 50);
+  setTimeout(() => { const el = document.querySelector(`input[data-idx="${idx}"]`); if (el) el.focus(); }, 50);
 }
 
-// === APPLY MIN FLAT (single click) ===
-// Από τη γραμμή idx και κάτω → εφαρμόζει το Min% αυτής της γραμμής ως ΣΤΑΘΕΡΟ
+// ─── MIN% FLAT & CASCADE ──────────────────────────────────────────────────────
 function applyMinFlat(startIdx) {
   const flatMarkup = markupData[startIdx].minPct || 0;
   if (flatMarkup <= 0) return;
   for (let i = startIdx; i < markupData.length; i++) {
-    const row    = markupData[i];
-    row.markup   = parseFloat(flatMarkup.toFixed(1));
-    row.changed  = row.markup !== globalMarkup;
-    row.prices   = row.dhl_costs.map(c =>
-      parseFloat((c * (1 + row.markup/100)).toFixed(2)));
-    row.valid       = true;
+    const row = markupData[i];
+    row.markup  = parseFloat(flatMarkup.toFixed(1));
+    row.changed = row.markup !== globalMarkup;
+    row.prices  = row.dhl_costs.map(c => parseFloat((c * (1 + row.markup/100)).toFixed(2)));
     row.error_zones = [];
   }
   for (const r of markupData) { r.valid = true; r.error_zones = []; }
-  validateAll();
-  renderTable();
+  validateAll(); renderTable();
 }
 
-// === APPLY MIN CASCADE (double-click) ===
-// Από τη γραμμή idx και κάτω → εφαρμόζει το Min% κάθε γραμμής
 function applyMinCascade(startIdx) {
   for (let i = startIdx; i < markupData.length; i++) {
-    const row    = markupData[i];
-    const minPct = row.minPct || 0;
-    // Εφαρμόζουμε το Min% μόνο αν είναι μεγαλύτερο από το τρέχον markup
-    const newMarkup = Math.max(minPct, 0.1);
-    row.markup   = parseFloat(newMarkup.toFixed(1));
-    row.changed  = row.markup !== globalMarkup;
-    row.prices   = row.dhl_costs.map(c =>
-      parseFloat((c * (1 + row.markup/100)).toFixed(2)));
-    row.valid       = true;
+    const row = markupData[i];
+    const newMarkup = Math.max(row.minPct || 0, 0.1);
+    row.markup  = parseFloat(newMarkup.toFixed(1));
+    row.changed = row.markup !== globalMarkup;
+    row.prices  = row.dhl_costs.map(c => parseFloat((c * (1 + row.markup/100)).toFixed(2)));
     row.error_zones = [];
   }
-  // Επανυπολογισμός minPct για τις επόμενες γραμμές
   for (const r of markupData) { r.valid = true; r.error_zones = []; }
-  validateAll();
-  renderTable();
+  validateAll(); renderTable();
 }
 
-// === RESET ===
+// ─── RESET ────────────────────────────────────────────────────────────────────
 function resetMarkups() {
   for (const row of markupData) {
-    row.markup   = globalMarkup;
-    row.changed  = false;
-    row.prices   = row.dhl_costs.map(c => parseFloat((c * (1 + globalMarkup/100)).toFixed(2)));
-    row.valid    = true;
-    row.error_zones = [];
+    row.markup = globalMarkup; row.changed = false; row.error_zones = [];
+    row.prices = row.dhl_costs.map(c => parseFloat((c * (1 + globalMarkup/100)).toFixed(2)));
+    row.valid  = true;
   }
-  validateAll();
-  renderTable();
+  validateAll(); renderTable();
 }
 
-// === SAVE ===
+// ─── SAVE ─────────────────────────────────────────────────────────────────────
 function savePricelist() {
   const errCount = markupData.filter(r => !r.valid).length;
-  if (errCount > 0) { alert(`🔴 ${errCount} παραβιάσεις — δεν επιτρέπεται αποθήκευση (R1)`); return; }
-
-  // Έλεγχος αν είναι flat ή custom
-  const isCustom   = markupData.some(r => r.markup !== globalMarkup);
-  const typeEmoji  = isCustom ? '⚙️' : '📌';
-  const typeLabel  = isCustom ? 'custom' : 'flat';
-
+  if (errCount > 0) { alert(`🔴 ${errCount} παραβιάσεις — δεν επιτρέπεται αποθήκευση`); return; }
+  const isCustom = markupData.some(r => r.markup !== globalMarkup);
   document.getElementById('modal-service-id').textContent = SERVICE_ID;
-  const modal = document.getElementById('modal-bg');
-  document.getElementById('modal-name').value = `${SERVICE_ID} — ${globalMarkup}% ${typeEmoji}`;
+  document.getElementById('modal-name').value = `${SERVICE_ID} — ${globalMarkup}% ${isCustom ? '⚙️' : '📌'}`;
   document.getElementById('modal-type').textContent =
-    isCustom
-      ? `⚙️ Custom — διαφορετικό markup ανά βάρος`
-      : `📌 Flat — ενιαίο markup ${globalMarkup}% σε όλα τα βάρη`;
+    isCustom ? '⚙️ Custom — διαφορετικό markup ανά βάρος' : `📌 Flat — ενιαίο markup ${globalMarkup}%`;
   document.getElementById('modal-type').style.color = isCustom ? '#e65100' : '#1565c0';
-  modal.style.display = 'flex';
+  document.getElementById('modal-bg').style.display = 'flex';
 }
 
-function closeModal() {
-  document.getElementById('modal-bg').style.display = 'none';
-}
+function closeModal() { document.getElementById('modal-bg').style.display = 'none'; }
 
 function confirmSave() {
   const name    = document.getElementById('modal-name').value.trim();
   const account = document.getElementById('modal-account').value.trim();
   if (!name) { alert('Εισάγετε όνομα'); return; }
 
-  const isCustom = markupData.some(r => r.markup !== globalMarkup);
-
-  // Παίρνουμε τον χρήστη από το localStorage (αποθηκεύτηκε κατά το login)
+  const isCustom  = markupData.some(r => r.markup !== globalMarkup);
   const savedUser = JSON.parse(localStorage.getItem('4a_current_user') || 'null');
-  const userName  = savedUser?.name   || '—';
-  const userOffice= savedUser?.office || '—';
-
-  // Ημερομηνία σε DD-MM-YYYY
-  const now   = new Date();
-  const day   = String(now.getDate()).padStart(2,'0');
-  const month = String(now.getMonth()+1).padStart(2,'0');
-  const year  = now.getFullYear();
-  const dateFormatted = `${day}-${month}-${year}`;
-
-  const shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
+  const shelf     = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
   if (!shelf[SERVICE_ID]) shelf[SERVICE_ID] = [];
 
-  shelf[SERVICE_ID].unshift({
-    id:            Date.now(),
-    name,
+  const item = {
+    id: Date.now(), name,
     service_id:    SERVICE_ID,
+    service_name:  svcMeta.name,
     account:       account || '—',
     global_markup: globalMarkup,
+    markup:        globalMarkup,
+    markup_z9:     0,
+    surcharge:     URL_SURCHARGE,
     is_custom:     isCustom,
-    type_emoji:    isCustom ? '⚙️' : '📌',
+    is_combi:      IS_COMBI_SVC,
     rows:          markupData.map(r => ({ weight: r.weight, markup: r.markup })),
     fc:            fuelFc,
-    user:          userName,
-    office:        userOffice,
+    user:          savedUser?.name   || '—',
+    office:        savedUser?.office || '—',
     date:          todayFormatted(),
     created_at:    new Date().toISOString()
-  });
-
+  };
+  shelf[SERVICE_ID].unshift(item);
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
+
   const API = 'https://4aexpress.com/api';
   fetch(`${API}/shelf.php`, {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({
-  action:'save',
-  id: shelf[SERVICE_ID][0].id,
-  name: shelf[SERVICE_ID][0].name,
-  service_id: shelf[SERVICE_ID][0].service_id,
-  service_name: shelf[SERVICE_ID][0].service_name || '',
-  markup: shelf[SERVICE_ID][0].global_markup,
-  global_markup: shelf[SERVICE_ID][0].global_markup,
-  account: shelf[SERVICE_ID][0].account,
-  user: shelf[SERVICE_ID][0].user,
-  office: shelf[SERVICE_ID][0].office,
-  date: shelf[SERVICE_ID][0].date,
-  created_at: shelf[SERVICE_ID][0].created_at
-})
-  }).then(r=>r.json()).then(d=>console.log('API shelf save:', d))
-    .catch(e=>console.error('API shelf error:', e));
+    body: JSON.stringify({ action:'save', ...item })
+  }).catch(e => console.error('API shelf error:', e));
+
   closeModal();
   alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${SERVICE_ID}!`);
 }
-function cascadeDiff(idx, diff) {
-  if (idx === 0) return;
-  if (!diff) diff = markupData[idx].prices[0] - markupData[idx-1].prices[0];
-  for (let i = idx; i < markupData.length; i++) {
-    const targetPrice = markupData[i-1].prices[0] + diff;
-    const dhlCost = markupData[i].dhl_costs[0];
-    if (dhlCost > 0) {
-      markupData[i].markup = parseFloat(((targetPrice/dhlCost - 1)*100).toFixed(4));
-      markupData[i].changed = true;
-      markupData[i].prices = markupData[i].dhl_costs.map(c => 
-        parseFloat((c*(1+markupData[i].markup/100)).toFixed(2)));
-    }
-  }
-  validateAll();
-  renderTable();
-}
-function applyDiff(idx, diff) {
-  if (idx === 0 || !diff) return;
-  const targetPrice = markupData[idx-1].prices[0] + diff;
-  const dhlCost = markupData[idx].dhl_costs[0];
-  if (dhlCost > 0) {
-    markupData[idx].markup = parseFloat(((targetPrice/dhlCost - 1)*100).toFixed(4));
-    markupData[idx].changed = true;
-    markupData[idx].prices = markupData[idx].dhl_costs.map(c => 
-      parseFloat((c*(1+markupData[idx].markup/100)).toFixed(2)));
-  }
-  validateAll();
-  renderTable();
-}
+
 // Init
 loadData();
 </script>
 </body>
 </html>
+
