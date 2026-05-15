@@ -1,4 +1,4 @@
-<!-- pricelist-editor.html | v2.13 | 15-05-2026 -->
+<!-- pricelist-editor.html | v2.14 | 15-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -228,8 +228,8 @@ const SERVICES = [
   { id:'S1041',    name:'🚛🇬🇷↙️ Economy Import',           mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1041.json' },
   { id:'S1003_CY', name:'🇨🇾✈️↗️ Express Export Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1003.json', zone:'z9' },
   { id:'S1012_CY', name:'🇨🇾✈️↙️ Express Import Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1012.json', zone:'z9' },
-  { id:'S1053',    name:'🚛🇨🇾↗️ Export CY→GR',            mode:'AIR+ROAD / Κύπρος→Ελλάδα', file:'dhl_tariff_2026_S1003.json', cy_surcharge: true },
-  { id:'S1055',    name:'🚛🇨🇾↙️ Import GR→CY',            mode:'AIR+ROAD / Ελλάδα→Κύπρος', file:'dhl_tariff_2026_S1012.json', cy_surcharge: true },
+  { id:'S1053',    name:'🇨🇾✈️↗️🇬🇷✈️↗️ Export CY→GR→World', mode:'AIR / Κύπρος→Ελλάδα→Κόσμος', file:'dhl_tariff_2026_S1003.json', cy_surcharge: true },
+  { id:'S1055',    name:'🌍✈️↙️🇬🇷✈️↙️🇨🇾 Import World→GR→CY', mode:'AIR / Κόσμος→Ελλάδα→Κύπρος', file:'dhl_tariff_2026_S1012.json', cy_surcharge: true },
 ];
 
 // ─── Ποια AIR services εμφανίζουν Z9 block (Διεθνή μόνο, όχι CY/cy_surcharge) ───
@@ -477,7 +477,7 @@ function renderServices() {
     const cost  = getSampleCost(svc.id);
     const mu    = markups[svc.id] || '';
     const v     = mu ? validate(svc.id, parseFloat(mu)) : null;
-    const cls   = svc.zone ? 'is-cyprus' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error');
+    const cls   = (svc.zone || svc.cy_surcharge) ? 'is-cyprus' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error');
     const icon  = !mu ? '○' : v?.ok ? '✅' : '🔴';
     const calc  = mu && cost && v?.ok ? {
       price:  (cost * (1 + parseFloat(mu)/100)).toFixed(2),
@@ -550,7 +550,7 @@ function onMarkup(serviceId, value) {
   const mu    = value ? parseFloat(value) : null;
   const v     = mu ? validate(serviceId, mu) : null;
 
-  document.getElementById(`card-${serviceId}`).className = 'svc-card ' + (svc.zone ? 'is-cyprus' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error'));
+  document.getElementById(`card-${serviceId}`).className = 'svc-card ' + ((svc.zone || svc.cy_surcharge) ? 'is-cyprus' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error'));
   document.getElementById(`icon-${serviceId}`).textContent = !mu ? '○' : v?.ok ? '✅' : '🔴';
 
   const msgEl = document.getElementById(`msg-${serviceId}`);
