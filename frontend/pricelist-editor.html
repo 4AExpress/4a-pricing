@@ -1,4 +1,4 @@
-'<!-- pricelist-editor.html | v2.12 | 13-05-2026 -->'
+<!-- pricelist-editor.html | v2.13 | 15-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -58,6 +58,14 @@
   .markup-pct { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #888; }
   .markup-status { font-size: 20px; flex-shrink: 0; width: 28px; text-align: center; }
   .min-markup { font-size: 11px; color: #aaa; margin-bottom: 6px; }
+  /* --- Z9 block --- */
+  .z9-block { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #f0c040; }
+  .z9-label { font-size: 10px; color: #b8860b; font-weight: 600; margin-bottom: 4px; }
+  .z9-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .z9-msg { font-size: 11px; padding: 3px 8px; border-radius: 3px; min-height: 20px; }
+  .z9-msg.ok    { background: #e8f5e9; color: #2e7d32; }
+  .z9-msg.error { background: #ffebee; color: #c62828; }
+  /* --- end Z9 --- */
   .validation-msg { font-size: 11px; padding: 4px 8px; border-radius: 3px; margin-bottom: 6px; min-height: 22px; }
   .validation-msg.error { background: #ffebee; color: #c62828; }
   .validation-msg.ok    { background: #e8f5e9; color: #2e7d32; }
@@ -108,13 +116,13 @@
     <div class="login-title">Γνωστοποίηση Τιμών</div>
     <div class="login-sub">Εισάγετε τα στοιχεία σας για πρόσβαση</div>
     <label class="login-label">User Code</label>
-<input class="login-pin" type="text" id="login-user" maxlength="5" placeholder="E1001" style="letter-spacing:4px;" />
-<div id="otp-section" style="display:none;">
-  <label class="login-label">Κωδικός OTP (6 ψηφία)</label>
-  <input class="login-pin" type="text" id="login-otp" maxlength="6" placeholder="••••••" style="letter-spacing:6px;" />
-</div>
-<div class="login-error" id="login-error"></div>
-<button class="login-btn" id="login-btn" onclick="doLogin()">Αποστολή OTP</button>
+    <input class="login-pin" type="text" id="login-user" maxlength="5" placeholder="E1001" style="letter-spacing:4px;" />
+    <div id="otp-section" style="display:none;">
+      <label class="login-label">Κωδικός OTP (6 ψηφία)</label>
+      <input class="login-pin" type="text" id="login-otp" maxlength="6" placeholder="••••••" style="letter-spacing:6px;" />
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Αποστολή OTP</button>
   </div>
 </div>
 
@@ -137,8 +145,8 @@
     <button class="nav-btn active" onclick="showTab('editor', this)">+ Νέος Τιμοκατάλογος</button>
     <button class="nav-btn" onclick="showTab('shelf', this)">📦 Ράφι</button>
     <a class="nav-btn" href="pricelist-clients.html">👥 Πελάτες</a>
-<a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
-   <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
+    <a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
+    <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
   </div>
 
   <div class="container">
@@ -153,22 +161,24 @@
       <div class="section-header">Προσαύξηση ανά Service</div>
       <div class="section-body">
         <div id="fc-info" class="fc-info">Φόρτωση επίναυλου...</div>
-       <!-- CY Surcharge Panel -->
-<div id="cy-surcharge-panel" style="background:#fffde7;border:1px solid #f0c040;border-radius:6px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:24px;">
-  <span style="font-size:12px;font-weight:700;color:#888;">🇨🇾 Surcharge Κύπρου</span>
-  <div style="display:flex;align-items:center;gap:6px;">
-    <span style="font-size:11px;color:#555;">GR→CY</span>
-    <input type="number" id="surcharge-gr-cy" step="0.10" min="0" max="10" style="width:60px;padding:4px;border:1px solid #f0c040;border-radius:4px;font-size:13px;font-weight:700;text-align:center;" />
-    <span style="font-size:11px;color:#555;">€/kg</span>
-  </div>
-  <div style="display:flex;align-items:center;gap:6px;">
-    <span style="font-size:11px;color:#555;">CY→GR</span>
-    <input type="number" id="surcharge-cy-gr" step="0.10" min="0" max="10" style="width:60px;padding:4px;border:1px solid #f0c040;border-radius:4px;font-size:13px;font-weight:700;text-align:center;" />
-    <span style="font-size:11px;color:#555;">€/kg</span>
-  </div>
-  <button id="surcharge-save-btn" onclick="saveCySettings()" style="background:#f0c040;border:none;padding:5px 14px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;">💾 Αποθήκευση</button>
-  <span id="surcharge-msg" style="font-size:11px;color:#2e7d32;"></span>
-</div>
+
+        <!-- CY Surcharge Panel -->
+        <div id="cy-surcharge-panel" style="background:#fffde7;border:1px solid #f0c040;border-radius:6px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:24px;">
+          <span style="font-size:12px;font-weight:700;color:#888;">🇨🇾 Surcharge Κύπρου</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:#555;">GR→CY</span>
+            <input type="number" id="surcharge-gr-cy" step="0.10" min="0" max="10" style="width:60px;padding:4px;border:1px solid #f0c040;border-radius:4px;font-size:13px;font-weight:700;text-align:center;" />
+            <span style="font-size:11px;color:#555;">€/kg</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:#555;">CY→GR</span>
+            <input type="number" id="surcharge-cy-gr" step="0.10" min="0" max="10" style="width:60px;padding:4px;border:1px solid #f0c040;border-radius:4px;font-size:13px;font-weight:700;text-align:center;" />
+            <span style="font-size:11px;color:#555;">€/kg</span>
+          </div>
+          <button id="surcharge-save-btn" onclick="saveCySettings()" style="background:#f0c040;border:none;padding:5px 14px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;">💾 Αποθήκευση</button>
+          <span id="surcharge-msg" style="font-size:11px;color:#2e7d32;"></span>
+        </div>
+
         <div id="services-grid" class="services-grid">
           <div class="loading">Φόρτωση τιμών DHL...</div>
         </div>
@@ -210,26 +220,31 @@
 <script>
 const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 const API  = 'https://4aexpress.com/api';
-const PIN  = '1111';
 
- const SERVICES = [
-  { id:'S1003', name:'✈️↗️ Express Export',    mode:'AIR / Διεθνής',    file:'dhl_tariff_2026_S1003.json' },
-  { id:'S1012', name:'✈️🇬🇷↙️ Express Import', mode:'AIR / Διεθνής',    file:'dhl_tariff_2026_S1012.json' },
-  { id:'S1010', name:'🚛↗️ Economy Export',    mode:'ROAD / Εσωτερικό', file:'dhl_tariff_2026_S1010.json' },
-  { id:'S1041', name:'🚛🇬🇷↙️ Economy Import', mode:'ROAD / Εσωτερικό', file:'dhl_tariff_2026_S1041.json' },
-  { id:'S1003_CY', name:'🇨🇾✈️↗️ Express Export Κύπρος', mode:'AIR / Κύπρος Z9', file:'dhl_tariff_2026_S1003.json', zone:'z9' },
-  { id:'S1012_CY', name:'🇨🇾✈️↙️ Express Import Κύπρος', mode:'AIR / Κύπρος Z9', file:'dhl_tariff_2026_S1012.json', zone:'z9' },
-  { id:'S1053', name:'🚛🇨🇾↗️ Export CY→GR', mode:'AIR+ROAD / Κύπρος→Ελλάδα', file:'dhl_tariff_2026_S1003.json', cy_surcharge: true },
-  { id:'S1055', name:'🚛🇨🇾↙️ Import GR→CY', mode:'AIR+ROAD / Ελλάδα→Κύπρος', file:'dhl_tariff_2026_S1012.json', cy_surcharge: true },
-
+const SERVICES = [
+  { id:'S1003',    name:'✈️↗️ Express Export',              mode:'AIR / Διεθνής',            file:'dhl_tariff_2026_S1003.json' },
+  { id:'S1012',    name:'✈️🇬🇷↙️ Express Import',           mode:'AIR / Διεθνής',            file:'dhl_tariff_2026_S1012.json' },
+  { id:'S1010',    name:'🚛↗️ Economy Export',              mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1010.json' },
+  { id:'S1041',    name:'🚛🇬🇷↙️ Economy Import',           mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1041.json' },
+  { id:'S1003_CY', name:'🇨🇾✈️↗️ Express Export Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1003.json', zone:'z9' },
+  { id:'S1012_CY', name:'🇨🇾✈️↙️ Express Import Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1012.json', zone:'z9' },
+  { id:'S1053',    name:'🚛🇨🇾↗️ Export CY→GR',            mode:'AIR+ROAD / Κύπρος→Ελλάδα', file:'dhl_tariff_2026_S1003.json', cy_surcharge: true },
+  { id:'S1055',    name:'🚛🇨🇾↙️ Import GR→CY',            mode:'AIR+ROAD / Ελλάδα→Κύπρος', file:'dhl_tariff_2026_S1012.json', cy_surcharge: true },
 ];
+
+// ─── Ποια AIR services εμφανίζουν Z9 block (Διεθνή μόνο, όχι CY/cy_surcharge) ───
+function hasZ9Block(svc) {
+  return !svc.zone && !svc.cy_surcharge && svc.mode.includes('AIR');
+}
 
 let currentUser = null;
 let dhlData = {}, fuelData = null, markups = {}, pendingSvc = null;
 let shelf = {};
-let markups_z9 = {}; 
+let markups_z9 = {};
 let cySettings = { surcharge_gr_cy: 1.50, surcharge_cy_gr: 1.50 };
 let activeShelfTab = SERVICES[0].id;
+
+// ─── LOGIN ───────────────────────────────────────────────────────────────────
 async function forgotPin() {
   const code = document.getElementById('login-user').value.trim();
   if (!code) { alert('Εισάγετε πρώτα τον User Code σας'); return; }
@@ -242,7 +257,6 @@ async function doLogin() {
   const err  = document.getElementById('login-error');
   err.textContent = '';
 
-  // Βήμα 1 — Αποστολή OTP
   if (document.getElementById('otp-section').style.display === 'none') {
     if (!code) { err.textContent = 'Εισάγετε User Code'; return; }
     const r = await fetch(`${API}/login.php`, {
@@ -263,7 +277,6 @@ async function doLogin() {
     return;
   }
 
-  // Βήμα 2 — Επαλήθευση OTP
   try {
     const r = await fetch(`${API}/login.php`, {
       method: 'POST',
@@ -283,8 +296,7 @@ async function doLogin() {
 }
 document.getElementById('login-user').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
 
-// Auto-login αν υπάρχει session
-if(new URLSearchParams(location.search).get('logout')==='1'){
+if (new URLSearchParams(location.search).get('logout') === '1') {
   localStorage.removeItem('4a_current_user');
 }
 (function() {
@@ -300,12 +312,12 @@ if(new URLSearchParams(location.search).get('logout')==='1'){
 
 function doLogout() {
   localStorage.removeItem('4a_current_user');
-  currentUser = null; markups = {};
+  currentUser = null; markups = {}; markups_z9 = {};
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-screen').style.display   = 'none';
   document.getElementById('login-user').value = '';
-document.getElementById('otp-section').style.display = 'none';
-document.getElementById('login-btn').textContent = 'Αποστολή OTP';
+  document.getElementById('otp-section').style.display = 'none';
+  document.getElementById('login-btn').textContent = 'Αποστολή OTP';
   document.getElementById('login-error').textContent = '';
 }
 
@@ -316,6 +328,7 @@ document.addEventListener('visibilitychange', function() {
   }
 });
 
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
 function formatDate(isoStr) {
   if (!isoStr) return '—';
   if (/^\d{2}-\d{2}-\d{4}$/.test(isoStr)) return isoStr;
@@ -325,24 +338,26 @@ function formatDate(isoStr) {
 }
 function todayFormatted() { return formatDate(new Date().toISOString()); }
 
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 async function init() {
-  // Φόρτωση CY surcharge settings
   try {
     const rs = await fetch(`${API}/settings.php?v=${Date.now()}`);
     cySettings = await rs.json();
   } catch(e) { console.warn('Settings load failed', e); }
-  
+
   await Promise.all([loadDHL(), loadFuel()]);
- try {
-  const r = await fetch(`${API}/shelf.php?v=${Date.now()}`);
-  const remote = await r.json();
-  if (Object.keys(remote).length > 0) {
-    shelf = remote;
-    localStorage.setItem('4a_shelf', JSON.stringify(shelf));
+
+  try {
+    const r = await fetch(`${API}/shelf.php?v=${Date.now()}`);
+    const remote = await r.json();
+    if (Object.keys(remote).length > 0) {
+      shelf = remote;
+      localStorage.setItem('4a_shelf', JSON.stringify(shelf));
+    }
+  } catch(e) {
+    shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
   }
-} catch(e) {
-  shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
-}
+
   renderCyPanel();
   renderServices();
   renderShelf();
@@ -378,14 +393,16 @@ function getFcPct(svc) {
 
 function getSampleCost(serviceId) {
   const svc = SERVICES.find(s => s.id === serviceId);
-  const baseId = serviceId.replace('_CY','').replace('S1053','S1003').replace('S1055','S1012');
-  const d = dhlData[baseId] || dhlData[serviceId];
+  const d = dhlData[serviceId];
   if (!d?.entries) return 0;
   const z1 = d.entries.filter(e => e.zone_code === 'z1');
   const baseCost = z1[2]?.cost || z1[0]?.cost || 0;
   const surcharge = svc?.cy_surcharge ? (cySettings.surcharge_cy_gr || 1.50) : 0;
   return baseCost + surcharge;
 }
+
+// ─── VALIDATION ───────────────────────────────────────────────────────────────
+// Ελέγχει μονοτονικότητα τιμών για όλες τις ζώνες του service
 function validate(serviceId, markup) {
   if (!markup || isNaN(markup) || markup <= 0) return { ok: false, msg: 'Εισάγετε ποσοστό > 0%' };
   const d = dhlData[serviceId];
@@ -405,6 +422,25 @@ function validate(serviceId, markup) {
   }
   return { ok: true, msg: '✅ Έγκυρο' };
 }
+
+// Validation για Z9: χρησιμοποιεί τα entries ζώνης z9 (αν υπάρχουν) ή z1 fallback
+function validateZ9(serviceId, markup) {
+  if (!markup || isNaN(markup) || markup <= 0) return { ok: false, msg: 'Εισάγετε ποσοστό Z9 > 0%' };
+  const d = dhlData[serviceId];
+  if (!d?.entries) return { ok: true, msg: '✅ Z9 Έγκυρο' };
+  // Φιλτράρουμε z9 entries — αν δεν υπάρχουν, χρησιμοποιούμε z1
+  const z9entries = d.entries.filter(e => e.zone_code === 'z9');
+  const entries   = z9entries.length ? z9entries : d.entries.filter(e => e.zone_code === 'z1');
+  let prev = 0;
+  for (const e of entries) {
+    const price = parseFloat((e.cost * (1 + markup/100)).toFixed(2));
+    if (price < prev) return { ok: false, msg: '⚠️ Παραβίαση μονοτονικότητας Z9' };
+    prev = price;
+  }
+  return { ok: true, msg: '✅ Z9 Έγκυρο' };
+}
+
+// ─── CY PANEL ─────────────────────────────────────────────────────────────────
 function renderCyPanel() {
   const isAdmin = currentUser?.role === 'administrator';
   document.getElementById('surcharge-gr-cy').value = cySettings.surcharge_gr_cy || 1.50;
@@ -413,6 +449,7 @@ function renderCyPanel() {
   document.getElementById('surcharge-cy-gr').disabled = !isAdmin;
   document.getElementById('surcharge-save-btn').style.display = isAdmin ? '' : 'none';
 }
+
 async function saveCySettings() {
   const gr_cy = parseFloat(document.getElementById('surcharge-gr-cy').value);
   const cy_gr = parseFloat(document.getElementById('surcharge-cy-gr').value);
@@ -431,6 +468,8 @@ async function saveCySettings() {
     }
   } catch(e) { console.error(e); }
 }
+
+// ─── RENDER SERVICES ──────────────────────────────────────────────────────────
 function renderServices() {
   const grid = document.getElementById('services-grid');
   grid.innerHTML = SERVICES.map(svc => {
@@ -446,6 +485,25 @@ function renderServices() {
       profit: (cost * (1 + parseFloat(mu)/100) - cost - cost * fcPct/100).toFixed(2),
       pct:    ((cost * (1 + parseFloat(mu)/100) - cost - cost * fcPct/100) / (cost + cost * fcPct/100) * 100).toFixed(1)
     } : null;
+
+    // Z9 block — μόνο για AIR Διεθνή (S1003, S1012)
+    const z9mu = markups_z9[svc.id] || '';
+    const z9v  = (hasZ9Block(svc) && z9mu) ? validateZ9(svc.id, parseFloat(z9mu)) : null;
+    const z9block = hasZ9Block(svc) ? `
+      <div class="z9-block">
+        <div class="z9-label">🇨🇾 Markup Z9 (Κύπρος)</div>
+        <div class="z9-row">
+          <div class="markup-input-wrap">
+            <input class="markup-input" type="number" min="0" max="999" step="0.5"
+              id="markup-z9-${svc.id}" value="${z9mu}" placeholder="0"
+              oninput="onMarkupZ9('${svc.id}', this.value)" />
+            <span class="markup-pct">%</span>
+          </div>
+          <span class="markup-status" id="icon-z9-${svc.id}">${!z9mu ? '○' : z9v?.ok ? '✅' : '🔴'}</span>
+        </div>
+        <div class="z9-msg ${z9v ? (z9v.ok?'ok':'error') : ''}" id="msg-z9-${svc.id}">${z9v?.msg||''}</div>
+      </div>` : '';
+
     return `
     <div class="svc-card ${cls}" id="card-${svc.id}">
       <div class="svc-header">
@@ -463,19 +521,10 @@ function renderServices() {
         <span class="markup-status" id="icon-${svc.id}">${icon}</span>
       </div>
       <div class="min-markup">Ελάχιστο: 0% (ελεύθερο)</div>
-     ${!svc.zone && !svc.cy_surcharge && svc.mode.includes('AIR') ? `
-        <span style="font-size:10px;color:#888;min-width:70px;">🇨🇾 Z9</span>
-        <div class="markup-input-wrap">
-          <input class="markup-input" type="number" min="0" max="999" step="0.5"
-            id="markup-z9-${svc.id}" value="${markups_z9[svc.id]||''}" placeholder="0"
-            oninput="onMarkupZ9('${svc.id}', this.value)" />
-          <span class="markup-pct">%</span>
-        </div>
-        <span class="markup-status" id="icon-z9-${svc.id}">○</span>
-      </div>` : ''}
       <div class="validation-msg ${v ? (v.ok?'ok':'error') : ''}" id="msg-${svc.id}">${v?.msg||''}</div>
+      ${z9block}
       ${calc ? `
-      <div class="preview-row">
+      <div class="preview-row" id="preview-${svc.id}">
         <div class="preview-item"><span class="preview-label">Κόστος DHL</span><span class="preview-value cost">${cost.toFixed(2)}€</span></div>
         <div class="preview-item"><span class="preview-label">FC ${fcPct}%</span><span class="preview-value" style="color:#888">${calc.fc}€</span></div>
         <div class="preview-item"><span class="preview-label">Τιμή πελάτη</span><span class="preview-value price">${calc.price}€</span></div>
@@ -492,6 +541,7 @@ function renderServices() {
   }).join('');
 }
 
+// ─── onMarkup ─────────────────────────────────────────────────────────────────
 function onMarkup(serviceId, value) {
   markups[serviceId] = value ? parseFloat(value) : null;
   const svc   = SERVICES.find(s => s.id === serviceId);
@@ -499,16 +549,21 @@ function onMarkup(serviceId, value) {
   const cost  = getSampleCost(serviceId);
   const mu    = value ? parseFloat(value) : null;
   const v     = mu ? validate(serviceId, mu) : null;
-  document.getElementById(`card-${serviceId}`).className = 'svc-card ' + (!mu ? '' : v?.ok ? 'is-valid' : 'has-error');
+
+  document.getElementById(`card-${serviceId}`).className = 'svc-card ' + (svc.zone ? 'is-cyprus' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error'));
   document.getElementById(`icon-${serviceId}`).textContent = !mu ? '○' : v?.ok ? '✅' : '🔴';
+
   const msgEl = document.getElementById(`msg-${serviceId}`);
   msgEl.className   = 'validation-msg ' + (v ? (v.ok?'ok':'error') : '');
   msgEl.textContent = v?.msg || '';
+
   const saveBtn  = document.getElementById(`savebtn-${serviceId}`);
   const tableBtn = document.getElementById(`tablebtn-${serviceId}`);
   saveBtn.className  = 'save-svc-btn ' + (v?.ok ? 'visible' : '');
   if (tableBtn) tableBtn.className = 'save-svc-btn ' + (v?.ok ? 'visible' : '');
-  const card = document.getElementById(`card-${serviceId}`);
+
+  // Preview row
+  const card     = document.getElementById(`card-${serviceId}`);
   const existing = card.querySelector('.preview-row');
   if (mu && cost && v?.ok) {
     const calc = {
@@ -517,7 +572,7 @@ function onMarkup(serviceId, value) {
       profit: (cost * (1 + mu/100) - cost - cost * fcPct/100).toFixed(2),
       pct:    ((cost * (1 + mu/100) - cost - cost * fcPct/100) / (cost + cost * fcPct/100) * 100).toFixed(1)
     };
-    const html = `<div class="preview-row">
+    const html = `<div class="preview-row" id="preview-${serviceId}">
       <div class="preview-item"><span class="preview-label">Κόστος DHL</span><span class="preview-value cost">${cost.toFixed(2)}€</span></div>
       <div class="preview-item"><span class="preview-label">FC ${fcPct}%</span><span class="preview-value" style="color:#888">${calc.fc}€</span></div>
       <div class="preview-item"><span class="preview-label">Τιμή πελάτη</span><span class="preview-value price">${calc.price}€</span></div>
@@ -525,18 +580,31 @@ function onMarkup(serviceId, value) {
     </div>`;
     if (existing) existing.outerHTML = html;
     else saveBtn.insertAdjacentHTML('beforebegin', html);
- } else if (existing) { existing.remove(); }
-}
-function onMarkupZ9(serviceId, value) {
-  markups_z9[serviceId] = value ? parseFloat(value) : null;
-  document.getElementById(`icon-z9-${serviceId}`).textContent = value ? '✅' : '○';
+  } else if (existing) { existing.remove(); }
 }
 
+// ─── onMarkupZ9 — με validation ───────────────────────────────────────────────
+function onMarkupZ9(serviceId, value) {
+  markups_z9[serviceId] = value ? parseFloat(value) : null;
+  const mu = value ? parseFloat(value) : null;
+  const v  = mu ? validateZ9(serviceId, mu) : null;
+
+  document.getElementById(`icon-z9-${serviceId}`).textContent = !mu ? '○' : v?.ok ? '✅' : '🔴';
+
+  const msgEl = document.getElementById(`msg-z9-${serviceId}`);
+  if (msgEl) {
+    msgEl.className   = 'z9-msg ' + (v ? (v.ok?'ok':'error') : '');
+    msgEl.textContent = v?.msg || '';
+  }
+}
+
+// ─── TABLE / MODAL ────────────────────────────────────────────────────────────
 function openTable(serviceId) {
-  const mu = markups[serviceId];
+  const mu    = markups[serviceId];
+  const mu_z9 = markups_z9[serviceId] || 0;
   if (!mu) { alert('Εισάγετε πρώτα markup %'); return; }
   const sur = cySettings[serviceId === 'S1053' ? 'surcharge_cy_gr' : 'surcharge_gr_cy'] || 1.50;
-window.location.href = `pricelist-table.html?service=${serviceId}&markup=${mu}&surcharge=${sur}`;
+  window.location.href = `pricelist-table.html?service=${serviceId}&markup=${mu}&markup_z9=${mu_z9}&surcharge=${sur}`;
 }
 
 function openModal(serviceId) {
@@ -562,32 +630,45 @@ function confirmSave() {
   const svcId = pendingSvc;
   const svc   = SERVICES.find(s => s.id === svcId);
   const mu    = markups[svcId];
+  const mu_z9 = markups_z9[svcId] || 0;
+
   if (!shelf[svcId]) shelf[svcId] = [];
   shelf[svcId].unshift({
-    id: Date.now(), name,
-    service_id: svcId, service_name: svc.name,
-    markup: mu, global_markup: mu,
-    markup_z9: markups_z9[svcId] || 0,
-    account: account || '—',
-    user: currentUser.name, office: currentUser.office,
-    date: todayFormatted(), created_at: new Date().toISOString()
+    id:           Date.now(),
+    name,
+    service_id:   svcId,
+    service_name: svc.name,
+    markup:       mu,
+    global_markup: mu,
+    markup_z9:    mu_z9,
+    account:      account || '—',
+    user:         currentUser.name,
+    office:       currentUser.office,
+    date:         todayFormatted(),
+    created_at:   new Date().toISOString()
   });
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
   const savedItem = {...shelf[svcId][0]};
   closeModal();
+
   fetch(`${API}/shelf.php`, {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action:'save', ...savedItem})
   }).then(r=>r.json()).then(d=>console.log('API shelf save:', d))
     .catch(e=>console.error('API shelf error:', e));
-  markups[svcId] = null;
+
+  markups[svcId]    = null;
+  markups_z9[svcId] = null;
   document.getElementById(`markup-${svcId}`).value = '';
+  const z9input = document.getElementById(`markup-z9-${svcId}`);
+  if (z9input) z9input.value = '';
   onMarkup(svcId, '');
   renderShelf();
   alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${svcId}!`);
 }
 
+// ─── SHELF ────────────────────────────────────────────────────────────────────
 function renderShelf() {
   const tabsEl = document.getElementById('shelf-tabs');
   if (!tabsEl) return;
@@ -613,28 +694,45 @@ function renderShelfContent() {
     el.innerHTML = '<div class="shelf-empty">Δεν υπάρχουν τιμοκατάλογοι για ' + activeShelfTab + '</div>';
     return;
   }
-  el.innerHTML = items.map(p => `
+  el.innerHTML = items.map(p => {
+    const z9info = p.markup_z9 ? ` · Z9: ${p.markup_z9}%` : '';
+    return `
     <div class="shelf-item">
       <div>
         <div class="shelf-name">${p.name}</div>
-        <div class="shelf-meta">${formatDate(p.date)} · ${p.user||'—'} · ${p.office||'—'} · Markup: ${p.markup||p.global_markup||'—'}% · AccountNo: ${p.account}</div>
+        <div class="shelf-meta">${formatDate(p.date)} · ${p.user||'—'} · ${p.office||'—'} · Markup: ${p.markup||p.global_markup||'—'}%${z9info} · AccountNo: ${p.account}</div>
       </div>
       <div class="shelf-actions">
-      <button class="btn-small" onclick="viewShelfItem('${activeShelfTab}', ${p.id})">👁 Προβολή</button>
+        <button class="btn-small" onclick="viewShelfItem('${activeShelfTab}', ${p.id})">👁 Προβολή</button>
         <button class="btn-small btn-delete" onclick="deleteShelfItem('${activeShelfTab}', ${p.id})">Διαγραφή</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
+
+// ─── viewShelfItem — περνάει markup_z9 στο URL ────────────────────────────────
 function viewShelfItem(svcId, id) {
   const item = (shelf[svcId]||[]).find(p => p.id === id);
   if (!item) return;
-  const markup = item.markup || item.global_markup || 0;
-  window.open(`pricelist-table.html?service=${svcId}&markup=${markup}&readonly=1`, '_blank');
+  const markup    = item.markup || item.global_markup || 0;
+  const markup_z9 = item.markup_z9 || 0;
+  const svc       = SERVICES.find(s => s.id === svcId);
+  const sur       = cySettings[svcId === 'S1053' ? 'surcharge_cy_gr' : 'surcharge_gr_cy'] || 1.50;
+  window.open(
+    `pricelist-table.html?service=${svcId}&markup=${markup}&markup_z9=${markup_z9}&surcharge=${sur}&readonly=1`,
+    '_blank'
+  );
 }
+
 function deleteShelfItem(svcId, id) {
   if (!confirm('Διαγραφή;')) return;
   shelf[svcId] = (shelf[svcId]||[]).filter(p => p.id !== id);
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
+  fetch(`${API}/shelf.php`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action:'delete', id})
+  }).catch(e=>console.error('API delete error:', e));
   renderShelf();
 }
 
