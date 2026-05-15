@@ -1,4 +1,4 @@
-<!-- pricelist-editor.html | v2.14 | 15-05-2026 -->
+<!-- pricelist-editor.html | v2.15 | 15-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -228,8 +228,8 @@ const SERVICES = [
   { id:'S1041',    name:'🚛🇬🇷↙️ Economy Import',           mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1041.json' },
   { id:'S1003_CY', name:'🇨🇾✈️↗️ Express Export Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1003.json', zone:'z9' },
   { id:'S1012_CY', name:'🇨🇾✈️↙️ Express Import Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1012.json', zone:'z9' },
-  { id:'S1053',    name:'🇨🇾✈️↗️🇬🇷✈️↗️ Export CY→GR→World', mode:'AIR / Κύπρος→Ελλάδα→Κόσμος', file:'dhl_tariff_2026_S1003.json', cy_surcharge: true },
-  { id:'S1055',    name:'🌍✈️↙️🇬🇷✈️↙️🇨🇾 Import World→GR→CY', mode:'AIR / Κόσμος→Ελλάδα→Κύπρος', file:'dhl_tariff_2026_S1012.json', cy_surcharge: true },
+  { id:'S1050',    name:'🇨🇾 ✈️ 🇬🇷 🚛➡️ 🌍 Export CY→GR→World', mode:'COMBI AIR+ROAD / Κύπρος→Κόσμος', file:'dhl_tariff_2026_S1010.json', cy_surcharge: true, combi: true, surcharge_key: 'surcharge_cy_gr' },
+  { id:'S1051',    name:'🌍 🚛⬅️ 🇬🇷 ✈️ 🇨🇾 Import World→GR→CY', mode:'COMBI ROAD+AIR / Κόσμος→Κύπρος', file:'dhl_tariff_2026_S1041.json', cy_surcharge: true, combi: true, surcharge_key: 'surcharge_gr_cy' },
 ];
 
 // ─── Ποια AIR services εμφανίζουν Z9 block (Διεθνή μόνο, όχι CY/cy_surcharge) ───
@@ -388,6 +388,8 @@ async function loadFuel() {
 
 function getFcPct(svc) {
   if (!fuelData) return 0;
+  // COMBI: κυρίως ROAD επίναυλος
+  if (svc.combi) return fuelData.current_road || 0;
   return svc.mode.includes('AIR') ? (fuelData.current_air||0) : (fuelData.current_road||0);
 }
 
@@ -397,6 +399,13 @@ function getSampleCost(serviceId) {
   if (!d?.entries) return 0;
   const z1 = d.entries.filter(e => e.zone_code === 'z1');
   const baseCost = z1[2]?.cost || z1[0]?.cost || 0;
+  // COMBI: ROAD κόστος + surcharge (€/kg × sample weight)
+  // Χρησιμοποιούμε sample weight = z1[2].weight_kg για το surcharge
+  if (svc?.combi) {
+    const sampleWeight = z1[2]?.weight_kg || z1[0]?.weight_kg || 1;
+    const surchargePerKg = cySettings[svc.surcharge_key] || 1.50;
+    return baseCost + (surchargePerKg * sampleWeight);
+  }
   const surcharge = svc?.cy_surcharge ? (cySettings.surcharge_cy_gr || 1.50) : 0;
   return baseCost + surcharge;
 }
@@ -603,8 +612,10 @@ function openTable(serviceId) {
   const mu    = markups[serviceId];
   const mu_z9 = markups_z9[serviceId] || 0;
   if (!mu) { alert('Εισάγετε πρώτα markup %'); return; }
-  const sur = cySettings[serviceId === 'S1053' ? 'surcharge_cy_gr' : 'surcharge_gr_cy'] || 1.50;
-  window.location.href = `pricelist-table.html?service=${serviceId}&markup=${mu}&markup_z9=${mu_z9}&surcharge=${sur}`;
+  const svc = SERVICES.find(s => s.id === serviceId);
+  const surchargeKey = svc?.surcharge_key || 'surcharge_cy_gr';
+  const sur = cySettings[surchargeKey] || 1.50;
+  window.location.href = `pricelist-table.html?service=${serviceId}&markup=${mu}&markup_z9=${mu_z9}&surcharge=${sur}&combi=${svc?.combi ? 1 : 0}`;
 }
 
 function openModal(serviceId) {
