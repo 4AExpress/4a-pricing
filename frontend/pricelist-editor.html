@@ -542,10 +542,10 @@ function renderServices() {
         <div class="preview-item"><span class="preview-label">Τιμή πελάτη</span><span class="preview-value price">${calc.price}€</span></div>
         <div class="preview-item"><span class="preview-label">Κέρδος</span><span class="preview-value profit">${calc.profit}€ (${calc.pct}%)</span></div>
       </div>` : ''}
-      <button class="save-svc-btn ${v?.ok ? 'visible' : ''}" id="savebtn-${svc.id}" onclick="openModal('${svc.id}')">
+      <button class="save-svc-btn ${(v?.ok || (svc.zone === 'z9' && (markups_z9[svc.id] || markups[svc.id]))) ? 'visible' : ''}" id="savebtn-${svc.id}" onclick="openModal('${svc.id}')">
         💾 Αποθήκευση στο Ράφι ${svc.id}
       </button>
-      <button class="save-svc-btn ${v?.ok ? 'visible' : ''}" id="tablebtn-${svc.id}"
+      <button class="save-svc-btn ${(v?.ok || (svc.zone === 'z9' && (markups_z9[svc.id] || markups[svc.id]))) ? 'visible' : ''}" id="tablebtn-${svc.id}"
         style="background:#cc0000; margin-top:4px;" onclick="openTable('${svc.id}')">
         ▶ Ανάπτυξη Πίνακα ${svc.id}
       </button>
@@ -612,10 +612,11 @@ function onMarkupZ9(serviceId, value) {
 
 // ─── TABLE / MODAL ────────────────────────────────────────────────────────────
 function openTable(serviceId) {
-  const mu    = markups[serviceId];
-  const mu_z9 = markups_z9[serviceId] || 0;
+  const svc    = SERVICES.find(s => s.id === serviceId);
+  const isZ9only = svc?.zone === 'z9' && !svc?.combi;
+  const mu     = isZ9only ? (markups_z9[serviceId] || markups[serviceId]) : markups[serviceId];
+  const mu_z9  = markups_z9[serviceId] || 0;
   if (!mu) { alert('Εισάγετε πρώτα markup %'); return; }
-  const svc = SERVICES.find(s => s.id === serviceId);
   const surchargeKey = svc?.surcharge_key || 'surcharge_cy_gr';
   const sur = cySettings[surchargeKey] || 1.50;
   window.location.href = `pricelist-table.html?service=${serviceId}&markup=${mu}&markup_z9=${mu_z9}&surcharge=${sur}&combi=${svc?.combi ? 1 : 0}`;
