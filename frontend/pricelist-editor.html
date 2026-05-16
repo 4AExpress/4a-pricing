@@ -1,4 +1,4 @@
-<!-- pricelist-editor.html | v2.15 | 15-05-2026 -->
+<!-- pricelist-editor.html | v2.16 | 16-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -47,6 +47,7 @@
   .svc-card.has-error { border-color: #e53935; background: #fff8f8; }
   .svc-card.is-valid  { border-color: #43a047; background: #f8fff8; }
   .svc-card.is-cyprus { border-color: #f0c040; background: #fffde7; }
+  .svc-card.is-greece { border-color: #1565c0; background: #e3f2fd; }
   .svc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .svc-name { font-size: 13px; font-weight: 600; color: #333; }
   .svc-code { font-size: 11px; color: #888; background: #f0f0f0; padding: 2px 6px; border-radius: 10px; }
@@ -226,6 +227,8 @@ const SERVICES = [
   { id:'S1012',    name:'✈️🇬🇷↙️ Express Import',           mode:'AIR / Διεθνής',            file:'dhl_tariff_2026_S1012.json' },
   { id:'S1010',    name:'🚛↗️ Economy Export',              mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1010.json' },
   { id:'S1041',    name:'🚛🇬🇷↙️ Economy Import',           mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1041.json' },
+  { id:'S1003_GR', name:'🇬🇷✈️↗️ Export Ελλάδα→Κύπρος',    mode:'AIR / Ελλάδα Z9',          file:'dhl_tariff_2026_S1003.json', zone:'z9', greece: true },
+  { id:'S1012_GR', name:'🇬🇷✈️↙️ Import Κύπρος→Ελλάδα',    mode:'AIR / Ελλάδα Z9',          file:'dhl_tariff_2026_S1012.json', zone:'z9', greece: true },
   { id:'S1003_CY', name:'🇨🇾✈️↗️ Express Export Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1003.json', zone:'z9' },
   { id:'S1012_CY', name:'🇨🇾✈️↙️ Express Import Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1012.json', zone:'z9' },
   { id:'S1050',    name:'🇨🇾 ✈️ 🇬🇷 🚛➡️ 🌍 Export CY→GR→World', mode:'COMBI AIR+ROAD / Κύπρος→Κόσμος', file:'dhl_tariff_2026_S1010.json', cy_surcharge: true, combi: true, surcharge_key: 'surcharge_cy_gr' },
@@ -486,7 +489,7 @@ function renderServices() {
     const cost  = getSampleCost(svc.id);
     const mu    = markups[svc.id] || '';
     const v     = mu ? validate(svc.id, parseFloat(mu)) : null;
-    const cls   = (svc.zone || svc.cy_surcharge) ? 'is-cyprus' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error');
+    const cls   = svc.greece ? 'is-greece' : (svc.zone || svc.cy_surcharge) ? 'is-cyprus' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error');
     const icon  = !mu ? '○' : v?.ok ? '✅' : '🔴';
     const calc  = mu && cost && v?.ok ? {
       price:  (cost * (1 + parseFloat(mu)/100)).toFixed(2),
@@ -559,7 +562,7 @@ function onMarkup(serviceId, value) {
   const mu    = value ? parseFloat(value) : null;
   const v     = mu ? validate(serviceId, mu) : null;
 
-  document.getElementById(`card-${serviceId}`).className = 'svc-card ' + ((svc.zone || svc.cy_surcharge) ? 'is-cyprus' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error'));
+  document.getElementById(`card-${serviceId}`).className = 'svc-card ' + (svc.greece ? 'is-greece' : (svc.zone || svc.cy_surcharge) ? 'is-cyprus' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error'));
   document.getElementById(`icon-${serviceId}`).textContent = !mu ? '○' : v?.ok ? '✅' : '🔴';
 
   const msgEl = document.getElementById(`msg-${serviceId}`);
