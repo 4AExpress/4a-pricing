@@ -1,4 +1,4 @@
-<!-- pricelist-clients.html | v1.3 | 08-05-2026 -->
+<!-- pricelist-clients.html | v1.4 | 16-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -33,9 +33,7 @@
   .form-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px; }
   .form-group { display: flex; flex-direction: column; gap: 4px; }
   .form-group label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
-  .form-group input, .form-group select {
-    padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; color: #333; background: white;
-  }
+  .form-group input, .form-group select { padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; color: #333; background: white; }
   .form-group input:focus, .form-group select:focus { outline: none; border-color: #00BCD4; }
 
   .status-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
@@ -49,6 +47,7 @@
 
   .pricelist-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; align-items: center; }
   .pl-tag { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #e3f2fd; color: #1565c0; display: flex; align-items: center; gap: 4px; }
+  .pl-tag.cy { background: #fffde7; color: #7c6d00; }
   .pl-tag button { background: none; border: none; cursor: pointer; color: #c62828; font-size: 13px; padding: 0; line-height: 1; }
   .add-pl-btn { padding: 4px 10px; border-radius: 20px; font-size: 11px; border: 1px dashed #ddd; background: none; cursor: pointer; color: #888; }
   .add-pl-btn:hover { border-color: #00BCD4; color: #00BCD4; }
@@ -106,9 +105,12 @@
 
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
-  .modal-box { background: white; border-radius: 8px; padding: 24px; width: 440px; max-height: 80vh; overflow-y: auto; }
+  .modal-box { background: white; border-radius: 8px; padding: 24px; width: 480px; max-height: 80vh; overflow-y: auto; }
   .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
-  .modal-svc-title { font-size: 12px; font-weight: 600; color: #555; margin: 10px 0 6px; }
+  .modal-svc-group { margin-bottom: 8px; }
+  .modal-svc-title { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 4px; margin: 10px 0 4px; display: inline-block; }
+  .modal-svc-title.gr { background: #e3f2fd; color: #1565c0; }
+  .modal-svc-title.cy { background: #fffde7; color: #7c6d00; }
   .modal-pl-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
   .modal-pl-name { font-size: 12px; }
   .modal-pl-date { color: #aaa; font-size: 10px; margin-left: 4px; }
@@ -118,8 +120,7 @@
 </style>
 </head>
 <body>
-
-<div class="topbar">
+ <div class="topbar">
   <div class="topbar-left">
     <div class="topbar-logo">
       <div class="topbar-logo-box">4A</div>
@@ -137,8 +138,8 @@
   <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
   <a class="nav-btn" href="pricelist-editor.html#shelf">📦 Ράφι</a>
   <a class="nav-btn active" href="pricelist-clients.html">👥 Πελάτες</a>
-<a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
- <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
+  <a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
+  <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
 </div>
 
 <div class="container">
@@ -283,13 +284,23 @@
     </div>
   </div>
 </div>
-
 <script>
 const API = 'https://4aexpress.com/api';
+
 const SVC_NAMES = {
-  S1003:'✈️↗️ Express Export', S1012:'✈️🇬🇷↙️ Express Import',
-  S1010:'🚛↗️ Economy Export', S1041:'🚛🇬🇷↙️ Economy Import'
+  S1003:    '✈️↗️ Express Export',
+  S1012:    '✈️🇬🇷↙️ Express Import',
+  S1010:    '🚛↗️ Economy Export',
+  S1041:    '🚛🇬🇷↙️ Economy Import',
+  S1003_GR: '🇬🇷✈️↗️ Export Ελλάδα→Κύπρος',
+  S1012_GR: '🇬🇷✈️↙️ Import Κύπρος→Ελλάδα',
+  S1003_CY: '🇨🇾✈️↗️ Express Export Κύπρος',
+  S1012_CY: '🇨🇾✈️↙️ Express Import Κύπρος',
+  S1050:    '🇨🇾 ✈️ 🇬🇷 🚛➡️ 🌍 Export CY→GR→World',
+  S1051:    '🌍 🚛⬅️ 🇬🇷 ✈️ 🇨🇾 Import World→GR→CY'
 };
+const SVC_IS_CY = id => id.includes('_CY') || id === 'S1050' || id === 'S1051';
+
 const STATUS_LABELS = {
   prospect:'Υποψήφιος', negotiate:'Σε διαπραγμάτευση',
   accepted:'Αποδέχτηκε', rejected:'Αρνήθηκε', active:'Ενεργός'
@@ -367,25 +378,31 @@ function resetForm(){
 }
 
 function showPlModal(){
+  shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
   let html='';
-  Object.entries(SVC_NAMES).forEach(([svcId,svcName])=>{
-    const items=shelf[svcId]||[];
-    if(!items.length)return;
-    html+=`<div class="modal-svc-title">${svcName}</div>`;
-    items.forEach(p=>{
-      const already=selectedPls.find(s=>s.id===p.id);
-      html+=`<div class="modal-pl-row">
-        <span class="modal-pl-name">${p.name}<span class="modal-pl-date">${p.date||''}</span></span>
+  const SVC_ORDER = Object.keys(SVC_NAMES);
+  SVC_ORDER.forEach(svcId => {
+    const items = shelf[svcId] || [];
+    if (!items.length) return;
+    const isCY = SVC_IS_CY(svcId);
+    html += `<div class="modal-svc-group">
+      <div class="modal-svc-title ${isCY?'cy':'gr'}">${SVC_NAMES[svcId]}</div>`;
+    items.forEach(p => {
+      const already = selectedPls.find(s => s.id === p.id);
+      html += `<div class="modal-pl-row">
+        <span class="modal-pl-name">${p.name}<span class="modal-pl-date"> ${p.date||''}</span></span>
         ${already
-          ?`<button class="modal-btn-rem" onclick="removePl(${p.id})">✕ Αφαίρεση</button>`
-          :`<button class="modal-btn-add" onclick="addPl('${svcId}',${p.id})">+ Προσθήκη</button>`}
+          ? `<button class="modal-btn-rem" onclick="removePl(${p.id})">✕ Αφαίρεση</button>`
+          : `<button class="modal-btn-add" onclick="addPl('${svcId}',${p.id})">+ Προσθήκη</button>`}
       </div>`;
     });
+    html += `</div>`;
   });
-  if(!html)html='<div style="color:#aaa;text-align:center;padding:24px;">Δεν υπάρχουν τιμοκατάλογοι στο ράφι.<br>Δημιούργησε από τον Επεξεργαστή.</div>';
+  if(!html) html='<div style="color:#aaa;text-align:center;padding:24px;">Δεν υπάρχουν τιμοκατάλογοι στο ράφι.</div>';
   document.getElementById('pl-modal-content').innerHTML=html;
   document.getElementById('pl-modal').classList.add('open');
 }
+
 function closePlModal(){ document.getElementById('pl-modal').classList.remove('open'); checkForm(); }
 function addPl(svcId,plId){
   const item=(shelf[svcId]||[]).find(p=>p.id===plId);
@@ -396,7 +413,10 @@ function addPl(svcId,plId){
 function removePl(plId){ selectedPls=selectedPls.filter(p=>p.id!==plId); renderPlTags(); showPlModal(); }
 function renderPlTags(){
   document.getElementById('pl-tags').innerHTML=
-    selectedPls.map(p=>`<span class="pl-tag">${SVC_NAMES[p.service_id]||p.service_id} — ${p.name}<button onclick="removePl(${p.id})">✕</button></span>`).join('')+
+    selectedPls.map(p=>{
+      const isCY=SVC_IS_CY(p.service_id);
+      return `<span class="pl-tag ${isCY?'cy':''}">${SVC_NAMES[p.service_id]||p.service_id} — ${p.name}<button onclick="removePl(${p.id})">✕</button></span>`;
+    }).join('')+
     `<button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>`;
 }
 
@@ -429,11 +449,9 @@ function saveClient(){
   if(!name||!afm||!email){ alert('Συμπλήρωσε Επωνυμία, ΑΦΜ και Email'); return; }
   const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
   const client={
-    id:editingId||Date.now(),
-    name, afm,
+    id:editingId||Date.now(), name, afm,
     contact:document.getElementById('cl-contact').value.trim(),
-    email,
-    phone:document.getElementById('cl-phone').value.trim(),
+    email, phone:document.getElementById('cl-phone').value.trim(),
     website:document.getElementById('cl-website').value.trim(),
     account:document.getElementById('cl-account').value.trim()||'—',
     status:currentStatus,
@@ -447,13 +465,9 @@ function saveClient(){
     date:todayFmt(), created_at:new Date().toISOString()
   };
   clients=editingId?clients.map(c=>c.id===editingId?client:c):[client,...clients];
-   localStorage.setItem('4a_clients',JSON.stringify(clients));
-  fetch(`${API}/clients.php`, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({action:'save', ...client})
-  }).then(r=>r.json()).then(d=>console.log('API client save:', d))
-    .catch(e=>console.error('API client error:', e));
+  localStorage.setItem('4a_clients',JSON.stringify(clients));
+  fetch(`${API}/clients.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',...client})})
+    .then(r=>r.json()).then(d=>console.log('API client save:',d)).catch(e=>console.error(e));
   alert(`✅ "${name}" αποθηκεύτηκε\nΑρ. Προσφοράς: ${offerNum}`);
   resetForm(); renderClients();
 }
@@ -481,19 +495,17 @@ function editClient(id){
   renderPlTags(); renderSurcharges(); renderManagers(); updateOfferNum(); checkForm();
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
 function deleteClient(id){
   const c=clients.find(cl=>cl.id===id); if(!c)return;
   if(!confirm(`Διαγραφή "${c.name}";`))return;
   clients=clients.filter(cl=>cl.id!==id);
   localStorage.setItem('4a_clients',JSON.stringify(clients));
-  fetch(`${API}/clients.php`, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({action:'delete', id})
-  });
-   if(editingId===id)resetForm();
+  fetch(`${API}/clients.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})});
+  if(editingId===id)resetForm();
   renderClients();
 }
+
 function renderClients(){
   const el=document.getElementById('clients-list');
   document.getElementById('client-count').textContent=clients.length;
@@ -507,8 +519,7 @@ function renderClients(){
     return `<div class="client-item">
       <div class="client-avatar" style="background:${STATUS_BG[c.status]||'#f0f0f0'};color:${STATUS_COLOR[c.status]||'#555'};">${initials(c.name)}</div>
       <div class="client-info">
-        <div class="client-name">
-          ${c.name}
+        <div class="client-name">${c.name}
           <span class="status-pill st-${c.status}" style="font-size:10px;padding:2px 8px;cursor:default;">${STATUS_LABELS[c.status]||c.status}</span>
           ${isRenewal?'<span class="renewal-badge">↻ Ανανέωση</span>':''}
           <span class="offer-badge">${c.offer_number||'—'}</span>
@@ -530,6 +541,7 @@ function filterByStatus(s,btn){ filterStatus=s; document.querySelectorAll('.filt
 function filterClients(q){ filterSearch=q; renderClients(); }
 function exportCMS(id){ alert('CMS Export — επόμενο βήμα (TSV download)'); }
 function sendOffer(){ alert('Αποστολή Προσφοράς — επόμενο βήμα (SMTP + PDF)'); }
+
 async function previewPDF(){
   const name=document.getElementById('cl-name').value.trim();
   if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
@@ -547,11 +559,9 @@ async function previewPDF(){
     const office=(currentUser?.stations||'ATH').split(',')[0];
     const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
     const r=await fetch(`${API}/generate_pdf.php`,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        offer:{
-          name, afm:document.getElementById('cl-afm').value.trim(),
+        offer:{ name, afm:document.getElementById('cl-afm').value.trim(),
           email:document.getElementById('cl-email').value.trim(),
           contact:document.getElementById('cl-contact').value.trim(),
           phone:document.getElementById('cl-phone').value.trim(),
@@ -560,17 +570,14 @@ async function previewPDF(){
           offer_number:offerNum,
           pricelists:selectedPls.map(p=>({service_id:p.service_id,markup:p.markup||p.global_markup||0}))
         },
-        dhl:JSON.parse(localStorage.getItem('dhl_all')),
-        fuel
+        dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel
       })
     });
     const d=await r.json();
     if(d.ok){
-      const bytes=atob(d.pdf);
-      const arr=new Uint8Array(bytes.length);
+      const bytes=atob(d.pdf); const arr=new Uint8Array(bytes.length);
       for(let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
-      const blob=new Blob([arr],{type:'application/pdf'});
-      window.open(URL.createObjectURL(blob));
+      window.open(URL.createObjectURL(new Blob([arr],{type:'application/pdf'})));
     } else { alert('Σφάλμα: '+(d.error||'Άγνωστο')); }
   } catch(e){ alert('Σφάλμα: '+e.message); }
   finally {
@@ -578,6 +585,7 @@ async function previewPDF(){
     document.getElementById('preview-btn').disabled=false;
   }
 }
+
 function doLogout(){ window.location.href='pricelist-editor.html'; }
 
 document.addEventListener('visibilitychange',()=>{
