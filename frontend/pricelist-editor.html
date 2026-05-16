@@ -223,10 +223,10 @@ const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 const API  = 'https://4aexpress.com/api';
 
 const SERVICES = [
-  { id:'S1003',    name:'✈️↗️ Express Export',              mode:'AIR / Διεθνής',            file:'dhl_tariff_2026_S1003.json' },
-  { id:'S1012',    name:'✈️🇬🇷↙️ Express Import',           mode:'AIR / Διεθνής',            file:'dhl_tariff_2026_S1012.json' },
-  { id:'S1010',    name:'🚛↗️ Economy Export',              mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1010.json' },
-  { id:'S1041',    name:'🚛🇬🇷↙️ Economy Import',           mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1041.json' },
+  { id:'S1003',    name:'✈️↗️ Express Export',              mode:'AIR / Διεθνής',            file:'dhl_tariff_2026_S1003.json', greece: true },
+  { id:'S1012',    name:'✈️🇬🇷↙️ Express Import',           mode:'AIR / Διεθνής',            file:'dhl_tariff_2026_S1012.json', greece: true },
+  { id:'S1010',    name:'🚛↗️ Economy Export',              mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1010.json', greece: true },
+  { id:'S1041',    name:'🚛🇬🇷↙️ Economy Import',           mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1041.json', greece: true },
   { id:'S1003_GR', name:'🇬🇷✈️↗️ Export Ελλάδα→Κύπρος',    mode:'AIR / Ελλάδα Z9',          file:'dhl_tariff_2026_S1003.json', zone:'z9', greece: true },
   { id:'S1012_GR', name:'🇬🇷✈️↙️ Import Κύπρος→Ελλάδα',    mode:'AIR / Ελλάδα Z9',          file:'dhl_tariff_2026_S1012.json', zone:'z9', greece: true },
   { id:'S1003_CY', name:'🇨🇾✈️↗️ Express Export Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1003.json', zone:'z9' },
@@ -686,11 +686,18 @@ function confirmSave() {
 function renderShelf() {
   const tabsEl = document.getElementById('shelf-tabs');
   if (!tabsEl) return;
-  tabsEl.innerHTML = SERVICES.map(svc => `
-    <button class="shelf-tab ${svc.id === activeShelfTab ? 'active' : ''}"
+  tabsEl.innerHTML = SERVICES.map(svc => {
+    const isGR = svc.greece;
+    const isCY = svc.zone || svc.cy_surcharge;
+    const bgColor   = svc.id === activeShelfTab ? (isGR ? '#1565c0' : isCY ? '#f0a000' : '#555') : (isGR ? '#e3f2fd' : isCY ? '#fffde7' : '#f0f0f0');
+    const textColor = svc.id === activeShelfTab ? 'white' : (isGR ? '#1565c0' : isCY ? '#7c6d00' : '#555');
+    const border    = isGR ? '1px solid #1565c0' : isCY ? '1px solid #f0c040' : '1px solid #ccc';
+    return `<button class="shelf-tab ${svc.id === activeShelfTab ? 'active' : ''}"
+      style="background:${bgColor};color:${textColor};border:${border};"
       onclick="switchShelfTab('${svc.id}', this)">
       ${svc.id} <span style="font-size:10px;opacity:0.8">(${(shelf[svc.id]||[]).length})</span>
-    </button>`).join('');
+    </button>`;
+  }).join('');
   renderShelfContent();
 }
 
