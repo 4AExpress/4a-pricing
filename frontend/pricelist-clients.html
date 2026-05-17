@@ -1,4 +1,4 @@
-<!-- pricelist-clients.html | v1.4 | 16-05-2026 -->
+<!-- pricelist-clients.html | v1.5 | 17-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -51,6 +51,8 @@
   .pl-tag button { background: none; border: none; cursor: pointer; color: #c62828; font-size: 13px; padding: 0; line-height: 1; }
   .add-pl-btn { padding: 4px 10px; border-radius: 20px; font-size: 11px; border: 1px dashed #ddd; background: none; cursor: pointer; color: #888; }
   .add-pl-btn:hover { border-color: #00BCD4; color: #00BCD4; }
+  .zone-pdf-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border: 1.5px solid #cc0000; border-radius: 20px; font-size: 11px; font-weight: 600; color: #cc0000; background: white; text-decoration: none; }
+  .zone-pdf-badge:hover { background: #fff5f5; }
 
   .surcharges-list { margin-top: 8px; }
   .surcharge-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
@@ -204,6 +206,9 @@
       <div class="pricelist-tags" id="pl-tags">
         <button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>
       </div>
+      <div id="zone-pdf-badge-wrap" style="display:none;margin-top:6px;">
+        <a class="zone-pdf-badge" href="https://4aexpress.github.io/4a-pricing/docs/4A_Express_Zones_2026.pdf" target="_blank" rel="noopener">📄 Ζώνες 4A GR</a>
+      </div>
     </div>
 
     <div class="offer-terms">
@@ -286,6 +291,7 @@
     </div>
   </div>
 </div>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script>
 const API = 'https://4aexpress.com/api';
 
@@ -301,7 +307,9 @@ const SVC_NAMES = {
   S1050:    '🇨🇾 ✈️ 🇬🇷 🚛 ↗️ 🌍',
   S1051:    '🌍 🚛 🇬🇷 ↙️ ✈️ 🇨🇾'
 };
-const SVC_IS_CY = id => id.includes('_CY') || id === 'S1050' || id === 'S1051';
+const SVC_IS_CY   = id => id.includes('_CY') || id === 'S1050' || id === 'S1051';
+const GR_SERVICES  = new Set(['S1003','S1012','S1010','S1041','S1003_GR','S1012_GR']);
+const ZONES_PDF_URL = 'https://4aexpress.github.io/4a-pricing/docs/4A_Express_Zones_2026.pdf';
 
 const STATUS_LABELS = {
   prospect:'Υποψήφιος', negotiate:'Σε διαπραγμάτευση',
@@ -422,6 +430,8 @@ function renderPlTags(){
       return `<span class="pl-tag ${isCY?'cy':''}">${SVC_NAMES[p.service_id]||p.service_id} — ${p.name}<button onclick="removePl(${p.id})">✕</button></span>`;
     }).join('')+
     `<button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>`;
+  const hasGR = selectedPls.some(p => GR_SERVICES.has(p.service_id));
+  document.getElementById('zone-pdf-badge-wrap').style.display = hasGR ? 'block' : 'none';
 }
 
 function addSurcharge(){ surcharges.push({name:'',value:'',unit:'€/αποστολή'}); renderSurcharges(); }
@@ -579,9 +589,24 @@ async function previewPDF(){
     });
     const d=await r.json();
     if(d.ok){
-      const bytes=atob(d.pdf); const arr=new Uint8Array(bytes.length);
-      for(let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
-      window.open(URL.createObjectURL(new Blob([arr],{type:'application/pdf'})));
+      const offerBytes = Uint8Array.from(atob(d.pdf), c => c.charCodeAt(0));
+      let finalBytes = offerBytes;
+      if(selectedPls.some(p => GR_SERVICES.has(p.service_id))){
+        try{
+          const zonesResp = await fetch(ZONES_PDF_URL);
+          const zonesBytes = new Uint8Array(await zonesResp.arrayBuffer());
+          const { PDFDocument } = PDFLib;
+          const merged  = await PDFDocument.create();
+          const offerDoc = await PDFDocument.load(offerBytes);
+          const zonesDoc = await PDFDocument.load(zonesBytes);
+          (await merged.copyPages(offerDoc, offerDoc.getPageIndices())).forEach(p => merged.addPage(p));
+          (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
+          finalBytes = await merged.save();
+        } catch(mergeErr){
+          console.warn('Zones PDF merge failed, using offer-only PDF:', mergeErr);
+        }
+      }
+      window.open(URL.createObjectURL(new Blob([finalBytes], {type:'application/pdf'})));
     } else { alert('Σφάλμα: '+(d.error||'Άγνωστο')); }
   } catch(e){ alert('Σφάλμα: '+e.message); }
   finally {
