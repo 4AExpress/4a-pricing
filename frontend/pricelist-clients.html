@@ -586,7 +586,10 @@ async function previewPDF(){
           offer_number:offerNum,
           pricelists:selectedPls.map(p=>({service_id:p.service_id,markup:p.markup||p.global_markup||0}))
         },
-        dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel
+        dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel,
+        zones_appendix: selectedPls.some(p => GR_SERVICES.has(p.service_id))
+          ? { include:true, code:'zones', label:'Ζώνες 4A Express GR', type:'ΠΑΡΑΡΤΗΜΑ', section:'ΕΠΙΣΥΝΑΠΤΟΜΕΝΑ' }
+          : null
       })
     });
     const d=await r.json();
@@ -596,21 +599,87 @@ async function previewPDF(){
       let finalBytes = offerBytes;
       if(selectedPls.some(p => GR_SERVICES.has(p.service_id))){
         try{
-          console.log('[PDF] GR service detected — fetching zones PDF:', ZONES_PDF_URL);
-          const zonesResp = await fetch(ZONES_PDF_URL);
+          console.log('[PDF] GR detected — fetching zones PDF + NotoSans in parallel');
+          const { PDFDocument, PDFName, rgb, StandardFonts } = PDFLib;
+
+          const [zonesResp, fontResp] = await Promise.all([
+            fetch(ZONES_PDF_URL),
+            fetch('https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf').catch(()=>null)
+          ]);
           const zonesBytes = new Uint8Array(await zonesResp.arrayBuffer());
-          console.log('[PDF] Zones PDF fetched:', zonesBytes.byteLength, 'bytes');
-          const { PDFDocument } = PDFLib;
+          console.log('[PDF] Zones fetched:', zonesBytes.byteLength, 'bytes');
+
           const offerDoc = await PDFDocument.load(offerBytes);
           const zonesDoc = await PDFDocument.load(zonesBytes);
-          console.log('[PDF] Offer pages:', offerDoc.getPageCount(), '| Zones pages:', zonesDoc.getPageCount());
+          const offerN   = offerDoc.getPageCount();
+          console.log('[PDF] Offer pages:', offerN, '| Zones pages:', zonesDoc.getPageCount());
+
           const merged = await PDFDocument.create();
           (await merged.copyPages(offerDoc, offerDoc.getPageIndices())).forEach(p => merged.addPage(p));
+
+          // Embed Greek-capable font; fall back to standard Helvetica
+          let fBold, fReg, hasGreek = false;
+          if(fontResp && fontResp.ok){
+            try{
+              const fb = new Uint8Array(await fontResp.arrayBuffer());
+              fReg = fBold = await merged.embedFont(fb);
+              hasGreek = true;
+              console.log('[PDF] NotoSans embedded for Greek text');
+            } catch(fe){ console.warn('[PDF] Font embed failed:', fe); }
+          }
+          if(!fReg)  fReg  = await merged.embedFont(StandardFonts.Helvetica);
+          if(!fBold) fBold = await merged.embedFont(StandardFonts.HelveticaBold);
+
+          // Text strings — Greek when font supports it, ASCII fallback
+          const T = hasGreek ? {
+            header:'ΕΠΙΣΥΝΑΠΤΟΜΕΝΑ', code:'ΚΩΔΙΚΟΣ', desc:'ΠΕΡΙΓΡΑΦΗ', type:'ΤΥΠΟΣ', page:'ΣΕΛΙΔΑ',
+            descVal:'Ζώνες 4A Express GR', typeVal:'ΠΑΡΑΡΤΗΜΑ'
+          } : {
+            header:'APPENDIX', code:'CODE', desc:'DESCRIPTION', type:'TYPE', page:'PAGE',
+            descVal:'Zones 4A Express GR', typeVal:'APPENDIX'
+          };
+
+          // ── ΕΠΙΣΥΝΑΠΤΟΜΕΝΑ separator page (A4: 595.28 × 841.89 pt) ──────────
+          const [AW, AH] = [595.28, 841.89];
+          const sep = merged.addPage([AW, AH]);
+
+          sep.drawRectangle({ x:0, y:AH-40, width:AW, height:40, color:rgb(0.8,0,0) });
+          sep.drawText(T.header, { x:20, y:AH-28, font:fBold, size:13, color:rgb(1,1,1) });
+
+          sep.drawLine({ start:{x:20,y:AH-55}, end:{x:AW-20,y:AH-55}, thickness:0.5, color:rgb(0.75,0.75,0.75) });
+
+          const lY = AH - 70;
+          sep.drawText(T.code, { x:20,  y:lY, font:fBold, size:7, color:rgb(0.5,0.5,0.5) });
+          sep.drawText(T.desc, { x:90,  y:lY, font:fBold, size:7, color:rgb(0.5,0.5,0.5) });
+          sep.drawText(T.type, { x:390, y:lY, font:fBold, size:7, color:rgb(0.5,0.5,0.5) });
+          sep.drawText(T.page, { x:540, y:lY, font:fBold, size:7, color:rgb(0.5,0.5,0.5) });
+          sep.drawLine({ start:{x:20,y:AH-77}, end:{x:AW-20,y:AH-77}, thickness:0.3, color:rgb(0.88,0.88,0.88) });
+
+          // Zones TOC row — separator is page offerN+1; zones start at offerN+2 (1-indexed)
+          const rY    = AH - 93;
+          const pgNum = offerN + 2;
+          sep.drawText('zones',      { x:20,  y:rY, font:fReg,  size:10, color:rgb(0.45,0.45,0.45) });
+          sep.drawText(T.descVal,    { x:90,  y:rY, font:fBold, size:10, color:rgb(0.8,0,0) });
+          sep.drawText(T.typeVal,    { x:390, y:rY, font:fReg,  size:10, color:rgb(0.45,0.45,0.45) });
+          sep.drawText(String(pgNum),{ x:545, y:rY, font:fBold, size:10, color:rgb(0.1,0.1,0.1) });
+
+          // Copy zones pages (at index offerN+1 in merged, separator is at offerN)
           (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
+
+          // Internal GoTo hyperlink: zones TOC row → first zones page
+          const zRef = merged.getPage(offerN + 1).ref;
+          const ann  = merged.context.obj({
+            Type:'Annot', Subtype:'Link',
+            Rect:[20, rY-4, AW-20, rY+13],
+            Border:[0,0,0,0],
+            Dest:[zRef,'XYZ',null,null,null]
+          });
+          sep.node.set(PDFName.of('Annots'), merged.context.obj([merged.context.register(ann)]));
+
           finalBytes = await merged.save();
-          console.log('[PDF] Merge complete — total pages:', merged.getPageCount(), '| size:', finalBytes.byteLength, 'bytes');
+          console.log('[PDF] Merge+appendix done — pages:', merged.getPageCount(), '| size:', finalBytes.byteLength, 'bytes');
         } catch(mergeErr){
-          console.warn('[PDF] Zones merge failed, falling back to offer-only PDF:', mergeErr);
+          console.warn('[PDF] Zones merge failed, offer-only fallback:', mergeErr);
         }
       }
       const blobUrl = URL.createObjectURL(new Blob([finalBytes], {type:'application/pdf'}));
