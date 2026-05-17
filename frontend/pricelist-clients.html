@@ -51,7 +51,7 @@
   .pl-tag button { background: none; border: none; cursor: pointer; color: #c62828; font-size: 13px; padding: 0; line-height: 1; }
   .add-pl-btn { padding: 4px 10px; border-radius: 20px; font-size: 11px; border: 1px dashed #ddd; background: none; cursor: pointer; color: #888; }
   .add-pl-btn:hover { border-color: #00BCD4; color: #00BCD4; }
-  .zone-pdf-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border: 1.5px solid #cc0000; border-radius: 20px; font-size: 11px; font-weight: 600; color: #cc0000; background: white; text-decoration: none; }
+  .zone-pdf-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border: 1.5px solid #cc0000; border-radius: 20px; font-size: 11px; font-weight: 600; color: #cc0000; background: white; text-decoration: none; cursor: pointer; white-space: nowrap; }
   .zone-pdf-badge:hover { background: #fff5f5; }
 
   .surcharges-list { margin-top: 8px; }
@@ -203,11 +203,13 @@
 
     <div class="form-group" style="margin-bottom:12px;">
       <label>Τιμοκατάλογοι από Ράφι</label>
-      <div class="pricelist-tags" id="pl-tags">
-        <button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>
-      </div>
-      <div id="zone-pdf-badge-wrap" style="display:none;margin-top:6px;">
-        <a class="zone-pdf-badge" href="https://4aexpress.github.io/4a-pricing/docs/4A_Express_Zones_2026.pdf" target="_blank" rel="noopener">📄 Ζώνες 4A GR</a>
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <div class="pricelist-tags" id="pl-tags" style="flex:1;">
+          <button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>
+        </div>
+        <div id="zone-pdf-badge-wrap" style="display:none;align-self:flex-start;padding-top:4px;">
+          <a class="zone-pdf-badge" href="https://4aexpress.github.io/4a-pricing/docs/4A_Express_Zones_2026.pdf" target="_blank" rel="noopener">📄 Ζώνες 4A GR</a>
+        </div>
       </div>
     </div>
 
@@ -590,23 +592,30 @@ async function previewPDF(){
     const d=await r.json();
     if(d.ok){
       const offerBytes = Uint8Array.from(atob(d.pdf), c => c.charCodeAt(0));
+      console.log('[PDF] Offer PDF decoded:', offerBytes.byteLength, 'bytes');
       let finalBytes = offerBytes;
       if(selectedPls.some(p => GR_SERVICES.has(p.service_id))){
         try{
+          console.log('[PDF] GR service detected — fetching zones PDF:', ZONES_PDF_URL);
           const zonesResp = await fetch(ZONES_PDF_URL);
           const zonesBytes = new Uint8Array(await zonesResp.arrayBuffer());
+          console.log('[PDF] Zones PDF fetched:', zonesBytes.byteLength, 'bytes');
           const { PDFDocument } = PDFLib;
-          const merged  = await PDFDocument.create();
           const offerDoc = await PDFDocument.load(offerBytes);
           const zonesDoc = await PDFDocument.load(zonesBytes);
+          console.log('[PDF] Offer pages:', offerDoc.getPageCount(), '| Zones pages:', zonesDoc.getPageCount());
+          const merged = await PDFDocument.create();
           (await merged.copyPages(offerDoc, offerDoc.getPageIndices())).forEach(p => merged.addPage(p));
           (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
           finalBytes = await merged.save();
+          console.log('[PDF] Merge complete — total pages:', merged.getPageCount(), '| size:', finalBytes.byteLength, 'bytes');
         } catch(mergeErr){
-          console.warn('Zones PDF merge failed, using offer-only PDF:', mergeErr);
+          console.warn('[PDF] Zones merge failed, falling back to offer-only PDF:', mergeErr);
         }
       }
-      window.open(URL.createObjectURL(new Blob([finalBytes], {type:'application/pdf'})));
+      const blobUrl = URL.createObjectURL(new Blob([finalBytes], {type:'application/pdf'}));
+      console.log('[PDF] Opening blob URL:', blobUrl);
+      window.open(blobUrl);
     } else { alert('Σφάλμα: '+(d.error||'Άγνωστο')); }
   } catch(e){ alert('Σφάλμα: '+e.message); }
   finally {
