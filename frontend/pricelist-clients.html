@@ -108,9 +108,11 @@
   .modal-box { background: white; border-radius: 8px; padding: 24px; width: 480px; max-height: 80vh; overflow-y: auto; }
   .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
   .pl-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
-  .pl-card-svc { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 12px; display: inline-block; align-self: flex-start; }
-  .pl-card-svc.gr { background: #e3f2fd; color: #1565c0; }
-  .pl-card-svc.cy { background: #fffde7; color: #7c6d00; }
+  .pl-card.gr { background: #e3f2fd; border-color: #90caf9; }
+  .pl-card.cy { background: #fffde7; border-color: #ffe082; }
+  .pl-card-svc { font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 12px; display: inline-block; align-self: flex-start; }
+  .pl-card-svc.gr { background: #1565c0; color: white; }
+  .pl-card-svc.cy { background: #f57f17; color: white; }
   .pl-card-name { font-size: 13px; font-weight: 500; color: #333; }
   .pl-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
   .pl-card-date { font-size: 10px; color: #aaa; }
@@ -288,16 +290,16 @@
 const API = 'https://4aexpress.com/api';
 
 const SVC_NAMES = {
-  S1003:    '✈️↗️ Express Export',
-  S1012:    '✈️🇬🇷↙️ Express Import',
-  S1010:    '🚛↗️ Economy Export',
-  S1041:    '🚛🇬🇷↙️ Economy Import',
-  S1003_GR: '🇬🇷✈️↗️ Export Ελλάδα→Κύπρος',
-  S1012_GR: '🇬🇷✈️↙️ Import Κύπρος→Ελλάδα',
-  S1003_CY: '🇨🇾✈️↗️ Express Export Κύπρος',
-  S1012_CY: '🇨🇾✈️↙️ Express Import Κύπρος',
-  S1050:    '🇨🇾 ✈️ 🇬🇷 🚛➡️ 🌍 Export CY→GR→World',
-  S1051:    '🌍 🚛⬅️ 🇬🇷 ✈️ 🇨🇾 Import World→GR→CY'
+  S1003:    '🇬🇷 ✈️ ↗️ 🌍',
+  S1012:    '🌍 ↙️ ✈️ 🇬🇷',
+  S1010:    '🇬🇷 🚛 ↗️ 🇪🇺',
+  S1041:    '🇪🇺 ↙️ 🚛 🇬🇷',
+  S1003_GR: '🇬🇷 ✈️ ↗️ 🇨🇾',
+  S1012_GR: '🇨🇾 ↙️ ✈️ 🇬🇷',
+  S1003_CY: '🇨🇾 ✈️ ↗️ 🌍',
+  S1012_CY: '🌍 ↙️ ✈️ 🇨🇾',
+  S1050:    '🇨🇾 ✈️ 🇬🇷 🚛 ↗️ 🌍',
+  S1051:    '🌍 🚛 🇬🇷 ↙️ ✈️ 🇨🇾'
 };
 const SVC_IS_CY = id => id.includes('_CY') || id === 'S1050' || id === 'S1051';
 
@@ -387,7 +389,7 @@ function showPlModal(){
     const isCY = SVC_IS_CY(svcId);
     items.forEach(p => {
       const already = selectedPls.find(s => s.id === p.id);
-      html += `<div class="pl-card">
+      html += `<div class="pl-card ${isCY?'cy':'gr'}">
         <div class="pl-card-svc ${isCY?'cy':'gr'}">${SVC_NAMES[svcId]}</div>
         <div class="pl-card-name">${p.name}</div>
         <div class="pl-card-footer">
