@@ -607,17 +607,28 @@ async function previewPDF(){
           const offerDoc = await PDFDocument.load(offerBytes);
           const zonesDoc = await PDFDocument.load(zonesBytes);
           console.log('[PDF] Offer pages:', offerDoc.getPageCount(), '| Zones pages:', zonesDoc.getPageCount());
-          // Intro pages = total offer pages minus one page per pricelist (server convention)
-          const offerN  = offerDoc.getPageCount();
-          const introN  = Math.max(0, offerN - selectedPls.length);
-          console.log('[PDF] Offer pages:', offerN, '| intro:', introN, '| pricelist:', offerN - introN, '| zones:', zonesDoc.getPageCount());
+          // Server PDF structure: [cover][TOC][how,track,net][pricelist×N][terms]
+          // introN = everything before pricelists; termsN = 1 trailing terms page
+          const offerN   = offerDoc.getPageCount();
+          const plCount  = selectedPls.length;
+          const termsN   = 1;
+          const introN   = Math.max(0, offerN - plCount - termsN);
+          const zonesN   = zonesDoc.getPageCount();
+          console.log('[PDF] Server PDF pages:', offerN,
+            '— intro:', introN, '| pricelists:', plCount, '| terms:', termsN);
+          console.log('[PDF] Zones pages:', zonesN);
+          console.log('[PDF] Final order: intro(0–' + (introN-1) + ')'
+            + ' → zones(' + introN + '–' + (introN+zonesN-1) + ')'
+            + ' → pricelists(' + (introN+zonesN) + '–' + (introN+zonesN+plCount-1) + ')'
+            + ' → terms(' + (introN+zonesN+plCount) + ')');
           const merged = await PDFDocument.create();
           const offerPages = await merged.copyPages(offerDoc, offerDoc.getPageIndices());
           offerPages.slice(0, introN).forEach(p => merged.addPage(p));
           (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
-          offerPages.slice(introN).forEach(p => merged.addPage(p));
+          offerPages.slice(introN, introN + plCount).forEach(p => merged.addPage(p));
+          offerPages.slice(introN + plCount).forEach(p => merged.addPage(p));
           finalBytes = await merged.save();
-          console.log('[PDF] Merge done — pages:', merged.getPageCount(), '| size:', finalBytes.byteLength, 'bytes');
+          console.log('[PDF] Merge done — total pages:', merged.getPageCount(), '| size:', finalBytes.byteLength, 'bytes');
         } catch(mergeErr){
           console.warn('[PDF] Zones merge failed, offer-only fallback:', mergeErr);
         }
