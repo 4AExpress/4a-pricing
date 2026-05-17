@@ -107,13 +107,13 @@
   .modal-overlay.open { display: flex; }
   .modal-box { background: white; border-radius: 8px; padding: 24px; width: 480px; max-height: 80vh; overflow-y: auto; }
   .modal-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
-  .modal-svc-group { margin-bottom: 8px; }
-  .modal-svc-title { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 4px; margin: 10px 0 4px; display: inline-block; }
-  .modal-svc-title.gr { background: #e3f2fd; color: #1565c0; }
-  .modal-svc-title.cy { background: #fffde7; color: #7c6d00; }
-  .modal-pl-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
-  .modal-pl-name { font-size: 12px; }
-  .modal-pl-date { color: #aaa; font-size: 10px; margin-left: 4px; }
+  .pl-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .pl-card-svc { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 12px; display: inline-block; align-self: flex-start; }
+  .pl-card-svc.gr { background: #e3f2fd; color: #1565c0; }
+  .pl-card-svc.cy { background: #fffde7; color: #7c6d00; }
+  .pl-card-name { font-size: 13px; font-weight: 500; color: #333; }
+  .pl-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+  .pl-card-date { font-size: 10px; color: #aaa; }
   .modal-btn-add { padding: 3px 10px; border: 1px solid #90caf9; background: #e3f2fd; color: #1565c0; border-radius: 4px; font-size: 11px; cursor: pointer; }
   .modal-btn-rem { padding: 3px 10px; border: 1px solid #ef9a9a; background: #ffebee; color: #c62828; border-radius: 4px; font-size: 11px; cursor: pointer; }
   .modal-footer  { display: flex; justify-content: flex-end; margin-top: 16px; }
@@ -385,18 +385,19 @@ function showPlModal(){
     const items = shelf[svcId] || [];
     if (!items.length) return;
     const isCY = SVC_IS_CY(svcId);
-    html += `<div class="modal-svc-group">
-      <div class="modal-svc-title ${isCY?'cy':'gr'}">${SVC_NAMES[svcId]}</div>`;
     items.forEach(p => {
       const already = selectedPls.find(s => s.id === p.id);
-      html += `<div class="modal-pl-row">
-        <span class="modal-pl-name">${p.name}<span class="modal-pl-date"> ${p.date||''}</span></span>
-        ${already
-          ? `<button class="modal-btn-rem" onclick="removePl(${p.id})">✕ Αφαίρεση</button>`
-          : `<button class="modal-btn-add" onclick="addPl('${svcId}',${p.id})">+ Προσθήκη</button>`}
+      html += `<div class="pl-card">
+        <div class="pl-card-svc ${isCY?'cy':'gr'}">${SVC_NAMES[svcId]}</div>
+        <div class="pl-card-name">${p.name}</div>
+        <div class="pl-card-footer">
+          <span class="pl-card-date">${p.date||''}</span>
+          ${already
+            ? `<button class="modal-btn-rem" onclick="removePl(${p.id})">✕ Αφαίρεση</button>`
+            : `<button class="modal-btn-add" onclick="addPl('${svcId}',${p.id})">+ Προσθήκη</button>`}
+        </div>
       </div>`;
     });
-    html += `</div>`;
   });
   if(!html) html='<div style="color:#aaa;text-align:center;padding:24px;">Δεν υπάρχουν τιμοκατάλογοι στο ράφι.</div>';
   document.getElementById('pl-modal-content').innerHTML=html;
@@ -406,7 +407,8 @@ function showPlModal(){
 function closePlModal(){ document.getElementById('pl-modal').classList.remove('open'); checkForm(); }
 function addPl(svcId,plId){
   const item=(shelf[svcId]||[]).find(p=>p.id===plId);
-  if(!item||selectedPls.find(s=>s.id===plId))return;
+  if(!item)return;
+  selectedPls=selectedPls.filter(s=>s.service_id!==svcId);
   selectedPls.push({...item,service_id:svcId});
   renderPlTags(); showPlModal();
 }
