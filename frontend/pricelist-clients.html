@@ -588,7 +588,7 @@ async function previewPDF(){
         },
         dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel,
         zones_appendix: selectedPls.some(p => GR_SERVICES.has(p.service_id))
-          ? { include:true, code:'zones', label:'Ζώνες 4A Express GR', type:'ΠΑΡΑΡΤΗΜΑ', toc_after:'net', toc_section:'ΕΠΙΣΥΝΑΠΤΟΜΕΝΑ' }
+          ? { include:true, code:'zones', label:'Ζώνες 4A Express GR', type:'ΠΑΡΑΡΤΗΜΑ', toc_after:'net', toc_section:'ΕΠΙΣΥΝΑΠΤΟΜΕΝΑ', pdf_before_pricelists:true }
           : null
       })
     });
@@ -607,9 +607,15 @@ async function previewPDF(){
           const offerDoc = await PDFDocument.load(offerBytes);
           const zonesDoc = await PDFDocument.load(zonesBytes);
           console.log('[PDF] Offer pages:', offerDoc.getPageCount(), '| Zones pages:', zonesDoc.getPageCount());
+          // Intro pages = total offer pages minus one page per pricelist (server convention)
+          const offerN  = offerDoc.getPageCount();
+          const introN  = Math.max(0, offerN - selectedPls.length);
+          console.log('[PDF] Offer pages:', offerN, '| intro:', introN, '| pricelist:', offerN - introN, '| zones:', zonesDoc.getPageCount());
           const merged = await PDFDocument.create();
-          (await merged.copyPages(offerDoc, offerDoc.getPageIndices())).forEach(p => merged.addPage(p));
+          const offerPages = await merged.copyPages(offerDoc, offerDoc.getPageIndices());
+          offerPages.slice(0, introN).forEach(p => merged.addPage(p));
           (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
+          offerPages.slice(introN).forEach(p => merged.addPage(p));
           finalBytes = await merged.save();
           console.log('[PDF] Merge done — pages:', merged.getPageCount(), '| size:', finalBytes.byteLength, 'bytes');
         } catch(mergeErr){
