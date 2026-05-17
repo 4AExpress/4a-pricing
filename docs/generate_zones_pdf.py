@@ -156,8 +156,8 @@ def build_legend():
     tbl.setStyle(TableStyle([
         ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
         ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING",    (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("TOPPADDING",    (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
         ("LINEBELOW",     (0, 0), (-1, -1), 0.3, colors.HexColor("#cccccc")),
         ("LINEBEFORE",    (1, 0), (-1, -1), 0.3, colors.HexColor("#cccccc")),
         ("BOX",           (0, 0), (-1, -1), 0.5, colors.HexColor("#bbbbbb")),
@@ -303,7 +303,11 @@ def generate():
     )
     sub_st = ParagraphStyle(
         "Sub", fontName="Arial", fontSize=6.5,
-        textColor=MGRAY, alignment=TA_CENTER, leading=9, spaceAfter=4,
+        textColor=MGRAY, alignment=TA_CENTER, leading=9, spaceAfter=1,
+    )
+    svc_st = ParagraphStyle(
+        "Svc", fontName="Arial", fontSize=6.5,
+        textColor=MGRAY, alignment=TA_CENTER, leading=8, spaceAfter=1,
     )
 
     doc = SimpleDocTemplate(
@@ -312,10 +316,14 @@ def generate():
         topMargin=MARGIN,  bottomMargin=MARGIN,
     )
     story = [
-        Paragraph("Ζώνες DHL 2026 — 4A Express GR", title_st),
+        Paragraph("Ζώνες 4A Express 2026 — GR", title_st),
         Paragraph(f"Ισχύει από 01/01/2026  ·  {len(countries)} χώρες", sub_st),
+        Paragraph(
+            "<b>S1003</b> = Αεροπορική Εξαγωγή  |  <b>S1012</b> = Αεροπορική Εισαγωγή"
+            "  |  <b>S1010</b> = Οδική Εξαγωγή  |  <b>S1041</b> = Οδική Εισαγωγή",
+            svc_st,
+        ),
         build_legend(),
-        Spacer(1, 4),
         build_grid(countries),
     ]
     doc.build(story)
