@@ -588,7 +588,7 @@ async function previewPDF(){
         },
         dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel,
         zones_appendix: selectedPls.some(p => GR_SERVICES.has(p.service_id))
-          ? { include:true, code:'zones', label:'Ζώνες 4A Express GR', type:'ΠΑΡΑΡΤΗΜΑ', toc_after:'net', toc_section:'ΕΠΙΣΥΝΑΠΤΟΜΕΝΑ', pdf_before_pricelists:true }
+          ? { include:true, code:'zones', label:'Ζώνες 4A Express GR', type:'ΠΑΡΑΡΤΗΜΑ', toc_replace:'net', toc_section:'ΕΠΙΣΥΝΑΠΤΟΜΕΝΑ', link:ZONES_PDF_URL, pdf_before_pricelists:true }
           : null
       })
     });
