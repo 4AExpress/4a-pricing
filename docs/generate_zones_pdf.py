@@ -8,11 +8,10 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 )
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
-# Register Arial (supports Greek) from Windows system fonts
 pdfmetrics.registerFont(TTFont("Arial",      r"C:\Windows\Fonts\arial.ttf"))
 pdfmetrics.registerFont(TTFont("Arial-Bold", r"C:\Windows\Fonts\arialbd.ttf"))
 pdfmetrics.registerFontFamily("Arial", normal="Arial", bold="Arial-Bold")
@@ -21,182 +20,193 @@ BASE      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_FILE = os.path.join(BASE, "data", "dhl_zones_2026.json")
 OUT_FILE  = os.path.join(BASE, "docs", "4A_Express_Zones_2026.pdf")
 
-# Zone full colors (for badges)
+RED   = colors.HexColor("#cc0000")
+WHITE = colors.white
+LIGHT = colors.HexColor("#f5f5f5")
+DGRAY = colors.HexColor("#222222")
+MGRAY = colors.HexColor("#666666")
+HDR   = colors.HexColor("#1a1a1a")
+
 ZONE_COLORS = {
     1: colors.HexColor("#1565c0"),  # blue
     2: colors.HexColor("#2e7d32"),  # green
-    3: colors.HexColor("#f57f17"),  # amber
+    3: colors.HexColor("#e65100"),  # orange
     4: colors.HexColor("#e91e8c"),  # pink
     5: colors.HexColor("#6a1b9a"),  # purple
-    6: colors.HexColor("#e65100"),  # orange
+    6: colors.HexColor("#f57f17"),  # amber
     7: colors.HexColor("#c62828"),  # red
 }
 
-# Light tints for cell backgrounds
-ZONE_LIGHT = {
-    1: colors.HexColor("#e3f2fd"),
-    2: colors.HexColor("#e8f5e9"),
-    3: colors.HexColor("#fff8e1"),
-    4: colors.HexColor("#fce4ec"),
-    5: colors.HexColor("#f3e5f5"),
-    6: colors.HexColor("#fbe9e7"),
-    7: colors.HexColor("#ffebee"),
-}
+SERVICES = ["S1003", "S1012", "S1010", "S1041"]
 
-RED   = colors.HexColor("#cc0000")
-WHITE = colors.white
-DGRAY = colors.HexColor("#333333")
-MGRAY = colors.HexColor("#666666")
+# Page geometry
+PAGE_W    = A4[0]
+MARGIN    = 1.5 * cm
+AVAIL_W   = PAGE_W - 2 * MARGIN
+COL_COUNTRY = 200
+COL_SVC     = (AVAIL_W - COL_COUNTRY) / len(SERVICES)  # ~4 equal service cols
+
+
+def z_para(zone, style):
+    """Colored zone-number paragraph, or a dash if zone is None."""
+    if zone is None:
+        return Paragraph('<font color="#bbbbbb">—</font>', style)
+    c = ZONE_COLORS[zone].hexval()
+    return Paragraph(f'<font color="{c}" name="Arial-Bold"><b>Z{zone}</b></font>', style)
 
 
 def build_legend():
-    label_style = ParagraphStyle(
-        "LegendLabel",
-        fontName="Arial-Bold",
-        fontSize=8,
-        textColor=WHITE,
-        leading=12,
-        alignment=TA_CENTER,
-    )
-    zone_names = {
-        1: "Z1 Μπλε", 2: "Z2 Πρασινο", 3: "Z3 Κιτρινο",
-        4: "Z4 Ροζ",  5: "Z5 Μωβ",    6: "Z6 Πορτοκαλι", 7: "Z7 Κοκκινο",
+    label_names = {
+        1: "Z1 Blue", 2: "Z2 Green", 3: "Z3 Orange",
+        4: "Z4 Pink",  5: "Z5 Purple", 6: "Z6 Amber", 7: "Z7 Red",
     }
-    cells = [Paragraph(zone_names[z], label_style) for z in sorted(ZONE_COLORS)]
-    col_w = (A4[0] - 3 * cm) / len(cells)
-    tbl = Table([cells], colWidths=[col_w] * len(cells))
-    bg_cmds = [("BACKGROUND", (i, 0), (i, 0), ZONE_COLORS[z])
-               for i, z in enumerate(sorted(ZONE_COLORS))]
+    st = ParagraphStyle("leg", fontName="Arial-Bold", fontSize=7.5,
+                        textColor=WHITE, leading=11, alignment=TA_CENTER)
+    cells  = [Paragraph(label_names[z], st) for z in sorted(ZONE_COLORS)]
+    col_w  = AVAIL_W / len(cells)
+    tbl    = Table([cells], colWidths=[col_w] * len(cells))
+    bg     = [("BACKGROUND", (i, 0), (i, 0), ZONE_COLORS[z])
+              for i, z in enumerate(sorted(ZONE_COLORS))]
     tbl.setStyle(TableStyle([
         ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
         ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
         ("TOPPADDING",    (0, 0), (-1, -1), 5),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        *bg_cmds,
+        *bg,
     ]))
     return tbl
 
 
-def build_section(section_data, section_title):
-    flowables = []
+def build_grid(countries_by_code):
+    """Build the main country × service grid table."""
 
-    header_style = ParagraphStyle(
-        "SectionHdr",
-        fontName="Arial-Bold",
-        fontSize=13,
-        textColor=WHITE,
-        backColor=RED,
-        leading=18,
-        borderPadding=(6, 8, 6, 8),
-        spaceAfter=6,
-    )
-    flowables.append(Paragraph(section_title, header_style))
+    svc_st = ParagraphStyle("svc", fontName="Arial-Bold", fontSize=8,
+                            textColor=WHITE, leading=11, alignment=TA_CENTER)
+    ctr_st = ParagraphStyle("ctr", fontName="Arial-Bold", fontSize=8,
+                            textColor=WHITE, leading=11, alignment=TA_LEFT)
 
-    # Sort purely alphabetically
-    countries = sorted(section_data["zones"], key=lambda c: c["name"])
+    # Header row
+    hdr_row = [
+        Paragraph("Χώρα / Country", ctr_st),
+        *[Paragraph(s, svc_st) for s in SERVICES],
+    ]
 
-    COLS = 3
-    col_w = (A4[0] - 3 * cm) / COLS
-    rows = []
-    bg_cmds = []
+    # Data rows — sorted alphabetically by country name
+    cell_st = ParagraphStyle("cell", fontName="Arial", fontSize=7.5,
+                             textColor=DGRAY, leading=11, alignment=TA_LEFT)
+    zone_st = ParagraphStyle("zone", fontName="Arial-Bold", fontSize=8,
+                             textColor=DGRAY, leading=11, alignment=TA_CENTER)
 
-    for i in range(0, len(countries), COLS):
-        chunk = countries[i:i + COLS]
-        row_idx = i // COLS
-        row = []
-        for col_idx, c in enumerate(chunk):
-            z = c["zone"]
-            cell_style = ParagraphStyle(
-                f"C{i}{col_idx}",
-                fontName="Arial",
-                fontSize=7.5,
-                textColor=DGRAY,
-                leading=11,
-                leftIndent=2,
-            )
-            zcolor = ZONE_COLORS[z].hexval()  # e.g. "#1565c0"
-            text = (
-                f'<font name="Arial-Bold" color="{zcolor}">Z{z}</font>'
-                f'  {c["name"]}'
-                f'  <font size="6.5" color="#999999">[{c["code"]}]</font>'
-            )
-            row.append(Paragraph(text, cell_style))
-            bg_cmds.append(("BACKGROUND", (col_idx, row_idx), (col_idx, row_idx), ZONE_LIGHT[z]))
-
-        # Pad short last row
-        while len(row) < COLS:
-            row.append(Paragraph("", ParagraphStyle("empty", fontName="Arial", fontSize=7.5)))
+    sorted_codes = sorted(countries_by_code.keys(),
+                          key=lambda k: countries_by_code[k]["name"])
+    rows = [hdr_row]
+    for code in sorted_codes:
+        info = countries_by_code[code]
+        name_para = Paragraph(
+            f'{info["name"]}  <font size="6.5" color="#999999">[{code}]</font>',
+            cell_st,
+        )
+        row = [name_para] + [z_para(info.get(s), zone_st) for s in SERVICES]
         rows.append(row)
 
-    tbl = Table(rows, colWidths=[col_w] * COLS)
-    tbl.setStyle(TableStyle([
-        ("VALIGN",       (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING",   (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING",(0, 0), (-1, -1), 3),
-        ("LEFTPADDING",  (0, 0), (-1, -1), 5),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-        ("LINEBELOW",    (0, 0), (-1, -1), 0.3, colors.HexColor("#dddddd")),
-        *bg_cmds,
-    ]))
-    flowables.append(tbl)
-    return flowables
+    col_widths = [COL_COUNTRY] + [COL_SVC] * len(SERVICES)
+    tbl = Table(rows, colWidths=col_widths, repeatRows=1)
+
+    n = len(rows)
+    style_cmds = [
+        # Global
+        ("FONTNAME",      (0, 0), (-1, -1), "Arial"),
+        ("FONTSIZE",      (0, 0), (-1, -1), 8),
+        ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING",    (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 5),
+        ("ALIGN",         (1, 0), (-1, -1), "CENTER"),
+        ("ALIGN",         (0, 0), (0, -1),  "LEFT"),
+        # Header row
+        ("BACKGROUND",    (0, 0), (-1, 0),  RED),
+        ("TEXTCOLOR",     (0, 0), (-1, 0),  WHITE),
+        ("FONTNAME",      (0, 0), (-1, 0),  "Arial-Bold"),
+        ("FONTSIZE",      (0, 0), (-1, 0),  8.5),
+        ("TOPPADDING",    (0, 0), (-1, 0),  5),
+        ("BOTTOMPADDING", (0, 0), (-1, 0),  5),
+        # Alternating row backgrounds (data rows only)
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, LIGHT]),
+        # Grid lines
+        ("LINEBELOW",     (0, 0), (-1, -1), 0.3, colors.HexColor("#dddddd")),
+        ("LINEBEFORE",    (1, 0), (-1, -1), 0.3, colors.HexColor("#dddddd")),
+        # Outer border
+        ("BOX",           (0, 0), (-1, -1), 0.5, colors.HexColor("#cccccc")),
+    ]
+    tbl.setStyle(TableStyle(style_cmds))
+    return tbl
 
 
 def generate():
     with open(DATA_FILE, encoding="utf-8") as f:
         data = json.load(f)
 
+    # Build unified country dict: code -> {name, S1003, S1012, S1010, S1041}
+    countries: dict[str, dict] = {}
+
+    for c in data["air"]["zones"]:
+        countries[c["code"]] = {
+            "name":  c["name"],
+            "S1003": c["zone"],
+            "S1012": c["zone"],   # same zone for both air services
+            "S1010": None,
+            "S1041": None,
+        }
+
+    for c in data["road"]["zones"]:
+        code = c["code"]
+        if code in countries:
+            countries[code]["S1010"] = c["zone"]
+            countries[code]["S1041"] = c["zone"]  # same zone for both road services
+        else:
+            countries[code] = {
+                "name":  c["name"],
+                "S1003": None,
+                "S1012": None,
+                "S1010": c["zone"],
+                "S1041": c["zone"],
+            }
+
     doc = SimpleDocTemplate(
         OUT_FILE,
         pagesize=A4,
-        leftMargin=1.5 * cm, rightMargin=1.5 * cm,
-        topMargin=1.5 * cm,  bottomMargin=1.5 * cm,
+        leftMargin=MARGIN, rightMargin=MARGIN,
+        topMargin=MARGIN,  bottomMargin=MARGIN,
     )
 
-    story = []
-
-    title_style = ParagraphStyle(
-        "Title",
-        fontName="Arial-Bold",
-        fontSize=16,
-        textColor=WHITE,
-        backColor=RED,
-        alignment=TA_CENTER,
-        leading=22,
-        borderPadding=(10, 12, 10, 12),
-        spaceAfter=4,
+    title_st = ParagraphStyle(
+        "Title", fontName="Arial-Bold", fontSize=16,
+        textColor=WHITE, backColor=RED,
+        alignment=TA_CENTER, leading=22,
+        borderPadding=(10, 12, 10, 12), spaceAfter=4,
     )
-    story.append(Paragraph("Zones DHL 2026 — 4A Express", title_style))
-
-    sub_style = ParagraphStyle(
-        "Sub",
-        fontName="Arial",
-        fontSize=8,
-        textColor=MGRAY,
-        alignment=TA_CENTER,
-        leading=12,
-        spaceAfter=6,
+    sub_st = ParagraphStyle(
+        "Sub", fontName="Arial", fontSize=8,
+        textColor=MGRAY, alignment=TA_CENTER, leading=12, spaceAfter=6,
     )
-    story.append(Paragraph(
-        "Ισχύει από 01/01/2026  ·  Πηγή: DHL Express Rate Card 2026",
-        sub_style,
-    ))
 
-    story.append(build_legend())
-    story.append(Spacer(1, 10))
-    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cccccc")))
-    story.append(Spacer(1, 8))
-
-    story += build_section(data["air"],  "AIR — Express (S1003 / S1012)")
-
-    story.append(Spacer(1, 12))
-    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cccccc")))
-    story.append(Spacer(1, 8))
-
-    story += build_section(data["road"], "ROAD — Economy (S1010 / S1041)")
+    story = [
+        Paragraph("Zones DHL 2026 — 4A Express", title_st),
+        Paragraph(
+            "Ισχύει από 01/01/2026  ·  Πηγή: DHL Express Rate Card 2026  ·"
+            f"  {len(countries)} χώρες",
+            sub_st,
+        ),
+        build_legend(),
+        Spacer(1, 10),
+        HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#cccccc")),
+        Spacer(1, 8),
+        build_grid(countries),
+    ]
 
     doc.build(story)
-    print(f"OK  PDF generated: {OUT_FILE}")
+    print(f"OK  PDF generated: {OUT_FILE}  ({len(countries)} countries)")
 
 
 if __name__ == "__main__":
