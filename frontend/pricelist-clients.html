@@ -556,7 +556,58 @@ function renderClients(){
 function filterByStatus(s,btn){ filterStatus=s; document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderClients(); }
 function filterClients(q){ filterSearch=q; renderClients(); }
 function exportCMS(id){ alert('CMS Export — επόμενο βήμα (TSV download)'); }
-function sendOffer(){ alert('Αποστολή Προσφοράς — επόμενο βήμα (SMTP + PDF)'); }
+async function buildFinalPDF(offerNum){
+  if(!localStorage.getItem('dhl_all')){
+    const arr=await Promise.all(['S1003','S1012','S1010','S1041'].map(s=>
+      fetch(`https://raw.githubusercontent.com/4AExpress/4a-pricing/main/dhl_tariff_2026_${s}.json`)
+      .then(r=>r.json()).then(d=>({[s]:d.entries}))));
+    localStorage.setItem('dhl_all',JSON.stringify(Object.assign({},...arr)));
+  }
+  const fuel=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json());
+  const office=(currentUser?.stations||'ATH').split(',')[0];
+  const name=document.getElementById('cl-name').value.trim();
+  const r=await fetch(`${API}/generate_pdf.php`,{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      offer:{ name, afm:document.getElementById('cl-afm').value.trim(),
+        email:document.getElementById('cl-email').value.trim(),
+        contact:document.getElementById('cl-contact').value.trim(),
+        phone:document.getElementById('cl-phone').value.trim(),
+        user:currentUser.name, office_code:office,
+        date:todayFmt(), validity:document.getElementById('cl-validity').value,
+        offer_number:offerNum,
+        pricelists:selectedPls.map(p=>({service_id:p.service_id,markup:p.markup||p.global_markup||0}))
+      },
+      dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel,
+      zones_appendix: selectedPls.some(p => GR_SERVICES.has(p.service_id))
+        ? { include:true, code:'zones', description:'Ζώνες 4A Express GR', type:'ΠΑΡΑΡΤΗΜΑ', toc_replace:'net', link:ZONES_PDF_URL, pdf_before_pricelists:true }
+        : null
+    })
+  });
+  const d=await r.json();
+  if(!d.ok) throw new Error(d.error||'Άγνωστο σφάλμα');
+  const offerBytes = Uint8Array.from(atob(d.pdf), c => c.charCodeAt(0));
+  if(!selectedPls.some(p => GR_SERVICES.has(p.service_id))) return offerBytes;
+  try{
+    const { PDFDocument } = PDFLib;
+    const zonesResp = await fetch(ZONES_PDF_URL);
+    const zonesBytes = new Uint8Array(await zonesResp.arrayBuffer());
+    const offerDoc = await PDFDocument.load(offerBytes);
+    const zonesDoc = await PDFDocument.load(zonesBytes);
+    // Server PDF: page 0 = cover, page 1 = TOC, pages 2+ = rest (how/track/net/pricelists/terms)
+    // Zones insert immediately after TOC (index 1), before everything else
+    const INSERT_AFTER = 1;
+    const merged = await PDFDocument.create();
+    const offerPages = await merged.copyPages(offerDoc, offerDoc.getPageIndices());
+    offerPages.slice(0, INSERT_AFTER + 1).forEach(p => merged.addPage(p));
+    (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
+    offerPages.slice(INSERT_AFTER + 1).forEach(p => merged.addPage(p));
+    return await merged.save();
+  } catch(mergeErr){
+    console.warn('[PDF] Zones merge failed, offer-only fallback:', mergeErr);
+    return offerBytes;
+  }
+}
 
 async function previewPDF(){
   const name=document.getElementById('cl-name').value.trim();
@@ -565,75 +616,48 @@ async function previewPDF(){
   document.getElementById('preview-btn').textContent='⏳ Παράγεται...';
   document.getElementById('preview-btn').disabled=true;
   try {
-    if(!localStorage.getItem('dhl_all')){
-      const arr=await Promise.all(['S1003','S1012','S1010','S1041'].map(s=>
-        fetch(`https://raw.githubusercontent.com/4AExpress/4a-pricing/main/dhl_tariff_2026_${s}.json`)
-        .then(r=>r.json()).then(d=>({[s]:d.entries}))));
-      localStorage.setItem('dhl_all',JSON.stringify(Object.assign({},...arr)));
-    }
-    const fuel=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json());
-    const office=(currentUser?.stations||'ATH').split(',')[0];
     const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
-    const r=await fetch(`${API}/generate_pdf.php`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        offer:{ name, afm:document.getElementById('cl-afm').value.trim(),
-          email:document.getElementById('cl-email').value.trim(),
-          contact:document.getElementById('cl-contact').value.trim(),
-          phone:document.getElementById('cl-phone').value.trim(),
-          user:currentUser.name, office_code:office,
-          date:todayFmt(), validity:document.getElementById('cl-validity').value,
-          offer_number:offerNum,
-          pricelists:selectedPls.map(p=>({service_id:p.service_id,markup:p.markup||p.global_markup||0}))
-        },
-        dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel,
-        zones_appendix: selectedPls.some(p => GR_SERVICES.has(p.service_id))
-          ? { include:true, code:'zones', description:'Ζώνες 4A Express GR', type:'ΠΑΡΑΡΤΗΜΑ', toc_replace:'net', link:ZONES_PDF_URL, pdf_before_pricelists:true }
-          : null
-      })
-    });
-    const d=await r.json();
-    if(d.ok){
-      const offerBytes = Uint8Array.from(atob(d.pdf), c => c.charCodeAt(0));
-      console.log('[PDF] Offer PDF decoded:', offerBytes.byteLength, 'bytes');
-      let finalBytes = offerBytes;
-      if(selectedPls.some(p => GR_SERVICES.has(p.service_id))){
-        try{
-          console.log('[PDF] GR detected — fetching zones PDF:', ZONES_PDF_URL);
-          const { PDFDocument } = PDFLib;
-          const zonesResp = await fetch(ZONES_PDF_URL);
-          const zonesBytes = new Uint8Array(await zonesResp.arrayBuffer());
-          console.log('[PDF] Zones fetched:', zonesBytes.byteLength, 'bytes');
-          const offerDoc = await PDFDocument.load(offerBytes);
-          const zonesDoc = await PDFDocument.load(zonesBytes);
-          // Server PDF: page 0 = cover, page 1 = TOC, pages 2+ = rest (how/track/net/pricelists/terms)
-          // Zones insert immediately after TOC (index 1), before everything else
-          const offerN = offerDoc.getPageCount();
-          const zonesN = zonesDoc.getPageCount();
-          const INSERT_AFTER = 1; // TOC is always page index 1
-          console.log('[PDF] Offer pages:', offerN, '| Zones pages:', zonesN);
-          console.log('[PDF] Final order: offer(0–' + INSERT_AFTER + ')'
-            + ' → zones(' + (INSERT_AFTER+1) + '–' + (INSERT_AFTER+zonesN) + ')'
-            + ' → offer(' + (INSERT_AFTER+1) + '–' + (offerN-1) + ')');
-          const merged = await PDFDocument.create();
-          const offerPages = await merged.copyPages(offerDoc, offerDoc.getPageIndices());
-          offerPages.slice(0, INSERT_AFTER + 1).forEach(p => merged.addPage(p));
-          (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
-          offerPages.slice(INSERT_AFTER + 1).forEach(p => merged.addPage(p));
-          finalBytes = await merged.save();
-          console.log('[PDF] Merge done — total pages:', merged.getPageCount(), '| size:', finalBytes.byteLength, 'bytes');
-        } catch(mergeErr){
-          console.warn('[PDF] Zones merge failed, offer-only fallback:', mergeErr);
-        }
-      }
-      const blobUrl = URL.createObjectURL(new Blob([finalBytes], {type:'application/pdf'}));
-      console.log('[PDF] Opening blob URL:', blobUrl);
-      window.open(blobUrl);
-    } else { alert('Σφάλμα: '+(d.error||'Άγνωστο')); }
+    const finalBytes = await buildFinalPDF(offerNum);
+    const blobUrl = URL.createObjectURL(new Blob([finalBytes], {type:'application/pdf'}));
+    window.open(blobUrl);
   } catch(e){ alert('Σφάλμα: '+e.message); }
   finally {
     document.getElementById('preview-btn').textContent='📄 Προεπισκόπηση PDF';
     document.getElementById('preview-btn').disabled=false;
+  }
+}
+
+async function sendOffer(){
+  const name=document.getElementById('cl-name').value.trim();
+  const email=document.getElementById('cl-email').value.trim();
+  if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
+  if(!email){ alert('Απαιτείται email παραλήπτη'); return; }
+  if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
+  document.getElementById('send-btn').textContent='⏳ Αποστολή...';
+  document.getElementById('send-btn').disabled=true;
+  try {
+    const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+    const finalBytes = await buildFinalPDF(offerNum);
+    let binary='';
+    for(let i=0;i<finalBytes.length;i++) binary+=String.fromCharCode(finalBytes[i]);
+    const pdf_base64 = btoa(binary);
+    const r = await fetch(`${API}/send_email.php`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        to: email,
+        subject: `Προσφορά 4A Express — ${offerNum}`,
+        body: `Αγαπητέ/ή ${name},\n\nΣας αποστέλλουμε την προσφορά μας.\n\nΜε εκτίμηση,\nΗ ομάδα 4A Express`,
+        pdf_base64,
+        filename: `Προσφορά_4A_Express_${offerNum}.pdf`
+      })
+    });
+    const d = await r.json();
+    if(d.ok){ alert('Η προσφορά στάλθηκε επιτυχώς!'); }
+    else { alert('Σφάλμα αποστολής: '+(d.error||'Άγνωστο')); }
+  } catch(e){ alert('Σφάλμα: '+e.message); }
+  finally {
+    document.getElementById('send-btn').textContent='✉️ Αποστολή Προσφοράς';
+    document.getElementById('send-btn').disabled=false;
   }
 }
 
