@@ -171,13 +171,21 @@ def generate(offer_data, dhl_data, fuel_data):
     # TOC
     story.append(sec('ΠΕΡΙΕΧΟΜΕΝΟ ΠΡΟΣΦΟΡΑΣ'))
     story.append(Spacer(1,2*mm))
-    toc_items=[(2,'how','Πώς Λειτουργεί ο Τιμοκατάλογος','ΠΛΗΡΟΦΟΡΙΕΣ'),
-           (2,'track','Πληροφορίες Αποστολής & Tracking','ΠΛΗΡΟΦΟΡΙΕΣ'),
-           (3,'net','Δίκτυο Γραφείων 4A Express','ΠΛΗΡΟΦΟΡΙΕΣ')]
-    for i,svc in enumerate(services,4):
-        info=SVC_INFO.get(svc['service_id'],{})
-        toc_items.append((i,svc['service_id'],f"{info.get('name',svc['service_id'])} — {info.get('desc','')}",info.get('type','')))
-    toc_items.append((len(toc_items)+2,'terms','Όροι, Χρεώσεις & Επίναυλος','ΟΡΟΙ'))
+    has_gr = any(svc['service_id'] in {'S1003','S1012','S1010','S1041'} for svc in services)
+    pg = 2
+    toc_items = [(pg,'how','Πώς Λειτουργεί ο Τιμοκατάλογος','ΠΛΗΡΟΦΟΡΙΕΣ')]
+    pg += 1
+    if has_gr:
+        toc_items.append((pg,'zones','Ζώνες 4A Express GR','ΠΑΡΑΡΤΗΜΑ'))
+        pg += 1
+    for svc in services:
+        info = SVC_INFO.get(svc['service_id'],{})
+        toc_items.append((pg,svc['service_id'],f"{info.get('name',svc['service_id'])} — {info.get('desc','')}",info.get('type','')))
+        pg += 1
+    toc_items.append((pg,'net','Δίκτυο Γραφείων 4A Express','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
+    toc_items.append((pg,'track','Εύρεση & Tracking Αποστολής','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
+    toc_items.append((pg,'terms','Όροι, Χρεώσεις & Επίναυλος','ΟΡΟΙ')); pg+=1
+    toc_items.append((pg,'accept','Αποδοχή Προσφοράς','ΑΠΟΔΟΧΗ'))
 
     toc_rows=[[P('ΣΕΛ.',sb('th',fontSize=7,textColor=WHITE,alignment=TA_CENTER)),
                P('ΚΩΔΙΚΟΣ',sb('th',fontSize=7,textColor=WHITE)),
