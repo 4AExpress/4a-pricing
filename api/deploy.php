@@ -1,4 +1,5 @@
 <?php
+# v2 webhook ready
 header('Content-Type: application/json');
 $secret  = '4Aexpress2026';
 $payload = file_get_contents('php://input');
