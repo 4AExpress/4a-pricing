@@ -1,0 +1,571 @@
+#!/usr/bin/env python3
+# generate_pdf.py | v1.0 | 10-05-2026
+import sys, json, os, base64, tempfile
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.units import mm
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable, PageBreak
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+# Fonts path
+FONT_DIR = os.path.dirname(os.path.abspath(__file__))
+pdfmetrics.registerFont(TTFont('DV',  os.path.join(FONT_DIR,'DejaVuSans.ttf')))
+pdfmetrics.registerFont(TTFont('DV-B',os.path.join(FONT_DIR,'DejaVuSans-Bold.ttf')))
+
+F='DV'; FB='DV-B'
+W,H=A4; ML=MR=15*mm; cw=W-ML-MR
+
+RED=colors.HexColor('#cc0000'); DRED=colors.HexColor('#990000')
+MGRAY=colors.HexColor('#555555'); LGRAY=colors.HexColor('#f2f2f2')
+XLGRAY=colors.HexColor('#f8f8f8'); DGRAY=colors.HexColor('#222222')
+BGRAY=colors.HexColor('#999999'); BORDER=colors.HexColor('#dddddd'); WHITE=colors.white
+
+ZONE_BG={1:colors.HexColor('#f0f0f0'),2:colors.HexColor('#e8e8e8'),
+         3:colors.HexColor('#e0e0e0'),4:colors.HexColor('#d8d8d8'),
+         5:colors.HexColor('#d0d0d0'),6:colors.HexColor('#c8c8c8'),7:colors.HexColor('#c0c0c0'),
+         8:colors.HexColor('#ddeeff'),9:colors.HexColor('#ddeeff')}
+
+OFFICES={
+    'ATH':{'name':'Αθήνα',   'prefix':'0107','addr':'Βελεστίνου 7, 11523, Αθήνα',         'tel':'+30 210 9966661','email':'info@skynetworldwide.gr','maps':'https://maps.google.com/?q=Βελεστίνου+7,+Αθήνα'},
+    'NIC':{'name':'Λευκωσία','prefix':'0108','addr':'Αθαλάσσης 107, Λευκωσία, Κύπρος',    'tel':'+357 22 953311', 'email':'4aexpress@cytanet.com.cy','maps':'https://maps.google.com/?q=Athalassas+107,+Nicosia'},
+    'QLI':{'name':'Λεμεσός', 'prefix':'0109','addr':'Spyrou Kyprianou Ave 20, Λεμεσός',    'tel':'+357 25590500',  'email':'qli1@4aexpress.com','maps':'https://maps.google.com/?q=Spyrou+Kyprianou+20,+Limassol'},
+    'LCA':{'name':'Λάρνακα', 'prefix':'0110','addr':'Αρχιεπ. Κυπριανού 58, Λάρνακα',      'tel':'+357 24 424280', 'email':'4aexpress@cytanet.com.cy','maps':'https://maps.google.com/?q=Archiepiskopou+Kyprianou+58,+Larnaca'},
+}
+
+SVC_INFO={
+    'S1003':{'name':'Express Export','desc':'Αεροπορική Μεταφορά — Export','type':'AIR'},
+    'S1012':{'name':'Express Import','desc':'Αεροπορική Μεταφορά — Import','type':'AIR'},
+    'S1010':{'name':'Economy Export','desc':'Οδική Μεταφορά — Export',     'type':'ROAD'},
+    'S1041':{'name':'Economy Import','desc':'Οδική Μεταφορά — Import',     'type':'ROAD'},
+}
+
+def s(n,**k):  return ParagraphStyle(n,fontName=F, **k)
+def sb(n,**k): return ParagraphStyle(n,fontName=FB,**k)
+P=lambda t,st:Paragraph(t,st)
+
+def hdr(num):
+    t=Table([[
+        Table([[P('4A',sb('l',fontSize=16,textColor=RED,alignment=TA_CENTER))]],colWidths=[14*mm]),
+        P('WORLDWIDE EXPRESS',sb('w',fontSize=8,textColor=WHITE)),
+        P(num,sb('n',fontSize=9,textColor=WHITE,alignment=TA_RIGHT)),
+    ]],colWidths=[14*mm,cw-74*mm,60*mm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND',(0,0),(0,0),WHITE),('BACKGROUND',(1,0),(2,0),RED),
+        ('VALIGN',(0,0),(-1,-1),'MIDDLE'),('TOPPADDING',(0,0),(-1,-1),5),
+        ('BOTTOMPADDING',(0,0),(-1,-1),5),('LEFTPADDING',(1,0),(1,0),10),
+        ('RIGHTPADDING',(2,0),(2,0),8),('BOX',(0,0),(-1,-1),1.2,RED),
+    ]))
+    return t
+
+def ftr(num,date):
+    return Table([[
+        P('Ε.Ε.Τ.Τ. 033-99  ·  ΑΦΜ: 044978638  ·  ΚΕΦΟΔΕ ΑΘΗΝΩΝ',
+          s('f1',fontSize=6.5,textColor=BGRAY)),
+        P(f"4A Express  ·  {num}  ·  {date}  ·  www.4aexpress.com",
+          s('f2',fontSize=6.5,textColor=BGRAY,alignment=TA_RIGHT)),
+    ]],colWidths=[cw//2,cw//2],style=[('TOPPADDING',(0,0),(-1,-1),4)])
+
+def sec(txt):
+    t=Table([[P(txt,sb('st',fontSize=10,textColor=WHITE))]],colWidths=[cw])
+    t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,-1),DRED),
+        ('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7),
+        ('LEFTPADDING',(0,0),(-1,-1),10)]))
+    return t
+
+def apply_markup(entries, markup_pct, zones, markup_z9=None):
+    table={}
+    for e in entries:
+        z=int(e['zone_code'].replace('z',''))
+        if z>zones and z!=9: continue
+        w=e['weight_kg']
+        if w not in table: table[w]={}
+        if z==9 and markup_z9 is not None:
+            table[w][z]=round(e['cost']*(1+markup_z9/100),2)
+        else:
+            table[w][z]=round(e['cost']*(1+markup_pct/100),2)
+    return table
+
+def generate(offer_data, dhl_data, fuel_data):
+    office_code = offer_data.get('office_code','ATH')
+    office = OFFICES.get(office_code, OFFICES['ATH'])
+
+    curr_air  = next((x for x in fuel_data.get('air',[])  if x.get('is_current')),None)
+    curr_road = next((x for x in fuel_data.get('road',[]) if x.get('is_current')),None)
+    fuel_air  = curr_air['pct']  if curr_air  else 0
+    fuel_road = curr_road['pct'] if curr_road else 0
+    fuel_week = curr_air['week'] if curr_air  else '—'
+
+    # Αριθμός προσφοράς με prefix
+    prefix = office.get('prefix','0107')
+    offer_num = f"{prefix}-{offer_data.get('offer_number','4A-2026-0001')}"
+
+    services = offer_data.get('pricelists',[])
+
+    tmpfile = tempfile.NamedTemporaryFile(suffix='.pdf', delete=False)
+    tmpfile.close()
+
+    doc=SimpleDocTemplate(tmpfile.name,pagesize=A4,
+        rightMargin=MR,leftMargin=ML,topMargin=15*mm,bottomMargin=12*mm,
+        title=f"Προσφορά {offer_num}",author='4A Express Worldwide')
+    story=[]
+    date = offer_data.get('date','—')
+
+    # Validity
+    from datetime import datetime, timedelta
+    try:
+        d = datetime.strptime(date,'%d-%m-%Y')
+        validity_days = int(offer_data.get('validity',30))
+        valid_until = (d+timedelta(days=validity_days)).strftime('%d-%m-%Y')
+    except:
+        valid_until = '—'
+
+    # ── COVER ──
+    story.append(hdr(offer_num))
+    story.append(Table([[
+        P('ΠΡΟΣΦΟΡΑ',sb('t1',fontSize=20,textColor=WHITE,alignment=TA_CENTER)),
+        P('OFFER',   sb('t2',fontSize=20,textColor=colors.HexColor('#ffcccc'),alignment=TA_CENTER)),
+    ]],colWidths=[cw//2,cw//2],style=[
+        ('BACKGROUND',(0,0),(-1,-1),DRED),('TOPPADDING',(0,0),(-1,-1),9),
+        ('BOTTOMPADDING',(0,0),(-1,-1),9),('LINEAFTER',(0,0),(0,-1),0.5,colors.HexColor('#dd3333'))]))
+    story.append(Spacer(1,4*mm))
+
+    C=cw//2-3*mm
+    def trow(l1,v1,l2,v2,bold=False):
+        fs=10 if bold else 9; fc=RED if bold else DGRAY
+        return [
+            Table([[P(l1,s('rl',fontSize=7,textColor=BGRAY))],[P(v1,sb('rv',fontSize=fs,textColor=fc))]],colWidths=[C]),
+            Table([[P(l2,s('rl2',fontSize=7,textColor=BGRAY))],[P(v2,sb('rv2',fontSize=fs,textColor=fc))]],colWidths=[C]),
+        ]
+    mt=Table([
+        trow('ΠΕΛΑΤΗΣ',offer_data.get('name','—'),'ΓΡΑΦΕΙΟ',f"4A Express — {office['name']}",bold=True),
+        trow('ΑΦΜ',offer_data.get('afm','—'),'ΔΙΕΥΘΥΝΣΗ',office['addr']),
+        trow('EMAIL',offer_data.get('email','—'),'ΤΗΛΕΦΩΝΟ',office['tel']),
+        trow('ΥΠΕΥΘΥΝΟΣ',offer_data.get('contact','—'),'EMAIL ΓΡΑΦΕΙΟΥ',office['email']),
+        trow('ΕΚΔΟΤΗΣ',offer_data.get('user','—'),'ΙΣΤΟΣΕΛΙΔΑ','www.4aexpress.com'),
+    ],colWidths=[C,C])
+    mt.setStyle(TableStyle([
+        ('VALIGN',(0,0),(-1,-1),'TOP'),('TOPPADDING',(0,0),(-1,-1),5),
+        ('BOTTOMPADDING',(0,0),(-1,-1),5),('LEFTPADDING',(0,0),(-1,-1),8),
+        ('LINEAFTER',(0,0),(0,-1),0.5,BORDER),('LINEBELOW',(0,0),(-1,-2),0.25,BORDER),
+        ('BACKGROUND',(0,0),(-1,0),LGRAY),
+    ]))
+    story.append(mt)
+    story.append(Spacer(1,4*mm))
+
+    story.append(Table([[
+        Table([[P('ΑΡ. ΠΡΟΣΦΟΡΑΣ',s('nl',fontSize=7,textColor=BGRAY))],[P(offer_num,sb('nv',fontSize=11,textColor=RED))]],colWidths=[65*mm]),
+        Table([[P('ΗΜΕΡΟΜΗΝΙΑ',s('dl',fontSize=7,textColor=BGRAY))],[P(date,sb('dv',fontSize=11,textColor=DGRAY))]],colWidths=[38*mm]),
+        Table([[P('ΙΣΧΥΣ ΕΩΣ',s('vl',fontSize=7,textColor=BGRAY))],[P(valid_until,sb('vv',fontSize=11,textColor=RED))]],colWidths=[38*mm]),
+        Table([[P('ΓΛΩΣΣΑ',s('ll',fontSize=7,textColor=BGRAY))],[P('Ελληνικά',sb('lv',fontSize=9,textColor=DGRAY))]],colWidths=[cw-141*mm]),
+    ]],colWidths=[65*mm,38*mm,38*mm,cw-141*mm],style=[
+        ('BACKGROUND',(0,0),(-1,-1),LGRAY),('TOPPADDING',(0,0),(-1,-1),6),
+        ('BOTTOMPADDING',(0,0),(-1,-1),6),('LEFTPADDING',(0,0),(-1,-1),8),
+        ('BOX',(0,0),(-1,-1),0.5,BORDER),('LINEAFTER',(0,0),(2,-1),0.5,BORDER),
+        ('VALIGN',(0,0),(-1,-1),'TOP'),
+    ]))
+    story.append(Spacer(1,5*mm))
+
+    # TOC
+    story.append(sec('ΠΕΡΙΕΧΟΜΕΝΟ ΠΡΟΣΦΟΡΑΣ'))
+    story.append(Spacer(1,2*mm))
+    toc_items=[(2,'how','Πώς Λειτουργεί ο Τιμοκατάλογος','ΠΛΗΡΟΦΟΡΙΕΣ'),
+           (2,'track','Πληροφορίες Αποστολής & Tracking','ΠΛΗΡΟΦΟΡΙΕΣ'),
+           (3,'net','Δίκτυο Γραφείων 4A Express','ΠΛΗΡΟΦΟΡΙΕΣ')]
+    for i,svc in enumerate(services,4):
+        info=SVC_INFO.get(svc['service_id'],{})
+        toc_items.append((i,svc['service_id'],f"{info.get('name',svc['service_id'])} — {info.get('desc','')}",info.get('type','')))
+    toc_items.append((len(toc_items)+2,'terms','Όροι, Χρεώσεις & Επίναυλος','ΟΡΟΙ'))
+
+    toc_rows=[[P('ΣΕΛ.',sb('th',fontSize=7,textColor=WHITE,alignment=TA_CENTER)),
+               P('ΚΩΔΙΚΟΣ',sb('th',fontSize=7,textColor=WHITE)),
+               P('ΠΕΡΙΓΡΑΦΗ',sb('th',fontSize=7,textColor=WHITE)),
+               P('ΤΥΠΟΣ',sb('th',fontSize=7,textColor=WHITE,alignment=TA_CENTER))]]
+    for pg,code,desc,typ in toc_items:
+        is_svc=(len(code)==5 and code[0]=='S') or code=='zones'
+        toc_rows.append([
+            P(str(pg),sb('tp',fontSize=8,textColor=MGRAY,alignment=TA_CENTER)),
+            P(f'<a href="#{code}" color="red"><u>{code}</u></a>' if is_svc else code,
+              sb('tc',fontSize=8,textColor=RED if is_svc else BGRAY)),
+            P(desc,s('td',fontSize=8,textColor=colors.HexColor('#1565c0') if code=='zones' else DGRAY)),
+            P(typ,sb('tt2',fontSize=7,textColor=WHITE if is_svc else MGRAY,alignment=TA_CENTER)),
+        ])
+    toc_t=Table(toc_rows,colWidths=[15*mm,22*mm,cw-72*mm,35*mm])
+    toc_ts=TableStyle([
+        ('BACKGROUND',(0,0),(-1,0),MGRAY),('GRID',(0,0),(-1,-1),0.25,BORDER),
+        ('TOPPADDING',(0,0),(-1,-1),6),('BOTTOMPADDING',(0,0),(-1,-1),6),
+        ('LEFTPADDING',(0,0),(-1,-1),6),('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+        ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE,XLGRAY]),
+    ])
+    for i,(pg,code,desc,typ) in enumerate(toc_items,1):
+        is_svc=len(code)==5 and code[0]=='S'
+        toc_ts.add('BACKGROUND',(3,i),(3,i),RED if is_svc else LGRAY)
+    toc_t.setStyle(toc_ts)
+    story.append(toc_t)
+    story.append(Spacer(1,3*mm))
+    story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
+    story.append(ftr(offer_num,date))
+    story.append(PageBreak())
+
+    # ── ΠΩΣ ΛΕΙΤΟΥΡΓΕΙ ──
+    story.append(hdr(offer_num))
+    story.append(Paragraph('<a name="how"/>',s('anc',fontSize=0.1)))
+    story.append(sec('ΠΩΣ ΛΕΙΤΟΥΡΓΕΙ Ο ΤΙΜΟΚΑΤΑΛΟΓΟΣ'))
+    story.append(Spacer(1,3*mm))
+    for num,title,desc in [
+        ('1','Βρείτε τον Προορισμό','Ανατρέξτε στον Κατάλογο Ζωνών. Κάθε χώρα = Ζώνη Z1-Z7 (AIR) ή Z1-Z3 (ROAD).'),
+        ('2','Μετρήστε το Βάρος','Χρησιμοποιήστε το μεγαλύτερο: πραγματικό ή ογκομετρικό (Μ×Π×Υ cm / 5000).'),
+        ('3','Βρείτε την Τιμή','Γραμμή βάρους × Στήλη ζώνης = βασική τιμή εκτός επίναυλου.'),
+        ('4','Προσθέστε Επίναυλο',f"Τρέχουσα εβδομάδα ({fuel_week}): AIR {fuel_air}% · ROAD {fuel_road}%."),
+        ('5','Βάρος >70kg','Χρησιμοποιήστε +1kg ή +5kg row × επιπλέον κιλά.'),
+    ]:
+        st=Table([[
+            P(num,sb('hn',fontSize=13,textColor=WHITE,alignment=TA_CENTER)),
+            Table([[P(title,sb('ht',fontSize=9,textColor=DGRAY))],
+                   [P(desc,s('hd',fontSize=8,textColor=MGRAY,leading=12))]],colWidths=[cw-22*mm]),
+        ]],colWidths=[18*mm,cw-18*mm])
+        st.setStyle(TableStyle([
+            ('BACKGROUND',(0,0),(0,-1),MGRAY),('VALIGN',(0,0),(-1,-1),'TOP'),
+            ('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7),
+            ('LEFTPADDING',(0,0),(-1,-1),8),
+            ('BOX',(0,0),(-1,-1),0.25,BORDER),('LINEAFTER',(0,0),(0,-1),0.5,BORDER),
+        ]))
+        story.append(st); story.append(Spacer(1,2*mm))
+
+    story.append(Spacer(1,3*mm))
+    story.append(Paragraph('<a name="track"/>',s('anc',fontSize=0.1)))
+    story.append(sec('ΠΛΗΡΟΦΟΡΙΕΣ ΑΠΟΣΤΟΛΗΣ & TRACKING'))
+    story.append(Spacer(1,3*mm))
+    it=Table([[P(t,sb('it',fontSize=8,textColor=WHITE)),P(d,s('id',fontSize=8,textColor=MGRAY,leading=12))] for t,d in [
+        ('TRACKING','Μοναδικός αριθμός AWB 12 ψηφία. Παρακολούθηση σε πραγματικό χρόνο στο www.4aexpress.com .'),
+        ('ΠΑΡΑΔΟΣΗ','AIR: 1-3 εργάσιμες. ROAD: 2-5 εργάσιμες. Κύπρος: +1 εργάσιμη.'),
+        ('ΑΣΦΑΛΕΙΑ','Βασική κάλυψη €100. Πρόσθετη ασφάλεια κατόπιν αιτήματος.'),
+        ('ΑΠΑΓΟΡΕΥΜΕΝΑ','Επικίνδυνα υλικά, νομίσματα, ζώα. Επικοινωνήστε για διευκρινίσεις.'),
+    ]],colWidths=[38*mm,cw-38*mm])
+    it.setStyle(TableStyle([
+        ('BACKGROUND',(0,0),(0,-1),MGRAY),('GRID',(0,0),(-1,-1),0.25,BORDER),
+        ('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7),
+        ('LEFTPADDING',(0,0),(-1,-1),8),('VALIGN',(0,0),(-1,-1),'TOP'),
+        ('ROWBACKGROUNDS',(1,0),(1,-1),[WHITE,XLGRAY]),
+    ]))
+    story.append(it)
+    story.append(Spacer(1,3*mm))
+    story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
+    story.append(ftr(offer_num,date))
+    story.append(PageBreak())
+
+    # ── ΔΙΚΤΥΟ ──
+    story.append(hdr(offer_num))
+    story.append(Paragraph('<a name="net"/>',s('anc',fontSize=0.1)))
+    story.append(sec('ΔΙΚΤΥΟ ΓΡΑΦΕΙΩΝ 4A EXPRESS'))
+    story.append(Spacer(1,4*mm))
+    off_rows=[[P('PREFIX',sb('oh',fontSize=7,textColor=WHITE,alignment=TA_CENTER)),
+               P('ΣΤΑΘΜΟΣ',sb('oh',fontSize=7,textColor=WHITE)),
+               P('ΔΙΕΥΘΥΝΣΗ',sb('oh',fontSize=7,textColor=WHITE)),
+               P('ΤΗΛΕΦΩΝΟ',sb('oh',fontSize=7,textColor=WHITE)),
+               P('EMAIL',sb('oh',fontSize=7,textColor=WHITE))]]
+    for code,off in OFFICES.items():
+        is_cur=code==office_code
+        off_rows.append([
+            P(off['prefix'],sb('op',fontSize=10,textColor=RED if is_cur else MGRAY,alignment=TA_CENTER)),
+            P(f"{'★ ' if is_cur else ''}{off['name']}",sb('on2',fontSize=10,textColor=RED if is_cur else DGRAY)),
+            P(f'<a href="{off["maps"]}" color="#1565c0">{off["addr"]}</a>',s('oa',fontSize=8,textColor=MGRAY,leading=12)),
+            P(off['tel'], sb('ot',fontSize=8,textColor=DGRAY)),
+            P(off['email'],s('oe',fontSize=8,textColor=MGRAY)),
+        ])
+    oft=Table(off_rows,colWidths=[16*mm,28*mm,68*mm,36*mm,cw-148*mm])
+    ofts=TableStyle([
+        ('BACKGROUND',(0,0),(-1,0),MGRAY),('GRID',(0,0),(-1,-1),0.25,BORDER),
+        ('TOPPADDING',(0,0),(-1,-1),8),('BOTTOMPADDING',(0,0),(-1,-1),8),
+        ('LEFTPADDING',(0,0),(-1,-1),6),('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+        ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE,XLGRAY]),
+    ])
+    for i,(code,_) in enumerate(OFFICES.items(),1):
+        if code==office_code:
+            ofts.add('BACKGROUND',(0,i),(-1,i),colors.HexColor('#fff0f0'))
+            ofts.add('LINEBEFORE',(0,i),(0,i),3,RED)
+    oft.setStyle(ofts)
+    story.append(oft)
+    story.append(Spacer(1,5*mm))
+    story.append(Table([[
+        P("ΚΑΤΑΛΟΓΟΣ ΖΩΝΩΝ",sb('ztl',fontSize=8,textColor=MGRAY)),
+        P("Ο κατάλογος ζωνών χωρών επισυνάπτεται στην παρούσα προσφορά.",
+          s('ztb',fontSize=8,textColor=MGRAY,leading=12))
+    ]],colWidths=[42*mm,cw-42*mm],style=[
+        ('BACKGROUND',(0,0),(0,-1),LGRAY),('TOPPADDING',(0,0),(-1,-1),8),
+        ('BOTTOMPADDING',(0,0),(-1,-1),8),('LEFTPADDING',(0,0),(-1,-1),10),
+        ('BOX',(0,0),(-1,-1),0.5,BORDER),('LINEAFTER',(0,0),(0,-1),0.5,BORDER),
+        ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+    ]))
+    story.append(Spacer(1,3*mm))
+    story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
+    story.append(ftr(offer_num,date))
+    story.append(PageBreak())
+
+    # ── SERVICES ──
+    zone_descs={1:'ΕΕ Δυτ.',2:'Ευρώπη',3:'ΕΕ Περιφ.',4:'Αμερική',5:'ΜΑ/Αφρ.',6:'Ασία/Ωκ.',7:'Υπόλοιπος',8:'',9:'Κύπρος'}
+    for svc in services:
+        svc_id=svc['service_id']
+        info=SVC_INFO.get(svc_id,{})
+        is_air=info.get('type')=='AIR'
+        zones=7 if is_air else 3
+        markup=float(svc.get('markup',0))
+        markup_z9=float(svc.get('markup_z9',0)) or None
+        entries=dhl_data.get(svc_id,[])
+        prices=apply_markup(entries,markup,zones,markup_z9)
+        AIR_W=[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,55,60,65,70]
+        ROAD_W=[1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100]
+        target_w = AIR_W if is_air else ROAD_W
+        weights = [w for w in target_w if w in prices]
+        if not weights: continue
+        fc=fuel_air if is_air else fuel_road
+        icon='ΑΕΡΟΠΟΡΙΚΗ ΜΕΤΑΦΟΡΑ' if is_air else 'ΟΔΙΚΗ ΜΕΤΑΦΟΡΑ'
+
+        story.append(hdr(offer_num))
+        story.append(Paragraph(f'<a name="{svc_id}"/>',s('anc',fontSize=0.1)))
+        sh=Table([[
+            P('✈️' if is_air else '🚛',sb('ic2',fontSize=14,textColor=WHITE,alignment=TA_CENTER)),
+            P(f"{svc_id}  ·  {info.get('name',svc_id)}",sb('sh',fontSize=13,textColor=WHITE)),
+            P(info.get('desc',''),s('sd2',fontSize=8,textColor=colors.HexColor('#cccccc'))),
+        ]],colWidths=[38*mm,80*mm,cw-118*mm])
+        sh.setStyle(TableStyle([
+            ('BACKGROUND',(0,0),(-1,-1),RED),('BACKGROUND',(0,0),(0,0),DRED),
+            ('TOPPADDING',(0,0),(-1,-1),9),('BOTTOMPADDING',(0,0),(-1,-1),9),
+            ('LEFTPADDING',(0,0),(-1,-1),12),('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+            ('LINEAFTER',(0,0),(0,-1),1,colors.HexColor('#dd3333')),
+        ]))
+        story.append(sh)
+        story.append(Table([[P(
+            f"Βρείτε ζώνη → βάρος → διασταύρωση = βασική τιμή. Επίναυλος {fc}% ({fuel_week}) ξεχωριστά.",
+            s('hw',fontSize=7.5,textColor=MGRAY,leading=11))]],colWidths=[cw],style=[
+            ('BACKGROUND',(0,0),(-1,-1),LGRAY),('TOPPADDING',(0,0),(-1,-1),5),
+            ('BOTTOMPADDING',(0,0),(-1,-1),5),('LEFTPADDING',(0,0),(-1,-1),10),
+            ('BOX',(0,0),(-1,-1),0.5,BORDER)]))
+        story.append(Spacer(1,3*mm))
+
+
+        zone_splits = [(1,zones)]
+        
+        for split_idx, (z_from, z_to) in enumerate(zone_splits):
+            if split_idx > 0:
+                story.append(hdr(offer_num))
+                story.append(sh)
+                story.append(Table([[P(
+                    f"Βρείτε ζώνη → βάρος → διασταύρωση = βασική τιμή. Επίναυλος {fc}% ({fuel_week}) ξεχωριστά.",
+                    s('hw',fontSize=7.5,textColor=MGRAY,leading=11))]],colWidths=[cw],style=[
+                    ('BACKGROUND',(0,0),(-1,-1),LGRAY),('TOPPADDING',(0,0),(-1,-1),5),
+                    ('BOTTOMPADDING',(0,0),(-1,-1),5),('LEFTPADDING',(0,0),(-1,-1),10),
+                    ('BOX',(0,0),(-1,-1),0.5,BORDER)]))
+                story.append(Spacer(1,2*mm))
+            z_range = list(range(z_from, z_to+1)) + ([9] if is_air else [])
+            split_cw = (cw-22*mm)/len(z_range)
+            split_col_w = [22*mm]+[split_cw]*len(z_range)
+            
+            hdr_row=[P('ΒΑΡΟΣ\n(kg)',sb('zh',fontSize=7,textColor=WHITE,alignment=TA_CENTER))]
+            for z in z_range:
+                hdr_row.append(P(f"Z{z}\n{zone_descs[z]}",sb('zh2',fontSize=7,textColor=WHITE,alignment=TA_CENTER)))
+            
+            td=[hdr_row]
+            for w in weights:
+                row=[P(str(w),sb('tw',fontSize=7,textColor=MGRAY,alignment=TA_LEFT))]
+                for z in z_range:
+                    row.append(P(f"€{prices[w].get(z,0):.2f}",s('tp',fontSize=7,textColor=DGRAY,alignment=TA_CENTER)))
+                td.append(row)
+            
+            if split_idx==len(zone_splits)-1:
+                last_w=weights[-1]
+                extra_label='+1 kg' if is_air else '+5 kg'
+                extra_mult=1/last_w if is_air else 5/last_w
+                td.append([P(extra_label,sb('ex',fontSize=7,textColor=RED,alignment=TA_LEFT))]+
+                          [P(f"€{round(prices[last_w].get(z,0)*extra_mult,2):.2f}",
+                             s('ep',fontSize=7,textColor=RED,alignment=TA_CENTER)) for z in z_range])
+
+            pt=Table(td,colWidths=split_col_w,repeatRows=1)
+            ts=TableStyle([
+                ('BACKGROUND',(0,0),(-1,0),RED),
+                ('FONTSIZE',(0,0),(-1,-1),6),
+                ('ALIGN',(0,0),(-1,-1),'CENTER'),('ALIGN',(0,0),(0,-1),'LEFT'),
+                ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+                ('TOPPADDING',(0,0),(-1,-1),1),('BOTTOMPADDING',(0,0),(-1,-1),1),
+                ('LEFTPADDING',(0,0),(0,-1),6),
+                ('GRID',(0,0),(-1,-1),0.25,BORDER),
+                ('BACKGROUND',(0,-1),(-1,-1),colors.HexColor('#fff0f0')),
+                ('FONTNAME',(0,-1),(-1,-1),FB),
+            ])
+            for i in range(1,len(weights)+1):
+                bg=WHITE if i%2==0 else XLGRAY
+                ts.add('BACKGROUND',(0,i),(0,i),bg)
+                for z_idx,z in enumerate(z_range,1):
+                    ts.add('BACKGROUND',(z_idx,i),(z_idx,i),ZONE_BG[z] if i%2==0 else colors.HexColor('#f0f0f0'))
+            pt.setStyle(ts)
+            story.append(pt)
+            story.append(Spacer(1,3*mm))
+            story.append(P(f"* Τιμές εξαιρούν ΦΠΑ και επίναυλο {fc}%. Ισχύουν έως {valid_until}. Ζώνες Z{z_from}-Z{z_to}.",
+                s('note',fontSize=7,textColor=BGRAY)))
+            story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER,spaceBefore=3))
+            story.append(ftr(offer_num,date))
+            story.append(PageBreak())
+
+    # ── ΟΡΟΙ ──
+    story.append(hdr(offer_num))
+    story.append(Paragraph('<a name="terms"/>',s('anc',fontSize=0.1)))
+    story.append(sec('ΟΡΟΙ, ΧΡΕΩΣΕΙΣ & ΕΠΙΝΑΥΛΟΣ ΚΑΥΣΙΜΩΝ'))
+    story.append(Spacer(1,4*mm))
+    story.append(P('Επίναυλος Καυσίμων',sb('etl',fontSize=9,textColor=DGRAY,spaceAfter=3)))
+    story.append(Table([
+        [P('SERVICE',sb('fl',fontSize=7,textColor=WHITE)),P('ΕΒΔΟΜΑΔΑ',sb('fl',fontSize=7,textColor=WHITE)),
+         P('ΠΟΣΟΣΤΟ',sb('fl',fontSize=7,textColor=WHITE)),P('ΣΗΜΕΙΩΣΗ',sb('fl',fontSize=7,textColor=WHITE))],
+        [P('AIR — S1003, S1012',sb('fv',fontSize=8,textColor=DGRAY)),P(fuel_week,s('fw',fontSize=8,textColor=DGRAY)),
+         P(f"{fuel_air}%",sb('fp',fontSize=12,textColor=RED)),P('Εβδομαδιαία ανανέωση βάσει DHL',s('fn',fontSize=7,textColor=MGRAY))],
+        [P('ROAD — S1010, S1041',sb('fv2',fontSize=8,textColor=DGRAY)),P(fuel_week,s('fw2',fontSize=8,textColor=DGRAY)),
+         P(f"{fuel_road}%",sb('fp2',fontSize=12,textColor=MGRAY)),P('Εβδομαδιαία ανανέωση βάσει DHL',s('fn2',fontSize=7,textColor=MGRAY))],
+    ],colWidths=[55*mm,40*mm,28*mm,cw-123*mm],style=[
+        ('BACKGROUND',(0,0),(-1,0),MGRAY),('GRID',(0,0),(-1,-1),0.25,BORDER),
+        ('TOPPADDING',(0,0),(-1,-1),6),('BOTTOMPADDING',(0,0),(-1,-1),6),
+        ('LEFTPADDING',(0,0),(-1,-1),8),('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+        ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE,XLGRAY]),
+    ]))
+    story.append(Spacer(1,4*mm))
+    story.append(P('Extra Χρεώσεις',sb('ectl',fontSize=9,textColor=DGRAY,spaceAfter=3)))
+    story.append(Table(
+        [[P('ΧΡΕΩΣΗ',sb('chl',fontSize=7,textColor=WHITE)),P('ΑΞΙΑ',sb('chl',fontSize=7,textColor=WHITE)),P('ΣΗΜΕΙΩΣΗ',sb('chl',fontSize=7,textColor=WHITE))]]+
+        [[P(nm,sb('cn2',fontSize=8,textColor=DGRAY)),P(vl,sb('cv',fontSize=8,textColor=RED)),P(nt,s('cn3',fontSize=7,textColor=MGRAY))] for nm,vl,nt in [
+            ('Επίναυλος Κύπρου','€1.20 / kg','Πραγματικό βάρος · COMBI services'),
+            ('Ασφάλεια','Κατόπιν αιτήματος','Insurance on declared value'),
+            ('Παραλαβή','Κατόπιν συνεννόησης','Pick-up service'),
+            ('COD','Διαθέσιμο','Cash on delivery'),
+            ('SMS','Συμπεριλαμβάνεται','Tracking notifications'),
+        ]],colWidths=[60*mm,50*mm,cw-110*mm],style=[
+            ('BACKGROUND',(0,0),(-1,0),MGRAY),('GRID',(0,0),(-1,-1),0.25,BORDER),
+            ('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5),
+            ('LEFTPADDING',(0,0),(-1,-1),8),('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE,XLGRAY]),
+        ]))
+    story.append(Spacer(1,4*mm))
+    story.append(P('Όροι & Προϋποθέσεις',sb('otl',fontSize=9,textColor=DGRAY,spaceAfter=3)))
+    story.append(P("Οι τιμές εξαιρούν ΦΠΑ, επίναυλο καυσίμων και λοιπές χρεώσεις. "
+        "Ο επίναυλος ανανεώνεται εβδομαδιαίως  "
+        "Η προσφορά ισχύει 30 ημέρες από έκδοση. "
+        "Ισχύουν για αποστολές με προέλευση Ελλάδα.",
+        s('tt',fontSize=8,textColor=MGRAY,leading=13,spaceAfter=8)))
+    story.append(Table([[
+        P('____________________________',s('sl',fontSize=9,textColor=BGRAY,alignment=TA_CENTER)),
+        P('',s('sp',fontSize=9)),
+        P('____________________________',s('sl2',fontSize=9,textColor=BGRAY,alignment=TA_CENTER)),
+    ],[
+        P('Υπογραφή Πελάτη',s('sll',fontSize=7,textColor=MGRAY,alignment=TA_CENTER)),
+        P('',s('sp2',fontSize=7)),
+        P('4A Express',sb('slr',fontSize=7,textColor=RED,alignment=TA_CENTER)),
+    ]],colWidths=[70*mm,cw-140*mm,70*mm],
+    style=[('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3)]))
+    story.append(Spacer(1,5*mm))
+    story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
+    story.append(ftr(offer_num,date))
+# ── ΑΠΟΔΟΧΗ ──
+    story.append(PageBreak())
+    story.append(hdr(offer_num))
+    story.append(Table([[
+        P('ΑΠΟΔΟΧΗ ΠΡΟΣΦΟΡΑΣ', sb('at', fontSize=12, textColor=WHITE)),
+        P('ΣΥΜΒΑΣΗ ΠΑΡΟΧΗΣ ΥΠΗΡΕΣΙΩΝ ΤΑΧΥΜΕΤΑΦΟΡΑΣ', s('at2', fontSize=9, textColor=colors.HexColor('#ffcccc'), alignment=TA_RIGHT)),
+    ]], colWidths=[cw//2, cw//2], style=[
+        ('BACKGROUND',(0,0),(-1,-1),DRED),
+        ('TOPPADDING',(0,0),(-1,-1),9),('BOTTOMPADDING',(0,0),(-1,-1),9),
+        ('LEFTPADDING',(0,0),(-1,-1),12),('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+    ]))
+    story.append(Spacer(1,4*mm))
+    for row in [
+        ['ΕΤΑΙΡΕΙΑ:',offer_data.get('name',''),'Ώρες Λειτουργίας:',''],
+        ['ΔΙΕΥΘΥΝΣΗ:','','ΠΟΛΗ:',''],
+        ['Τ.Κ.:','','ΤΗΛ:',offer_data.get('phone','')],
+        ['Α.Φ.Μ.:',offer_data.get('afm',''),'Δ.Ο.Υ.:',''],
+    ]:
+        story.append(Table([[
+            P(row[0],sb('al',fontSize=8,textColor=MGRAY)),
+            P(row[1],s('av',fontSize=9,textColor=DGRAY)),
+            P(row[2],sb('al2',fontSize=8,textColor=MGRAY)),
+            P(row[3],s('av2',fontSize=9,textColor=DGRAY)),
+        ]],colWidths=[30*mm,cw//2-30*mm,35*mm,cw//2-35*mm],style=[
+            ('LINEBELOW',(1,0),(1,0),0.5,BORDER),('LINEBELOW',(3,0),(3,0),0.5,BORDER),
+            ('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4),
+        ]))
+    story.append(Spacer(1,3*mm))
+    story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
+    story.append(Spacer(1,3*mm))
+    story.append(P('ΣΤΟΙΧΕΙΑ ΕΠΙΚΟΙΝΩΝΙΑΣ',sb('stt',fontSize=8,textColor=MGRAY,spaceAfter=4)))
+    for row in [
+        ['ΥΠΕΥΘΥΝΟΣ:',offer_data.get('contact',''),'ΤΗΛΕΦΩΝΟ:',offer_data.get('phone','')],
+        ['EMAIL:',offer_data.get('email',''),'ΥΠΕΥΘ. ΠΛΗΡΩΜΩΝ:',''],
+    ]:
+        story.append(Table([[
+            P(row[0],sb('al3',fontSize=8,textColor=MGRAY)),
+            P(row[1],s('av3',fontSize=9,textColor=DGRAY)),
+            P(row[2],sb('al4',fontSize=8,textColor=MGRAY)),
+            P(row[3],s('av4',fontSize=9,textColor=DGRAY)),
+        ]],colWidths=[30*mm,cw//2-30*mm,35*mm,cw//2-35*mm],style=[
+            ('LINEBELOW',(1,0),(1,0),0.5,BORDER),('LINEBELOW',(3,0),(3,0),0.5,BORDER),
+            ('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4),
+        ]))
+    story.append(Spacer(1,4*mm))
+    contract_full = (
+        f"Η παρούσα Σύμβαση Παροχής Υπηρεσιών Ταχυμεταφοράς συνάφθηκε μεταξύ του "
+        f"Απ. Ορφανίδη GENESIS COURIER - SKYNET - 4A EXPRESS (\"4AEXPRESS\"), Βελεστίνου 7, Τ.Κ. 11523, Αθήνα, "
+        f"και της εταιρείας {offer_data.get('name','')}. "
+        "Ο Πελάτης δύναται να χρησιμοποιεί το δίκτυο της 4A EXPRESS και να εκτελεί αποστολές, παραλαβές προς/από όλους τους "
+        "προορισμούς που εξυπηρετούνται από την 4AEXPRESS με βάση τον εκάστοτε ισχύοντα τιμοκατάλογο, τον Οδηγό Υπηρεσιών "
+        "και τους Όρους και Προϋποθέσεις. Η 4AEXPRESS διατηρεί το δικαίωμα να μεταβάλει τις προσφερόμενες υπηρεσίες της "
+        "κατά την διακριτική της ευχέρεια οποτεδήποτε. Ο Πελάτης συμφωνεί να εξοφλεί εξ ολοκλήρου τα τιμολόγια εντός "
+        f"{offer_data.get('payment','30')} ημερών από την έκδοση εκάστου τιμολογίου. "
+        "Ο Πελάτης συμφωνεί ρητά ότι οι ειδικές τιμές ισχύουν μόνο για τους κωδικούς συνεργασίας του Παραρτήματος Α "
+        "και δεν επιτρέπεται να εκχωρηθούν ή μεταβιβασθούν. "
+        "Η 4A EXPRESS αποζημιώνει για απώλεια/καταστροφή εγγράφων έως €50 και δεμάτων έως €120. "
+        "Για ασφάλεια αποστολής απαιτούνται πρωτότυπα τιμολόγια και δήλωση ασφάλισης. "
+        "Ο χρονικός περιορισμός γνωστοποίησης αξίωσης καθορίζεται στις 15 ημέρες από την έκδοση της φορτωτικής. "
+        "Η Σύμβαση διέπεται από τους Όρους Μεταφοράς 4A EXPRESS και ανανεώνεται αυτομάτως ετησίως "
+        "εκτός έγγραφης καταγγελίας ενός μήνα. "
+        "Επιτρεπόμενα είδη: www.skyath.wordpress.com/2008/10/14/dangerus-goods/"
+    )
+    story.append(P(contract_full, s('ct',fontSize=7,textColor=MGRAY,leading=12,spaceAfter=6)))
+    story.append(Table([[
+        P('ΙΣΧΥΣ ΑΠΟ:',sb('pl',fontSize=8,textColor=MGRAY)),
+        P(date,sb('pv',fontSize=9,textColor=RED)),
+        P('ΕΩΣ:',sb('pl2',fontSize=8,textColor=MGRAY)),
+        P(valid_until,sb('pv2',fontSize=9,textColor=RED)),
+        P('ΤΡΟΠΟΣ ΠΛΗΡΩΜΗΣ:',sb('pl3',fontSize=8,textColor=MGRAY)),
+        P(f"{offer_data.get('payment','30')} ημέρες",sb('pv3',fontSize=9,textColor=DGRAY)),
+    ]],colWidths=[22*mm,28*mm,14*mm,28*mm,38*mm,cw-130*mm],style=[
+        ('BACKGROUND',(0,0),(-1,-1),LGRAY),
+        ('TOPPADDING',(0,0),(-1,-1),6),('BOTTOMPADDING',(0,0),(-1,-1),6),
+        ('LEFTPADDING',(0,0),(-1,-1),6),
+        ('BOX',(0,0),(-1,-1),0.5,BORDER),('LINEAFTER',(0,0),(4,-1),0.5,BORDER),
+    ]))
+    story.append(Spacer(1,8*mm))
+    story.append(Table([[
+        P('____________________________',s('sl',fontSize=9,textColor=BGRAY,alignment=TA_CENTER)),
+        P('ΤΟΠΟΣ & ΗΜΕΡΟΜΗΝΙΑ: ________________________',s('sd3',fontSize=8,textColor=BGRAY,alignment=TA_CENTER)),
+        P('____________________________',s('sl2',fontSize=9,textColor=BGRAY,alignment=TA_CENTER)),
+    ],[
+        P('Υπογραφή & Σφραγίδα Πελάτη',s('sll',fontSize=7,textColor=MGRAY,alignment=TA_CENTER)),
+        P('',s('sp2',fontSize=7)),
+        P('ΕΓΚΡΙΝΕΤΑΙ ΑΠΟ: 4A Express',sb('slr',fontSize=7,textColor=RED,alignment=TA_CENTER)),
+    ]],colWidths=[70*mm,cw-140*mm,70*mm],
+    style=[('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3)]))
+    story.append(Spacer(1,4*mm))
+    story.append(Table([[P(
+        'Βελεστίνου 7, 115 23 Αθήνα  ·  Τηλ: +30 210 9966661  ·  sales@skynetworldwide.gr  ·  www.4aexpress.com',
+        s('ft2',fontSize=7,textColor=BGRAY,alignment=TA_CENTER))]],colWidths=[cw],style=[
+        ('TOPPADDING',(0,0),(-1,-1),4),('LINEABOVE',(0,0),(-1,0),0.5,BORDER)]))
+    story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
+    story.append(ftr(offer_num,date))
+
+    doc.build(story)
+
+    with open(tmpfile.name,'rb') as f:
+        pdf_b64=base64.b64encode(f.read()).decode()
+    os.unlink(tmpfile.name)
+    return pdf_b64
+
+if __name__=='__main__':
+    data=json.loads(sys.stdin.read())
+    result=generate(data['offer'],data['dhl'],data['fuel'])
+    print(json.dumps({'ok':True,'pdf':result}))
