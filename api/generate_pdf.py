@@ -472,6 +472,7 @@ def generate(offer_data, dhl_data, fuel_data):
 
     # ── ΑΠΟΔΟΧΗ ──
     svc_ids = ', '.join(svc['service_id'] for svc in services)
+    contract_valid = f"31/12/{datetime.now().year}"
     story.append(PageBreak())
     story.append(hdr(offer_num))
     story.append(Paragraph('<a name="accept"/>',s('anc',fontSize=0.1)))
@@ -503,9 +504,9 @@ def generate(offer_data, dhl_data, fuel_data):
         P('ΗΜΕΡΟΜΗΝΙΑ:',sb('cdl',fontSize=7,textColor=BGRAY)),
         P(date,sb('cdv',fontSize=9,textColor=RED)),
         P('ΙΣΧΥΣ ΕΩΣ:',sb('cdl2',fontSize=7,textColor=BGRAY)),
-        P(valid_until,sb('cdv2',fontSize=9,textColor=RED)),
+        P(contract_valid,sb('cdv2',fontSize=9,textColor=RED)),
         P('ΠΛΗΡΩΜΗ:',sb('cdl3',fontSize=7,textColor=BGRAY)),
-        P(f"{offer_data.get('payment','30')} ημέρες",sb('cdv3',fontSize=9,textColor=DGRAY)),
+        P('30 ημέρες από την έκδοση του τιμολογίου',sb('cdv3',fontSize=9,textColor=DGRAY)),
     ]],colWidths=[26*mm,28*mm,22*mm,28*mm,22*mm,cw-126*mm],style=[
         ('BACKGROUND',(0,0),(-1,-1),XLGRAY),('TOPPADDING',(0,0),(-1,-1),5),
         ('BOTTOMPADDING',(0,0),(-1,-1),5),('LEFTPADDING',(0,0),(-1,-1),6),
@@ -518,7 +519,7 @@ def generate(offer_data, dhl_data, fuel_data):
     articles = [
         ('Άρθρο 1 — Αντικείμενο Σύμβασης',
          f"Η παρούσα Σύμβαση Παροχής Υπηρεσιών Ταχυμεταφοράς συνάπτεται μεταξύ της εταιρείας "
-         f"«Απ. Ορφανίδης — GENESIS COURIER / SKYNET / 4A EXPRESS» (εφεξής «4A EXPRESS»), "
+         f"«Απ. Ορφανίδης — 4A EXPRESS» (εφεξής «4A EXPRESS»), "
          f"Βελεστίνου 7, Τ.Κ. 11523 Αθήνα, ΑΦΜ 044978638, και της εταιρείας "
          f"«{offer_data.get('name','')}», ΑΦΜ {offer_data.get('afm','')} (εφεξής «Πελάτης»). "
          f"Αντικείμενο αποτελεί η παροχή υπηρεσιών ταχυμεταφοράς ({svc_ids}) "
@@ -532,7 +533,6 @@ def generate(offer_data, dhl_data, fuel_data):
         ('Άρθρο 3 — Τρόπος & Όροι Πληρωμής',
          f"Ο Πελάτης υποχρεούται να εξοφλεί πλήρως τα εκδιδόμενα τιμολόγια εντός "
          f"{offer_data.get('payment','30')} ημερών από την ημερομηνία έκδοσής τους. "
-         "Σε περίπτωση υπέρβασης της προθεσμίας εφαρμόζεται νόμιμος τόκος υπερημερίας. "
          "Η 4A EXPRESS διατηρεί το δικαίωμα αναστολής παροχής υπηρεσιών σε περίπτωση ληξιπρόθεσμων οφειλών."),
         ('Άρθρο 4 — Υποχρεώσεις Πελάτη',
          "Ο Πελάτης υποχρεούται: (α) να παραδίδει αποστολές σε κατάλληλη συσκευασία, "
