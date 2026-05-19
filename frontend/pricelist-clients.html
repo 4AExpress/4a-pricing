@@ -471,7 +471,7 @@ function saveClient(){
     website:document.getElementById('cl-website').value.trim(),
     account:document.getElementById('cl-account').value.trim()||'—',
     status:currentStatus,
-    pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup||0})),
+    pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup??p.markup??0})),
     surcharges:[...surcharges], managers:[...managers],
     payment:document.getElementById('cl-payment').value,
     invoice:document.getElementById('cl-invoice').value,
@@ -576,7 +576,7 @@ async function buildFinalPDF(offerNum){
         user:currentUser.name, office_code:office,
         date:todayFmt(), validity:document.getElementById('cl-validity').value,
         offer_number:offerNum,
-        pricelists:selectedPls.map(p=>({service_id:p.service_id,markup:p.markup||p.global_markup||0}))
+        pricelists:selectedPls.map(p=>({service_id:p.service_id,markup:p.global_markup??p.markup??0}))
       },
       dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel,
       zones_appendix: selectedPls.some(p => GR_SERVICES.has(p.service_id))
