@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/config.php';
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -9,15 +11,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$dsn  = 'mysql:host=DB_HOST;dbname=DB_NAME;charset=utf8mb4';
-$user = 'DB_USER';
-$pass = 'DB_PASS';
-
 try {
-    $pdo = new PDO($dsn, $user, $pass, [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
+    $pdo = new PDO(
+        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
+        DB_USER, DB_PASS,
+        [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]
+    );
 } catch (PDOException $e) {
     echo json_encode(['ok' => false, 'error' => 'DB connection failed: ' . $e->getMessage()]);
     exit;
@@ -25,21 +27,22 @@ try {
 
 $pdo->exec("CREATE TABLE IF NOT EXISTS shelf (
     id         VARCHAR(64)  PRIMARY KEY,
-    name       VARCHAR(255) NOT NULL,
-    service    VARCHAR(64)  NOT NULL,
-    rows       TEXT,
+    name       VARCHAR(255) NOT NULL DEFAULT '',
+    service_id VARCHAR(64)  NOT NULL DEFAULT '',
+    rows       TEXT         DEFAULT NULL,
     markup     FLOAT        NOT NULL DEFAULT 0,
     created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+$pdo->exec("ALTER TABLE shelf ADD COLUMN IF NOT EXISTS rows TEXT DEFAULT NULL");
+
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    $stmt  = $pdo->query('SELECT * FROM shelf ORDER BY created_at DESC');
-    $rows  = $stmt->fetchAll();
+    $stmt = $pdo->query('SELECT * FROM shelf ORDER BY created_at DESC');
     $result = [];
-    foreach ($rows as $row) {
-        $row['rows'] = json_decode($row['rows'], true) ?? [];
+    foreach ($stmt->fetchAll() as $row) {
+        $row['rows'] = isset($row['rows']) ? (json_decode($row['rows'], true) ?? []) : [];
         $result[$row['id']] = $row;
     }
     echo json_encode($result);
@@ -47,15 +50,15 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true);
+    $input  = json_decode(file_get_contents('php://input'), true);
     $action = $input['action'] ?? '';
 
     if ($action === 'save') {
         $id         = $input['id']         ?? null;
         $name       = $input['name']       ?? '';
-        $service    = $input['service']    ?? '';
+        $service_id = $input['service_id'] ?? ($input['service'] ?? '');
         $rows       = json_encode($input['rows'] ?? []);
-        $markup     = (float)($input['markup'] ?? 0);
+        $markup     = (float)($input['markup'] ?? $input['global_markup'] ?? 0);
         $created_at = $input['created_at'] ?? date('Y-m-d H:i:s');
 
         if (!$id) {
@@ -63,17 +66,19 @@ if ($method === 'POST') {
             exit;
         }
 
-        $stmt = $pdo->prepare("INSERT INTO shelf (id, name, service, rows, markup, created_at)
-            VALUES (:id, :name, :service, :rows, :markup, :created_at)
-            ON DUPLICATE KEY UPDATE
-                name       = VALUES(name),
-                service    = VALUES(service),
-                rows       = VALUES(rows),
-                markup     = VALUES(markup)");
+        $stmt = $pdo->prepare(
+            "INSERT INTO shelf (id, name, service_id, rows, markup, created_at)
+             VALUES (:id, :name, :service_id, :rows, :markup, :created_at)
+             ON DUPLICATE KEY UPDATE
+                 name       = VALUES(name),
+                 service_id = VALUES(service_id),
+                 rows       = VALUES(rows),
+                 markup     = VALUES(markup)"
+        );
         $stmt->execute([
             ':id'         => $id,
             ':name'       => $name,
-            ':service'    => $service,
+            ':service_id' => $service_id,
             ':rows'       => $rows,
             ':markup'     => $markup,
             ':created_at' => $created_at,
