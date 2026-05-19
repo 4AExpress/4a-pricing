@@ -506,7 +506,7 @@ def generate(offer_data, dhl_data, fuel_data):
         P('ΙΣΧΥΣ ΕΩΣ:',sb('cdl2',fontSize=7,textColor=BGRAY)),
         P(contract_valid,sb('cdv2',fontSize=9,textColor=RED)),
         P('ΠΛΗΡΩΜΗ:',sb('cdl3',fontSize=7,textColor=BGRAY)),
-        P(f"{offer_data.get('payment','30')} από την έκδοση του τιμολογίου",sb('cdv3',fontSize=9,textColor=DGRAY)),
+        P(f"{offer_data.get('payment','30')} ημέρες από την έκδοση του τιμολογίου",sb('cdv3',fontSize=9,textColor=DGRAY)),
     ]],colWidths=[26*mm,28*mm,22*mm,28*mm,22*mm,cw-126*mm],style=[
         ('BACKGROUND',(0,0),(-1,-1),XLGRAY),('TOPPADDING',(0,0),(-1,-1),5),
         ('BOTTOMPADDING',(0,0),(-1,-1),5),('LEFTPADDING',(0,0),(-1,-1),6),
