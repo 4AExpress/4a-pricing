@@ -37,10 +37,16 @@ OFFICES={
 }
 
 SVC_INFO={
-    'S1003':{'name':'Express Export','desc':'Αεροπορική Μεταφορά — Export','type':'AIR'},
-    'S1012':{'name':'Express Import','desc':'Αεροπορική Μεταφορά — Import','type':'AIR'},
-    'S1010':{'name':'Economy Export','desc':'Οδική Μεταφορά — Export',     'type':'ROAD'},
-    'S1041':{'name':'Economy Import','desc':'Οδική Μεταφορά — Import',     'type':'ROAD'},
+    'S1003':   {'name':'Express Export',          'desc':'Αεροπορική Μεταφορά — Export',          'type':'AIR'},
+    'S1012':   {'name':'Express Import',          'desc':'Αεροπορική Μεταφορά — Import',          'type':'AIR'},
+    'S1010':   {'name':'Economy Export',          'desc':'Οδική Μεταφορά — Export',               'type':'ROAD'},
+    'S1041':   {'name':'Economy Import',          'desc':'Οδική Μεταφορά — Import',               'type':'ROAD'},
+    'S1003_GR':{'name':'Export Ελλάδα→Κύπρος',   'desc':'Αεροπορική Μεταφορά — Export GR→CY',    'type':'AIR'},
+    'S1012_GR':{'name':'Import Κύπρος→Ελλάδα',   'desc':'Αεροπορική Μεταφορά — Import CY→GR',    'type':'AIR'},
+    'S1003_CY':{'name':'Express Export Κύπρος',  'desc':'Αεροπορική Μεταφορά — Export CY',       'type':'AIR'},
+    'S1012_CY':{'name':'Express Import Κύπρος',  'desc':'Αεροπορική Μεταφορά — Import CY',       'type':'AIR'},
+    'S1050':   {'name':'Export CY→GR→World',      'desc':'COMBI AIR+ROAD — Export',               'type':'COMBI'},
+    'S1051':   {'name':'Import World→GR→CY',      'desc':'COMBI ROAD+AIR — Import',               'type':'COMBI'},
 }
 
 def s(n,**k):  return ParagraphStyle(n,fontName=F, **k)
