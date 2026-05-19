@@ -1,7 +1,8 @@
 <?php
 # v2 webhook ready
+# webhook v3 test
 header('Content-Type: application/json');
-$secret  = '4Aexpress2026';
+$secret  = 'WEBHOOK_SECRET';
 $payload = file_get_contents('php://input');
 $sig = $_SERVER['HTTP_X_HUB_SIGNATURE_256'] ?? '';
 $expected = 'sha256=' . hash_hmac('sha256', $payload, $secret);
