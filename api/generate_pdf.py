@@ -328,7 +328,8 @@ def generate(offer_data, dhl_data, fuel_data):
         zones=7 if is_air else 3
         markup=float(svc.get('markup',0))
         markup_z9=float(svc.get('markup_z9',0)) or None
-        entries=dhl_data.get(svc_id,[])
+        _DHL_SRC={'S1003_GR':'S1003','S1012_GR':'S1012'}
+        entries=dhl_data.get(_DHL_SRC.get(svc_id,svc_id),[])
         prices=apply_markup(entries,markup,zones,markup_z9)
         AIR_W=[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,55,60,65,70]
         ROAD_W=[1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100]
@@ -372,7 +373,12 @@ def generate(offer_data, dhl_data, fuel_data):
                     ('BOTTOMPADDING',(0,0),(-1,-1),5),('LEFTPADDING',(0,0),(-1,-1),10),
                     ('BOX',(0,0),(-1,-1),0.5,BORDER)]))
                 story.append(Spacer(1,2*mm))
-            z_range = list(range(z_from, z_to+1)) + ([9] if is_air else [])
+            if svc_id in ('S1003','S1012'):
+                z_range = list(range(z_from, z_to+1))
+            elif svc_id in ('S1003_GR','S1012_GR'):
+                z_range = [9]
+            else:
+                z_range = list(range(z_from, z_to+1)) + ([9] if is_air else [])
             split_cw = (cw-22*mm)/len(z_range)
             split_col_w = [22*mm]+[split_cw]*len(z_range)
 
@@ -415,7 +421,8 @@ def generate(offer_data, dhl_data, fuel_data):
             pt.setStyle(ts)
             story.append(pt)
             story.append(Spacer(1,3*mm))
-            story.append(P(f"* Τιμές εξαιρούν ΦΠΑ και επίναυλο {fc}%. Ισχύουν έως {valid_until}. Ζώνες Z{z_from}-Z{z_to}.",
+            zone_label = f"Z{z_range[0]}" if len(z_range)==1 else f"Z{z_from}-Z{z_to}"
+            story.append(P(f"* Τιμές εξαιρούν ΦΠΑ και επίναυλο {fc}%. Ισχύουν έως {valid_until}. Ζώνες {zone_label}.",
                 s('note',fontSize=7,textColor=BGRAY)))
             story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER,spaceBefore=3))
             story.append(ftr(offer_num,date,vstamp))
