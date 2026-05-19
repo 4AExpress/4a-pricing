@@ -158,7 +158,7 @@ def generate(offer_data, dhl_data, fuel_data):
     story.append(Table([[
         Table([[P('ΑΡ. ΠΡΟΣΦΟΡΑΣ',s('nl',fontSize=7,textColor=BGRAY))],[P(offer_num,sb('nv',fontSize=11,textColor=RED))]],colWidths=[65*mm]),
         Table([[P('ΗΜΕΡΟΜΗΝΙΑ',s('dl',fontSize=7,textColor=BGRAY))],[P(date,sb('dv',fontSize=11,textColor=DGRAY))]],colWidths=[38*mm]),
-        Table([[P('ΙΣΧΥΣ ΕΩΣ',s('vl',fontSize=7,textColor=BGRAY))],[P(valid_until,sb('vv',fontSize=11,textColor=RED))]],colWidths=[38*mm]),
+        Table([[P('ΙΣΧΥΣ ΑΠΟΔΟΧΗΣ ΕΩΣ',s('vl',fontSize=7,textColor=BGRAY))],[P(valid_until,sb('vv',fontSize=11,textColor=RED))]],colWidths=[38*mm]),
         Table([[P('ΓΛΩΣΣΑ',s('ll',fontSize=7,textColor=BGRAY))],[P('Ελληνικά',sb('lv',fontSize=9,textColor=DGRAY))]],colWidths=[cw-141*mm]),
     ]],colWidths=[65*mm,38*mm,38*mm,cw-141*mm],style=[
         ('BACKGROUND',(0,0),(-1,-1),LGRAY),('TOPPADDING',(0,0),(-1,-1),6),
