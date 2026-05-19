@@ -328,6 +328,8 @@ def generate(offer_data, dhl_data, fuel_data):
         zones=7 if is_air else 3
         markup=float(svc.get('markup',0))
         markup_z9=float(svc.get('markup_z9',0)) or None
+        if svc_id in ('S1003_GR','S1012_GR'):
+            markup_z9=None
         _DHL_SRC={'S1003_GR':'S1003','S1012_GR':'S1012'}
         entries=dhl_data.get(_DHL_SRC.get(svc_id,svc_id),[])
         prices=apply_markup(entries,markup,zones,markup_z9)
