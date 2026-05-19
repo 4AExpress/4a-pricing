@@ -173,7 +173,7 @@ def generate(offer_data, dhl_data, fuel_data):
     story.append(Spacer(1,2*mm))
     has_gr = any(svc['service_id'] in {'S1003','S1012','S1010','S1041'} for svc in services)
     pg = 2
-    toc_items = [(pg,'how','Πώς Λειτουργεί ο Τιμοκατάλογος','ΠΛΗΡΟΦΟΡΙΕΣ')]
+    toc_items = [(pg,'How','Πώς Λειτουργεί ο Τιμοκατάλογος','ΠΛΗΡΟΦΟΡΙΕΣ')]
     pg += 1
     if has_gr:
         toc_items.append((pg,'Zones','Ζώνες 4A Express GR','ΠΛΗΡΟΦΟΡΙΕΣ'))
@@ -192,7 +192,7 @@ def generate(offer_data, dhl_data, fuel_data):
                P('ΠΕΡΙΓΡΑΦΗ',sb('th',fontSize=7,textColor=WHITE)),
                P('ΤΥΠΟΣ',sb('th',fontSize=7,textColor=WHITE,alignment=TA_CENTER))]]
     for pg,code,desc,typ in toc_items:
-        is_svc=(len(code)==5 and code[0]=='S') or code=='Zones'
+        is_svc=(len(code)==5 and code[0]=='S')
         toc_rows.append([
             P(str(pg),sb('tp',fontSize=8,textColor=MGRAY,alignment=TA_CENTER)),
             P(f'<a href="#{code}" color="red"><u>{code}</u></a>' if (len(code)==5 and code[0]=='S') else code,
