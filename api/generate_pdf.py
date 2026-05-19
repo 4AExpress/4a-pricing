@@ -195,7 +195,7 @@ def generate(offer_data, dhl_data, fuel_data):
         is_svc=(len(code)==5 and code[0]=='S') or code=='zones'
         toc_rows.append([
             P(str(pg),sb('tp',fontSize=8,textColor=MGRAY,alignment=TA_CENTER)),
-            P(f'<a href="#{code}" color="red"><u>{code}</u></a>' if is_svc else code,
+            P(f'<a href="#{code}" color="red"><u>{code}</u></a>' if (len(code)==5 and code[0]=='S') else code,
               sb('tc',fontSize=8,textColor=RED if is_svc else BGRAY)),
             P(desc,s('td',fontSize=8,textColor=colors.HexColor('#1565c0') if code=='zones' else DGRAY)),
             P(typ,sb('tt2',fontSize=7,textColor=WHITE if is_svc else MGRAY,alignment=TA_CENTER)),
