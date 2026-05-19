@@ -471,6 +471,7 @@ def generate(offer_data, dhl_data, fuel_data):
     story.append(ftr(offer_num,date,vstamp))
 
     # ── ΑΠΟΔΟΧΗ ──
+    svc_ids = ', '.join(svc['service_id'] for svc in services)
     story.append(PageBreak())
     story.append(hdr(offer_num))
     story.append(Paragraph('<a name="accept"/>',s('anc',fontSize=0.1)))
@@ -482,83 +483,128 @@ def generate(offer_data, dhl_data, fuel_data):
         ('TOPPADDING',(0,0),(-1,-1),9),('BOTTOMPADDING',(0,0),(-1,-1),9),
         ('LEFTPADDING',(0,0),(-1,-1),12),('VALIGN',(0,0),(-1,-1),'MIDDLE'),
     ]))
-    story.append(Spacer(1,4*mm))
-    for row in [
-        ['ΕΤΑΙΡΕΙΑ:',offer_data.get('name',''),'Ώρες Λειτουργίας:',''],
-        ['ΔΙΕΥΘΥΝΣΗ:','','ΠΟΛΗ:',''],
-        ['Τ.Κ.:','','ΤΗΛ:',offer_data.get('phone','')],
-        ['Α.Φ.Μ.:',offer_data.get('afm',''),'Δ.Ο.Υ.:',''],
-    ]:
-        story.append(Table([[
-            P(row[0],sb('al',fontSize=8,textColor=MGRAY)),
-            P(row[1],s('av',fontSize=9,textColor=DGRAY)),
-            P(row[2],sb('al2',fontSize=8,textColor=MGRAY)),
-            P(row[3],s('av2',fontSize=9,textColor=DGRAY)),
-        ]],colWidths=[30*mm,cw//2-30*mm,35*mm,cw//2-35*mm],style=[
-            ('LINEBELOW',(1,0),(1,0),0.5,BORDER),('LINEBELOW',(3,0),(3,0),0.5,BORDER),
-            ('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4),
-        ]))
     story.append(Spacer(1,3*mm))
-    story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
-    story.append(Spacer(1,3*mm))
-    story.append(P('ΣΤΟΙΧΕΙΑ ΕΠΙΚΟΙΝΩΝΙΑΣ',sb('stt',fontSize=8,textColor=MGRAY,spaceAfter=4)))
-    for row in [
-        ['ΥΠΕΥΘΥΝΟΣ:',offer_data.get('contact',''),'ΤΗΛΕΦΩΝΟ:',offer_data.get('phone','')],
-        ['EMAIL:',offer_data.get('email',''),'ΥΠΕΥΘ. ΠΛΗΡΩΜΩΝ:',''],
-    ]:
-        story.append(Table([[
-            P(row[0],sb('al3',fontSize=8,textColor=MGRAY)),
-            P(row[1],s('av3',fontSize=9,textColor=DGRAY)),
-            P(row[2],sb('al4',fontSize=8,textColor=MGRAY)),
-            P(row[3],s('av4',fontSize=9,textColor=DGRAY)),
-        ]],colWidths=[30*mm,cw//2-30*mm,35*mm,cw//2-35*mm],style=[
-            ('LINEBELOW',(1,0),(1,0),0.5,BORDER),('LINEBELOW',(3,0),(3,0),0.5,BORDER),
-            ('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4),
-        ]))
-    story.append(Spacer(1,4*mm))
-    contract_full = (
-        f"Η παρούσα Σύμβαση Παροχής Υπηρεσιών Ταχυμεταφοράς συνάφθηκε μεταξύ του "
-        f"Απ. Ορφανίδη GENESIS COURIER - SKYNET - 4A EXPRESS (\"4AEXPRESS\"), Βελεστίνου 7, Τ.Κ. 11523, Αθήνα, "
-        f"και της εταιρείας {offer_data.get('name','')}. "
-        "Ο Πελάτης δύναται να χρησιμοποιεί το δίκτυο της 4A EXPRESS και να εκτελεί αποστολές, παραλαβές προς/από όλους τους "
-        "προορισμούς που εξυπηρετούνται από την 4AEXPRESS με βάση τον εκάστοτε ισχύοντα τιμοκατάλογο, τον Οδηγό Υπηρεσιών "
-        "και τους Όρους και Προϋποθέσεις. Η 4AEXPRESS διατηρεί το δικαίωμα να μεταβάλει τις προσφερόμενες υπηρεσίες της "
-        "κατά την διακριτική της ευχέρεια οποτεδήποτε. Ο Πελάτης συμφωνεί να εξοφλεί εξ ολοκλήρου τα τιμολόγια εντός "
-        f"{offer_data.get('payment','30')} ημερών από την έκδοση εκάστου τιμολογίου. "
-        "Ο Πελάτης συμφωνεί ρητά ότι οι ειδικές τιμές ισχύουν μόνο για τους κωδικούς συνεργασίας του Παραρτήματος Α "
-        "και δεν επιτρέπεται να εκχωρηθούν ή μεταβιβασθούν. "
-        "Η 4A EXPRESS αποζημιώνει για απώλεια/καταστροφή εγγράφων έως €50 και δεμάτων έως €120. "
-        "Για ασφάλεια αποστολής απαιτούνται πρωτότυπα τιμολόγια και δήλωση ασφάλισης. "
-        "Ο χρονικός περιορισμός γνωστοποίησης αξίωσης καθορίζεται στις 15 ημέρες από την έκδοση της φορτωτικής. "
-        "Η Σύμβαση διέπεται από τους Όρους Μεταφοράς 4A EXPRESS και ανανεώνεται αυτομάτως ετησίως "
-        "εκτός έγγραφης καταγγελίας ενός μήνα. "
-        "Επιτρεπόμενα είδη: www.skyath.wordpress.com/2008/10/14/dangerus-goods/"
-    )
-    story.append(P(contract_full, s('ct',fontSize=7,textColor=MGRAY,leading=12,spaceAfter=6)))
+
+    # Contract parties info bar
     story.append(Table([[
-        P('ΙΣΧΥΣ ΑΠΟ:',sb('pl',fontSize=8,textColor=MGRAY)),
-        P(date,sb('pv',fontSize=9,textColor=RED)),
-        P('ΕΩΣ:',sb('pl2',fontSize=8,textColor=MGRAY)),
-        P(valid_until,sb('pv2',fontSize=9,textColor=RED)),
-        P('ΤΡΟΠΟΣ ΠΛΗΡΩΜΗΣ:',sb('pl3',fontSize=8,textColor=MGRAY)),
-        P(f"{offer_data.get('payment','30')} ημέρες",sb('pv3',fontSize=9,textColor=DGRAY)),
-    ]],colWidths=[22*mm,28*mm,14*mm,28*mm,38*mm,cw-130*mm],style=[
-        ('BACKGROUND',(0,0),(-1,-1),LGRAY),
-        ('TOPPADDING',(0,0),(-1,-1),6),('BOTTOMPADDING',(0,0),(-1,-1),6),
-        ('LEFTPADDING',(0,0),(-1,-1),6),
+        P('ΕΤΑΙΡΕΙΑ / ΠΕΛΑΤΗΣ:',sb('cpl',fontSize=7,textColor=BGRAY)),
+        P(offer_data.get('name',''),sb('cpv',fontSize=9,textColor=DGRAY)),
+        P('Α.Φ.Μ.:',sb('cpl2',fontSize=7,textColor=BGRAY)),
+        P(offer_data.get('afm',''),sb('cpv2',fontSize=9,textColor=DGRAY)),
+        P('ΥΠΗΡΕΣΙΕΣ:',sb('cpl3',fontSize=7,textColor=BGRAY)),
+        P(svc_ids,sb('cpv3',fontSize=8,textColor=RED)),
+    ]],colWidths=[32*mm,50*mm,16*mm,24*mm,24*mm,cw-146*mm],style=[
+        ('BACKGROUND',(0,0),(-1,-1),LGRAY),('TOPPADDING',(0,0),(-1,-1),5),
+        ('BOTTOMPADDING',(0,0),(-1,-1),5),('LEFTPADDING',(0,0),(-1,-1),6),
         ('BOX',(0,0),(-1,-1),0.5,BORDER),('LINEAFTER',(0,0),(4,-1),0.5,BORDER),
+        ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
     ]))
-    story.append(Spacer(1,8*mm))
     story.append(Table([[
-        P('____________________________',s('sl',fontSize=9,textColor=BGRAY,alignment=TA_CENTER)),
-        P('ΤΟΠΟΣ & ΗΜΕΡΟΜΗΝΙΑ: ________________________',s('sd3',fontSize=8,textColor=BGRAY,alignment=TA_CENTER)),
-        P('____________________________',s('sl2',fontSize=9,textColor=BGRAY,alignment=TA_CENTER)),
-    ],[
-        P('Υπογραφή & Σφραγίδα Πελάτη',s('sll',fontSize=7,textColor=MGRAY,alignment=TA_CENTER)),
-        P('',s('sp2',fontSize=7)),
-        P('ΕΓΚΡΙΝΕΤΑΙ ΑΠΟ: 4A Express',sb('slr',fontSize=7,textColor=RED,alignment=TA_CENTER)),
-    ]],colWidths=[70*mm,cw-140*mm,70*mm],
-    style=[('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3)]))
+        P('ΗΜΕΡΟΜΗΝΙΑ:',sb('cdl',fontSize=7,textColor=BGRAY)),
+        P(date,sb('cdv',fontSize=9,textColor=RED)),
+        P('ΙΣΧΥΣ ΕΩΣ:',sb('cdl2',fontSize=7,textColor=BGRAY)),
+        P(valid_until,sb('cdv2',fontSize=9,textColor=RED)),
+        P('ΠΛΗΡΩΜΗ:',sb('cdl3',fontSize=7,textColor=BGRAY)),
+        P(f"{offer_data.get('payment','30')} ημέρες",sb('cdv3',fontSize=9,textColor=DGRAY)),
+    ]],colWidths=[26*mm,28*mm,22*mm,28*mm,22*mm,cw-126*mm],style=[
+        ('BACKGROUND',(0,0),(-1,-1),XLGRAY),('TOPPADDING',(0,0),(-1,-1),5),
+        ('BOTTOMPADDING',(0,0),(-1,-1),5),('LEFTPADDING',(0,0),(-1,-1),6),
+        ('BOX',(0,0),(-1,-1),0.5,BORDER),('LINEAFTER',(0,0),(4,-1),0.5,BORDER),
+        ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+    ]))
+    story.append(Spacer(1,3*mm))
+
+    # Articles
+    articles = [
+        ('Άρθρο 1 — Αντικείμενο Σύμβασης',
+         f"Η παρούσα Σύμβαση Παροχής Υπηρεσιών Ταχυμεταφοράς συνάπτεται μεταξύ της εταιρείας "
+         f"«Απ. Ορφανίδης — GENESIS COURIER / SKYNET / 4A EXPRESS» (εφεξής «4A EXPRESS»), "
+         f"Βελεστίνου 7, Τ.Κ. 11523 Αθήνα, ΑΦΜ 044978638, και της εταιρείας "
+         f"«{offer_data.get('name','')}», ΑΦΜ {offer_data.get('afm','')} (εφεξής «Πελάτης»). "
+         f"Αντικείμενο αποτελεί η παροχή υπηρεσιών ταχυμεταφοράς ({svc_ids}) "
+         f"βάσει της προσφοράς {offer_num} ημερομηνίας {date}."),
+        ('Άρθρο 2 — Υπηρεσίες & Τιμολόγιο',
+         f"Η 4A EXPRESS παρέχει στον Πελάτη πρόσβαση στο διεθνές δίκτυο ταχυμεταφοράς για τις υπηρεσίες {svc_ids}. "
+         "Οι τιμές βασίζονται στον επισυναπτόμενο τιμοκατάλογο και επιβαρύνονται με τον εκάστοτε ισχύοντα "
+         "επίναυλο καυσίμων, ο οποίος ανανεώνεται εβδομαδιαίως. Η 4A EXPRESS διατηρεί το δικαίωμα αναθεώρησης "
+         "τιμών κατόπιν 30ήμερης έγγραφης ειδοποίησης. Οι ειδικές τιμές ισχύουν αποκλειστικά για τον Πελάτη "
+         "και δεν επιτρέπεται η εκχώρηση ή μεταβίβασή τους."),
+        ('Άρθρο 3 — Τρόπος & Όροι Πληρωμής',
+         f"Ο Πελάτης υποχρεούται να εξοφλεί πλήρως τα εκδιδόμενα τιμολόγια εντός "
+         f"{offer_data.get('payment','30')} ημερών από την ημερομηνία έκδοσής τους. "
+         "Σε περίπτωση υπέρβασης της προθεσμίας εφαρμόζεται νόμιμος τόκος υπερημερίας. "
+         "Η 4A EXPRESS διατηρεί το δικαίωμα αναστολής παροχής υπηρεσιών σε περίπτωση ληξιπρόθεσμων οφειλών."),
+        ('Άρθρο 4 — Υποχρεώσεις Πελάτη',
+         "Ο Πελάτης υποχρεούται: (α) να παραδίδει αποστολές σε κατάλληλη συσκευασία, "
+         "(β) να δηλώνει ακριβώς το περιεχόμενο και την αξία κάθε αποστολής, "
+         "(γ) να τηρεί τους εκάστοτε ισχύοντες κανονισμούς τελωνείου και αερομεταφορών, "
+         "(δ) να μην αποστέλλει απαγορευμένα ή επικίνδυνα είδη χωρίς προηγούμενη γραπτή συγκατάθεση. "
+         "Ο Πελάτης φέρει αποκλειστική ευθύνη για τυχόν παραβάσεις."),
+        ('Άρθρο 5 — Ευθύνη & Αποζημίωση',
+         "Η 4A EXPRESS ευθύνεται για απώλεια ή καταστροφή αποστολής έως €50 για έγγραφα και έως €120 για δέματα, "
+         "εκτός εάν έχει δηλωθεί υψηλότερη αξία και καταβληθεί αντίστοιχη ασφάλιση. "
+         "Αξιώσεις αποζημίωσης πρέπει να υποβάλλονται εγγράφως εντός 15 ημερών από την ημερομηνία έκδοσης "
+         "της φορτωτικής. Η 4A EXPRESS δεν ευθύνεται για έμμεσες ζημίες, διαφυγόντα κέρδη ή καθυστερήσεις "
+         "οφειλόμενες σε ανωτέρα βία, τελωνειακές διαδικασίες ή απεργίες."),
+        ('Άρθρο 6 — Ασφάλεια Αποστολών & Απαγορευμένα Είδη',
+         "Πρόσθετη ασφάλιση αποστολής παρέχεται κατόπιν αιτήματος και συνοδεύεται από πρωτότυπο τιμολόγιο "
+         "και δήλωση ασφαλιζόμενης αξίας. Απαγορεύεται ρητώς η αποστολή: επικίνδυνων υλικών (IATA/ADR), "
+         "νομισμάτων, πολύτιμων λίθων, ζώντων οργανισμών, ναρκωτικών ουσιών και κάθε είδους που απαγορεύεται "
+         "από την ισχύουσα νομοθεσία. Πλήρης κατάλογος: www.skyath.wordpress.com/2008/10/14/dangerus-goods/"),
+        ('Άρθρο 7 — Διάρκεια, Ανανέωση & Καταγγελία',
+         f"Η παρούσα Σύμβαση αρχίζει να ισχύει από {date} και παραμένει σε ισχύ για ένα (1) έτος, "
+         "ανανεούμενη αυτόματα για ισόχρονα διαστήματα εκτός εάν κάποιο μέρος γνωστοποιήσει εγγράφως την "
+         "πρόθεση μη ανανέωσης τουλάχιστον τριάντα (30) ημέρες πριν από τη λήξη. Άμεση καταγγελία επιτρέπεται "
+         "σε περίπτωση ουσιώδους παραβίασης όρων από οποιοδήποτε μέρος. Η λύση της Σύμβασης δεν επηρεάζει "
+         "εκκρεμείς υποχρεώσεις πληρωμής."),
+    ]
+    for title, body in articles:
+        story.append(Table([[
+            P(title, sb('artt',fontSize=8,textColor=WHITE)),
+        ]], colWidths=[cw], style=[
+            ('BACKGROUND',(0,0),(-1,-1),MGRAY),
+            ('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4),
+            ('LEFTPADDING',(0,0),(-1,-1),8),
+        ]))
+        story.append(Table([[
+            P(body, s('artb',fontSize=7.5,textColor=MGRAY,leading=12)),
+        ]], colWidths=[cw], style=[
+            ('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5),
+            ('LEFTPADDING',(0,0),(-1,-1),8),('RIGHTPADDING',(0,0),(-1,-1),8),
+            ('BOX',(0,0),(-1,-1),0.25,BORDER),
+        ]))
+        story.append(Spacer(1,1.5*mm))
+
+    story.append(Spacer(1,4*mm))
+
+    # Two signature blocks
+    sig_w = (cw - 10*mm) / 2
+    story.append(Table([[
+        Table([
+            [P('4A EXPRESS — Απ. Ορφανίδης', sb('s4a',fontSize=8,textColor=DGRAY,alignment=TA_CENTER))],
+            [P('', s('sg',fontSize=28,textColor=LGRAY,alignment=TA_CENTER))],
+            [P('____________________________', s('sl3',fontSize=9,textColor=BGRAY,alignment=TA_CENTER))],
+            [P('Υπογραφή & Σφραγίδα', s('sla',fontSize=7,textColor=MGRAY,alignment=TA_CENTER))],
+            [P('Ημερομηνία: _______________', s('sld',fontSize=7,textColor=BGRAY,alignment=TA_CENTER))],
+        ], colWidths=[sig_w], style=[
+            ('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3),
+            ('BOX',(0,0),(-1,-1),0.5,BORDER),('BACKGROUND',(0,0),(-1,0),LGRAY),
+        ]),
+        Table([
+            [P(offer_data.get('name','ΠΕΛΑΤΗΣ'), sb('scl',fontSize=8,textColor=DGRAY,alignment=TA_CENTER))],
+            [P('', s('sg2',fontSize=28,textColor=LGRAY,alignment=TA_CENTER))],
+            [P('____________________________', s('sl4',fontSize=9,textColor=BGRAY,alignment=TA_CENTER))],
+            [P('Υπογραφή & Σφραγίδα Πελάτη', s('slb',fontSize=7,textColor=MGRAY,alignment=TA_CENTER))],
+            [P('Ημερομηνία: _______________', s('sle',fontSize=7,textColor=BGRAY,alignment=TA_CENTER))],
+        ], colWidths=[sig_w], style=[
+            ('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3),
+            ('BOX',(0,0),(-1,-1),0.5,BORDER),('BACKGROUND',(0,0),(-1,0),LGRAY),
+        ]),
+    ]], colWidths=[sig_w, sig_w], style=[
+        ('LEFTPADDING',(0,0),(-1,-1),0),('RIGHTPADDING',(0,0),(-1,-1),0),
+        ('TOPPADDING',(0,0),(-1,-1),0),('BOTTOMPADDING',(0,0),(-1,-1),0),
+        ('LINEAFTER',(0,0),(0,-1),5*mm,WHITE),
+    ]))
     story.append(Spacer(1,4*mm))
     story.append(Table([[P(
         'Βελεστίνου 7, 115 23 Αθήνα  ·  Τηλ: +30 210 9966661  ·  sales@skynetworldwide.gr  ·  www.4aexpress.com',
