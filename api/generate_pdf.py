@@ -129,7 +129,8 @@ def generate(offer_data, dhl_data, fuel_data):
         P('OFFER',   sb('t2',fontSize=20,textColor=colors.HexColor('#ffcccc'),alignment=TA_CENTER)),
     ]],colWidths=[cw//2,cw//2],style=[
         ('BACKGROUND',(0,0),(-1,-1),DRED),('TOPPADDING',(0,0),(-1,-1),9),
-        ('BOTTOMPADDING',(0,0),(-1,-1),9),('LINEAFTER',(0,0),(0,-1),0.5,colors.HexColor('#dd3333'))]))
+        ('BOTTOMPADDING',(0,0),(-1,-1),9),('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+        ('LINEAFTER',(0,0),(0,-1),0.5,colors.HexColor('#dd3333'))]))
     story.append(Spacer(1,4*mm))
 
     C=cw//2-3*mm
