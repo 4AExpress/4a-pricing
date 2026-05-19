@@ -180,9 +180,10 @@
 <script>
 const PARAMS      = new URLSearchParams(window.location.search);
 const SERVICE_ID  = PARAMS.get('service') || 'S1003';
-const URL_MARKUP  = parseFloat(PARAMS.get('markup')) || 140;
+const URL_MARKUP  = parseFloat(PARAMS.get('markup')) || 0;
 const URL_SURCHARGE = parseFloat(PARAMS.get('surcharge')) || 0;
 const IS_COMBI    = PARAMS.get('combi') === '1';
+const URL_ROWS    = (() => { try { return JSON.parse(PARAMS.get('rows') || '[]'); } catch(e) { return []; } })();
 
 // ─── Service metadata ────────────────────────────────────────────────────────
 const SVC_INFO = {
@@ -347,6 +348,18 @@ function expandTable() {
     const val = parseFloat(document.getElementById('global-markup').value) || globalMarkup;
     globalMarkup = val;
     buildMarkupData(val);
+    if (URL_ROWS.length) {
+      const rowMap = {};
+      for (const r of URL_ROWS) rowMap[r.weight] = r.markup;
+      for (const row of markupData) {
+        if (rowMap[row.weight] !== undefined) {
+          row.markup = rowMap[row.weight];
+          row.changed = row.markup !== globalMarkup;
+          row.prices = row.dhl_costs.map(c => parseFloat((c * (1 + row.markup/100)).toFixed(2)));
+        }
+      }
+      validateAll();
+    }
     renderTable();
     tableVisible = true;
     document.getElementById('expand-btn').textContent = '▼ Απόκρυψη πίνακα';

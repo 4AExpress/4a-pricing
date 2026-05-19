@@ -739,8 +739,9 @@ function viewShelfItem(svcId, id) {
   const markup_z9 = item.markup_z9 || 0;
   const svc       = SERVICES.find(s => s.id === svcId);
   const sur       = cySettings[svcId === 'S1053' ? 'surcharge_cy_gr' : 'surcharge_gr_cy'] || 1.50;
+  const rows = encodeURIComponent(JSON.stringify(item.rows || []));
   window.open(
-    `pricelist-table.html?service=${svcId}&markup=${markup}&markup_z9=${markup_z9}&surcharge=${sur}&readonly=1`,
+    `pricelist-table.html?service=${svcId}&markup=${markup}&markup_z9=${markup_z9}&surcharge=${sur}&readonly=1&rows=${rows}`,
     '_blank'
   );
 }
