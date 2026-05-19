@@ -595,9 +595,10 @@ function applyDiff(idx, diff) {
 
 function cascadeDiff(idx, diff) {
   if (idx === 0) return;
-  if (!diff) diff = markupData[idx].prices[0] - markupData[idx-1].prices[0];
+  if (isNaN(diff)) diff = markupData[idx].prices[0] - markupData[idx-1].prices[0];
+  let base = markupData[idx - 1].prices[0];
   for (let i = idx; i < markupData.length; i++) {
-    const targetPrice = markupData[i-1].prices[0] + diff;
+    const targetPrice = base + diff;
     const dhlCost = markupData[i].dhl_costs[0];
     if (dhlCost > 0) {
       markupData[i].markup  = parseFloat(((targetPrice/dhlCost - 1)*100).toFixed(4));
@@ -605,6 +606,7 @@ function cascadeDiff(idx, diff) {
       markupData[i].prices  = markupData[i].dhl_costs.map(c =>
         parseFloat((c*(1+markupData[i].markup/100)).toFixed(2)));
     }
+    base = targetPrice;
   }
   for (const r of markupData) { r.valid = true; r.error_zones = []; }
   validateAll(); renderTable();
