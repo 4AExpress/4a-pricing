@@ -183,10 +183,7 @@ const SERVICE_ID  = PARAMS.get('service') || 'S1003';
 const URL_MARKUP  = parseFloat(PARAMS.get('markup')) || 0;
 const URL_SURCHARGE = parseFloat(PARAMS.get('surcharge')) || 0;
 const IS_COMBI    = PARAMS.get('combi') === '1';
-const URL_VIEW_ID = PARAMS.get('view_id');
-const _viewData   = URL_VIEW_ID ? (() => { try { return JSON.parse(localStorage.getItem('shelf_view_' + URL_VIEW_ID) || '{}'); } catch(e) { return {}; } })() : {};
-const URL_ROWS    = _viewData.rows || [];
-const URL_NAME    = _viewData.name || '';
+const URL_ROWS    = (() => { try { return JSON.parse(PARAMS.get('rows') || '[]'); } catch(e) { return []; } })();
 
 // ─── Service metadata ────────────────────────────────────────────────────────
 const SVC_INFO = {
@@ -213,8 +210,8 @@ const IS_CY      = SERVICE_ID.endsWith('_CY') || SERVICE_ID.endsWith('_GR');
 const IS_COMBI_SVC = svcMeta.combi || IS_COMBI;
 
 // ─── UI init ─────────────────────────────────────────────────────────────────
-document.getElementById('topbar-title').textContent = URL_NAME ? `${SERVICE_ID} — ${URL_NAME}` : `Τιμοκατάλογος — ${SERVICE_ID} ${svcMeta.name}`;
-document.getElementById('section-title').textContent = URL_NAME ? `${SERVICE_ID} — ${URL_NAME} · ${SVC_MODE} · έως ${MAX_WEIGHT}kg` : `${SERVICE_ID} — ${svcMeta.name} · ${SVC_MODE} · έως ${MAX_WEIGHT}kg`;
+document.getElementById('topbar-title').textContent = `Τιμοκατάλογος — ${SERVICE_ID} ${svcMeta.name}`;
+document.getElementById('section-title').textContent = `${SERVICE_ID} — ${svcMeta.name} · ${SVC_MODE} · έως ${MAX_WEIGHT}kg`;
 document.getElementById('global-markup').value = URL_MARKUP;
 document.getElementById('save-btn-svc').textContent = SERVICE_ID;
 
@@ -259,7 +256,6 @@ async function loadData() {
     document.getElementById('fc-badge').textContent = `FC ${SVC_MODE}: ${fuelFc}%`;
     document.getElementById('table-container').innerHTML =
       '<div class="loading">✅ Δεδομένα φορτώθηκαν — Πατήστε "Ανάπτυξη πίνακα"</div>';
-    if (URL_VIEW_ID) expandTable();
 
   } catch(e) {
     document.getElementById('table-container').innerHTML =
@@ -658,7 +654,6 @@ function confirmSave() {
     created_at:    new Date().toISOString()
   };
   shelf[SERVICE_ID].unshift(item);
-  localStorage.setItem('shelf_rows_' + item.id, JSON.stringify(item.rows));
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
 
   const API = 'https://4aexpress.com/api';
