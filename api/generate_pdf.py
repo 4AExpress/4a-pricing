@@ -176,7 +176,7 @@ def generate(offer_data, dhl_data, fuel_data):
     toc_items = [(pg,'how','Πώς Λειτουργεί ο Τιμοκατάλογος','ΠΛΗΡΟΦΟΡΙΕΣ')]
     pg += 1
     if has_gr:
-        toc_items.append((pg,'zones','Ζώνες 4A Express GR','ΠΑΡΑΡΤΗΜΑ'))
+        toc_items.append((pg,'Zones','Ζώνες 4A Express GR','ΠΛΗΡΟΦΟΡΙΕΣ'))
         pg += 1
     for svc in services:
         info = SVC_INFO.get(svc['service_id'],{})
@@ -192,12 +192,12 @@ def generate(offer_data, dhl_data, fuel_data):
                P('ΠΕΡΙΓΡΑΦΗ',sb('th',fontSize=7,textColor=WHITE)),
                P('ΤΥΠΟΣ',sb('th',fontSize=7,textColor=WHITE,alignment=TA_CENTER))]]
     for pg,code,desc,typ in toc_items:
-        is_svc=(len(code)==5 and code[0]=='S') or code=='zones'
+        is_svc=(len(code)==5 and code[0]=='S') or code=='Zones'
         toc_rows.append([
             P(str(pg),sb('tp',fontSize=8,textColor=MGRAY,alignment=TA_CENTER)),
             P(f'<a href="#{code}" color="red"><u>{code}</u></a>' if (len(code)==5 and code[0]=='S') else code,
               sb('tc',fontSize=8,textColor=RED if is_svc else BGRAY)),
-            P(desc,s('td',fontSize=8,textColor=colors.HexColor('#1565c0') if code=='zones' else DGRAY)),
+            P(desc,s('td',fontSize=8,textColor=DGRAY)),
             P(typ,sb('tt2',fontSize=7,textColor=WHITE if is_svc else MGRAY,alignment=TA_CENTER)),
         ])
     toc_t=Table(toc_rows,colWidths=[15*mm,22*mm,cw-72*mm,35*mm])
