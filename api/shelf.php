@@ -1,107 +1,54 @@
 <?php
-require_once __DIR__ . '/config.php';
-
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit;
-}
-
-try {
-    $pdo = new PDO(
-        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
-        DB_USER, DB_PASS,
-        [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ]
-    );
-} catch (PDOException $e) {
-    echo json_encode(['ok' => false, 'error' => 'DB connection failed: ' . $e->getMessage()]);
-    exit;
-}
-
-$pdo->exec("CREATE TABLE IF NOT EXISTS shelf (
-    id         VARCHAR(64)  PRIMARY KEY,
-    name       VARCHAR(255) NOT NULL DEFAULT '',
-    service_id VARCHAR(64)  NOT NULL DEFAULT '',
-    rows       TEXT         DEFAULT NULL,
-    markup     FLOAT        NOT NULL DEFAULT 0,
-    created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-$pdo->exec("ALTER TABLE shelf ADD COLUMN IF NOT EXISTS rows TEXT DEFAULT NULL");
-
+// shelf.php | v1.0 | 08-05-2026
+require_once 'config.php';
+db()->exec("ALTER TABLE 4a_shelf ADD COLUMN IF NOT EXISTS rows TEXT DEFAULT NULL");
 $method = $_SERVER['REQUEST_METHOD'];
-
 if ($method === 'GET') {
-    $stmt = $pdo->query('SELECT * FROM shelf ORDER BY created_at DESC');
-    $result = [];
-    foreach ($stmt->fetchAll() as $row) {
-        $row['rows'] = isset($row['rows']) ? (json_decode($row['rows'], true) ?? []) : [];
-        $result[$row['id']] = $row;
+    $rows = db()->query('SELECT * FROM 4a_shelf ORDER BY created_at DESC')->fetchAll();
+    $shelf = [];
+    foreach ($rows as $r) {
+        $r['rows'] = json_decode($r['rows'] ?? '[]', true);
+        $shelf[$r['service_id']][] = $r;
     }
-    echo json_encode($result);
-    exit;
+    respond((object)$shelf);
 }
-
 if ($method === 'POST') {
-    $input  = json_decode(file_get_contents('php://input'), true);
-    $action = $input['action'] ?? '';
-
+    $b = body();
+    $action = $b['action'] ?? 'save';
     if ($action === 'save') {
-        $id         = $input['id']         ?? null;
-        $name       = $input['name']       ?? '';
-        $service_id = $input['service_id'] ?? ($input['service'] ?? '');
-        $rows       = json_encode($input['rows'] ?? []);
-        $markup     = (float)($input['markup'] ?? $input['global_markup'] ?? 0);
-        $created_at = $input['created_at'] ?? date('Y-m-d H:i:s');
-
-        if (!$id) {
-            echo json_encode(['ok' => false, 'error' => 'Missing id']);
-            exit;
-        }
-
-        $stmt = $pdo->prepare(
-            "INSERT INTO shelf (id, name, service_id, rows, markup, created_at)
-             VALUES (:id, :name, :service_id, :rows, :markup, :created_at)
-             ON DUPLICATE KEY UPDATE
-                 name       = VALUES(name),
-                 service_id = VALUES(service_id),
-                 rows       = VALUES(rows),
-                 markup     = VALUES(markup)"
-        );
+        $stmt = db()->prepare('INSERT INTO 4a_shelf
+            (id, name, service_id, service_name, markup, global_markup, account, user, office, date, created_at, rows)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            ON DUPLICATE KEY UPDATE
+            name=VALUES(name), markup=VALUES(markup), global_markup=VALUES(global_markup), rows=VALUES(rows)');
         $stmt->execute([
-            ':id'         => $id,
-            ':name'       => $name,
-            ':service_id' => $service_id,
-            ':rows'       => $rows,
-            ':markup'     => $markup,
-            ':created_at' => $created_at,
+            $b['id'], $b['name'], $b['service_id'], $b['service_name'] ?? '',
+            $b['markup'], $b['global_markup'] ?? $b['markup'],
+            $b['account'] ?? '—', $b['user'] ?? '', $b['office'] ?? '',
+            $b['date'] ?? '', $b['created_at'] ?? date('Y-m-d H:i:s'), json_encode($b['rows'] ?? [])
         ]);
-
-        echo json_encode(['ok' => true, 'id' => $id]);
-        exit;
+        respond(['ok' => true]);
     }
-
     if ($action === 'delete') {
-        $id = $input['id'] ?? null;
-        if (!$id) {
-            echo json_encode(['ok' => false, 'error' => 'Missing id']);
-            exit;
-        }
-        $stmt = $pdo->prepare('DELETE FROM shelf WHERE id = :id');
-        $stmt->execute([':id' => $id]);
-        echo json_encode(['ok' => true]);
-        exit;
+        $stmt = db()->prepare('DELETE FROM 4a_shelf WHERE id=?');
+        $stmt->execute([$b['id']]);
+        respond(['ok' => true]);
     }
-
-    echo json_encode(['ok' => false, 'error' => 'Unknown action']);
-    exit;
+    if ($action === 'sync') {
+        $pdo = db();
+        $pdo->exec('DELETE FROM 4a_shelf');
+        $stmt = $pdo->prepare('INSERT INTO 4a_shelf
+            (id, name, service_id, service_name, markup, global_markup, account, user, office, date, created_at, rows)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
+        foreach ($b['items'] as $item) {
+            $stmt->execute([
+                $item['id'], $item['name'], $item['service_id'], $item['service_name'] ?? '',
+                $item['markup'], $item['global_markup'] ?? $item['markup'],
+                $item['account'] ?? '—', $item['user'] ?? '', $item['office'] ?? '',
+                $item['date'] ?? '', $item['created_at'] ?? date('Y-m-d H:i:s'), json_encode($item['rows'] ?? [])
+            ]);
+        }
+        respond(['ok' => true, 'synced' => count($b['items'])]);
+    }
 }
-
-echo json_encode(['ok' => false, 'error' => 'Method not allowed']);
+respond(['error' => 'Bad request'], 400);
