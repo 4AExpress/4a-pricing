@@ -187,7 +187,8 @@ def generate(offer_data, dhl_data, fuel_data):
         pg += 1
     for svc in services:
         svc_id = svc['service_id']
-        if not dhl_data.get(svc_id,[]): continue
+        dhl_key = {'S1003_GR':'S1003','S1012_GR':'S1012'}.get(svc_id, svc_id)
+        if not dhl_data.get(dhl_key,[]): continue
         info = SVC_INFO.get(svc_id,{})
         toc_items.append((pg,svc_id,f"{info.get('name',svc_id)} — {info.get('desc','')}",info.get('type','')))
         pg += 1
