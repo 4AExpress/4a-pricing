@@ -186,8 +186,10 @@ def generate(offer_data, dhl_data, fuel_data):
         toc_items.append((pg,'Zones','Ζώνες 4A Express GR','ΠΛΗΡΟΦΟΡΙΕΣ'))
         pg += 1
     for svc in services:
-        info = SVC_INFO.get(svc['service_id'],{})
-        toc_items.append((pg,svc['service_id'],f"{info.get('name',svc['service_id'])} — {info.get('desc','')}",info.get('type','')))
+        svc_id = svc['service_id']
+        if not dhl_data.get(svc_id,[]): continue
+        info = SVC_INFO.get(svc_id,{})
+        toc_items.append((pg,svc_id,f"{info.get('name',svc_id)} — {info.get('desc','')}",info.get('type','')))
         pg += 1
     toc_items.append((pg,'net','Δίκτυο Γραφείων 4A Express','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
     toc_items.append((pg,'track','Εύρεση & Tracking Αποστολής','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
