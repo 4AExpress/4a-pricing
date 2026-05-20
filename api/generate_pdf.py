@@ -330,12 +330,12 @@ def generate(offer_data, dhl_data, fuel_data):
         zones=7 if is_air else 3
         markup=float(svc.get('markup',0))
         markup_z9=float(svc.get('markup_z9',0)) or None
-        print(f"DEBUG [{svc_id}] raw svc={svc}  →  markup={markup}  markup_z9_raw={svc.get('markup_z9',0)}", flush=True)
+        print(f"DEBUG [{svc_id}] raw svc={svc}  →  markup={markup}  markup_z9_raw={svc.get('markup_z9',0)}", file=sys.stderr, flush=True)
         if svc_id in ('S1003_GR','S1012_GR'):
             markup_z9=None
         _DHL_SRC={'S1003_GR':'S1003','S1012_GR':'S1012'}
         entries=dhl_data.get(_DHL_SRC.get(svc_id,svc_id),[])
-        print(f"DEBUG [{svc_id}] final markup={markup}  markup_z9={markup_z9}  entries={len(entries)}", flush=True)
+        print(f"DEBUG [{svc_id}] final markup={markup}  markup_z9={markup_z9}  entries={len(entries)}", file=sys.stderr, flush=True)
         prices=apply_markup(entries,markup,zones,markup_z9)
         AIR_W=[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,55,60,65,70]
         ROAD_W=[1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100]
