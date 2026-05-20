@@ -30,7 +30,7 @@ ZONE_BG={1:colors.HexColor('#f0f0f0'),2:colors.HexColor('#e8e8e8'),
          8:colors.HexColor('#ddeeff'),9:colors.HexColor('#ddeeff')}
 
 OFFICES={
-    'ATH':{'name':'Αθήνα',   'prefix':'0107','addr':'Βελεστίνου 7, 11523, Αθήνα',         'tel':'+30 210 9966661','email':'info@skynetworldwide.gr','maps':'https://maps.google.com/?q=Βελεστίνου+7,+Αθήνα'},
+    'ATH':{'name':'Αθήνα',   'prefix':'0107','addr':'Βελεστίνου 7, 11523, Αθήνα',         'tel':'+30 210 9966661','email':'sales@4aexpress.com','maps':'https://maps.google.com/?q=Βελεστίνου+7,+Αθήνα'},
     'NIC':{'name':'Λευκωσία','prefix':'0108','addr':'Αθαλάσσης 107, Λευκωσία, Κύπρος',    'tel':'+357 22 953311', 'email':'4aexpress@cytanet.com.cy','maps':'https://maps.google.com/?q=Athalassas+107,+Nicosia'},
     'QLI':{'name':'Λεμεσός', 'prefix':'0109','addr':'Spyrou Kyprianou Ave 20, Λεμεσός',    'tel':'+357 25590500',  'email':'qli1@4aexpress.com','maps':'https://maps.google.com/?q=Spyrou+Kyprianou+20,+Limassol'},
     'LCA':{'name':'Λάρνακα', 'prefix':'0110','addr':'Αρχιεπ. Κυπριανού 58, Λάρνακα',      'tel':'+357 24 424280', 'email':'4aexpress@cytanet.com.cy','maps':'https://maps.google.com/?q=Archiepiskopou+Kyprianou+58,+Larnaca'},
@@ -328,10 +328,12 @@ def generate(offer_data, dhl_data, fuel_data):
         zones=7 if is_air else 3
         markup=float(svc.get('markup',0))
         markup_z9=float(svc.get('markup_z9',0)) or None
+        print(f"DEBUG [{svc_id}] raw svc={svc}  →  markup={markup}  markup_z9_raw={svc.get('markup_z9',0)}", flush=True)
         if svc_id in ('S1003_GR','S1012_GR'):
             markup_z9=None
         _DHL_SRC={'S1003_GR':'S1003','S1012_GR':'S1012'}
         entries=dhl_data.get(_DHL_SRC.get(svc_id,svc_id),[])
+        print(f"DEBUG [{svc_id}] final markup={markup}  markup_z9={markup_z9}  entries={len(entries)}", flush=True)
         prices=apply_markup(entries,markup,zones,markup_z9)
         AIR_W=[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,55,60,65,70]
         ROAD_W=[1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100]
@@ -622,7 +624,7 @@ def generate(offer_data, dhl_data, fuel_data):
     ]))
     story.append(Spacer(1,4*mm))
     story.append(Table([[P(
-        'Βελεστίνου 7, 115 23 Αθήνα  ·  Τηλ: +30 210 9966661  ·  sales@skynetworldwide.gr  ·  www.4aexpress.com',
+        'Βελεστίνου 7, 115 23 Αθήνα  ·  Τηλ: +30 210 9966661  ·  sales@4aexpress.com  ·  www.4aexpress.com',
         s('ft2',fontSize=7,textColor=BGRAY,alignment=TA_CENTER))]],colWidths=[cw],style=[
         ('TOPPADDING',(0,0),(-1,-1),4),('LINEABOVE',(0,0),(-1,0),0.5,BORDER)]))
     story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))

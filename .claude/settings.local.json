@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Skill(update-config)",
+      "Bash(powershell.exe -NonInteractive -File /tmp/test_hook.ps1)",
+      "Bash(python3 -c \"import json,sys; json.load\\(sys.stdin\\); print\\('JSON valid'\\)\")",
+      "Bash(python3 docs/generate_zones_pdf.py)",
+      "Bash(python3 -c ' *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(git revert *)"
+    ]
+  }
+}
