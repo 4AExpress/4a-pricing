@@ -566,6 +566,7 @@ async function buildFinalPDF(offerNum){
   const fuel=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json());
   const office=(currentUser?.stations||'ATH').split(',')[0];
   const name=document.getElementById('cl-name').value.trim();
+  console.log('PDF PAYLOAD:', JSON.stringify({offer:{name, afm:document.getElementById('cl-afm').value.trim(), email:document.getElementById('cl-email').value.trim(), contact:document.getElementById('cl-contact').value.trim(), phone:document.getElementById('cl-phone').value.trim(), user:currentUser.name, office_code:office, date:todayFmt(), validity:document.getElementById('cl-validity').value, offer_number:offerNum, pricelists:selectedPls.map(p=>({service_id:p.service_id,markup:p.global_markup??p.markup??0}))}, dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel}));
   const r=await fetch(`${API}/generate_pdf.php`,{
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
