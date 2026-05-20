@@ -34,7 +34,7 @@ try {
     $mail->Port       = 465;
     $mail->CharSet    = 'UTF-8';
 
-    $mail->setFrom('SMTP_USER', '4A Express');
+    $mail->setFrom('sales@4aexpress.com', '4A Express');
     $mail->addAddress($input['to']);
 
     $mail->Subject = $input['subject'];
