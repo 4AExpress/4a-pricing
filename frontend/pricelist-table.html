@@ -358,13 +358,9 @@ function expandTable() {
         const row = markupData[i];
         const saved = rowMap[row.weight];
         if (saved !== undefined) {
-          if (saved.diff != null && i > 0) {
-            const targetPrice = markupData[i-1].prices[0] + saved.diff;
-            const dhlCost = row.dhl_costs[0];
-            if (dhlCost > 0) row.markup = parseFloat(((targetPrice / dhlCost - 1) * 100).toFixed(4));
-            else row.markup = saved.markup;
-          } else {
-            row.markup = saved.markup;
+          const dhlCost = row.dhl_costs[0];
+          if (saved.price != null && dhlCost > 0) {
+            row.markup = parseFloat(((saved.price / dhlCost - 1) * 100).toFixed(4));
           }
           row.changed = row.markup !== globalMarkup;
           row.prices = row.dhl_costs.map(c => parseFloat((c * (1 + row.markup/100)).toFixed(2)));
@@ -674,7 +670,7 @@ function confirmSave() {
     surcharge:     URL_SURCHARGE,
     is_custom:     isCustom,
     is_combi:      IS_COMBI_SVC,
-    rows:          markupData.map((r, i) => ({ weight: r.weight, markup: r.markup, diff: i > 0 ? parseFloat((r.prices[0] - markupData[i-1].prices[0]).toFixed(2)) : 0 })),
+    rows:          markupData.map(r => ({ weight: r.weight, price: r.prices[0] })),
     fc:            fuelFc,
     user:          savedUser?.name   || '—',
     office:        savedUser?.office || '—',
