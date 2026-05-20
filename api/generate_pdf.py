@@ -360,7 +360,7 @@ def generate(offer_data, dhl_data, fuel_data):
         AIR_W=[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,55,60,65,70]
         ROAD_W=[1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100]
         target_w = AIR_W if is_air else ROAD_W
-        weights = [w for w in target_w if w in prices]
+        weights = [w for w in sorted(saved_rows.keys()) if w in prices] if saved_rows else [w for w in target_w if w in prices]
         if not weights: continue
         fc=fuel_air if is_air else fuel_road
 
