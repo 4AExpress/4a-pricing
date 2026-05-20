@@ -140,6 +140,7 @@
       <div class="legend-item"><span style="color:#cc0000">■</span> <span>Τιμή πελάτη</span></div>
     </div>
 
+    <div id="pbadge" style="display:none;margin:8px 0;"></div>
     <!-- TABLE -->
     <div id="table-container">
       <div class="loading">Φόρτωση τιμών DHL... Πατήστε "Ανάπτυξη" για εμφάνιση πίνακα.</div>
@@ -397,72 +398,19 @@ function renderTable() {
   document.getElementById('stat-err').textContent   = errCount;
   document.getElementById('stat-range').textContent = minMu === maxMu ? `${minMu}%` : `${minMu}% – ${maxMu}%`;
 
-  // Badge update
-  const bd = document.getElementById('price-badge');
-  if (markupData.length > 0) {
-    const z1 = markupData.map(r => ({w: r.weight, p: Math.round(r.prices[0]*100)/100}));
-    let top = '', bot = '', segs = [], i = 0;
-    while (i < z1.length) {
-      const bp = z1[i].p; let j = i+1;
-      while (j < z1.length && z1[j].p === bp) j++;
-      if (i===0){segs.push({top:'⚖️ ≤2kg', bot:bp+'·15', unit:'€/αποστολή'});i=j;continue;}
-      const diff = Math.round((z1[i].p - z1[i-1].p)*10)/10;
-      let k = i+1;
-      while (k < z1.length && Math.round((z1[k].p-z1[k-1].p)*10)/10===diff) k++;
-      const lbl = k<z1.length ? '⩉ '+z1[i-1].w+'→'+z1[k-1].w+'kg' : '⩉ '+z1[i-1].w+'kg+';
-      segs.push({top:lbl, bot:'+'+diff, unit:'€/kg ┙1kg=€'+diff});
-      i=k;
-    }
-    const w = 90;
-    let html = '<div style="display:inline-grid;grid-template-columns:repeat('+segs.length+','+w+'px);border:0.5px solid #ccc;border-radius:6px;overflow:hidden;font-family:monospace;font-size:12px;">';
-    segs.forEach((s,idx) => {
-      const br = idx<segs.length-1?'border-right:0.5px solid #ccc;':'';
-      html += '<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;color:#666;">'+s.top+'</div>';
-    });
-    segs.forEach((s,idx) => {
-      const br = idx<segs.length-1?'border-right:0.5px solid #ccc;':'';
-      html += '<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;font-weight:500;">'+s.bot+'</div>';
-    });
-    segs.forEach((s,idx) => {
-      const br = idx<segs.length-1?'border-right:0.5px solid #ccc;':'';
-      html += '<div style="'+br+'padding:3px 0;text-align:center;font-size:10px;color:#999;">'+s.unit+'</div>';
-    });
-    html += '</div>';
-    bd.innerHTML = html; bd.style.display = 'block';
-  } else { bd.style.display = 'none'; }
-  // Badge update
-  const bd = document.getElementById('price-badge');
-  if (markupData.length > 0) {
-    const z1 = markupData.map(r => ({w: r.weight, p: Math.round(r.prices[0]*100)/100}));
-    let top = '', bot = '', segs = [], i = 0;
-    while (i < z1.length) {
-      const bp = z1[i].p; let j = i+1;
-      while (j < z1.length && z1[j].p === bp) j++;
-      if (i===0){segs.push({top:'⚖️ ≤2kg', bot:bp+'·15', unit:'€/αποστολή'});i=j;continue;}
-      const diff = Math.round((z1[i].p - z1[i-1].p)*10)/10;
-      let k = i+1;
-      while (k < z1.length && Math.round((z1[k].p-z1[k-1].p)*10)/10===diff) k++;
-      const lbl = k<z1.length ? '⩉ '+z1[i-1].w+'→'+z1[k-1].w+'kg' : '⩉ '+z1[i-1].w+'kg+';
-      segs.push({top:lbl, bot:'+'+diff, unit:'€/kg ┙1kg=€'+diff});
-      i=k;
-    }
-    const w = 90;
-    let html = '<div style="display:inline-grid;grid-template-columns:repeat('+segs.length+','+w+'px);border:0.5px solid #ccc;border-radius:6px;overflow:hidden;font-family:monospace;font-size:12px;">';
-    segs.forEach((s,idx) => {
-      const br = idx<segs.length-1?'border-right:0.5px solid #ccc;':'';
-      html += '<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;color:#666;">'+s.top+'</div>';
-    });
-    segs.forEach((s,idx) => {
-      const br = idx<segs.length-1?'border-right:0.5px solid #ccc;':'';
-      html += '<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;font-weight:500;">'+s.bot+'</div>';
-    });
-    segs.forEach((s,idx) => {
-      const br = idx<segs.length-1?'border-right:0.5px solid #ccc;':'';
-      html += '<div style="'+br+'padding:3px 0;text-align:center;font-size:10px;color:#999;">'+s.unit+'</div>';
-    });
-    html += '</div>';
-    bd.innerHTML = html; bd.style.display = 'block';
-  } else { bd.style.display = 'none'; }
+  const pbdg=document.getElementById('pbadge');
+  if(markupData.length>0){const zz=markupData.map(r=>({w:r.weight,p:Math.round(r.prices[0]*100)/100}));let ss=[],i=0;
+  while(i<zz.length){const bp=zz[i].p;let j=i+1;while(j<zz.length&&zz[j].p===bp)j++;
+  if(i===0){ss.push({t:'☉6 ≤2kg',b:bp+'·'+bp,u:'€/αποστολή'});i=j;continue;}
+  const df=Math.round((zz[i].p-zz[i-1].p)*10)/10;let k=i+1;
+  while(k<zz.length&&Math.round((zz[k].p-zz[k-1].p)*10)/10===df)k++;
+  const lb=k<zz.length?'☉6 '+zz[i-1].w+'→'+zz[k-1].w+'kg':'☉6 '+zz[i-1].w+'kg+';
+  ss.push({t:lb,b:'+'+df,u:'€/kg ┙1kg=€'+df});i=k;}
+  let h='<div style="display:inline-grid;grid-template-columns:repeat('+ss.length+',90px);border:0.5px solid #ccc;border-radius:6px;overflow:hidden;font-family:monospace;font-size:12px;">';
+  ss.forEach((s,x)=>{const br=x<ss.length-1?'border-right:0.5px solid #ccc;':'';h+='<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;color:#666;">'+s.t+'</div>';});
+  ss.forEach((s,x)=>{const br=x<ss.length-1?'border-right:0.5px solid #ccc;':'';h+='<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;font-weight:500;">'+s.b+'</div>';});
+  ss.forEach((s,x)=>{const br=x<ss.length-1?'border-right:0.5px solid #ccc;':'';h+='<div style="'+br+'padding:3px 0;text-align:center;font-size:10px;color:#999;">'+s.u+'</div>';});
+  h+='</div>';pbdg.innerHTML=h;pbdg.style.display='block';}else{pbdg.style.display='none';}
   const saveOk = errCount === 0 && okCount > 0;
   document.getElementById('save-btn').disabled  = !saveOk;
   document.getElementById('save-btn2').disabled = !saveOk;
@@ -706,19 +654,7 @@ function savePricelist() {
   if (errCount > 0) { alert(`🔴 ${errCount} παραβιάσεις — δεν επιτρέπεται αποθήκευση`); return; }
   const isCustom = markupData.some(r => r.markup !== globalMarkup);
   document.getElementById('modal-service-id').textContent = SERVICE_ID;
-  const z1rows = markupData.filter(r => r.prices && r.prices[0] !== undefined);
-  let segs = []; let i = 0;
-  while (i < z1rows.length) {
-    const bp = z1rows[i].prices[0]; let j = i+1;
-    while (j < z1rows.length && z1rows[j].prices[0] === bp) j++;
-    if (i===0){segs.push(bp+"↔2");i=j;continue;}
-    const diff = Math.round((z1rows[i].prices[0]-z1rows[i-1].prices[0])*10)/10;
-    let k = i+1;
-    while (k < z1rows.length && Math.round((z1rows[k].prices[0]-z1rows[k-1].prices[0])*10)/10===diff) k++;
-    segs.push(diff+(k<z1rows.length?"↑"+z1rows[k-1].weight:"↑"));
-    i=k;
-  }
-  document.getElementById("modal-name").value = SERVICE_ID + " · " + segs.join(" | ");
+  const z1r=markupData.filter(r=>r.prices&&r.prices[0]!==undefined);let sg=[],ii=0;while(ii<z1r.length){const bp=z1r[ii].prices[0];let jj=ii+1;while(jj<z1r.length&&z1r[jj].prices[0]===bp)jj++;if(ii===0){sg.push(bp+"↔2");ii=jj;continue;}const df=Math.round((z1r[ii].prices[0]-z1r[ii-1].prices[0])*10)/10;let kk=ii+1;while(kk<z1r.length&&Math.round((z1r[kk].prices[0]-z1r[kk-1].prices[0])*10)/10===df)kk++;sg.push(df+(kk<z1r.length?"↑"+z1r[kk-1].weight:"↑"));ii=kk;}document.getElementById("modal-name").value=SERVICE_ID+" · "+sg.join(" | ");
   document.getElementById('modal-type').textContent =
     isCustom ? '⚙️ Custom — διαφορετικό markup ανά βάρος' : `📌 Flat — ενιαίο markup ${globalMarkup}%`;
   document.getElementById('modal-type').style.color = isCustom ? '#e65100' : '#1565c0';
@@ -731,7 +667,6 @@ function confirmSave() {
   const name    = document.getElementById('modal-name').value.trim();
   const account = document.getElementById('modal-account').value.trim();
   if (!name) { alert('Εισάγετε όνομα'); return; }
-  if (markupData.length === 0) { alert('❌ Δεν υπάρχουν δεδομένα πίνακα!\nΠατήστε πρώτα \"Ανάπτυξη πίνακα\" και μετά αποθηκεύστε.'); return; }
 
   const isCustom  = markupData.some(r => r.markup !== globalMarkup);
   const savedUser = JSON.parse(localStorage.getItem('4a_current_user') || 'null');
@@ -767,8 +702,7 @@ function confirmSave() {
   }).catch(e => console.error('API shelf error:', e));
 
   closeModal();
-  alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${SERVICE_ID}!
-📊 ${markupData.length} γραμμές τιμών αποθηκεύτηκαν.`);
+  alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${SERVICE_ID}!`);
 }
 
 // Init
