@@ -471,7 +471,7 @@ function saveClient(){
     website:document.getElementById('cl-website').value.trim(),
     account:document.getElementById('cl-account').value.trim()||'—',
     status:currentStatus,
-    pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup??p.markup??0})),
+    pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[]})),
     surcharges:[...surcharges], managers:[...managers],
     payment:document.getElementById('cl-payment').value,
     invoice:document.getElementById('cl-invoice').value,
