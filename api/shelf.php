@@ -1,8 +1,8 @@
 <?php
 // shelf.php | v1.0 | 08-05-2026
+error_reporting(E_ALL); ini_set("log_errors",1); ini_set("error_log","/tmp/shelf_errors.log");
 require_once 'config.php';
 
-db()->exec("ALTER TABLE 4a_shelf ADD COLUMN IF NOT EXISTS `rows` TEXT DEFAULT NULL");
 
 $method = $_SERVER['REQUEST_METHOD'];
 
