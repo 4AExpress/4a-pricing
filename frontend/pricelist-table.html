@@ -397,6 +397,72 @@ function renderTable() {
   document.getElementById('stat-err').textContent   = errCount;
   document.getElementById('stat-range').textContent = minMu === maxMu ? `${minMu}%` : `${minMu}% – ${maxMu}%`;
 
+  // Badge update
+  const bd = document.getElementById('price-badge');
+  if (markupData.length > 0) {
+    const z1 = markupData.map(r => ({w: r.weight, p: Math.round(r.prices[0]*100)/100}));
+    let top = '', bot = '', segs = [], i = 0;
+    while (i < z1.length) {
+      const bp = z1[i].p; let j = i+1;
+      while (j < z1.length && z1[j].p === bp) j++;
+      if (i===0){segs.push({top:'⚖️ ≤2kg', bot:bp+'·15', unit:'€/αποστολή'});i=j;continue;}
+      const diff = Math.round((z1[i].p - z1[i-1].p)*10)/10;
+      let k = i+1;
+      while (k < z1.length && Math.round((z1[k].p-z1[k-1].p)*10)/10===diff) k++;
+      const lbl = k<z1.length ? '⩉ '+z1[i-1].w+'→'+z1[k-1].w+'kg' : '⩉ '+z1[i-1].w+'kg+';
+      segs.push({top:lbl, bot:'+'+diff, unit:'€/kg ┙1kg=€'+diff});
+      i=k;
+    }
+    const w = 90;
+    let html = '<div style="display:inline-grid;grid-template-columns:repeat('+segs.length+','+w+'px);border:0.5px solid #ccc;border-radius:6px;overflow:hidden;font-family:monospace;font-size:12px;">';
+    segs.forEach((s,idx) => {
+      const br = idx<segs.length-1?'border-right:0.5px solid #ccc;':'';
+      html += '<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;color:#666;">'+s.top+'</div>';
+    });
+    segs.forEach((s,idx) => {
+      const br = idx<segs.length-1?'border-right:0.5px solid #ccc;':'';
+      html += '<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;font-weight:500;">'+s.bot+'</div>';
+    });
+    segs.forEach((s,idx) => {
+      const br = idx<segs.length-1?'border-right:0.5px solid #ccc;':'';
+      html += '<div style="'+br+'padding:3px 0;text-align:center;font-size:10px;color:#999;">'+s.unit+'</div>';
+    });
+    html += '</div>';
+    bd.innerHTML = html; bd.style.display = 'block';
+  } else { bd.style.display = 'none'; }
+  // Badge update
+  const bd = document.getElementById('price-badge');
+  if (markupData.length > 0) {
+    const z1 = markupData.map(r => ({w: r.weight, p: Math.round(r.prices[0]*100)/100}));
+    let top = '', bot = '', segs = [], i = 0;
+    while (i < z1.length) {
+      const bp = z1[i].p; let j = i+1;
+      while (j < z1.length && z1[j].p === bp) j++;
+      if (i===0){segs.push({top:'⚖️ ≤2kg', bot:bp+'·15', unit:'€/αποστολή'});i=j;continue;}
+      const diff = Math.round((z1[i].p - z1[i-1].p)*10)/10;
+      let k = i+1;
+      while (k < z1.length && Math.round((z1[k].p-z1[k-1].p)*10)/10===diff) k++;
+      const lbl = k<z1.length ? '⩉ '+z1[i-1].w+'→'+z1[k-1].w+'kg' : '⩉ '+z1[i-1].w+'kg+';
+      segs.push({top:lbl, bot:'+'+diff, unit:'€/kg ┙1kg=€'+diff});
+      i=k;
+    }
+    const w = 90;
+    let html = '<div style="display:inline-grid;grid-template-columns:repeat('+segs.length+','+w+'px);border:0.5px solid #ccc;border-radius:6px;overflow:hidden;font-family:monospace;font-size:12px;">';
+    segs.forEach((s,idx) => {
+      const br = idx<segs.length-1?'border-right:0.5px solid #ccc;':'';
+      html += '<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;color:#666;">'+s.top+'</div>';
+    });
+    segs.forEach((s,idx) => {
+      const br = idx<segs.length-1?'border-right:0.5px solid #ccc;':'';
+      html += '<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;font-weight:500;">'+s.bot+'</div>';
+    });
+    segs.forEach((s,idx) => {
+      const br = idx<segs.length-1?'border-right:0.5px solid #ccc;':'';
+      html += '<div style="'+br+'padding:3px 0;text-align:center;font-size:10px;color:#999;">'+s.unit+'</div>';
+    });
+    html += '</div>';
+    bd.innerHTML = html; bd.style.display = 'block';
+  } else { bd.style.display = 'none'; }
   const saveOk = errCount === 0 && okCount > 0;
   document.getElementById('save-btn').disabled  = !saveOk;
   document.getElementById('save-btn2').disabled = !saveOk;
