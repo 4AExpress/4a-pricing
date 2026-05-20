@@ -401,10 +401,10 @@ function renderTable() {
   const pbdg=document.getElementById('pbadge');
   if(markupData.length>0){const zz=markupData.map(r=>({w:r.weight,p:Math.round(r.prices[0]*100)/100}));let ss=[],bi=0;
   while(bi<zz.length){const bp=zz[bi].p;let bj=bi+1;while(bj<zz.length&&zz[bj].p===bp)bj++;
-  if(bi===0){ss.push({t:'☉6 ≤2kg',b:bp+'·'+bp,u:'€/αποστολή'});bi=bj;continue;}
+  if(bi===0){ss.push({t:'⚖️ ≤2kg',b:bp+'·'+bp,u:'€/αποστολή'});bi=bj;continue;}
   const df=Math.round((zz[bi].p-zz[bi-1].p)*10)/10;let bk=bi+1;
   while(bk<zz.length&&Math.round((zz[bk].p-zz[bk-1].p)*10)/10===df)bk++;
-  const lb=bk<zz.length?'☉6 '+zz[bi-1].w+'→'+zz[bk-1].w+'kg':'☉6 '+zz[bi-1].w+'kg+';
+  const lb=bk<zz.length?'⚖️ '+zz[bi-1].w+'→'+zz[bk-1].w+'kg':'⚖️ '+zz[bi-1].w+'kg+';
   ss.push({t:lb,b:'+'+df,u:'€/kg ┙1kg=€'+df});bi=bk;}
   let h='<div style="display:inline-grid;grid-template-columns:repeat('+ss.length+',90px);border:0.5px solid #ccc;border-radius:6px;overflow:hidden;font-family:monospace;font-size:12px;">';
   ss.forEach((s,x)=>{const br=x<ss.length-1?'border-right:0.5px solid #ccc;':'';h+='<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;color:#666;">'+s.t+'</div>';});
