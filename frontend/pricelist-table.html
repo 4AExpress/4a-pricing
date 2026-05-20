@@ -405,7 +405,7 @@ function renderTable() {
   const df=Math.round((zz[bi].p-zz[bi-1].p)*10)/10;let bk=bi+1;
   while(bk<zz.length&&Math.round((zz[bk].p-zz[bk-1].p)*10)/10===df)bk++;
   const lb=bk<zz.length?'⚖️ '+zz[bi-1].w+'→'+zz[bk-1].w+'kg':'⚖️ '+zz[bi-1].w+'kg+';
-  ss.push({t:lb,b:'+'+df,u:'€/kg ┙1kg=€'+df});bi=bk;}
+  ss.push({t:lb,b:'+'+df,u:'€/kg ↑1kg=€'+df});bi=bk;}
   let h='<div style="display:inline-grid;grid-template-columns:repeat('+ss.length+',90px);border:0.5px solid #ccc;border-radius:6px;overflow:hidden;font-family:monospace;font-size:12px;">';
   ss.forEach((s,x)=>{const br=x<ss.length-1?'border-right:0.5px solid #ccc;':'';h+='<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;color:#666;">'+s.t+'</div>';});
   ss.forEach((s,x)=>{const br=x<ss.length-1?'border-right:0.5px solid #ccc;':'';h+='<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;font-weight:500;">'+s.b+'</div>';});
