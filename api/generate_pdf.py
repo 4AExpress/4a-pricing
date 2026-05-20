@@ -337,7 +337,23 @@ def generate(offer_data, dhl_data, fuel_data):
         _DHL_SRC={'S1003_GR':'S1003','S1012_GR':'S1012'}
         entries=dhl_data.get(_DHL_SRC.get(svc_id,svc_id),[])
         print(f"DEBUG [{svc_id}] final markup={markup}  markup_z9={markup_z9}  entries={len(entries)}", file=sys.stderr, flush=True)
-        prices=apply_markup(entries,markup,zones,markup_z9)
+        saved_rows={float(r['weight']):float(r['price']) for r in svc.get('rows',[]) if 'weight' in r and 'price' in r}
+        if saved_rows:
+            dhl_costs={}
+            for e in entries:
+                w=e['weight_kg']; z=int(e['zone_code'].replace('z',''))
+                dhl_costs.setdefault(w,{})[z]=e['cost']
+            prices=apply_markup(entries,markup,zones,markup_z9)
+            for w,saved_price in saved_rows.items():
+                if w not in prices or w not in dhl_costs: continue
+                z1_cost=dhl_costs[w].get(1)
+                if not z1_cost: continue
+                derived=(saved_price/z1_cost-1)*100
+                for z in prices[w]:
+                    if z in dhl_costs[w]:
+                        prices[w][z]=round(dhl_costs[w][z]*(1+derived/100),2)
+        else:
+            prices=apply_markup(entries,markup,zones,markup_z9)
         AIR_W=[0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8,9,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,55,60,65,70]
         ROAD_W=[1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100]
         target_w = AIR_W if is_air else ROAD_W
