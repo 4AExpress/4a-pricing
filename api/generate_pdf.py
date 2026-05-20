@@ -346,7 +346,7 @@ def generate(offer_data, dhl_data, fuel_data):
             prices=apply_markup(entries,markup,zones,markup_z9)
             for w,saved_price in saved_rows.items():
                 if w not in prices or w not in dhl_costs: continue
-                z1_cost=dhl_costs[w].get(1)
+                z1_cost=dhl_costs[w].get(1) or next(iter(dhl_costs[w].values()), None)
                 if not z1_cost: continue
                 derived=(saved_price/z1_cost-1)*100
                 for z in prices[w]:
