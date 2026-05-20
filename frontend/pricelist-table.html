@@ -471,6 +471,7 @@ function renderTable() {
           type="number" min="0" max="999" step="0.5"
           value="${row.markup}" data-idx="${i}"
           onchange="onRowMarkup(${i}, this.value)"
+          ondblclick="cascadeMarkup(${i}, this.value)"
           onfocus="this.select()" />
       </td>`;
 
@@ -541,6 +542,19 @@ function onRowMarkup(idx, value) {
   validateAll();
   renderTable();
   setTimeout(() => { const el = document.querySelector(`input[data-idx="${idx}"]`); if (el) el.focus(); }, 50);
+}
+
+function cascadeMarkup(idx, value) {
+  const val = parseFloat(value);
+  if (!val || val <= 0) return;
+  for (let i = idx; i < markupData.length; i++) {
+    markupData[i].markup  = val;
+    markupData[i].changed = val !== globalMarkup;
+    markupData[i].prices  = markupData[i].dhl_costs.map(c => parseFloat((c * (1 + val/100)).toFixed(2)));
+  }
+  for (const r of markupData) { r.valid = true; r.error_zones = []; }
+  validateAll();
+  renderTable();
 }
 
 // ─── MIN% FLAT & CASCADE ──────────────────────────────────────────────────────
