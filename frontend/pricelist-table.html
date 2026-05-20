@@ -653,6 +653,7 @@ function confirmSave() {
   const name    = document.getElementById('modal-name').value.trim();
   const account = document.getElementById('modal-account').value.trim();
   if (!name) { alert('Εισάγετε όνομα'); return; }
+  if (markupData.length === 0) { alert('❌ Δεν υπάρχουν δεδομένα πίνακα!\nΠατήστε πρώτα \"Ανάπτυξη πίνακα\" και μετά αποθηκεύστε.'); return; }
 
   const isCustom  = markupData.some(r => r.markup !== globalMarkup);
   const savedUser = JSON.parse(localStorage.getItem('4a_current_user') || 'null');
@@ -688,7 +689,8 @@ function confirmSave() {
   }).catch(e => console.error('API shelf error:', e));
 
   closeModal();
-  alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${SERVICE_ID}!`);
+  alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${SERVICE_ID}!
+📊 ${markupData.length} γραμμές τιμών αποθηκεύτηκαν.`);
 }
 
 // Init
