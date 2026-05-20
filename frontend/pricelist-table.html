@@ -399,13 +399,13 @@ function renderTable() {
   document.getElementById('stat-range').textContent = minMu === maxMu ? `${minMu}%` : `${minMu}% – ${maxMu}%`;
 
   const pbdg=document.getElementById('pbadge');
-  if(markupData.length>0){const zz=markupData.map(r=>({w:r.weight,p:Math.round(r.prices[0]*100)/100}));let ss=[],i=0;
-  while(i<zz.length){const bp=zz[i].p;let j=i+1;while(j<zz.length&&zz[j].p===bp)j++;
-  if(i===0){ss.push({t:'☉6 ≤2kg',b:bp+'·'+bp,u:'€/αποστολή'});i=j;continue;}
-  const df=Math.round((zz[i].p-zz[i-1].p)*10)/10;let k=i+1;
-  while(k<zz.length&&Math.round((zz[k].p-zz[k-1].p)*10)/10===df)k++;
-  const lb=k<zz.length?'☉6 '+zz[i-1].w+'→'+zz[k-1].w+'kg':'☉6 '+zz[i-1].w+'kg+';
-  ss.push({t:lb,b:'+'+df,u:'€/kg ┙1kg=€'+df});i=k;}
+  if(markupData.length>0){const zz=markupData.map(r=>({w:r.weight,p:Math.round(r.prices[0]*100)/100}));let ss=[],bi=0;
+  while(bi<zz.length){const bp=zz[bi].p;let bj=bi+1;while(bj<zz.length&&zz[bj].p===bp)bj++;
+  if(bi===0){ss.push({t:'☉6 ≤2kg',b:bp+'·'+bp,u:'€/αποστολή'});bi=bj;continue;}
+  const df=Math.round((zz[bi].p-zz[bi-1].p)*10)/10;let bk=bi+1;
+  while(bk<zz.length&&Math.round((zz[bk].p-zz[bk-1].p)*10)/10===df)bk++;
+  const lb=bk<zz.length?'☉6 '+zz[bi-1].w+'→'+zz[bk-1].w+'kg':'☉6 '+zz[bi-1].w+'kg+';
+  ss.push({t:lb,b:'+'+df,u:'€/kg ┙1kg=€'+df});bi=bk;}
   let h='<div style="display:inline-grid;grid-template-columns:repeat('+ss.length+',90px);border:0.5px solid #ccc;border-radius:6px;overflow:hidden;font-family:monospace;font-size:12px;">';
   ss.forEach((s,x)=>{const br=x<ss.length-1?'border-right:0.5px solid #ccc;':'';h+='<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;color:#666;">'+s.t+'</div>';});
   ss.forEach((s,x)=>{const br=x<ss.length-1?'border-right:0.5px solid #ccc;':'';h+='<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;font-weight:500;">'+s.b+'</div>';});
