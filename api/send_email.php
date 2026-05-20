@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/config.php';
 require __DIR__ . '/PHPMailer/src/Exception.php';
 require __DIR__ . '/PHPMailer/src/SMTP.php';
 require __DIR__ . '/PHPMailer/src/PHPMailer.php';
@@ -26,10 +27,10 @@ if (empty($input['to']) || empty($input['subject']) || empty($input['pdf_base64'
 $mail = new PHPMailer(true);
 try {
     $mail->isSMTP();
-    $mail->Host       = 'sales@4aexpress.com';
+    $mail->Host       = SMTP_HOST;
     $mail->SMTPAuth   = true;
-    $mail->Username   = 'sales@4aexpress.com';
-    $mail->Password   = '044978638';
+    $mail->Username   = SMTP_USER;
+    $mail->Password   = SMTP_PASS;
     $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
     $mail->Port       = 465;
     $mail->CharSet    = 'UTF-8';
