@@ -640,7 +640,19 @@ function savePricelist() {
   if (errCount > 0) { alert(`🔴 ${errCount} παραβιάσεις — δεν επιτρέπεται αποθήκευση`); return; }
   const isCustom = markupData.some(r => r.markup !== globalMarkup);
   document.getElementById('modal-service-id').textContent = SERVICE_ID;
-  document.getElementById('modal-name').value = `${SERVICE_ID} — ${globalMarkup}% ${isCustom ? '⚙️' : '📌'}`;
+  const z1rows = markupData.filter(r => r.prices && r.prices[0] !== undefined);
+  let segs = []; let i = 0;
+  while (i < z1rows.length) {
+    const bp = z1rows[i].prices[0]; let j = i+1;
+    while (j < z1rows.length && z1rows[j].prices[0] === bp) j++;
+    if (i===0){segs.push(bp+"↔2");i=j;continue;}
+    const diff = Math.round((z1rows[i].prices[0]-z1rows[i-1].prices[0])*10)/10;
+    let k = i+1;
+    while (k < z1rows.length && Math.round((z1rows[k].prices[0]-z1rows[k-1].prices[0])*10)/10===diff) k++;
+    segs.push(diff+(k<z1rows.length?"↑"+z1rows[k-1].weight:"↑"));
+    i=k;
+  }
+  document.getElementById("modal-name").value = SERVICE_ID + " · " + segs.join(" | ");
   document.getElementById('modal-type').textContent =
     isCustom ? '⚙️ Custom — διαφορετικό markup ανά βάρος' : `📌 Flat — ενιαίο markup ${globalMarkup}%`;
   document.getElementById('modal-type').style.color = isCustom ? '#e65100' : '#1565c0';
