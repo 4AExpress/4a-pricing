@@ -527,7 +527,7 @@ function renderTable() {
       ? adderCosts.map(c => parseFloat((c + URL_SURCHARGE).toFixed(2)))
       : adderCosts;
     window._adderPrices = adderEffective.map(c=>parseFloat((c*(1+lastMarkup/100)).toFixed(2)));
-    const adderPrices = window._adderPrices.map(c => parseFloat((c * (1 + lastMarkup/100)).toFixed(2)));
+    const adderPrices = window._adderPrices;
 
     html += `<div style="margin-top:8px;border:1px solid #00BCD4;border-radius:4px;overflow:hidden;">
       <div style="background:#00BCD4;color:white;font-size:11px;font-weight:600;padding:4px 10px;">
