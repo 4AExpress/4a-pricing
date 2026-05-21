@@ -610,27 +610,78 @@ async function buildFinalPDF(offerNum){
   }
 }
 
-async function previewPDF(){
+function previewPDF(){
   const name=document.getElementById('cl-name').value.trim();
   if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
   if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
-  const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||'—'):'—';
-  const w=window.open('','_blank');
-  w.document.write('<html><head><title>Προσφορά '+offerNum+'</title><style>body{font-family:Arial,sans-serif;margin:10mm}h1{font-size:14px;margin:0 0 4px}h2{font-size:12px;margin:12px 0 4px;color:#c00}.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}table{border-collapse:collapse;width:100%}th,td{padding:2px 6px;font-size:10px;border-bottom:0.5px solid #eee}th{color:#888;font-weight:normal}td:first-child{color:#555}.info{font-size:11px;color:#444;margin-bottom:8px}@media print{body{margin:8mm}}</style></head><body>');
-  w.document.write('<h1>4A Express &mdash; Προσφορά '+offerNum+'</h1>');
-  w.document.write('<div class="info">'+name+' &nbsp;|&nbsp; '+document.getElementById('cl-afm').value+' &nbsp;|&nbsp; '+new Date().toLocaleDateString('el-GR')+'</div>');
-  for(const pl of selectedPls){
-    const rows=pl.rows||[];
+  const afm=document.getElementById('cl-afm').value.trim();
+  const contact=document.getElementById('cl-contact').value.trim();
+  const email=document.getElementById('cl-email').value.trim();
+  const phone=document.getElementById('cl-phone').value.trim();
+  const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+
+  let html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Προσφορά ${offerNum}</title><style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:Arial,sans-serif;font-size:11px;color:#222;background:#fff;}
+    .page{width:210mm;min-height:297mm;margin:0 auto;padding:12mm 14mm;}
+    .header{background:#cc0000;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+    .header-title{font-size:16px;font-weight:bold;letter-spacing:1px;}
+    .header-offer{font-size:11px;opacity:.85;}
+    .client-box{border:1px solid #ddd;padding:10px 14px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;background:#fafafa;}
+    .client-box .lbl{color:#888;font-size:9px;text-transform:uppercase;}
+    .client-box .val{font-weight:bold;font-size:11px;}
+    .svc-title{background:#cc0000;color:#fff;font-weight:bold;font-size:12px;padding:6px 12px;margin:14px 0 0;}
+    table{width:100%;border-collapse:collapse;margin-bottom:2px;}
+    th{background:#1a3a6e;color:#fff;font-size:9px;text-align:center;padding:5px 4px;}
+    th.wt{text-align:left;padding-left:8px;}
+    td{font-size:10px;text-align:center;padding:4px 4px;border-bottom:1px solid #e8e8e8;}
+    td.wt{text-align:left;padding-left:8px;font-weight:bold;color:#444;}
+    tr.odd{background:#fff;}
+    tr.even{background:#eef3fb;}
+    .footer{margin-top:24px;border-top:1px solid #ddd;padding-top:8px;text-align:center;font-size:9px;color:#888;}
+    @media print{.page{padding:8mm 10mm;} .no-print{display:none;}}
+  </style></head><body><div class="page">`;
+
+  html+=`<div class="header">
+    <div class="header-title">4A WORLDWIDE EXPRESS</div>
+    <div class="header-offer">ΠΡΟΣΦΟΡΑ #${offerNum} &nbsp;·&nbsp; ${todayFmt()}</div>
+  </div>`;
+
+  html+=`<div class="client-box">
+    <div><div class="lbl">Επωνυμία</div><div class="val">${name}</div></div>
+    <div><div class="lbl">ΑΦΜ</div><div class="val">${afm||'—'}</div></div>
+    <div><div class="lbl">Επαφή</div><div class="val">${contact||'—'}</div></div>
+    <div><div class="lbl">Τηλέφωνο</div><div class="val">${phone||'—'}</div></div>
+    <div><div class="lbl">Email</div><div class="val">${email||'—'}</div></div>
+  </div>`;
+
+  for(const p of selectedPls){
+    const rows=p.rows||[];
     if(!rows.length) continue;
-    const zones=Object.keys(rows[0]).filter(k=>k!=='weight' && k!=='price');
-    w.document.write('<h2>'+(pl.service_name||pl.service_id)+'</h2>');
-    const col=Math.ceil(rows.length/3);
-    const mkT=(sl)=>'<table><thead><tr><th>kg</th><th>Τιμή</th></tr></thead><tbody>'+sl.map((r,i)=>'<tr><td>'+r.weight+'</td><td style="text-align:right;">&euro;'+parseFloat(r.price).toFixed(2)+'</td></tr>').join('')+'</tbody></table>';
-    w.document.write('<div class="grid">'+[0,1,2].map(c=>mkT(rows.slice(c*col,(c+1)*col))).join('')+'</div>');
+    html+=`<div class="svc-title">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div>`;
+    html+=`<table><thead><tr>
+      <th class="wt">ΒΑΡΟΣ (kg)</th>
+      <th>ΤΙΜΗ (€)</th>
+      ${rows[0].extraKg!=null?'<th>+kg (€)</th>':''}
+    </tr></thead><tbody>`;
+    rows.forEach((r,i)=>{
+      html+=`<tr class="${i%2===0?'odd':'even'}">
+        <td class="wt">${r.weight}</td>
+        <td>${parseFloat(r.price).toFixed(2)}</td>
+        ${r.extraKg!=null?`<td>${parseFloat(r.extraKg).toFixed(2)}</td>`:''}
+      </tr>`;
+    });
+    html+=`</tbody></table>`;
   }
-  w.document.write('</body></html>');
+
+  html+=`<div class="footer">Ε.Ε.Τ.Τ. 033-99 &nbsp;·&nbsp; ΑΦΜ: 044978638</div>`;
+  html+=`</div></body></html>`;
+
+  const w=window.open('','_blank','width=900,height=700');
+  w.document.write(html);
   w.document.close();
-  setTimeout(()=>{w.focus();w.print();},400);
+  w.focus();
+  setTimeout(()=>w.print(),400);
 }
 
 async function sendOffer(){
