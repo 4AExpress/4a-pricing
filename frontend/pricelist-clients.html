@@ -614,18 +614,23 @@ async function previewPDF(){
   const name=document.getElementById('cl-name').value.trim();
   if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
   if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
-  document.getElementById('preview-btn').textContent='⏳ Παράγεται...';
-  document.getElementById('preview-btn').disabled=true;
-  try {
-    const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
-    const finalBytes = await buildFinalPDF(offerNum);
-    const blobUrl = URL.createObjectURL(new Blob([finalBytes], {type:'application/pdf'}));
-    window.open(blobUrl);
-  } catch(e){ alert('Σφάλμα: '+e.message); }
-  finally {
-    document.getElementById('preview-btn').textContent='📄 Προεπισκόπηση PDF';
-    document.getElementById('preview-btn').disabled=false;
+  const offerNum=document.getElementById('cl-offer-number')?.value||'—';
+  const w=window.open('','_blank');
+  w.document.write('<html><head><title>Προσφορά '+offerNum+'</title><style>body{font-family:Arial,sans-serif;margin:10mm}h1{font-size:14px;margin:0 0 4px}h2{font-size:12px;margin:12px 0 4px;color:#c00}.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}table{border-collapse:collapse;width:100%}th,td{padding:2px 6px;font-size:10px;border-bottom:0.5px solid #eee}th{color:#888;font-weight:normal}td:first-child{color:#555}.info{font-size:11px;color:#444;margin-bottom:8px}@media print{body{margin:8mm}}</style></head><body>');
+  w.document.write('<h1>4A Express &mdash; Προσφορά '+offerNum+'</h1>');
+  w.document.write('<div class="info">'+name+' &nbsp;|&nbsp; '+document.getElementById('cl-afm').value+' &nbsp;|&nbsp; '+new Date().toLocaleDateString('el-GR')+'</div>');
+  for(const pl of selectedPls){
+    const rows=pl.rows||[];
+    if(!rows.length) continue;
+    const zones=Object.keys(rows[0]).filter(k=>k!=='weight' && k!=='price');
+    w.document.write('<h2>'+pl.service_name+' &mdash; '+pl.service_id+'</h2>');
+    const col=Math.ceil(rows.length/3);
+    const mkT=(sl)=>'<table><thead><tr><th>kg</th><th>Τιμή</th></tr></thead><tbody>'+sl.map((r,i)=>'<tr><td>'+r.weight+'</td><td style="text-align:right;">&euro;'+parseFloat(r.price).toFixed(2)+'</td></tr>').join('')+'</tbody></table>';
+    w.document.write('<div class="grid">'+[0,1,2].map(c=>mkT(rows.slice(c*col,(c+1)*col))).join('')+'</div>');
   }
+  w.document.write('</body></html>');
+  w.document.close();
+  setTimeout(()=>{w.focus();w.print();},400);
 }
 
 async function sendOffer(){
