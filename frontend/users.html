@@ -76,6 +76,26 @@
   .empty { text-align: center; padding: 30px; color: #bbb; font-size: 13px; }
   .no-access { text-align: center; padding: 40px; color: #c62828; font-size: 14px; font-weight: 600; }
   .admin-note { font-size: 11px; color: #888; font-style: italic; margin-top: 4px; }
+
+  /* TABS */
+  .tab-bar { display:flex; gap:0; margin-bottom:20px; border-bottom:2px solid #ddd; }
+  .tab-btn { padding:9px 20px; border:none; background:none; font-size:13px; font-weight:600; color:#666; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
+  .tab-btn.active { color:#cc0000; border-bottom-color:#cc0000; }
+  .tab-btn:hover:not(.active) { background:#f8f8f8; color:#333; }
+
+  /* OFFICES */
+  .offices-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .offices-table th { background:#f5f5f5; padding:8px 10px; text-align:left; font-size:11px; font-weight:700; color:#666; text-transform:uppercase; letter-spacing:0.04em; border-bottom:2px solid #ddd; }
+  .offices-table td { padding:8px 10px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+  .offices-table tr:last-child td { border-bottom:none; }
+  .offices-table tr:hover td { background:#fafafa; }
+  .prefix-badge { padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; background:#fff3e0; color:#e65100; border:1px solid #ffcc80; font-family:monospace; }
+  .toggle { position:relative; display:inline-block; width:36px; height:20px; }
+  .toggle input { opacity:0; width:0; height:0; position:absolute; }
+  .toggle-slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#ccc; border-radius:20px; transition:.2s; }
+  .toggle-slider:before { position:absolute; content:""; height:14px; width:14px; left:3px; bottom:3px; background:white; border-radius:50%; transition:.2s; }
+  .toggle input:checked + .toggle-slider { background:#43a047; }
+  .toggle input:checked + .toggle-slider:before { transform:translateX(16px); }
 </style>
 </head>
 <body>
@@ -104,6 +124,13 @@
 </div>
 
 <div class="container">
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('users',this)">⚙️ Χρήστες</button>
+    <button class="tab-btn" onclick="showTab('offices',this)">🏢 Γραφεία</button>
+  </div>
+
+  <div id="tab-users">
 
   <div class="section-header">
     <span id="form-title">Νέος Χρήστης</span>
@@ -184,6 +211,68 @@
   <div class="section-body">
     <div id="users-list"><div class="empty">Φόρτωση...</div></div>
   </div>
+
+  </div><!-- /tab-users -->
+
+  <div id="tab-offices" style="display:none">
+
+  <div class="section-header">
+    <span id="office-form-title">Νέο Γραφείο</span>
+    <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="resetOfficeForm()">✕ Καθαρισμός</button>
+  </div>
+  <div class="section-body">
+    <div class="form-grid3">
+      <div class="form-group">
+        <label>Prefix *</label>
+        <input type="text" id="o-prefix" placeholder="ATH" maxlength="10" oninput="this.value=this.value.toUpperCase();checkOfficeForm()" />
+      </div>
+      <div class="form-group">
+        <label>Πόλη *</label>
+        <input type="text" id="o-city" placeholder="Αθήνα" oninput="checkOfficeForm()" />
+      </div>
+      <div class="form-group">
+        <label>Τηλέφωνο</label>
+        <input type="text" id="o-tel" placeholder="+30 210 0000000" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="o-email" placeholder="ath@4aexpress.com" />
+      </div>
+      <div class="form-group">
+        <label>Manager</label>
+        <input type="text" id="o-manager" placeholder="Ονοματεπώνυμο" />
+      </div>
+      <div class="form-group">
+        <label>Ενεργό</label>
+        <select id="o-active">
+          <option value="1">Ναι</option>
+          <option value="0">Όχι</option>
+        </select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="resetOfficeForm()">Ακύρωση</button>
+      <button class="btn btn-primary" id="office-save-btn" onclick="saveOffice()" disabled>💾 Αποθήκευση</button>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <span>Γραφεία (<span id="office-count">0</span>)</span>
+  </div>
+  <div class="section-body" style="padding:0;overflow-x:auto;">
+    <table class="offices-table">
+      <thead>
+        <tr>
+          <th>Prefix</th><th>Πόλη</th><th>Τηλέφωνο</th><th>Email</th><th>Manager</th><th>Ενεργό</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="offices-tbody">
+        <tr><td colspan="7" style="text-align:center;padding:24px;color:#bbb;">Φόρτωση...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  </div><!-- /tab-offices -->
 
 </div>
 
@@ -425,6 +514,114 @@ ${u.name} ${isMe?'<span style="font-size:10px;color:#888;">(εσύ)</span>':''}
       </div>
     </div>`;
   }).join('');
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-users').style.display   = name === 'users'   ? '' : 'none';
+  document.getElementById('tab-offices').style.display = name === 'offices' ? '' : 'none';
+  if (name === 'offices' && !offices.length) loadOffices();
+}
+
+// ─── OFFICES ──────────────────────────────────────────────────────────────────
+let offices = [];
+let editingOfficeId = null;
+
+async function loadOffices() {
+  try {
+    const r = await fetch(`${API}/offices.php?v=${Date.now()}`);
+    offices = await r.json();
+  } catch(e) { offices = []; }
+  document.getElementById('office-count').textContent = offices.length;
+  renderOffices();
+}
+
+function renderOffices() {
+  const tbody = document.getElementById('offices-tbody');
+  if (!offices.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#bbb;">Δεν υπάρχουν γραφεία</td></tr>';
+    return;
+  }
+  tbody.innerHTML = offices.map(o => `
+    <tr>
+      <td><span class="prefix-badge">${o.prefix}</span></td>
+      <td>${o.city}</td>
+      <td>${o.tel || '—'}</td>
+      <td>${o.email || '—'}</td>
+      <td>${o.manager || '—'}</td>
+      <td>
+        <label class="toggle" title="${parseInt(o.active) ? 'Ενεργό' : 'Ανενεργό'}">
+          <input type="checkbox" ${parseInt(o.active) ? 'checked' : ''}
+            onchange="toggleOfficeActive(${o.id}, this.checked)" />
+          <span class="toggle-slider"></span>
+        </label>
+      </td>
+      <td><button class="action-btn" onclick="editOffice(${o.id})">✏️ Edit</button></td>
+    </tr>`).join('');
+}
+
+function checkOfficeForm() {
+  const ok = document.getElementById('o-prefix').value.trim() &&
+             document.getElementById('o-city').value.trim();
+  document.getElementById('office-save-btn').disabled = !ok;
+}
+
+function resetOfficeForm() {
+  editingOfficeId = null;
+  ['o-prefix','o-city','o-tel','o-email','o-manager'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('o-active').value = '1';
+  document.getElementById('office-form-title').textContent = 'Νέο Γραφείο';
+  document.getElementById('office-save-btn').disabled = true;
+}
+
+function editOffice(id) {
+  const o = offices.find(x => x.id == id);
+  if (!o) return;
+  editingOfficeId = id;
+  document.getElementById('o-prefix').value  = o.prefix  || '';
+  document.getElementById('o-city').value    = o.city    || '';
+  document.getElementById('o-tel').value     = o.tel     || '';
+  document.getElementById('o-email').value   = o.email   || '';
+  document.getElementById('o-manager').value = o.manager || '';
+  document.getElementById('o-active').value  = parseInt(o.active) ? '1' : '0';
+  document.getElementById('office-form-title').textContent = `✏️ Επεξεργασία: ${o.city}`;
+  document.getElementById('office-save-btn').disabled = false;
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function saveOffice() {
+  const payload = {
+    action:  'save',
+    id:      editingOfficeId || null,
+    prefix:  document.getElementById('o-prefix').value.trim(),
+    city:    document.getElementById('o-city').value.trim(),
+    tel:     document.getElementById('o-tel').value.trim(),
+    email:   document.getElementById('o-email').value.trim(),
+    manager: document.getElementById('o-manager').value.trim(),
+    active:  parseInt(document.getElementById('o-active').value),
+  };
+  try {
+    const r = await fetch(`${API}/offices.php`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (d.ok) { resetOfficeForm(); loadOffices(); }
+    else { alert('Σφάλμα: ' + (d.error || 'Άγνωστο')); }
+  } catch(e) { alert('Σφάλμα σύνδεσης με API'); }
+}
+
+async function toggleOfficeActive(id, active) {
+  const o = offices.find(x => x.id == id);
+  if (!o) return;
+  await fetch(`${API}/offices.php`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ action:'save', ...o, id, active: active ? 1 : 0 })
+  });
+  loadOffices();
 }
 
 function doLogout() { window.location.href = 'pricelist-editor.html'; }
