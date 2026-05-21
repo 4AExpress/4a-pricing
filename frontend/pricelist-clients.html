@@ -424,7 +424,7 @@ function addPl(svcId,plId){
   selectedPls.push({...item,service_id:svcId});
   renderPlTags(); showPlModal();
 }
-function removePl(plId){ selectedPls=selectedPls.filter(p=>p.id!==plId); renderPlTags(); showPlModal(); }
+function removePl(plId){ selectedPls=selectedPls.filter(p=>p.id!=plId); renderPlTags(); showPlModal(); }
 function renderPlTags(){
   document.getElementById('pl-tags').innerHTML=
     selectedPls.map(p=>{
