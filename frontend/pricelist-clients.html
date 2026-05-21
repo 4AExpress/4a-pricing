@@ -785,7 +785,12 @@ async function previewPDF(){
   .pl-3col .pt th{font-size:8.5px;padding:4px 7px;}
   .pl-3col .pt td{font-size:10px;padding:3px 7px;}
   .pl-footnote{font-size:8.5px;color:#888;margin-top:5px;padding-top:4px;border-top:1px solid #f0f0f0;font-style:italic;}
-  @media print{body{margin:0;} .page{margin:0;padding:8mm 12mm 11mm;} @page{margin:0;size:A4;}}`;
+  /* landscape + zone tables */
+  .page.land{width:297mm;min-height:210mm;}
+  .pt-zone th{font-size:8px;padding:3px 4px;}
+  .pt-zone td{font-size:8px;padding:2px 3px;}
+  @page land{size:A4 landscape;margin:0;}
+  @media print{body{margin:0;} .page{margin:0;padding:8mm 12mm 11mm;} .page.land{page:land;} @page{margin:0;size:A4;}}`;
 
   // ── PAGE 1: COVER ──────────────────────────────────────────────
   let html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Προσφορά ${offerNum}</title><style>${CSS}</style></head><body>`;
@@ -895,30 +900,78 @@ async function previewPDF(){
   }
 
   // ── PAGES 5+: PER-PRICELIST ────────────────────────────────────
+  let dhlAll=null;
+  try{dhlAll=JSON.parse(localStorage.getItem('dhl_all')||'null');}catch(e){}
+  if(!dhlAll){
+    try{
+      const arr=await Promise.all(['S1003','S1012','S1010','S1041'].map(s=>
+        fetch(`https://raw.githubusercontent.com/4AExpress/4a-pricing/main/dhl_tariff_2026_${s}.json`)
+        .then(r=>r.json()).then(d=>({[s]:d.entries}))));
+      dhlAll=Object.assign({},...arr);
+      localStorage.setItem('dhl_all',JSON.stringify(dhlAll));
+    }catch(e){}
+  }
+  const _DHL_ALIAS={S1003_GR:'S1003',S1012_GR:'S1012',S1003_CY:'S1003',S1012_CY:'S1012',S1050:'S1003',S1051:'S1012'};
+  const _ZN={S1003:7,S1012:7,S1003_CY:7,S1012_CY:7,S1050:7,S1051:7,S1010:3,S1041:3,S1003_GR:1,S1012_GR:1};
+  const _ZHC=['','#2e7d32','#1565c0','#f57f17','#c62828','#6a1b9a','#00838f','#555'];
   let plPg=5;
   for(const p of selectedPls){
     const rows=p.rows||[];
     if(!rows.length) continue;
     const isAir=p.service_id.includes('S1003')||p.service_id.includes('S1012');
     const fcVal=p.fc?(p.fc+'%'):(isAir?fuelAir:fuelRoad);
-    let xkg=null;
-    if(rows.length>=2){
+    const zcount=_ZN[p.service_id]||1;
+    const dhlKey=_DHL_ALIAS[p.service_id]||p.service_id;
+    const dhlEnt=(dhlAll&&dhlAll[dhlKey])||[];
+    // Build per-weight zone price table from DHL costs + derived markup
+    const ztable=[];
+    if(zcount>1&&dhlEnt.length>0){
+      const dm={};
+      dhlEnt.forEach(e=>{const w=parseFloat(e.weight_kg),z=parseInt(e.zone_code.replace('z',''));if(!dm[w])dm[w]={};dm[w][z]=parseFloat(e.cost);});
+      rows.forEach(r=>{
+        const w=parseFloat(r.weight),sp=parseFloat(r.price),z1c=dm[w]?.[1];
+        if(!z1c)return;
+        const mk=(sp/z1c-1)*100;
+        const zp=[];
+        for(let z=1;z<=zcount;z++){const c=dm[w]?.[z];zp.push(c!=null?parseFloat((c*(1+mk/100)).toFixed(2)):null);}
+        ztable.push({w,zp});
+      });
+    }
+    // Extra weight row (+N kg)
+    let xkgLbl='+1 kg',xkgZP=null;
+    if(zcount>1&&ztable.length>=2){
+      const dw=ztable[ztable.length-1].w-ztable[ztable.length-2].w;
+      if(dw>0){
+        xkgLbl=`+${dw} kg`;
+        const lz=ztable[ztable.length-1].zp,pz=ztable[ztable.length-2].zp;
+        xkgZP=lz.map((v,i)=>v!=null&&pz[i]!=null?parseFloat(((v-pz[i])/dw).toFixed(2)):null);
+      }
+    } else if(zcount===1&&rows.length>=2){
       const dw=parseFloat(rows[rows.length-1].weight)-parseFloat(rows[rows.length-2].weight);
       const dp=parseFloat(rows[rows.length-1].price)-parseFloat(rows[rows.length-2].price);
-      if(dw>0) xkg=(dp/dw).toFixed(2);
+      if(dw>0){xkgLbl=`+${dw} kg`;xkgZP=[parseFloat((dp/dw).toFixed(2))];}
     }
-    const cs3=Math.ceil(rows.length/3);
-    const rg=[rows.slice(0,cs3),rows.slice(cs3,cs3*2),rows.slice(cs3*2)];
-    html+=`<div class="page">
-    ${H(offerNum)}
-    <div class="plhdr">
-      <div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div>
-      <div class="pls">Επίναυλος Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div>
-    </div>
-    <div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>€</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€ ${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkg!=null?`<tr class="xr"><td class="wt">+1 kg</td><td>€ ${xkg}</td></tr>`:''}</tbody></table>`).join('')}</div>
-    <div class="pl-footnote">* Τιμές εκτός ΦΠΑ 24% και επίναυλο καυσίμων</div>
-    ${F(String(plPg++))}
-    </div>`;
+    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div><div class="pls">Επίναυλος Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div></div>`;
+    const plFtr=`<div class="pl-footnote">* Τιμές εκτός ΦΠΑ 24% και επίναυλο καυσίμων</div>${F(String(plPg++))}`;
+    if(zcount===7&&ztable.length>0){
+      // LANDSCAPE: ΒΑΡΟΣ + Z1–Z7
+      const thz=Array.from({length:7},(_,i)=>`<th style="background:${_ZHC[i+1]}">Z${i+1}</th>`).join('');
+      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`).join('');
+      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`:'';
+      html+=`<div class="page land">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">ΒΑΡΟΣ kg</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
+    } else if(zcount===3&&ztable.length>0){
+      // PORTRAIT: ΒΑΡΟΣ + Z1–Z3
+      const thz=Array.from({length:3},(_,i)=>`<th style="background:${_ZHC[i+1]}">Z${i+1}</th>`).join('');
+      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`).join('');
+      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`:'';
+      html+=`<div class="page">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">ΒΑΡΟΣ (kg)</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
+    } else {
+      // 1-ZONE: 3-column grid (S1003_GR etc.)
+      const xkgV=xkgZP?xkgZP[0]:null;
+      const cs3=Math.ceil(rows.length/3);
+      const rg=[rows.slice(0,cs3),rows.slice(cs3,cs3*2),rows.slice(cs3*2)];
+      html+=`<div class="page">${plHdr}<div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>€</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkgV!=null?`<tr class="xr"><td class="wt">${xkgLbl}</td><td>€${xkgV.toFixed(2)}</td></tr>`:''}</tbody></table>`).join('')}</div>${plFtr}</div>`;
+    }
   }
 
   // ── TERMS PAGE ─────────────────────────────────────────────────
