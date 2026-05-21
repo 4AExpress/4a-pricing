@@ -526,7 +526,7 @@ function renderTable() {
     const adderEffective = IS_COMBI_SVC
       ? adderCosts.map(c => parseFloat((c + URL_SURCHARGE).toFixed(2)))
       : adderCosts;
-    window._adderPrices = adderEffective.map(c=>parseFloat((c*(1+lastMarkup/100)).toFixed(2)));
+    const lastTwo=markupData.slice(-2); const lastDiff=lastTwo.length===2?parseFloat((lastTwo[1].prices[0]-lastTwo[0].prices[0]).toFixed(2)):0; window._adderPrices=[lastDiff];
     const adderPrices = window._adderPrices;
 
     html += `<div style="margin-top:8px;border:1px solid #00BCD4;border-radius:4px;overflow:hidden;">
