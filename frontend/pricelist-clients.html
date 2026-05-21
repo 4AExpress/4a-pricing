@@ -645,12 +645,9 @@ async function previewPDF(){
     zonesData=zd;
   } catch(e){}
 
-  const OFFICES=[
-    {city:'Αθήνα',    addr:'Βελεστίνου 7, 11523, Αθήνα',         tel:'+30 210 9966661', email:'sales@4aexpress.com'},
-    {city:'Λευκωσία', addr:'Αθαλάσσης 107, Λευκωσία, Κύπρος',    tel:'+357 22 953311',  email:'4aexpress@cytanet.com.cy'},
-    {city:'Λεμεσός',  addr:'Spyrou Kyprianou Ave 20, Λεμεσός',    tel:'+357 25590500',   email:'qli1@4aexpress.com'},
-    {city:'Λάρνακα',  addr:'Αρχιεπ. Κυπριανού 58, Λάρνακα',      tel:'+357 24 424280',  email:'4aexpress@cytanet.com.cy'},
-  ];
+  let officesFromAPI=[];
+  try { officesFromAPI=await fetch(`${API}/offices.php?v=${Date.now()}`).then(r=>r.json()); } catch(e){}
+  const OFFICES=officesFromAPI.filter(o=>parseInt(o.active));
   const ZONES=[
     {z:'Z1',name:'ΕΕ Δυτ.',   desc:'Γερμανία, Γαλλία, Βέλγιο, Ολλανδία, Λουξεμβούργο, Δανία',            svcs:'Όλες'},
     {z:'Z2',name:'Ευρώπη',    desc:'Αυστρία, Ελβετία, Τσεχία, Ουγγαρία, Ρουμανία, Βουλγαρία, Σλοβακία',  svcs:'Όλες'},
@@ -661,18 +658,13 @@ async function previewPDF(){
     {z:'Z7',name:'Υπόλοιπος', desc:'Υπόλοιπες χώρες που δεν ανήκουν σε Z1–Z6',                             svcs:'AIR μόνο'},
     {z:'Z9',name:'Κύπρος',    desc:'Κύπρος — μόνο αεροπορικά μέσω S1003 / S1012',                          svcs:'S1003, S1012'},
   ];
-  const OFFICE_MAP={
-    'ATH':{city:'Αθήνα',    addr:'Βελεστίνου 7, 11523, Αθήνα',         tel:'+30 210 9966661', email:'sales@4aexpress.com'},
-    'NIC':{city:'Λευκωσία', addr:'Αθαλάσσης 107, Λευκωσία, Κύπρος',    tel:'+357 22 953311',  email:'4aexpress@cytanet.com.cy'},
-    'QLI':{city:'Λεμεσός',  addr:'Spyrou Kyprianou Ave 20, Λεμεσός',    tel:'+357 25590500',   email:'qli1@4aexpress.com'},
-    'LCA':{city:'Λάρνακα',  addr:'Αρχιεπ. Κυπριανού 58, Λάρνακα',      tel:'+357 24 424280',  email:'4aexpress@cytanet.com.cy'},
-  };
+  const OFFICE_MAP=Object.fromEntries(officesFromAPI.map(o=>[o.prefix,o]));
   const officeCode=((currentUser?.stations||currentUser?.office||'ATH').split(',')[0]).trim().toUpperCase();
-  const issuerOffice=OFFICE_MAP[officeCode]||OFFICE_MAP['ATH'];
+  const issuerOffice=OFFICE_MAP[officeCode]||OFFICE_MAP['ATH']||{};
   const issuerName=currentUser?.name||'—';
 
   const H=(num)=>`<div class="ph"><div class="ph-l"><span class="lb">4A</span><span class="lt">WORLDWIDE<br>EXPRESS</span></div><div class="ph-r">${num}</div></div>`;
-  const F=(pg)=>`<div class="pf"><span>Ε.Ε.Τ.Τ. 033-99 &nbsp;·&nbsp; ΑΦΜ: 044978638 &nbsp;·&nbsp; www.4aexpress.com</span><span>σελ. ${pg}</span></div>`;
+  const F=(pg)=>`<div class="pf"><span>Ε.Ε.Τ.Τ. 033-99 &nbsp;·&nbsp; ΑΦΜ: ${issuerOffice.vat||'044978638'} &nbsp;·&nbsp; www.4aexpress.com</span><span>σελ. ${pg}</span></div>`;
   const S=(t)=>`<div class="st">${t}</div>`;
 
   let pg=2;
@@ -847,7 +839,7 @@ async function previewPDF(){
     </div>`).join('')}
   </div>
   <div style="margin-top:14px;font-size:9.5px;color:#555;line-height:1.65;">
-    <p>Η <strong>4A Express Worldwide</strong> παρέχει ολοκληρωμένες υπηρεσίες courier &amp; logistics σε Ελλάδα και Κύπρο από το 1999.</p>
+    <p>Η <strong>${issuerOffice.company||'4A Express Worldwide'}</strong> παρέχει ολοκληρωμένες υπηρεσίες courier &amp; logistics σε Ελλάδα και Κύπρο από το 1999.</p>
     <p style="margin-top:5px;">Για θέματα αποστολών και tracking, επικοινωνήστε με το γραφείο της περιοχής σας ή επισκεφθείτε <strong>www.4aexpress.com</strong>.</p>
   </div>
   ${F('2')}
@@ -1009,7 +1001,7 @@ async function previewPDF(){
   ${H(offerNum)}
   ${S('ΣΥΜΒΑΣΗ & ΑΠΟΔΟΧΗ ΠΡΟΣΦΟΡΑΣ')}
   <div class="cbody">
-    <p>Με την υπογραφή του παρόντος, η εταιρεία <strong>${name}</strong> (ΑΦΜ: ${afm||'—'}) αποδέχεται πλήρως τους όρους και τις τιμές της προσφοράς αριθμ. <strong>${offerNum}</strong> της <strong>4A Express Worldwide</strong>.</p>
+    <p>Με την υπογραφή του παρόντος, η εταιρεία <strong>${name}</strong> (ΑΦΜ: ${afm||'—'}) αποδέχεται πλήρως τους όρους και τις τιμές της προσφοράς αριθμ. <strong>${offerNum}</strong> της <strong>${issuerOffice.company||'4A Express Worldwide'}</strong>.</p>
     <p>Η αποδοχή συνεπάγεται δέσμευση ως προς τον τρόπο πληρωμής (${payDays} ημέρες), τη συχνότητα τιμολόγησης (${invoiceLbl}) και τους γενικούς όρους συνεργασίας της 4A Express.</p>
     <p>Οι τιμές ισχύουν για <strong>${validDays} ημέρες</strong> από ${today} και λήγουν στις <strong>${validUntil}</strong>. Ο επίναυλος καυσίμου αναθεωρείται εβδομαδιαία βάσει διεθνών δεικτών και δεν αποτελεί μέρος της σταθερής τιμής.</p>
     <p>Υπηρεσίες που καλύπτει η παρούσα προσφορά:</p>
@@ -1017,7 +1009,7 @@ async function previewPDF(){
   </div>
   <div class="sigrid">
     <div class="sigbox">
-      <div class="siglbl">Για λογαριασμό της <strong>4A Express Worldwide</strong></div>
+      <div class="siglbl">Για λογαριασμό της <strong>${issuerOffice.company||'4A Express Worldwide'}</strong></div>
       <div class="sigval">${currentUser?.name||'—'} &nbsp;·&nbsp; ${currentUser?.office||'—'}<br><span style="color:#bbb;">${today}</span></div>
     </div>
     <div class="sigbox">

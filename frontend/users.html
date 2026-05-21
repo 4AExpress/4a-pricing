@@ -249,6 +249,18 @@
           <option value="0">Όχι</option>
         </select>
       </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Διεύθυνση</label>
+        <input type="text" id="o-addr" placeholder="Βελεστίνου 7, 11523, Αθήνα" />
+      </div>
+      <div class="form-group">
+        <label>Εταιρεία (για PDF)</label>
+        <input type="text" id="o-company" placeholder="4A Express Worldwide" />
+      </div>
+      <div class="form-group">
+        <label>ΑΦΜ (για PDF)</label>
+        <input type="text" id="o-vat" placeholder="044978638" />
+      </div>
     </div>
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="resetOfficeForm()">Ακύρωση</button>
@@ -569,7 +581,7 @@ function checkOfficeForm() {
 
 function resetOfficeForm() {
   editingOfficeId = null;
-  ['o-prefix','o-city','o-tel','o-email','o-manager'].forEach(id => document.getElementById(id).value = '');
+  ['o-prefix','o-city','o-tel','o-email','o-manager','o-addr','o-company','o-vat'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('o-active').value = '1';
   document.getElementById('office-form-title').textContent = 'Νέο Γραφείο';
   document.getElementById('office-save-btn').disabled = true;
@@ -584,6 +596,9 @@ function editOffice(id) {
   document.getElementById('o-tel').value     = o.tel     || '';
   document.getElementById('o-email').value   = o.email   || '';
   document.getElementById('o-manager').value = o.manager || '';
+  document.getElementById('o-addr').value    = o.addr    || '';
+  document.getElementById('o-company').value = o.company || '';
+  document.getElementById('o-vat').value     = o.vat     || '';
   document.getElementById('o-active').value  = parseInt(o.active) ? '1' : '0';
   document.getElementById('office-form-title').textContent = `✏️ Επεξεργασία: ${o.city}`;
   document.getElementById('office-save-btn').disabled = false;
@@ -599,6 +614,9 @@ async function saveOffice() {
     tel:     document.getElementById('o-tel').value.trim(),
     email:   document.getElementById('o-email').value.trim(),
     manager: document.getElementById('o-manager').value.trim(),
+    addr:    document.getElementById('o-addr').value.trim(),
+    company: document.getElementById('o-company').value.trim(),
+    vat:     document.getElementById('o-vat').value.trim(),
     active:  parseInt(document.getElementById('o-active').value),
   };
   try {
