@@ -610,78 +610,337 @@ async function buildFinalPDF(offerNum){
   }
 }
 
-function previewPDF(){
+async function previewPDF(){
   const name=document.getElementById('cl-name').value.trim();
   if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
   if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
-  const afm=document.getElementById('cl-afm').value.trim();
-  const contact=document.getElementById('cl-contact').value.trim();
-  const email=document.getElementById('cl-email').value.trim();
-  const phone=document.getElementById('cl-phone').value.trim();
-  const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
 
-  let html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Προσφορά ${offerNum}</title><style>
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{font-family:Arial,sans-serif;font-size:11px;color:#222;background:#fff;}
-    .page{width:210mm;min-height:297mm;margin:0 auto;padding:12mm 14mm;}
-    .header{background:#cc0000;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
-    .header-title{font-size:16px;font-weight:bold;letter-spacing:1px;}
-    .header-offer{font-size:11px;opacity:.85;}
-    .client-box{border:1px solid #ddd;padding:10px 14px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;background:#fafafa;}
-    .client-box .lbl{color:#888;font-size:9px;text-transform:uppercase;}
-    .client-box .val{font-weight:bold;font-size:11px;}
-    .svc-title{background:#cc0000;color:#fff;font-weight:bold;font-size:12px;padding:6px 12px;margin:14px 0 0;}
-    table{width:100%;border-collapse:collapse;margin-bottom:2px;}
-    th{background:#1a3a6e;color:#fff;font-size:9px;text-align:center;padding:5px 4px;}
-    th.wt{text-align:left;padding-left:8px;}
-    td{font-size:10px;text-align:center;padding:4px 4px;border-bottom:1px solid #e8e8e8;}
-    td.wt{text-align:left;padding-left:8px;font-weight:bold;color:#444;}
-    tr.odd{background:#fff;}
-    tr.even{background:#eef3fb;}
-    .footer{margin-top:24px;border-top:1px solid #ddd;padding-top:8px;text-align:center;font-size:9px;color:#888;}
-    @media print{.page{padding:8mm 10mm;} .no-print{display:none;}}
-  </style></head><body><div class="page">`;
+  const afm        = document.getElementById('cl-afm').value.trim();
+  const contact    = document.getElementById('cl-contact').value.trim();
+  const phone      = document.getElementById('cl-phone').value.trim();
+  const email      = document.getElementById('cl-email').value.trim();
+  const website    = document.getElementById('cl-website').value.trim();
+  const payDays    = document.getElementById('cl-payment').value;
+  const invoiceMode= document.getElementById('cl-invoice').value;
+  const validDays  = parseInt(document.getElementById('cl-validity').value)||30;
+  const offerNum   = editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+  const today      = todayFmt();
+  const dd=new Date(); dd.setDate(dd.getDate()+validDays);
+  const validUntil = formatDate(dd.toISOString());
+  const invoiceLbl = invoiceMode==='weekly'?'Εβδομαδιαία':'Μηνιαία';
 
-  html+=`<div class="header">
-    <div class="header-title">4A WORLDWIDE EXPRESS</div>
-    <div class="header-offer">ΠΡΟΣΦΟΡΑ #${offerNum} &nbsp;·&nbsp; ${todayFmt()}</div>
+  let fuelAir='—', fuelRoad='—', fuelWeek='';
+  try {
+    let fd=JSON.parse(localStorage.getItem('4a_fuel_cache')||'null');
+    if(!fd){ fd=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json()); localStorage.setItem('4a_fuel_cache',JSON.stringify(fd)); }
+    const ca=(fd.air||[]).find(x=>x.is_current), cr=(fd.road||[]).find(x=>x.is_current);
+    if(ca){ fuelAir=ca.pct+'%'; fuelWeek=ca.week||''; }
+    if(cr)  fuelRoad=cr.pct+'%';
+  } catch(e){}
+
+  const OFFICES=[
+    {city:'Αθήνα',    addr:'Βελεστίνου 7, 11523, Αθήνα',         tel:'+30 210 9966661', email:'sales@4aexpress.com'},
+    {city:'Λευκωσία', addr:'Αθαλάσσης 107, Λευκωσία, Κύπρος',    tel:'+357 22 953311',  email:'4aexpress@cytanet.com.cy'},
+    {city:'Λεμεσός',  addr:'Spyrou Kyprianou Ave 20, Λεμεσός',    tel:'+357 25590500',   email:'qli1@4aexpress.com'},
+    {city:'Λάρνακα',  addr:'Αρχιεπ. Κυπριανού 58, Λάρνακα',      tel:'+357 24 424280',  email:'4aexpress@cytanet.com.cy'},
+  ];
+  const ZONES=[
+    {z:'Z1',name:'ΕΕ Δυτ.',   desc:'Γερμανία, Γαλλία, Βέλγιο, Ολλανδία, Λουξεμβούργο, Δανία',            svcs:'Όλες'},
+    {z:'Z2',name:'Ευρώπη',    desc:'Αυστρία, Ελβετία, Τσεχία, Ουγγαρία, Ρουμανία, Βουλγαρία, Σλοβακία',  svcs:'Όλες'},
+    {z:'Z3',name:'ΕΕ Περιφ.', desc:'Πορτογαλία, Ισπανία, Σουηδία, Φινλανδία, Νορβηγία, Ιρλανδία, Πολωνία',svcs:'Όλες'},
+    {z:'Z4',name:'Αμερική',   desc:'ΗΠΑ, Καναδάς, Μεξικό, Βραζιλία, Αργεντινή, Λατινική Αμερική',         svcs:'AIR μόνο'},
+    {z:'Z5',name:'ΜΑ / Αφρ.', desc:'ΗΑΕ, Σαουδική Αραβία, Ισραήλ, Τουρκία, Αίγυπτος, Νότια Αφρική',      svcs:'AIR μόνο'},
+    {z:'Z6',name:'Ασία / Ωκ.',desc:'Κίνα, Ιαπωνία, Νότια Κορέα, Ινδία, Αυστραλία, Νέα Ζηλανδία',          svcs:'AIR μόνο'},
+    {z:'Z7',name:'Υπόλοιπος', desc:'Υπόλοιπες χώρες που δεν ανήκουν σε Z1–Z6',                             svcs:'AIR μόνο'},
+    {z:'Z9',name:'Κύπρος',    desc:'Κύπρος — μόνο αεροπορικά μέσω S1003 / S1012',                          svcs:'S1003, S1012'},
+  ];
+
+  const H=(num)=>`<div class="ph"><div class="ph-l"><span class="lb">4A</span><span class="lt">WORLDWIDE<br>EXPRESS</span></div><div class="ph-r">${num}</div></div>`;
+  const F=(pg)=>`<div class="pf"><span>Ε.Ε.Τ.Τ. 033-99 &nbsp;·&nbsp; ΑΦΜ: 044978638 &nbsp;·&nbsp; www.4aexpress.com</span><span>σελ. ${pg}</span></div>`;
+  const S=(t)=>`<div class="st">${t}</div>`;
+
+  let pg=2;
+  const toc=[];
+  toc.push({pg:pg++,t:'Δίκτυο Γραφείων 4A Express'});
+  toc.push({pg:pg++,t:'Πώς Λειτουργεί ο Τιμοκατάλογος & Tracking'});
+  toc.push({pg:pg++,t:'Ζώνες Χωρών'});
+  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''}`});
+  toc.push({pg:pg++,t:'Όροι, Επίναυλος & Χρεώσεις'});
+  toc.push({pg:pg,  t:'Σύμβαση & Αποδοχή Προσφοράς'});
+
+  const CSS=`
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:10.5px;color:#1a1a1a;background:#fff;}
+  .page{width:210mm;min-height:297mm;margin:0 auto;padding:10mm 14mm 13mm;position:relative;page-break-after:always;}
+  .page.last{page-break-after:auto;}
+  .ph{background:#cc0000;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:7px 14px;margin-bottom:10px;}
+  .ph-l{display:flex;align-items:center;gap:8px;}
+  .lb{background:#fff;color:#cc0000;font-size:14px;font-weight:900;padding:2px 7px;border-radius:2px;letter-spacing:-1px;}
+  .lt{font-size:9px;font-weight:700;line-height:1.3;letter-spacing:.5px;}
+  .ph-r{font-size:10px;font-weight:600;opacity:.9;}
+  .pf{display:flex;justify-content:space-between;font-size:8px;color:#aaa;border-top:1px solid #e0e0e0;padding-top:5px;margin-top:12px;}
+  .st{background:#cc0000;color:#fff;font-size:10.5px;font-weight:700;padding:5px 12px;margin:10px 0 7px;letter-spacing:.3px;}
+  /* cover */
+  .hero{background:#990000;color:#fff;text-align:center;padding:16px 0 12px;margin-bottom:10px;}
+  .hero h1{font-size:28px;font-weight:900;letter-spacing:3px;margin-bottom:3px;}
+  .hero h2{font-size:12px;font-weight:400;opacity:.8;letter-spacing:1px;}
+  .meta-bar{display:flex;border:1px solid #ddd;margin-bottom:12px;}
+  .meta-item{flex:1;padding:7px 12px;border-right:1px solid #ddd;}
+  .meta-item:last-child{border-right:none;}
+  .cgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#e0e0e0;border:1px solid #e0e0e0;margin-bottom:12px;}
+  .cc{background:#fff;padding:7px 12px;}
+  .lbl{font-size:8px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+  .val{font-size:11px;font-weight:600;color:#222;}
+  .toc-t{width:100%;border-collapse:collapse;}
+  .toc-t th{background:#1a3a6e;color:#fff;font-size:9px;padding:5px 10px;text-align:left;}
+  .toc-t td{padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:10px;}
+  .toc-t tr:nth-child(even) td{background:#f8f9fb;}
+  .tpg{text-align:center;font-weight:700;color:#cc0000;width:42px;}
+  /* offices */
+  .ogrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+  .ocard{border:1px solid #e0e0e0;border-top:3px solid #cc0000;padding:10px 12px;}
+  .ocity{font-size:13px;font-weight:700;color:#cc0000;margin-bottom:5px;}
+  .oline{font-size:10px;color:#444;margin-bottom:3px;}
+  /* how */
+  .steps{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+  .step{display:flex;gap:10px;padding:8px;border:1px solid #eee;}
+  .sn{background:#cc0000;color:#fff;font-size:12px;font-weight:900;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .sb h4{font-size:10.5px;font-weight:700;margin-bottom:2px;}
+  .sb p{font-size:9.5px;color:#555;line-height:1.4;}
+  .igrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .icard{background:#f8f8f8;border:1px solid #e8e8e8;padding:8px 10px;}
+  .icard h4{font-size:10px;font-weight:700;color:#1a3a6e;margin-bottom:4px;}
+  .icard p{font-size:9px;color:#555;line-height:1.5;}
+  /* zones */
+  .zt{width:100%;border-collapse:collapse;}
+  .zt th{background:#1a3a6e;color:#fff;font-size:9px;padding:5px 10px;text-align:left;}
+  .zt td{padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:10px;}
+  .zt tr:nth-child(even) td{background:#f8f9fb;}
+  .zbadge{display:inline-block;background:#cc0000;color:#fff;font-size:9px;font-weight:700;padding:1px 7px;border-radius:10px;}
+  .znote{background:#fff8e1;border:1px solid #f0c040;padding:8px 12px;margin-top:9px;font-size:9.5px;color:#7c6d00;}
+  /* pricelist */
+  .plhdr{background:#cc0000;color:#fff;padding:8px 14px;margin-bottom:0;}
+  .plt{font-size:13px;font-weight:700;}
+  .pls{font-size:9px;opacity:.85;margin-top:2px;}
+  .pt{width:100%;border-collapse:collapse;}
+  .pt th{background:#1a3a6e;color:#fff;font-size:9px;padding:5px 10px;text-align:center;}
+  .pt th.wt{text-align:left;}
+  .pt td{font-size:10.5px;padding:4px 10px;border-bottom:1px solid #eeeff2;text-align:center;}
+  .pt td.wt{text-align:left;font-weight:600;color:#333;}
+  .pt tr:nth-child(odd) td{background:#fff;}
+  .pt tr:nth-child(even) td{background:#eef3fb;}
+  .pt tr.xr td{background:#fff3cd!important;font-weight:600;color:#7c6d00;}
+  .fcnote{font-size:9px;color:#888;margin-top:6px;padding-top:4px;border-top:1px solid #f0f0f0;}
+  /* terms */
+  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .tbox{border:1px solid #e0e0e0;padding:9px 12px;}
+  .tbox h4{font-size:10px;font-weight:700;color:#1a3a6e;margin-bottom:5px;border-bottom:1px solid #eee;padding-bottom:3px;}
+  .tbox li,.tbox p{font-size:9.5px;color:#444;line-height:1.55;}
+  .tbox ul{padding-left:14px;}
+  .fct{width:100%;border-collapse:collapse;margin-bottom:10px;}
+  .fct th{background:#1a3a6e;color:#fff;font-size:9px;padding:4px 10px;text-align:left;}
+  .fct td{padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:10px;}
+  .surt{width:100%;border-collapse:collapse;margin-top:7px;}
+  .surt th{background:#555;color:#fff;font-size:9px;padding:4px 10px;text-align:left;}
+  .surt td{padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:10px;}
+  /* contract */
+  .cbody{font-size:10px;line-height:1.75;color:#333;}
+  .cbody p{margin-bottom:8px;}
+  .cbody ul{padding-left:18px;margin-bottom:10px;}
+  .sigrid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:28px;}
+  .sigbox{border-top:1px solid #333;padding-top:6px;}
+  .siglbl{font-size:9px;color:#888;margin-bottom:26px;}
+  .sigval{font-size:9.5px;color:#555;}
+  @media print{body{margin:0;} .page{margin:0;padding:8mm 12mm 11mm;} @page{margin:0;size:A4;}}`;
+
+  // ── PAGE 1: COVER ──────────────────────────────────────────────
+  let html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Προσφορά ${offerNum}</title><style>${CSS}</style></head><body>`;
+
+  html+=`<div class="page">
+  ${H(offerNum)}
+  <div class="hero"><h1>ΠΡΟΣΦΟΡΑ</h1><h2>OFFER &nbsp;·&nbsp; ${offerNum}</h2></div>
+  <div class="meta-bar">
+    <div class="meta-item"><div class="lbl">Ημερομηνία</div><div class="val">${today}</div></div>
+    <div class="meta-item"><div class="lbl">Ισχύς έως</div><div class="val">${validUntil}</div></div>
+    <div class="meta-item"><div class="lbl">Πληρωμή</div><div class="val">${payDays} ημέρες</div></div>
+    <div class="meta-item"><div class="lbl">Τιμολόγηση</div><div class="val">${invoiceLbl}</div></div>
+  </div>
+  ${S('ΣΤΟΙΧΕΙΑ ΠΕΛΑΤΗ')}
+  <div class="cgrid">
+    <div class="cc"><div class="lbl">Επωνυμία</div><div class="val">${name}</div></div>
+    <div class="cc"><div class="lbl">ΑΦΜ</div><div class="val">${afm||'—'}</div></div>
+    <div class="cc"><div class="lbl">Υπεύθυνος</div><div class="val">${contact||'—'}</div></div>
+    <div class="cc"><div class="lbl">Τηλέφωνο</div><div class="val">${phone||'—'}</div></div>
+    <div class="cc"><div class="lbl">Email</div><div class="val">${email||'—'}</div></div>
+    <div class="cc"><div class="lbl">Website</div><div class="val">${website||'—'}</div></div>
+  </div>
+  ${S('ΠΕΡΙΕΧΟΜΕΝΑ ΠΡΟΣΦΟΡΑΣ')}
+  <table class="toc-t">
+    <thead><tr><th class="tpg">Σελ.</th><th>Ενότητα</th></tr></thead>
+    <tbody>${toc.map(r=>`<tr><td class="tpg">${r.pg}</td><td>${r.t}</td></tr>`).join('')}</tbody>
+  </table>
+  ${F('1')}
   </div>`;
 
-  html+=`<div class="client-box">
-    <div><div class="lbl">Επωνυμία</div><div class="val">${name}</div></div>
-    <div><div class="lbl">ΑΦΜ</div><div class="val">${afm||'—'}</div></div>
-    <div><div class="lbl">Επαφή</div><div class="val">${contact||'—'}</div></div>
-    <div><div class="lbl">Τηλέφωνο</div><div class="val">${phone||'—'}</div></div>
-    <div><div class="lbl">Email</div><div class="val">${email||'—'}</div></div>
+  // ── PAGE 2: OFFICES ────────────────────────────────────────────
+  html+=`<div class="page">
+  ${H(offerNum)}
+  ${S('ΔΙΚΤΥΟ ΓΡΑΦΕΙΩΝ 4A EXPRESS')}
+  <div class="ogrid">
+    ${OFFICES.map(o=>`<div class="ocard">
+      <div class="ocity">${o.city}</div>
+      <div class="oline"><strong>Διεύθυνση:</strong> ${o.addr}</div>
+      <div class="oline"><strong>Τηλέφωνο:</strong> ${o.tel}</div>
+      <div class="oline"><strong>Email:</strong> ${o.email}</div>
+    </div>`).join('')}
+  </div>
+  <div style="margin-top:14px;font-size:9.5px;color:#555;line-height:1.65;">
+    <p>Η <strong>4A Express Worldwide</strong> παρέχει ολοκληρωμένες υπηρεσίες courier &amp; logistics σε Ελλάδα και Κύπρο από το 1999.</p>
+    <p style="margin-top:5px;">Για θέματα αποστολών και tracking, επικοινωνήστε με το γραφείο της περιοχής σας ή επισκεφθείτε <strong>www.4aexpress.com</strong>.</p>
+  </div>
+  ${F('2')}
   </div>`;
 
+  // ── PAGE 3: HOW IT WORKS + TRACKING ───────────────────────────
+  html+=`<div class="page">
+  ${H(offerNum)}
+  ${S('ΠΩΣ ΛΕΙΤΟΥΡΓΕΙ Ο ΤΙΜΟΚΑΤΑΛΟΓΟΣ')}
+  <div class="steps">
+    <div class="step"><div class="sn">1</div><div class="sb"><h4>Βρείτε τον Προορισμό</h4><p>Ανατρέξτε στον Κατάλογο Ζωνών. Κάθε χώρα αντιστοιχεί σε ζώνη Z1–Z7 (AIR) ή Z1–Z3 (ROAD).</p></div></div>
+    <div class="step"><div class="sn">2</div><div class="sb"><h4>Μετρήστε το Βάρος</h4><p>Χρησιμοποιείτε το μεγαλύτερο από: πραγματικό βάρος ή ογκομετρικό (Μ×Π×Υ cm ÷ 5.000).</p></div></div>
+    <div class="step"><div class="sn">3</div><div class="sb"><h4>Βρείτε την Τιμή</h4><p>Εντοπίστε τη γραμμή βάρους στον πίνακα και διαβάστε την τιμή στη στήλη της ζώνης σας.</p></div></div>
+    <div class="step"><div class="sn">4</div><div class="sb"><h4>Προσθέστε Επίναυλο Καυσίμου</h4><p>Ο επίναυλος αναθεωρείται εβδομαδιαία βάσει διεθνών δεικτών. Αναγράφεται σε κάθε τιμοκατάλογο.</p></div></div>
+    <div class="step"><div class="sn">5</div><div class="sb"><h4>Τελική Χρέωση</h4><p>Τιμή ζώνης × (1 + επίναυλος%). Λοιπές χρεώσεις (ασφάλεια, συσκευασία κ.α.) υπολογίζονται ξεχωριστά.</p></div></div>
+  </div>
+  ${S('ΠΛΗΡΟΦΟΡΙΕΣ ΑΠΟΣΤΟΛΗΣ & TRACKING')}
+  <div class="igrid">
+    <div class="icard"><h4>Παρακολούθηση</h4><p>Αριθμός αποστολής αμέσως μετά παραλαβή. Real-time tracking στο <strong>www.4aexpress.com</strong> ή μέσω email ειδοποίησης.</p></div>
+    <div class="icard"><h4>Χρόνοι Παράδοσης</h4><p><strong>Αεροπορικά (AIR):</strong> 1–2 εργάσιμες.<br><strong>Οδικά (ROAD):</strong> 3–5 εργάσιμες.<br>Ανάλογα προορισμό.</p></div>
+    <div class="icard"><h4>Ασφάλιση Φορτίου</h4><p>Αυτόματη κάλυψη έως <strong>€100</strong> ανά αποστολή. Πρόσθετη ασφάλιση κατόπιν αιτήματος (0,5% επί αξίας).</p></div>
+  </div>
+  ${F('3')}
+  </div>`;
+
+  // ── PAGE 4: ZONES ──────────────────────────────────────────────
+  html+=`<div class="page">
+  ${H(offerNum)}
+  ${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}
+  <table class="zt">
+    <thead><tr><th style="width:52px">Ζώνη</th><th style="width:88px">Κατηγορία</th><th>Χώρες / Περιοχές</th><th style="width:90px">Υπηρεσίες</th></tr></thead>
+    <tbody>${ZONES.map(z=>`<tr>
+      <td><span class="zbadge">${z.z}</span></td>
+      <td><strong>${z.name}</strong></td>
+      <td>${z.desc}</td>
+      <td style="font-size:9px;color:#666;">${z.svcs}</td>
+    </tr>`).join('')}</tbody>
+  </table>
+  <div class="znote"><strong>Σημείωση Κύπρος (Z9):</strong> Η Z9 ισχύει αποκλειστικά για αεροπορικές υπηρεσίες S1003/S1012. Για αποστολές Ελλάδα↔Κύπρος ισχύει ο τιμοκατάλογος S1003_GR / S1012_GR.</div>
+  ${F('4')}
+  </div>`;
+
+  // ── PAGES 5+: PER-PRICELIST ────────────────────────────────────
+  let plPg=5;
   for(const p of selectedPls){
     const rows=p.rows||[];
     if(!rows.length) continue;
-    html+=`<div class="svc-title">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div>`;
-    html+=`<table><thead><tr>
-      <th class="wt">ΒΑΡΟΣ (kg)</th>
-      <th>ΤΙΜΗ (€)</th>
-      ${rows[0].extraKg!=null?'<th>+kg (€)</th>':''}
-    </tr></thead><tbody>`;
-    rows.forEach((r,i)=>{
-      html+=`<tr class="${i%2===0?'odd':'even'}">
-        <td class="wt">${r.weight}</td>
-        <td>${parseFloat(r.price).toFixed(2)}</td>
-        ${r.extraKg!=null?`<td>${parseFloat(r.extraKg).toFixed(2)}</td>`:''}
-      </tr>`;
-    });
-    html+=`</tbody></table>`;
+    const isAir=p.service_id.includes('S1003')||p.service_id.includes('S1012');
+    const fcVal=p.fc?(p.fc+'%'):(isAir?fuelAir:fuelRoad);
+    let xkg=null;
+    if(rows.length>=2){
+      const dw=parseFloat(rows[rows.length-1].weight)-parseFloat(rows[rows.length-2].weight);
+      const dp=parseFloat(rows[rows.length-1].price)-parseFloat(rows[rows.length-2].price);
+      if(dw>0) xkg=(dp/dw).toFixed(2);
+    }
+    html+=`<div class="page">
+    ${H(offerNum)}
+    <div class="plhdr">
+      <div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div>
+      <div class="pls">Επίναυλος Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div>
+    </div>
+    <table class="pt">
+      <thead><tr><th class="wt">ΒΑΡΟΣ (kg)</th><th>ΤΙΜΗ (€)</th></tr></thead>
+      <tbody>
+        ${rows.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€ ${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}
+        ${xkg!=null?`<tr class="xr"><td class="wt">+ 1 kg</td><td>€ ${xkg}</td></tr>`:''}
+      </tbody>
+    </table>
+    <div class="fcnote">Βασικοί ναύλοι χωρίς επίναυλο καυσίμου. Ο επίναυλος ${fcVal} προστίθεται κατά την τιμολόγηση.</div>
+    ${F(String(plPg++))}
+    </div>`;
   }
 
-  html+=`<div class="footer">Ε.Ε.Τ.Τ. 033-99 &nbsp;·&nbsp; ΑΦΜ: 044978638</div>`;
-  html+=`</div></body></html>`;
+  // ── TERMS PAGE ─────────────────────────────────────────────────
+  const surchRows=surcharges.filter(s=>s.name&&s.value);
+  html+=`<div class="page">
+  ${H(offerNum)}
+  ${S('ΟΡΟΙ, ΕΠΙΝΑΥΛΟΣ & ΧΡΕΩΣΕΙΣ')}
+  <table class="fct">
+    <thead><tr><th>Υπηρεσία</th><th>Τύπος</th><th>Επίναυλος Καυσίμου</th></tr></thead>
+    <tbody>
+      <tr><td>Αεροπορικές (S1003, S1012, S1003_GR, S1012_GR)</td><td>AIR</td><td><strong>${fuelAir}</strong>${fuelWeek?' ('+fuelWeek+')':''}</td></tr>
+      <tr><td>Οδικές (S1010, S1041)</td><td>ROAD</td><td><strong>${fuelRoad}</strong></td></tr>
+    </tbody>
+  </table>
+  ${surchRows.length?`${S('ΕΠΙΠΛΕΟΝ ΧΡΕΩΣΕΙΣ')}<table class="surt">
+    <thead><tr><th>Περιγραφή</th><th>Αξία</th><th>Μονάδα</th></tr></thead>
+    <tbody>${surchRows.map(s=>`<tr><td>${s.name}</td><td>${s.value}</td><td>${s.unit}</td></tr>`).join('')}</tbody>
+  </table>`:''}
+  <div class="tgrid" style="margin-top:10px;">
+    <div class="tbox"><h4>Πληρωμή & Τιμολόγηση</h4><ul>
+      <li>Εξόφληση εντός <strong>${payDays} ημερών</strong> από τιμολόγηση</li>
+      <li>Τιμολόγηση: <strong>${invoiceLbl}</strong></li>
+      <li>Με εμβασμάτιο ή κατάθεση σε τραπεζικό λογαριασμό</li>
+    </ul></div>
+    <div class="tbox"><h4>Ισχύς Τιμοκαταλόγου</h4><ul>
+      <li>Ισχύς προσφοράς: <strong>${validDays} ημέρες</strong> (έως ${validUntil})</li>
+      <li>Επίναυλος καυσίμου αναθεωρείται εβδομαδιαία</li>
+      <li>Βασικοί ναύλοι επικαιροποιούνται ετησίως</li>
+    </ul></div>
+    <div class="tbox"><h4>Εξαιρέσεις & Όρια</h4><ul>
+      <li>Τιμές για αποστολές έως 70 kg</li>
+      <li>Δεν συμπεριλαμβάνονται τελωνειακά &amp; ΦΠΑ εισαγωγής</li>
+      <li>Επικίνδυνα εμπορεύματα κατόπιν ειδικής συμφωνίας</li>
+    </ul></div>
+    <div class="tbox"><h4>Ευθύνη & Ασφάλεια</h4><ul>
+      <li>Αυτόματη κάλυψη έως <strong>€100</strong> ανά αποστολή</li>
+      <li>Πρόσθετη ασφάλιση: 0,5% επί δηλωθείσας αξίας</li>
+      <li>Αξιώσεις εντός 7 ημερών από παράδοση</li>
+    </ul></div>
+  </div>
+  ${F(String(plPg++))}
+  </div>`;
 
-  const w=window.open('','_blank','width=900,height=700');
+  // ── CONTRACT PAGE ──────────────────────────────────────────────
+  html+=`<div class="page last">
+  ${H(offerNum)}
+  ${S('ΣΥΜΒΑΣΗ & ΑΠΟΔΟΧΗ ΠΡΟΣΦΟΡΑΣ')}
+  <div class="cbody">
+    <p>Με την υπογραφή του παρόντος, η εταιρεία <strong>${name}</strong> (ΑΦΜ: ${afm||'—'}) αποδέχεται πλήρως τους όρους και τις τιμές της προσφοράς αριθμ. <strong>${offerNum}</strong> της <strong>4A Express Worldwide</strong>.</p>
+    <p>Η αποδοχή συνεπάγεται δέσμευση ως προς τον τρόπο πληρωμής (${payDays} ημέρες), τη συχνότητα τιμολόγησης (${invoiceLbl}) και τους γενικούς όρους συνεργασίας της 4A Express.</p>
+    <p>Οι τιμές ισχύουν για <strong>${validDays} ημέρες</strong> από ${today} και λήγουν στις <strong>${validUntil}</strong>. Ο επίναυλος καυσίμου αναθεωρείται εβδομαδιαία βάσει διεθνών δεικτών και δεν αποτελεί μέρος της σταθερής τιμής.</p>
+    <p>Υπηρεσίες που καλύπτει η παρούσα προσφορά:</p>
+    <ul>${selectedPls.map(p=>`<li>${p.service_id} — ${p.service_name||p.name||''}</li>`).join('')}</ul>
+  </div>
+  <div class="sigrid">
+    <div class="sigbox">
+      <div class="siglbl">Για λογαριασμό της <strong>4A Express Worldwide</strong></div>
+      <div class="sigval">${currentUser?.name||'—'} &nbsp;·&nbsp; ${currentUser?.office||'—'}<br><span style="color:#bbb;">${today}</span></div>
+    </div>
+    <div class="sigbox">
+      <div class="siglbl">Για λογαριασμό της <strong>${name}</strong></div>
+      <div class="sigval" style="color:#bbb;">Ονοματεπώνυμο &nbsp;·&nbsp; Σφραγίδα &nbsp;·&nbsp; Ημερομηνία</div>
+    </div>
+  </div>
+  ${F(String(plPg))}
+  </div>`;
+
+  html+=`</body></html>`;
+
+  const w=window.open('','_blank','width=920,height=760');
   w.document.write(html);
   w.document.close();
   w.focus();
-  setTimeout(()=>w.print(),400);
+  setTimeout(()=>w.print(),500);
 }
 
 async function sendOffer(){
