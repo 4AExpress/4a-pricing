@@ -654,6 +654,15 @@ async function previewPDF(){
     {z:'Z7',name:'Υπόλοιπος', desc:'Υπόλοιπες χώρες που δεν ανήκουν σε Z1–Z6',                             svcs:'AIR μόνο'},
     {z:'Z9',name:'Κύπρος',    desc:'Κύπρος — μόνο αεροπορικά μέσω S1003 / S1012',                          svcs:'S1003, S1012'},
   ];
+  const OFFICE_MAP={
+    'ATH':{city:'Αθήνα',    addr:'Βελεστίνου 7, 11523, Αθήνα',         tel:'+30 210 9966661', email:'sales@4aexpress.com'},
+    'NIC':{city:'Λευκωσία', addr:'Αθαλάσσης 107, Λευκωσία, Κύπρος',    tel:'+357 22 953311',  email:'4aexpress@cytanet.com.cy'},
+    'QLI':{city:'Λεμεσός',  addr:'Spyrou Kyprianou Ave 20, Λεμεσός',    tel:'+357 25590500',   email:'qli1@4aexpress.com'},
+    'LCA':{city:'Λάρνακα',  addr:'Αρχιεπ. Κυπριανού 58, Λάρνακα',      tel:'+357 24 424280',  email:'4aexpress@cytanet.com.cy'},
+  };
+  const officeCode=((currentUser?.stations||currentUser?.office||'ATH').split(',')[0]).trim().toUpperCase();
+  const issuerOffice=OFFICE_MAP[officeCode]||OFFICE_MAP['ATH'];
+  const issuerName=currentUser?.name||'—';
 
   const H=(num)=>`<div class="ph"><div class="ph-l"><span class="lb">4A</span><span class="lt">WORLDWIDE<br>EXPRESS</span></div><div class="ph-r">${num}</div></div>`;
   const F=(pg)=>`<div class="pf"><span>Ε.Ε.Τ.Τ. 033-99 &nbsp;·&nbsp; ΑΦΜ: 044978638 &nbsp;·&nbsp; www.4aexpress.com</span><span>σελ. ${pg}</span></div>`;
@@ -681,12 +690,18 @@ async function previewPDF(){
   .pf{display:flex;justify-content:space-between;font-size:8px;color:#aaa;border-top:1px solid #e0e0e0;padding-top:5px;margin-top:12px;}
   .st{background:#cc0000;color:#fff;font-size:10.5px;font-weight:700;padding:5px 12px;margin:10px 0 7px;letter-spacing:.3px;}
   /* cover */
-  .hero{background:#990000;color:#fff;text-align:center;padding:16px 0 12px;margin-bottom:10px;}
-  .hero h1{font-size:28px;font-weight:900;letter-spacing:3px;margin-bottom:3px;}
-  .hero h2{font-size:12px;font-weight:400;opacity:.8;letter-spacing:1px;}
-  .meta-bar{display:flex;border:1px solid #ddd;margin-bottom:12px;}
+  .hero{background:#990000;color:#fff;display:flex;align-items:stretch;margin-bottom:10px;overflow:hidden;}
+  .hero-logo{display:flex;align-items:center;justify-content:center;padding:10px 18px 10px 14px;background:#770000;border-right:3px solid #bb0000;min-width:96px;}
+  .hero-4a{font-size:78px;font-weight:900;color:#fff;line-height:1;letter-spacing:-5px;opacity:.93;font-family:Arial Black,Arial,sans-serif;}
+  .hero-main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:14px 20px;}
+  .hero-main h1{font-size:26px;font-weight:900;letter-spacing:3px;margin-bottom:4px;}
+  .hero-main h2{font-size:11px;font-weight:400;opacity:.75;letter-spacing:1px;}
+  .meta-bar{display:flex;border:1px solid #ddd;margin-bottom:10px;}
   .meta-item{flex:1;padding:7px 12px;border-right:1px solid #ddd;}
   .meta-item:last-child{border-right:none;}
+  .issuer-bar{display:flex;border:1px solid #ddd;border-top:3px solid #cc0000;margin-bottom:10px;}
+  .issuer-item{flex:1;padding:6px 12px;border-right:1px solid #ddd;}
+  .issuer-item:last-child{border-right:none;}
   .cgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#e0e0e0;border:1px solid #e0e0e0;margin-bottom:12px;}
   .cc{background:#fff;padding:7px 12px;}
   .lbl{font-size:8px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
@@ -758,12 +773,25 @@ async function previewPDF(){
 
   html+=`<div class="page">
   ${H(offerNum)}
-  <div class="hero"><h1>ΠΡΟΣΦΟΡΑ</h1><h2>OFFER &nbsp;·&nbsp; ${offerNum}</h2></div>
+  <div class="hero">
+    <div class="hero-logo"><div class="hero-4a">4A</div></div>
+    <div class="hero-main">
+      <h1>ΠΡΟΣΦΟΡΑ</h1>
+      <h2>OFFER &nbsp;·&nbsp; ${offerNum}</h2>
+    </div>
+  </div>
   <div class="meta-bar">
     <div class="meta-item"><div class="lbl">Ημερομηνία</div><div class="val">${today}</div></div>
     <div class="meta-item"><div class="lbl">Ισχύς έως</div><div class="val">${validUntil}</div></div>
     <div class="meta-item"><div class="lbl">Πληρωμή</div><div class="val">${payDays} ημέρες</div></div>
     <div class="meta-item"><div class="lbl">Τιμολόγηση</div><div class="val">${invoiceLbl}</div></div>
+  </div>
+  ${S('ΕΚΔΟΤΗΣ ΠΡΟΣΦΟΡΑΣ')}
+  <div class="issuer-bar">
+    <div class="issuer-item"><div class="lbl">Στέλεχος</div><div class="val">${issuerName}</div></div>
+    <div class="issuer-item"><div class="lbl">Γραφείο</div><div class="val">${issuerOffice.city}</div></div>
+    <div class="issuer-item"><div class="lbl">Διεύθυνση</div><div class="val">${issuerOffice.addr}</div></div>
+    <div class="issuer-item"><div class="lbl">Τηλέφωνο</div><div class="val">${issuerOffice.tel}</div></div>
   </div>
   ${S('ΣΤΟΙΧΕΙΑ ΠΕΛΑΤΗ')}
   <div class="cgrid">
