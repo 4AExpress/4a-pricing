@@ -876,27 +876,18 @@ async function previewPDF(){
   // ── PAGE 4: ZONES ──────────────────────────────────────────────
   {
     const ZC=['','#2e7d32','#1565c0','#f57f17','#c62828','#6a1b9a','#00838f','#555'];
-    const ZL=['','Z1 — ΕΕ Κοντά','Z2 — Ευρώπη','Z3 — Περιφέρεια','Z4 — Αμερική','Z5 — ΜΑ/Αφρική','Z6 — Ασία/Ωκεανία','Z7 — Λοιποί'];
-    let zbh='';
     if(zonesData){
-      const cm={};
-      (zonesData.air?.zones||[]).forEach(z=>{cm[z.code]=cm[z.code]||{name:z.name,air:null,road:null};cm[z.code].air=parseInt(z.zone);});
-      (zonesData.road?.zones||[]).forEach(z=>{cm[z.code]=cm[z.code]||{name:z.name,air:null,road:null};cm[z.code].road=parseInt(z.zone);});
-      const ctrs=Object.values(cm).sort((a,b)=>a.name.localeCompare(b.name,'el'));
-      const cs=Math.ceil(ctrs.length/3);
-      const cols=[ctrs.slice(0,cs),ctrs.slice(cs,cs*2),ctrs.slice(cs*2)];
-      const lgnd=ZL.slice(1).map((l,i)=>`<span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px;font-size:8.5px;"><span style="width:10px;height:10px;border-radius:2px;background:${ZC[i+1]};display:inline-block;vertical-align:middle;"></span> ${l}</span>`).join('');
-      const colsHtml=cols.map(col=>`<div class="zcol">${col.map(c=>{const ap=c.air!=null?`<span class="zpill" style="background:${ZC[c.air]||'#555'}">Z${c.air}</span>`:'';const rp=c.road!=null?`<span class="zpill" style="background:${ZC[c.road]||'#888'};opacity:.8">Z${c.road}R</span>`:'';return `<div class="zentry"><span>${c.name}</span><span class="zpills">${ap}${rp}</span></div>`;}).join('')}</div>`).join('');
-      zbh=`<div style="margin-bottom:8px;line-height:2;">${lgnd}</div><div class="zcols">${colsHtml}</div><div class="znote">Ζώνες AIR: Z1–Z7 &nbsp;·&nbsp; Ζώνες ROAD: Z1–Z3. &nbsp; Κύπρος (Z9): μόνο S1003/S1012.</div>`;
+      const am={},rm={};
+      (zonesData.air?.zones||[]).forEach(z=>{am[z.code]={code:z.code,name:z.name,az:parseInt(z.zone)};});
+      (zonesData.road?.zones||[]).forEach(z=>{rm[z.code]=parseInt(z.zone);});
+      const ctrs=Object.values(am).sort((a,b)=>a.name.localeCompare(b.name,'el'));
+      const mid=Math.ceil(ctrs.length/2);
+      const zp=z=>z?`<span style="display:inline-block;background:${ZC[z]||'#555'};color:#fff;font-size:7px;font-weight:700;padding:1px 5px;border-radius:8px;white-space:nowrap;">Z${z}</span>`:'<span style="color:#ccc;font-size:7px;">—</span>';
+      const makeT=arr=>`<table class="pt pt-zone" style="width:100%"><thead><tr><th class="wt">Χώρα</th><th style="background:#154360;text-align:center;width:28px;font-size:7px;">S1003<br>✈↗</th><th style="background:#154360;text-align:center;width:28px;font-size:7px;">S1012<br>✈↙</th><th style="background:#1d4e36;text-align:center;width:28px;font-size:7px;">S1010<br>🚛↗</th><th style="background:#1d4e36;text-align:center;width:28px;font-size:7px;">S1041<br>🚛↙</th></tr></thead><tbody>${arr.map(c=>{const rz=rm[c.code];return `<tr><td class="wt" style="font-size:7.5px;">${c.name}</td><td style="text-align:center;padding:2px;">${zp(c.az)}</td><td style="text-align:center;padding:2px;">${zp(c.az)}</td><td style="text-align:center;padding:2px;">${rz!=null?zp(rz):'<span style="color:#ccc;font-size:7px;">—</span>'}</td><td style="text-align:center;padding:2px;">${rz!=null?zp(rz):'<span style="color:#ccc;font-size:7px;">—</span>'}</td></tr>`;}).join('')}</tbody></table>`;
+      html+=`<div class="page land">${H(offerNum)}${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">${makeT(ctrs.slice(0,mid))}${makeT(ctrs.slice(mid))}</div><div class="znote" style="margin-top:6px;">S1003/S1012: AIR Z1–Z7 &nbsp;·&nbsp; S1010/S1041: ROAD Z1–Z3 &nbsp;·&nbsp; Κύπρος (Z9): μόνο S1003/S1012</div>${F('4')}</div>`;
     } else {
-      zbh=`<table class="zt"><thead><tr><th style="width:52px">Ζώνη</th><th style="width:88px">Κατηγορία</th><th>Χώρες / Περιοχές</th><th style="width:90px">Υπηρεσίες</th></tr></thead><tbody>${ZONES.map(z=>`<tr><td><span class="zbadge">${z.z}</span></td><td><strong>${z.name}</strong></td><td>${z.desc}</td><td style="font-size:9px;color:#666;">${z.svcs}</td></tr>`).join('')}</tbody></table><div class="znote"><strong>Σημείωση Κύπρος (Z9):</strong> Η Z9 ισχύει αποκλειστικά για αεροπορικές υπηρεσίες S1003/S1012. Για αποστολές Ελλάδα↔Κύπρος ισχύει ο τιμοκατάλογος S1003_GR / S1012_GR.</div>`;
+      html+=`<div class="page">${H(offerNum)}${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}<table class="zt"><thead><tr><th style="width:52px">Ζώνη</th><th style="width:88px">Κατηγορία</th><th>Χώρες / Περιοχές</th><th style="width:90px">Υπηρεσίες</th></tr></thead><tbody>${ZONES.map(z=>`<tr><td><span class="zbadge">${z.z}</span></td><td><strong>${z.name}</strong></td><td>${z.desc}</td><td style="font-size:9px;color:#666;">${z.svcs}</td></tr>`).join('')}</tbody></table><div class="znote"><strong>Σημείωση:</strong> AIR Z1–Z7, ROAD Z1–Z3. Κύπρος (Z9): μόνο S1003/S1012.</div>${F('4')}</div>`;
     }
-    html+=`<div class="page">
-    ${H(offerNum)}
-    ${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}
-    ${zbh}
-    ${F('4')}
-    </div>`;
   }
 
   // ── PAGES 5+: PER-PRICELIST ────────────────────────────────────
