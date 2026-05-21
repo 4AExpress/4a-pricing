@@ -614,7 +614,7 @@ async function previewPDF(){
   const name=document.getElementById('cl-name').value.trim();
   if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
   if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
-  const offerNum=document.getElementById('cl-offer-number')?.value||'—';
+  const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||'—'):'—';
   const w=window.open('','_blank');
   w.document.write('<html><head><title>Προσφορά '+offerNum+'</title><style>body{font-family:Arial,sans-serif;margin:10mm}h1{font-size:14px;margin:0 0 4px}h2{font-size:12px;margin:12px 0 4px;color:#c00}.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}table{border-collapse:collapse;width:100%}th,td{padding:2px 6px;font-size:10px;border-bottom:0.5px solid #eee}th{color:#888;font-weight:normal}td:first-child{color:#555}.info{font-size:11px;color:#444;margin-bottom:8px}@media print{body{margin:8mm}}</style></head><body>');
   w.document.write('<h1>4A Express &mdash; Προσφορά '+offerNum+'</h1>');
