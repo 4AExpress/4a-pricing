@@ -623,7 +623,7 @@ async function previewPDF(){
     const rows=pl.rows||[];
     if(!rows.length) continue;
     const zones=Object.keys(rows[0]).filter(k=>k!=='weight' && k!=='price');
-    w.document.write('<h2>'+pl.service_name+' &mdash; '+pl.service_id+'</h2>');
+    w.document.write('<h2>'+(pl.service_name||pl.service_id)+'</h2>');
     const col=Math.ceil(rows.length/3);
     const mkT=(sl)=>'<table><thead><tr><th>kg</th><th>Τιμή</th></tr></thead><tbody>'+sl.map((r,i)=>'<tr><td>'+r.weight+'</td><td style="text-align:right;">&euro;'+parseFloat(r.price).toFixed(2)+'</td></tr>').join('')+'</tbody></table>';
     w.document.write('<div class="grid">'+[0,1,2].map(c=>mkT(rows.slice(c*col,(c+1)*col))).join('')+'</div>');
