@@ -196,10 +196,10 @@ const SVC_INFO = {
   S1012:    { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z1','z2','z3','z4','z5','z6','z7'], name: '✈️🇬🇷↙️ Express Import' },
   S1010:    { file: 'dhl_tariff_2026_S1010.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🚛↗️ Economy Export' },
   S1041:    { file: 'dhl_tariff_2026_S1041.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🚛🇬🇷↙️ Economy Import' },
-  S1003_GR: { file: 'dhl_tariff_2026_S1003.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: '🇬🇷✈️↗️ Export Ελλάδα→Κύπρος' },
-  S1012_GR: { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: '🇬🇷✈️↙️ Import Κύπρος→Ελλάδα' },
-  S1003_CY: { file: 'dhl_tariff_2026_S1003.json', mode: 'AIR',  maxW: 70,  zones: ['z9'],                                name: '🇨🇾✈️↗️ Express Export CY' },
-  S1012_CY: { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z9'],                                name: '🇨🇾✈️↙️ Express Import CY' },
+  S1003_GR: { file: 'dhl_tariff_2026_S1003.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: '🇬🇷✈️↗️ Export Ελλάδα→Κύπρος', extraKg: true },
+  S1012_GR: { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: '🇬🇷✈️↙️ Import Κύπρος→Ελλάδα', extraKg: true },
+  S1003_CY: { file: 'dhl_tariff_2026_S1003.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: '🇨🇾✈️↗️ Express Export CY', extraKg: true },
+  S1012_CY: { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: '🇨🇾✈️↙️ Express Import CY', extraKg: true },
   // COMBI: χρησιμοποιεί ROAD JSON + surcharge CY
   S1050:    { file: 'dhl_tariff_2026_S1010.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🇨🇾 ✈️ 🇬🇷 🚛➡️ 🌍 Export CY→GR→World', combi: true, surcharge_label: 'CY→GR AIR surcharge' },
   S1051:    { file: 'dhl_tariff_2026_S1041.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🌍 🚛⬅️ 🇬🇷 ✈️ 🇨🇾 Import World→GR→CY', combi: true, surcharge_label: 'GR→CY AIR surcharge' },
@@ -526,7 +526,8 @@ function renderTable() {
     const adderEffective = IS_COMBI_SVC
       ? adderCosts.map(c => parseFloat((c + URL_SURCHARGE).toFixed(2)))
       : adderCosts;
-    const adderPrices = adderEffective.map(c => parseFloat((c * (1 + lastMarkup/100)).toFixed(2)));
+    window._adderPrices = adderEffective.map(c=>parseFloat((c*(1+lastMarkup/100)).toFixed(2)));
+    const adderPrices = window._adderPrices.map(c => parseFloat((c * (1 + lastMarkup/100)).toFixed(2)));
 
     html += `<div style="margin-top:8px;border:1px solid #00BCD4;border-radius:4px;overflow:hidden;">
       <div style="background:#00BCD4;color:white;font-size:11px;font-weight:600;padding:4px 10px;">
@@ -699,7 +700,7 @@ function confirmSave() {
     surcharge:     URL_SURCHARGE,
     is_custom:     isCustom,
     is_combi:      IS_COMBI_SVC,
-    rows:          markupData.map(r => ({ weight: r.weight, price: r.prices[0] })),
+    rows:          [...markupData.map(r => ({ weight: r.weight, price: r.prices[0] })), ...(svcMeta.extraKg && window._adderPrices ? [{ weight: MAX_WEIGHT+"+", price: window._adderPrices[0], extraKg: true }] : [])],
     fc:            fuelFc,
     user:          savedUser?.name   || '—',
     office:        savedUser?.office || '—',
