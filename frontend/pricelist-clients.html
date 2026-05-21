@@ -638,6 +638,13 @@ async function previewPDF(){
     if(cr)  fuelRoad=cr.pct+'%';
   } catch(e){}
 
+  let zonesData=null;
+  try {
+    let zd=JSON.parse(localStorage.getItem('4a_zones_cache')||'null');
+    if(!zd){ zd=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/dhl_zones_2026.json').then(r=>r.json()); localStorage.setItem('4a_zones_cache',JSON.stringify(zd)); }
+    zonesData=zd;
+  } catch(e){}
+
   const OFFICES=[
     {city:'Αθήνα',    addr:'Βελεστίνου 7, 11523, Αθήνα',         tel:'+30 210 9966661', email:'sales@4aexpress.com'},
     {city:'Λευκωσία', addr:'Αθαλάσσης 107, Λευκωσία, Κύπρος',    tel:'+357 22 953311',  email:'4aexpress@cytanet.com.cy'},
@@ -766,6 +773,18 @@ async function previewPDF(){
   .sigbox{border-top:1px solid #333;padding-top:6px;}
   .siglbl{font-size:9px;color:#888;margin-bottom:26px;}
   .sigval{font-size:9.5px;color:#555;}
+  /* zones 3-col */
+  .zcols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;}
+  .zcol{border:1px solid #f0f0f0;}
+  .zentry{display:flex;align-items:center;justify-content:space-between;padding:3px 7px;border-bottom:1px solid #f5f5f5;font-size:9px;gap:4px;}
+  .zentry:last-child{border-bottom:none;}
+  .zpill{display:inline-block;font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:8px;color:#fff;white-space:nowrap;}
+  .zpills{display:flex;gap:2px;flex-shrink:0;}
+  /* pricelist 3-col */
+  .pl-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px;}
+  .pl-3col .pt th{font-size:8.5px;padding:4px 7px;}
+  .pl-3col .pt td{font-size:10px;padding:3px 7px;}
+  .pl-footnote{font-size:8.5px;color:#888;margin-top:5px;padding-top:4px;border-top:1px solid #f0f0f0;font-style:italic;}
   @media print{body{margin:0;} .page{margin:0;padding:8mm 12mm 11mm;} @page{margin:0;size:A4;}}`;
 
   // ── PAGE 1: COVER ──────────────────────────────────────────────
@@ -850,21 +869,30 @@ async function previewPDF(){
   </div>`;
 
   // ── PAGE 4: ZONES ──────────────────────────────────────────────
-  html+=`<div class="page">
-  ${H(offerNum)}
-  ${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}
-  <table class="zt">
-    <thead><tr><th style="width:52px">Ζώνη</th><th style="width:88px">Κατηγορία</th><th>Χώρες / Περιοχές</th><th style="width:90px">Υπηρεσίες</th></tr></thead>
-    <tbody>${ZONES.map(z=>`<tr>
-      <td><span class="zbadge">${z.z}</span></td>
-      <td><strong>${z.name}</strong></td>
-      <td>${z.desc}</td>
-      <td style="font-size:9px;color:#666;">${z.svcs}</td>
-    </tr>`).join('')}</tbody>
-  </table>
-  <div class="znote"><strong>Σημείωση Κύπρος (Z9):</strong> Η Z9 ισχύει αποκλειστικά για αεροπορικές υπηρεσίες S1003/S1012. Για αποστολές Ελλάδα↔Κύπρος ισχύει ο τιμοκατάλογος S1003_GR / S1012_GR.</div>
-  ${F('4')}
-  </div>`;
+  {
+    const ZC=['','#2e7d32','#1565c0','#f57f17','#c62828','#6a1b9a','#00838f','#555'];
+    const ZL=['','Z1 — ΕΕ Κοντά','Z2 — Ευρώπη','Z3 — Περιφέρεια','Z4 — Αμερική','Z5 — ΜΑ/Αφρική','Z6 — Ασία/Ωκεανία','Z7 — Λοιποί'];
+    let zbh='';
+    if(zonesData){
+      const cm={};
+      (zonesData.air?.zones||[]).forEach(z=>{cm[z.code]=cm[z.code]||{name:z.name,air:null,road:null};cm[z.code].air=parseInt(z.zone);});
+      (zonesData.road?.zones||[]).forEach(z=>{cm[z.code]=cm[z.code]||{name:z.name,air:null,road:null};cm[z.code].road=parseInt(z.zone);});
+      const ctrs=Object.values(cm).sort((a,b)=>a.name.localeCompare(b.name,'el'));
+      const cs=Math.ceil(ctrs.length/3);
+      const cols=[ctrs.slice(0,cs),ctrs.slice(cs,cs*2),ctrs.slice(cs*2)];
+      const lgnd=ZL.slice(1).map((l,i)=>`<span style="display:inline-flex;align-items:center;gap:3px;margin-right:10px;font-size:8.5px;"><span style="width:10px;height:10px;border-radius:2px;background:${ZC[i+1]};display:inline-block;vertical-align:middle;"></span> ${l}</span>`).join('');
+      const colsHtml=cols.map(col=>`<div class="zcol">${col.map(c=>{const ap=c.air!=null?`<span class="zpill" style="background:${ZC[c.air]||'#555'}">Z${c.air}</span>`:'';const rp=c.road!=null?`<span class="zpill" style="background:${ZC[c.road]||'#888'};opacity:.8">Z${c.road}R</span>`:'';return `<div class="zentry"><span>${c.name}</span><span class="zpills">${ap}${rp}</span></div>`;}).join('')}</div>`).join('');
+      zbh=`<div style="margin-bottom:8px;line-height:2;">${lgnd}</div><div class="zcols">${colsHtml}</div><div class="znote">Ζώνες AIR: Z1–Z7 &nbsp;·&nbsp; Ζώνες ROAD: Z1–Z3. &nbsp; Κύπρος (Z9): μόνο S1003/S1012.</div>`;
+    } else {
+      zbh=`<table class="zt"><thead><tr><th style="width:52px">Ζώνη</th><th style="width:88px">Κατηγορία</th><th>Χώρες / Περιοχές</th><th style="width:90px">Υπηρεσίες</th></tr></thead><tbody>${ZONES.map(z=>`<tr><td><span class="zbadge">${z.z}</span></td><td><strong>${z.name}</strong></td><td>${z.desc}</td><td style="font-size:9px;color:#666;">${z.svcs}</td></tr>`).join('')}</tbody></table><div class="znote"><strong>Σημείωση Κύπρος (Z9):</strong> Η Z9 ισχύει αποκλειστικά για αεροπορικές υπηρεσίες S1003/S1012. Για αποστολές Ελλάδα↔Κύπρος ισχύει ο τιμοκατάλογος S1003_GR / S1012_GR.</div>`;
+    }
+    html+=`<div class="page">
+    ${H(offerNum)}
+    ${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}
+    ${zbh}
+    ${F('4')}
+    </div>`;
+  }
 
   // ── PAGES 5+: PER-PRICELIST ────────────────────────────────────
   let plPg=5;
@@ -879,20 +907,16 @@ async function previewPDF(){
       const dp=parseFloat(rows[rows.length-1].price)-parseFloat(rows[rows.length-2].price);
       if(dw>0) xkg=(dp/dw).toFixed(2);
     }
+    const cs3=Math.ceil(rows.length/3);
+    const rg=[rows.slice(0,cs3),rows.slice(cs3,cs3*2),rows.slice(cs3*2)];
     html+=`<div class="page">
     ${H(offerNum)}
     <div class="plhdr">
       <div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div>
       <div class="pls">Επίναυλος Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div>
     </div>
-    <table class="pt">
-      <thead><tr><th class="wt">ΒΑΡΟΣ (kg)</th><th>ΤΙΜΗ (€)</th></tr></thead>
-      <tbody>
-        ${rows.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€ ${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}
-        ${xkg!=null?`<tr class="xr"><td class="wt">+ 1 kg</td><td>€ ${xkg}</td></tr>`:''}
-      </tbody>
-    </table>
-    <div class="fcnote">Βασικοί ναύλοι χωρίς επίναυλο καυσίμου. Ο επίναυλος ${fcVal} προστίθεται κατά την τιμολόγηση.</div>
+    <div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>€</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€ ${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkg!=null?`<tr class="xr"><td class="wt">+1 kg</td><td>€ ${xkg}</td></tr>`:''}</tbody></table>`).join('')}</div>
+    <div class="pl-footnote">* Τιμές εκτός ΦΠΑ 24% και επίναυλο καυσίμων</div>
     ${F(String(plPg++))}
     </div>`;
   }
