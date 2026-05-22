@@ -8,7 +8,7 @@ if ($method === 'GET') {
     $shelf = [];
     foreach ($rows as $r) {
         $r['rows'] = array_map(function($row){
-            $row['price'] = (float)number_format((float)($row['price']??0),2,'.','');
+         $row['price'] = (float)sprintf('%.2f', (float)($row['price']??0));   
             return $row;
         }, json_decode($r['rows']??'[]',true));
         $shelf[$r['service_id']][] = $r;
