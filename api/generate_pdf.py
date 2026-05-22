@@ -195,6 +195,7 @@ def generate(offer_data, dhl_data, fuel_data):
     toc_items.append((pg,'net','Δίκτυο Γραφείων 4A Express','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
     toc_items.append((pg,'track','Εύρεση & Tracking Αποστολής','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
     toc_items.append((pg,'terms','Όροι, Χρεώσεις & Επίναυλος','ΟΡΟΙ')); pg+=1
+    toc_items.append((pg,'vol','Ογκομέτρηση Δεμάτων','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
     toc_items.append((pg,'accept','Αποδοχή Προσφοράς','ΑΠΟΔΟΧΗ'))
 
     toc_rows=[[P('ΣΕΛ.',sb('th',fontSize=7,textColor=WHITE,alignment=TA_CENTER)),
