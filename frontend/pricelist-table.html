@@ -213,7 +213,7 @@ const ZONES      = svcMeta.zones;
 const ZONE_LABELS= ZONES.map(z => z.toUpperCase());
 const SVC_MODE   = svcMeta.mode;
 const SVC_FILE   = svcMeta.file;
-const IS_CY      = SERVICE_ID.endsWith('_CY') || SERVICE_ID.endsWith('_GR');
+const IS_CY      = SERVICE_ID.endsWith('_CY') || SERVICE_ID.endsWith('_GR')|| SERVICE_ID === 'S1039' || SERVICE_ID === 'S1059';
 const IS_COMBI_SVC = svcMeta.combi || IS_COMBI;
 
 // ─── UI init ─────────────────────────────────────────────────────────────────
