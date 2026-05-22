@@ -1,5 +1,5 @@
 <?php
-// shelf.php | v1.1 | 22-05-2026
+// shelf.php | v1.2 | 22-05-2026
 error_reporting(E_ALL); ini_set("log_errors",1); ini_set("error_log","/tmp/shelf_errors.log");
 require_once 'config.php';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -7,7 +7,10 @@ if ($method === 'GET') {
     $rows = db()->query('SELECT * FROM 4a_shelf ORDER BY created_at DESC')->fetchAll();
     $shelf = [];
     foreach ($rows as $r) {
-        $r['rows'] = json_decode($r['rows'] ?? '[]', true);
+        $r['rows'] = array_map(function($row){
+            $row['price'] = (float)number_format((float)($row['price']??0),2,'.','');
+            return $row;
+        }, json_decode($r['rows']??'[]',true));
         $shelf[$r['service_id']][] = $r;
     }
     respond((object)$shelf);
@@ -26,7 +29,7 @@ if ($method === 'POST') {
             $b['markup'], $b['global_markup'] ?? $b['markup'],
             $b['account'] ?? '—', $b['user'] ?? '', $b['office'] ?? '',
             $b['date'] ?? '', $b['created_at'] ?? date('Y-m-d H:i:s'),
-            json_encode(array_map(function($r){$r['price']=round((float)$r['price'],2);return $r;},$b['rows']??[]))
+            json_encode(array_map(function($r){$r['price']=(float)number_format((float)($r['price']??0),2,'.','');return $r;},$b['rows']??[]))
         ]);
         respond(['ok' => true]);
     }
@@ -47,7 +50,7 @@ if ($method === 'POST') {
                 $item['markup'], $item['global_markup'] ?? $item['markup'],
                 $item['account'] ?? '—', $item['user'] ?? '', $item['office'] ?? '',
                 $item['date'] ?? '', $item['created_at'] ?? date('Y-m-d H:i:s'),
-                json_encode(array_map(function($r){$r['price']=round((float)$r['price'],2);return $r;},$item['rows']??[]))
+                json_encode(array_map(function($r){$r['price']=(float)number_format((float)($r['price']??0),2,'.','');return $r;},$item['rows']??[]))
             ]);
         }
         respond(['ok' => true, 'synced' => count($b['items'])]);
