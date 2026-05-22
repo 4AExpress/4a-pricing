@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # generate_pdf.py | v1.2 | 19-05-2026
 import sys, json, os, base64, tempfile
 from datetime import datetime, timedelta
@@ -455,66 +455,66 @@ def generate(offer_data, dhl_data, fuel_data):
             story.append(PageBreak())
 
         # ── ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ ──
-    story.append(PageBreak())
-    story.append(hdr(offer_num))
-    story.append(sec('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ'))
-    story.append(Spacer(1,5*mm))
-    story.append(P(
-        'Η χρέωση κάθε αποστολής εξαρτάται από το συνδυασμό βάρους και μεγέθους '
-        '(Σύστημα ογκομέτρησης Διεθνούς Μεταφοράς).',
-        s('tt',fontSize=9,textColor=MGRAY,leading=14,spaceAfter=4)))
-    story.append(P(
-        'Αν το ογκομετρικό βάρος της αποστολής είναι μεγαλύτερο του πραγματικού '
-        '(περιπτώσεις ελαφρών δεμάτων με μεγάλο όγκο), τότε η χρέωση γίνεται με βάση το ογκομετρικό βάρος.',
-        s('tt',fontSize=9,textColor=MGRAY,leading=14,spaceAfter=8)))
-    story.append(P(
-        'Τα Διεθνή Ογκομετρικά Βάρη υπολογίζονται με τη χρήση του ακόλουθου τύπου:',
-        s('tt',fontSize=9,textColor=MGRAY,leading=14,spaceAfter=6)))
-    story.append(Table([[
-        P('Ογκομετρικό Βάρος σε kgr = Μήκος × Πλάτος × Ύψος / 5000',
-          sb('volform',fontSize=11,textColor=DGRAY)),
-    ]], colWidths=[cw], style=[
-        ('BACKGROUND',(0,0),(-1,-1),XLGRAY),
-        ('TOPPADDING',(0,0),(-1,-1),10),('BOTTOMPADDING',(0,0),(-1,-1),10),
-        ('LEFTPADDING',(0,0),(-1,-1),15),
-        ('BOX',(0,0),(-1,-1),0.5,BORDER),
-    ]))
-    story.append(Spacer(1,6*mm))
-    story.append(P('Παράδειγμα:',sb('tt2',fontSize=9,textColor=DGRAY,spaceAfter=4)))
-    story.append(Table([
-        [P('ΔΙΑΣΤΑΣΕΙΣ',sb('vh',fontSize=7,textColor=WHITE)),
-         P('ΤΥΠΟΣ',sb('vh',fontSize=7,textColor=WHITE)),
-         P('ΟΓΚΟΜΕΤΡΙΚΟ ΒΑΡΟΣ',sb('vh',fontSize=7,textColor=WHITE))],
-        [P('50 × 50 × 50 cm',s('vv',fontSize=9,textColor=DGRAY)),
-         P('50 × 50 × 50 / 5000',s('vv',fontSize=9,textColor=MGRAY)),
-         P('25 kg',sb('vr',fontSize=11,textColor=RED))],
-        [P('60 × 40 × 30 cm',s('vv2',fontSize=9,textColor=DGRAY)),
-         P('60 × 40 × 30 / 5000',s('vv2',fontSize=9,textColor=MGRAY)),
-         P('14.4 kg',sb('vr2',fontSize=11,textColor=RED))],
-        [P('100 × 30 × 20 cm',s('vv3',fontSize=9,textColor=DGRAY)),
-         P('100 × 30 × 20 / 5000',s('vv3',fontSize=9,textColor=MGRAY)),
-         P('12 kg',sb('vr3',fontSize=11,textColor=RED))],
-    ], colWidths=[60*mm,80*mm,cw-140*mm], style=[
-        ('BACKGROUND',(0,0),(-1,0),MGRAY),
-        ('GRID',(0,0),(-1,-1),0.25,BORDER),
-        ('TOPPADDING',(0,0),(-1,-1),6),('BOTTOMPADDING',(0,0),(-1,-1),6),
-        ('LEFTPADDING',(0,0),(-1,-1),8),
-        ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE,XLGRAY]),
-        ('ALIGN',(2,0),(-1,-1),'CENTER'),
-    ]))
-    story.append(Spacer(1,6*mm))
-    story.append(Table([[
-        P('⚠️  Χρησιμοποιείτε πάντα το ΜΕΓΑΛΥΤΕΡΟ από: πραγματικό βάρος ή ογκομετρικό βάρος.',
-          sb('volnote',fontSize=8,textColor=DGRAY)),
-    ]], colWidths=[cw], style=[
-        ('BACKGROUND',(0,0),(-1,-1),colors.HexColor('#fff3cd')),
-        ('TOPPADDING',(0,0),(-1,-1),8),('BOTTOMPADDING',(0,0),(-1,-1),8),
-        ('LEFTPADDING',(0,0),(-1,-1),12),
-        ('BOX',(0,0),(-1,-1),0.5,colors.HexColor('#ffc107')),
-    ]))
-    story.append(Spacer(1,5*mm))
-    story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
-    story.append(ftr(offer_num,date,vstamp))
+        story.append(PageBreak())
+        story.append(hdr(offer_num))
+        story.append(sec('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ'))
+        story.append(Spacer(1,5*mm))
+        story.append(P(
+            'Η χρέωση κάθε αποστολής εξαρτάται από το συνδυασμό βάρους και μεγέθους '
+            '(Σύστημα ογκομέτρησης Διεθνούς Μεταφοράς).',
+            s('tt',fontSize=9,textColor=MGRAY,leading=14,spaceAfter=4)))
+        story.append(P(
+            'Αν το ογκομετρικό βάρος της αποστολής είναι μεγαλύτερο του πραγματικού '
+            '(περιπτώσεις ελαφρών δεμάτων με μεγάλο όγκο), τότε η χρέωση γίνεται με βάση το ογκομετρικό βάρος.',
+            s('tt',fontSize=9,textColor=MGRAY,leading=14,spaceAfter=8)))
+        story.append(P(
+            'Τα Διεθνή Ογκομετρικά Βάρη υπολογίζονται με τη χρήση του ακόλουθου τύπου:',
+            s('tt',fontSize=9,textColor=MGRAY,leading=14,spaceAfter=6)))
+        story.append(Table([[
+            P('Ογκομετρικό Βάρος σε kgr = Μήκος × Πλάτος × Ύψος / 5000',
+              sb('volform',fontSize=11,textColor=DGRAY)),
+        ]], colWidths=[cw], style=[
+            ('BACKGROUND',(0,0),(-1,-1),XLGRAY),
+            ('TOPPADDING',(0,0),(-1,-1),10),('BOTTOMPADDING',(0,0),(-1,-1),10),
+            ('LEFTPADDING',(0,0),(-1,-1),15),
+            ('BOX',(0,0),(-1,-1),0.5,BORDER),
+        ]))
+        story.append(Spacer(1,6*mm))
+        story.append(P('Παράδειγμα:',sb('tt2',fontSize=9,textColor=DGRAY,spaceAfter=4)))
+        story.append(Table([
+            [P('ΔΙΑΣΤΑΣΕΙΣ',sb('vh',fontSize=7,textColor=WHITE)),
+             P('ΤΥΠΟΣ',sb('vh',fontSize=7,textColor=WHITE)),
+             P('ΟΓΚΟΜΕΤΡΙΚΟ ΒΑΡΟΣ',sb('vh',fontSize=7,textColor=WHITE))],
+            [P('50 × 50 × 50 cm',s('vv',fontSize=9,textColor=DGRAY)),
+             P('50 × 50 × 50 / 5000',s('vv',fontSize=9,textColor=MGRAY)),
+             P('25 kg',sb('vr',fontSize=11,textColor=RED))],
+            [P('60 × 40 × 30 cm',s('vv2',fontSize=9,textColor=DGRAY)),
+             P('60 × 40 × 30 / 5000',s('vv2',fontSize=9,textColor=MGRAY)),
+             P('14.4 kg',sb('vr2',fontSize=11,textColor=RED))],
+            [P('100 × 30 × 20 cm',s('vv3',fontSize=9,textColor=DGRAY)),
+             P('100 × 30 × 20 / 5000',s('vv3',fontSize=9,textColor=MGRAY)),
+             P('12 kg',sb('vr3',fontSize=11,textColor=RED))],
+        ], colWidths=[60*mm,80*mm,cw-140*mm], style=[
+            ('BACKGROUND',(0,0),(-1,0),MGRAY),
+            ('GRID',(0,0),(-1,-1),0.25,BORDER),
+            ('TOPPADDING',(0,0),(-1,-1),6),('BOTTOMPADDING',(0,0),(-1,-1),6),
+            ('LEFTPADDING',(0,0),(-1,-1),8),
+            ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE,XLGRAY]),
+            ('ALIGN',(2,0),(-1,-1),'CENTER'),
+        ]))
+        story.append(Spacer(1,6*mm))
+        story.append(Table([[
+            P('⚠️  Χρησιμοποιείτε πάντα το ΜΕΓΑΛΥΤΕΡΟ από: πραγματικό βάρος ή ογκομετρικό βάρος.',
+              sb('volnote',fontSize=8,textColor=DGRAY)),
+        ]], colWidths=[cw], style=[
+            ('BACKGROUND',(0,0),(-1,-1),colors.HexColor('#fff3cd')),
+            ('TOPPADDING',(0,0),(-1,-1),8),('BOTTOMPADDING',(0,0),(-1,-1),8),
+            ('LEFTPADDING',(0,0),(-1,-1),12),
+            ('BOX',(0,0),(-1,-1),0.5,colors.HexColor('#ffc107')),
+        ]))
+        story.append(Spacer(1,5*mm))
+        story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
+        story.append(ftr(offer_num,date,vstamp))
 
 
     story.append(hdr(offer_num))
