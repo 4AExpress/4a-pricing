@@ -1,12 +1,8 @@
 <?php
-// shelf.php | v1.0 | 08-05-2026
+// shelf.php | v1.1 | 22-05-2026
 error_reporting(E_ALL); ini_set("log_errors",1); ini_set("error_log","/tmp/shelf_errors.log");
 require_once 'config.php';
-
-
 $method = $_SERVER['REQUEST_METHOD'];
-
-// GET — φόρτωση όλου του ραφιού
 if ($method === 'GET') {
     $rows = db()->query('SELECT * FROM 4a_shelf ORDER BY created_at DESC')->fetchAll();
     $shelf = [];
@@ -16,12 +12,9 @@ if ($method === 'GET') {
     }
     respond((object)$shelf);
 }
-
-// POST — αποθήκευση τιμοκαταλόγου
 if ($method === 'POST') {
     $b = body();
     $action = $b['action'] ?? 'save';
-
     if ($action === 'save') {
         $stmt = db()->prepare('INSERT INTO 4a_shelf
             (id, name, service_id, service_name, markup, global_markup, account, user, office, date, created_at, `rows`)
@@ -32,18 +25,16 @@ if ($method === 'POST') {
             $b['id'], $b['name'], $b['service_id'], $b['service_name'] ?? '',
             $b['markup'], $b['global_markup'] ?? $b['markup'],
             $b['account'] ?? '—', $b['user'] ?? '', $b['office'] ?? '',
-            $b['date'] ?? '', $b['created_at'] ?? date('Y-m-d H:i:s'), json_encode($b['rows'] ?? [])
+            $b['date'] ?? '', $b['created_at'] ?? date('Y-m-d H:i:s'),
+            json_encode(array_map(function($r){$r['price']=round((float)$r['price'],2);return $r;},$b['rows']??[]))
         ]);
         respond(['ok' => true]);
     }
-
     if ($action === 'delete') {
         $stmt = db()->prepare('DELETE FROM 4a_shelf WHERE id=?');
         $stmt->execute([$b['id']]);
         respond(['ok' => true]);
     }
-
-    // sync — αντικατάσταση ολόκληρου ραφιού (για migration από localStorage)
     if ($action === 'sync') {
         $pdo = db();
         $pdo->exec('DELETE FROM 4a_shelf');
@@ -55,11 +46,11 @@ if ($method === 'POST') {
                 $item['id'], $item['name'], $item['service_id'], $item['service_name'] ?? '',
                 $item['markup'], $item['global_markup'] ?? $item['markup'],
                 $item['account'] ?? '—', $item['user'] ?? '', $item['office'] ?? '',
-                $item['date'] ?? '', $item['created_at'] ?? date('Y-m-d H:i:s'), json_encode($item['rows'] ?? [])
+                $item['date'] ?? '', $item['created_at'] ?? date('Y-m-d H:i:s'),
+                json_encode(array_map(function($r){$r['price']=round((float)$r['price'],2);return $r;},$item['rows']??[]))
             ]);
         }
         respond(['ok' => true, 'synced' => count($b['items'])]);
     }
 }
-
 respond(['error' => 'Bad request'], 400);
