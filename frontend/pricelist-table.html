@@ -1,4 +1,4 @@
-﻿<!-- pricelist-table.html | v2.16 | 15-05-2026 -->
+<!-- pricelist-table.html | v2.16 | 15-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -89,17 +89,17 @@
     <div class="topbar-logo-box">4A</div>
     <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
   </div>
-  <span class="topbar-title" id="topbar-title">Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΟ‚</span>
+  <span class="topbar-title" id="topbar-title">Τιμοκατάλογος</span>
 </div>
 
 <div class="container">
 
   <div class="section-header">
-    <span id="section-title">β€” </span>
+    <span id="section-title">— </span>
     <div style="display:flex;align-items:center;gap:8px;">
-      <button onclick="window.location.href='https://4aexpress.github.io/4a-pricing/frontend/pricelist-editor.html'" style="background:rgba(255,255,255,0.2);color:white;border:none;padding:3px 10px;border-radius:3px;font-size:11px;cursor:pointer;">β† Ξ Ξ―ΟƒΟ‰</button>
-      <span class="fc-badge" id="fc-badge">FC: β€”%</span>
-      <span class="combi-badge" id="combi-badge" style="display:none;">π‡¨π‡Ύ COMBI</span>
+      <button onclick="window.location.href='https://4aexpress.github.io/4a-pricing/frontend/pricelist-editor.html'" style="background:rgba(255,255,255,0.2);color:white;border:none;padding:3px 10px;border-radius:3px;font-size:11px;cursor:pointer;">← Πίσω</button>
+      <span class="fc-badge" id="fc-badge">FC: —%</span>
+      <span class="combi-badge" id="combi-badge" style="display:none;">🇨🇾 COMBI</span>
     </div>
   </div>
   <div class="section-body">
@@ -110,49 +110,49 @@
     <!-- CONTROLS -->
     <div class="controls">
       <div class="ctrl-group">
-        <span class="ctrl-label">Ξ“ΞµΞ½ΞΉΞΊΟ Markup</span>
-        <input class="ctrl-input" type="number" id="global-markup" placeholder="Ο€.Ο‡. 140" min="0" max="999" step="0.5" />
+        <span class="ctrl-label">Γενικό Markup</span>
+        <input class="ctrl-input" type="number" id="global-markup" placeholder="π.χ. 140" min="0" max="999" step="0.5" />
         <span style="font-size:13px;color:#888;">%</span>
-        <button class="btn btn-cyan" onclick="applyGlobal()">β†’ Ξ•Ο†Ξ±ΟΞΌΞΏΞ³Ξ® ΟƒΞµ ΟΞ»Ξ±</button>
+        <button class="btn btn-cyan" onclick="applyGlobal()">→ Εφαρμογή σε όλα</button>
       </div>
       <div class="ctrl-group">
-        <button class="btn btn-gray" onclick="expandTable()" id="expand-btn">β–¶ Ξ‘Ξ½Ξ¬Ο€Ο„Ο…ΞΎΞ· Ο€Ξ―Ξ½Ξ±ΞΊΞ±</button>
+        <button class="btn btn-gray" onclick="expandTable()" id="expand-btn">▶ Ανάπτυξη πίνακα</button>
       </div>
       <div class="ctrl-group" id="save-group" style="margin-left:auto;display:flex;gap:8px;">
-        <button class="btn btn-gray" id="print-btn" onclick="printTable()" style="display:none;">π–¨οΈ Print</button>
-        <button class="btn btn-green" id="save-btn" onclick="savePricelist()" disabled>π’Ύ Ξ‘Ο€ΞΏΞΈΞ®ΞΊΞµΟ…ΟƒΞ· ΟƒΟ„ΞΏ Ξ΅Ξ¬Ο†ΞΉ</button>
+        <button class="btn btn-gray" id="print-btn" onclick="printTable()" style="display:none;">🖨️ Print</button>
+        <button class="btn btn-green" id="save-btn" onclick="savePricelist()" disabled>💾 Αποθήκευση στο Ράφι</button>
       </div>
     </div>
 
     <!-- STATS -->
     <div class="stats-bar" id="stats-bar" style="display:none;">
-      <div class="stat">Ξ“ΟΞ±ΞΌΞΌΞ­Ο‚: <strong id="stat-rows">0</strong></div>
-      <div class="stat ok">β… ΞΞ³ΞΊΟ…ΟΞµΟ‚: <strong id="stat-ok">0</strong></div>
-      <div class="stat errors">π”΄ Ξ£Ο†Ξ¬Ξ»ΞΌΞ±Ο„Ξ±: <strong id="stat-err">0</strong></div>
-      <div class="stat">Markup ΞµΟΟΞΏΟ‚: <strong id="stat-range">β€”</strong></div>
+      <div class="stat">Γραμμές: <strong id="stat-rows">0</strong></div>
+      <div class="stat ok">✅ Έγκυρες: <strong id="stat-ok">0</strong></div>
+      <div class="stat errors">🔴 Σφάλματα: <strong id="stat-err">0</strong></div>
+      <div class="stat">Markup εύρος: <strong id="stat-range">—</strong></div>
     </div>
 
     <!-- LEGEND -->
     <div class="legend" id="legend" style="display:none;">
-      <div class="legend-item">π΅ <span>Ξ¤ΟΞΏΟ€ΞΏΟ€ΞΏΞΉΞ·ΞΌΞ­Ξ½ΞΏ markup</span></div>
-      <div class="legend-item">β… <span>ΞΞΏΞ½ΞΏΟ„ΞΏΞ½ΞΉΞΊΟΟ„Ξ·Ο„Ξ± OK</span></div>
-      <div class="legend-item">π”΄ <span>Ξ Ξ±ΟΞ±Ξ²Ξ―Ξ±ΟƒΞ· β€” Ξ±ΟΞΎΞ·ΟƒΞµ Ο„ΞΏ %</span></div>
-      <div class="legend-item"><span style="color:#1565c0">β– </span> <span>ΞΟΟƒΟ„ΞΏΟ‚ DHL</span></div>
-      <div class="legend-item"><span style="color:#cc0000">β– </span> <span>Ξ¤ΞΉΞΌΞ® Ο€ΞµΞ»Ξ¬Ο„Ξ·</span></div>
+      <div class="legend-item">🟡 <span>Τροποποιημένο markup</span></div>
+      <div class="legend-item">✅ <span>Μονοτονικότητα OK</span></div>
+      <div class="legend-item">🔴 <span>Παραβίαση — αύξησε το %</span></div>
+      <div class="legend-item"><span style="color:#1565c0">■</span> <span>Κόστος DHL</span></div>
+      <div class="legend-item"><span style="color:#cc0000">■</span> <span>Τιμή πελάτη</span></div>
     </div>
 
     <div id="pbadge" style="display:none;margin:8px 0;"></div>
     <!-- TABLE -->
     <div id="table-container">
-      <div class="loading">Ξ¦ΟΟΟ„Ο‰ΟƒΞ· Ο„ΞΉΞΌΟΞ½ DHL... Ξ Ξ±Ο„Ξ®ΟƒΟ„Ξµ "Ξ‘Ξ½Ξ¬Ο€Ο„Ο…ΞΎΞ·" Ξ³ΞΉΞ± ΞµΞΌΟ†Ξ¬Ξ½ΞΉΟƒΞ· Ο€Ξ―Ξ½Ξ±ΞΊΞ±.</div>
+      <div class="loading">Φόρτωση τιμών DHL... Πατήστε "Ανάπτυξη" για εμφάνιση πίνακα.</div>
     </div>
 
     <!-- SAVE BAR -->
     <div class="save-bar" id="save-bar" style="display:none;">
       <div class="save-info" id="save-info"></div>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-gray" onclick="resetMarkups()">β†Ί Reset ΟƒΞµ Ξ³ΞµΞ½ΞΉΞΊΟ markup</button>
-        <button class="btn btn-green" id="save-btn2" onclick="savePricelist()" disabled>π’Ύ Ξ‘Ο€ΞΏΞΈΞ®ΞΊΞµΟ…ΟƒΞ· ΟƒΟ„ΞΏ Ξ΅Ξ¬Ο†ΞΉ <span id="save-btn-svc"></span></button>
+        <button class="btn btn-gray" onclick="resetMarkups()">↺ Reset σε γενικό markup</button>
+        <button class="btn btn-green" id="save-btn2" onclick="savePricelist()" disabled>💾 Αποθήκευση στο Ράφι <span id="save-btn-svc"></span></button>
       </div>
     </div>
 
@@ -162,19 +162,19 @@
 <!-- MODAL -->
 <div id="modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;z-index:100;">
   <div style="background:white;border-radius:8px;padding:24px;width:360px;box-shadow:0 4px 20px rgba(0,0,0,0.2);">
-    <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Ξ‘Ο€ΞΏΞΈΞ®ΞΊΞµΟ…ΟƒΞ· ΟƒΟ„ΞΏ Ξ΅Ξ¬Ο†ΞΉ <span id="modal-service-id"></span></div>
+    <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Αποθήκευση στο Ράφι <span id="modal-service-id"></span></div>
     <div id="modal-type" style="font-size:12px;margin-bottom:16px;padding:6px 10px;background:#f8f8f8;border-radius:4px;"></div>
     <div style="margin-bottom:12px;">
-      <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;display:block;margin-bottom:4px;">ΞΞ½ΞΏΞΌΞ± Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ±Ξ»ΟΞ³ΞΏΟ…</label>
-      <input type="text" id="modal-name" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="Ο€.Ο‡. Standard 140%" />
+      <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;display:block;margin-bottom:4px;">Όνομα Τιμοκαταλόγου</label>
+      <input type="text" id="modal-name" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="π.χ. Standard 140%" />
     </div>
     <div style="margin-bottom:12px;">
-      <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;display:block;margin-bottom:4px;">AccountNo (Ο€ΟΞΏΞ±ΞΉΟΞµΟ„ΞΉΞΊΟ)</label>
-      <input type="text" id="modal-account" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="Ο€.Ο‡. 30004041" />
+      <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;display:block;margin-bottom:4px;">AccountNo (προαιρετικό)</label>
+      <input type="text" id="modal-account" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:13px;" placeholder="π.χ. 30004041" />
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
-      <button class="btn btn-gray" onclick="closeModal()">Ξ‘ΞΊΟΟΟ‰ΟƒΞ·</button>
-      <button class="btn btn-red" onclick="confirmSave()">π’Ύ Ξ‘Ο€ΞΏΞΈΞ®ΞΊΞµΟ…ΟƒΞ·</button>
+      <button class="btn btn-gray" onclick="closeModal()">Ακύρωση</button>
+      <button class="btn btn-red" onclick="confirmSave()">💾 Αποθήκευση</button>
     </div>
   </div>
 </div>
@@ -190,21 +190,21 @@ const _viewData   = URL_VIEW_ID ? (() => { try { return JSON.parse(localStorage.
 const URL_ROWS    = _viewData.rows || [];
 const URL_NAME    = _viewData.name || '';
 
-// β”€β”€β”€ Service metadata β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── Service metadata ────────────────────────────────────────────────────────
 const SVC_INFO = {
-  S1003:    { file: 'dhl_tariff_2026_S1003.json', mode: 'AIR',  maxW: 70,  zones: ['z1','z2','z3','z4','z5','z6','z7'], name: 'βοΈβ†—οΈ Express Export' },
-  S1012:    { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z1','z2','z3','z4','z5','z6','z7'], name: 'βοΈπ‡¬π‡·β†™οΈ Express Import' },
-  S1010:    { file: 'dhl_tariff_2026_S1010.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: 'π›β†—οΈ Economy Export' },
-  S1041:    { file: 'dhl_tariff_2026_S1041.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: 'π›π‡¬π‡·β†™οΈ Economy Import' },
-  S1003_GR: { file: 'dhl_tariff_2026_S1003.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: 'π‡¬π‡·βοΈβ†—οΈ Export Ξ•Ξ»Ξ»Ξ¬Ξ΄Ξ±β†’ΞΟΟ€ΟΞΏΟ‚', extraKg: true },
-  S1012_GR: { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: 'π‡¬π‡·βοΈβ†™οΈ Import ΞΟΟ€ΟΞΏΟ‚β†’Ξ•Ξ»Ξ»Ξ¬Ξ΄Ξ±', extraKg: true },
-  S1003_CY: { file: 'dhl_tariff_2026_S1003.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: 'π‡¨π‡ΎβοΈβ†—οΈ Express Export CY', extraKg: true },
-  S1012_CY: { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: 'π‡¨π‡ΎβοΈβ†™οΈ Express Import CY', extraKg: true },
-  // COMBI: Ο‡ΟΞ·ΟƒΞΉΞΌΞΏΟ€ΞΏΞΉΞµΞ― ROAD JSON + surcharge CY
-  S1050:    { file: 'dhl_tariff_2026_S1010.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: 'π‡¨π‡Ύ βοΈ π‡¬π‡· π›β΅οΈ π Export CYβ†’GRβ†’World', combi: true, surcharge_label: 'CYβ†’GR AIR surcharge' },
-  S1051:    { file: 'dhl_tariff_2026_S1041.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: 'π π›β¬…οΈ π‡¬π‡· βοΈ π‡¨π‡Ύ Import Worldβ†’GRβ†’CY', combi: true, surcharge_label: 'GRβ†’CY AIR surcharge' },
-  S1039:    { file: '4a_tariff_2026_S1039.json', mode: 'SEA',  maxW: 70,  zones: ['z9'], name: 'πΆ Shipping Courier GR-CY', extraKg: true },
-  S1059:    { file: '4a_tariff_2026_S1059.json', mode: 'SEA',  maxW: 70,  zones: ['z9'], name: 'πΆ Export ShipCourier P2P', extraKg: true },
+  S1003:    { file: 'dhl_tariff_2026_S1003.json', mode: 'AIR',  maxW: 70,  zones: ['z1','z2','z3','z4','z5','z6','z7'], name: '✈️↗️ Express Export' },
+  S1012:    { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z1','z2','z3','z4','z5','z6','z7'], name: '✈️🇬🇷↙️ Express Import' },
+  S1010:    { file: 'dhl_tariff_2026_S1010.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🚛↗️ Economy Export' },
+  S1041:    { file: 'dhl_tariff_2026_S1041.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🚛🇬🇷↙️ Economy Import' },
+  S1003_GR: { file: 'dhl_tariff_2026_S1003.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: '🇬🇷✈️↗️ Export Ελλάδα→Κύπρος', extraKg: true },
+  S1012_GR: { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: '🇬🇷✈️↙️ Import Κύπρος→Ελλάδα', extraKg: true },
+  S1003_CY: { file: 'dhl_tariff_2026_S1003.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: '🇨🇾✈️↗️ Express Export CY', extraKg: true },
+  S1012_CY: { file: 'dhl_tariff_2026_S1012.json', mode: 'AIR',  maxW: 70,  zones: ['z9'], name: '🇨🇾✈️↙️ Express Import CY', extraKg: true },
+  // COMBI: χρησιμοποιεί ROAD JSON + surcharge CY
+  S1050:    { file: 'dhl_tariff_2026_S1010.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🇨🇾 ✈️ 🇬🇷 🚛➡️ 🌍 Export CY→GR→World', combi: true, surcharge_label: 'CY→GR AIR surcharge' },
+  S1051:    { file: 'dhl_tariff_2026_S1041.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🌍 🚛⬅️ 🇬🇷 ✈️ 🇨🇾 Import World→GR→CY', combi: true, surcharge_label: 'GR→CY AIR surcharge' },
+  S1039:    { file: '4a_tariff_2026_S1039.json', mode: 'SEA',  maxW: 70,  zones: ['z9'], name: '🚢 Shipping Courier GR-CY', extraKg: true },
+  S1059:    { file: '4a_tariff_2026_S1059.json', mode: 'SEA',  maxW: 70,  zones: ['z9'], name: '🚢 Export ShipCourier P2P', extraKg: true },
 };
 
 const svcMeta = SVC_INFO[SERVICE_ID] || SVC_INFO['S1003'];
@@ -213,12 +213,12 @@ const ZONES      = svcMeta.zones;
 const ZONE_LABELS= ZONES.map(z => z.toUpperCase());
 const SVC_MODE   = svcMeta.mode;
 const SVC_FILE   = svcMeta.file;
-const IS_CY      = SERVICE_ID.endsWith('_CY') || SERVICE_ID.endsWith('_GR') || SERVICE_ID === 'S1039' || SERVICE_ID === 'S1059';
+const IS_CY      = SERVICE_ID.endsWith('_CY') || SERVICE_ID.endsWith('_GR');
 const IS_COMBI_SVC = svcMeta.combi || IS_COMBI;
 
-// β”€β”€β”€ UI init β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
-document.getElementById('topbar-title').textContent = URL_NAME ? `${SERVICE_ID} β€” ${URL_NAME}` : `Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΟ‚ β€” ${SERVICE_ID} ${svcMeta.name}`;
-document.getElementById('section-title').textContent = URL_NAME ? `${SERVICE_ID} β€” ${URL_NAME} Β· ${SVC_MODE} Β· Ξ­Ο‰Ο‚ ${MAX_WEIGHT}kg` : `${SERVICE_ID} β€” ${svcMeta.name} Β· ${SVC_MODE} Β· Ξ­Ο‰Ο‚ ${MAX_WEIGHT}kg`;
+// ─── UI init ─────────────────────────────────────────────────────────────────
+document.getElementById('topbar-title').textContent = URL_NAME ? `${SERVICE_ID} — ${URL_NAME}` : `Τιμοκατάλογος — ${SERVICE_ID} ${svcMeta.name}`;
+document.getElementById('section-title').textContent = URL_NAME ? `${SERVICE_ID} — ${URL_NAME} · ${SVC_MODE} · έως ${MAX_WEIGHT}kg` : `${SERVICE_ID} — ${svcMeta.name} · ${SVC_MODE} · έως ${MAX_WEIGHT}kg`;
 document.getElementById('global-markup').value = URL_MARKUP;
 document.getElementById('save-btn-svc').textContent = SERVICE_ID;
 
@@ -226,12 +226,12 @@ if (IS_COMBI_SVC) {
   document.getElementById('combi-badge').style.display = '';
   document.getElementById('surcharge-box').style.display = '';
   document.getElementById('surcharge-box').innerHTML =
-    `π‡¨π‡Ύ <strong>COMBI Service</strong> β€” ΞΟΟƒΟ„ΞΏΟ‚ = DHL ROAD Ο„ΞΉΞΌΞ® + <strong>${svcMeta.surcharge_label}: ${URL_SURCHARGE} β‚¬/kg Γ— Ξ²Ξ¬ΟΞΏΟ‚</strong>`;
+    `🇨🇾 <strong>COMBI Service</strong> — Κόστος = DHL ROAD τιμή + <strong>${svcMeta.surcharge_label}: ${URL_SURCHARGE} €/kg × βάρος</strong>`;
 }
 
-// β”€β”€β”€ Helpers β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatDate(isoStr) {
-  if (!isoStr) return 'β€”';
+  if (!isoStr) return '—';
   if (/^\d{2}-\d{2}-\d{4}$/.test(isoStr)) return isoStr;
   const d = new Date(isoStr);
   if (isNaN(d)) return isoStr;
@@ -247,7 +247,7 @@ let markupData = [];
 let tableVisible = false;
 let globalMarkup = URL_MARKUP;
 
-// β”€β”€β”€ LOAD β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── LOAD ─────────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
     const r1 = await fetch(BASE + SVC_FILE);
@@ -262,15 +262,15 @@ async function loadData() {
 
     document.getElementById('fc-badge').textContent = `FC ${SVC_MODE}: ${fuelFc}%`;
     document.getElementById('table-container').innerHTML =
-      '<div class="loading">β… Ξ”ΞµΞ΄ΞΏΞΌΞ­Ξ½Ξ± Ο†ΞΏΟΟ„ΟΞΈΞ·ΞΊΞ±Ξ½ β€” Ξ Ξ±Ο„Ξ®ΟƒΟ„Ξµ "Ξ‘Ξ½Ξ¬Ο€Ο„Ο…ΞΎΞ· Ο€Ξ―Ξ½Ξ±ΞΊΞ±"</div>';
+      '<div class="loading">✅ Δεδομένα φορτώθηκαν — Πατήστε "Ανάπτυξη πίνακα"</div>';
 
   } catch(e) {
     document.getElementById('table-container').innerHTML =
-      `<div class="loading" style="color:#c62828">β Ξ£Ο†Ξ¬Ξ»ΞΌΞ± Ο†ΟΟΟ„Ο‰ΟƒΞ·Ο‚: ${e.message}</div>`;
+      `<div class="loading" style="color:#c62828">❌ Σφάλμα φόρτωσης: ${e.message}</div>`;
   }
 }
 
-// β”€β”€β”€ BUILD MARKUP DATA β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── BUILD MARKUP DATA ────────────────────────────────────────────────────────
 function buildMarkupData(defaultMarkup) {
   if (!dhlData?.entries) return;
 
@@ -301,8 +301,8 @@ function buildMarkupData(defaultMarkup) {
       return parseFloat((prevC + (nextC-prevC)*(w-prev)/(next-prev)).toFixed(2));
     });
 
-    // COMBI: ΞΊΟΟƒΟ„ΞΏΟ‚ = DHL ROAD + surcharge Γ— weight
-    // Ξ Ξ±Ξ»ΞΉΞ¬ (S1053/S1055 non-combi): ΞΊΟΟƒΟ„ΞΏΟ‚ = DHL + flat surcharge
+    // COMBI: κόστος = DHL ROAD + surcharge × weight
+    // Παλιά (S1053/S1055 non-combi): κόστος = DHL + flat surcharge
     const effective_costs = IS_COMBI_SVC
       ? dhl_costs.map(c => c > 0 ? parseFloat((c + URL_SURCHARGE * w).toFixed(2)) : 0)
       : (URL_SURCHARGE > 0
@@ -316,7 +316,7 @@ function buildMarkupData(defaultMarkup) {
   validateAll();
 }
 
-// β”€β”€β”€ VALIDATE β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── VALIDATE ─────────────────────────────────────────────────────────────────
 function validateAll() {
   for (const r of markupData) { r.valid = true; r.error_zones = []; }
   for (let zi = 0; zi < ZONES.length; zi++) {
@@ -332,10 +332,10 @@ function validateAll() {
   }
 }
 
-// β”€β”€β”€ APPLY GLOBAL β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── APPLY GLOBAL ─────────────────────────────────────────────────────────────
 function applyGlobal() {
   const val = parseFloat(document.getElementById('global-markup').value);
-  if (!val || val <= 0) { alert('Ξ•ΞΉΟƒΞ¬Ξ³ΞµΟ„Ξµ Ξ­Ξ³ΞΊΟ…ΟΞΏ Ο€ΞΏΟƒΞΏΟƒΟ„Ο > 0'); return; }
+  if (!val || val <= 0) { alert('Εισάγετε έγκυρο ποσοστό > 0'); return; }
   globalMarkup = val;
   if (markupData.length) {
     for (const row of markupData) {
@@ -348,9 +348,9 @@ function applyGlobal() {
   }
 }
 
-// β”€β”€β”€ EXPAND TABLE β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── EXPAND TABLE ─────────────────────────────────────────────────────────────
 function expandTable() {
-  if (!dhlData) { alert('Ξ¦ΟΟΟ„Ο‰ΟƒΞ·...'); return; }
+  if (!dhlData) { alert('Φόρτωση...'); return; }
   if (!tableVisible) {
     const val = parseFloat(document.getElementById('global-markup').value) || globalMarkup;
     globalMarkup = val;
@@ -374,21 +374,21 @@ function expandTable() {
     }
     renderTable();
     tableVisible = true;
-    document.getElementById('expand-btn').textContent = 'β–Ό Ξ‘Ο€ΟΞΊΟΟ…ΟΞ· Ο€Ξ―Ξ½Ξ±ΞΊΞ±';
+    document.getElementById('expand-btn').textContent = '▼ Απόκρυψη πίνακα';
     document.getElementById('stats-bar').style.display = 'flex';
     document.getElementById('legend').style.display    = 'flex';
     document.getElementById('save-bar').style.display  = 'flex';
   } else {
-    document.getElementById('table-container').innerHTML = '<div class="loading">Ξ Ξ±Ο„Ξ®ΟƒΟ„Ξµ "Ξ‘Ξ½Ξ¬Ο€Ο„Ο…ΞΎΞ·" Ξ³ΞΉΞ± ΞµΞΌΟ†Ξ¬Ξ½ΞΉΟƒΞ·.</div>';
+    document.getElementById('table-container').innerHTML = '<div class="loading">Πατήστε "Ανάπτυξη" για εμφάνιση.</div>';
     tableVisible = false;
-    document.getElementById('expand-btn').textContent = 'β–¶ Ξ‘Ξ½Ξ¬Ο€Ο„Ο…ΞΎΞ· Ο€Ξ―Ξ½Ξ±ΞΊΞ±';
+    document.getElementById('expand-btn').textContent = '▶ Ανάπτυξη πίνακα';
     document.getElementById('stats-bar').style.display = 'none';
     document.getElementById('legend').style.display    = 'none';
     document.getElementById('save-bar').style.display  = 'none';
   }
 }
 
-// β”€β”€β”€ RENDER TABLE β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── RENDER TABLE ─────────────────────────────────────────────────────────────
 function renderTable() {
   const okCount  = markupData.filter(r => r.valid).length;
   const errCount = markupData.filter(r => !r.valid).length;
@@ -399,16 +399,16 @@ function renderTable() {
   document.getElementById('stat-rows').textContent  = markupData.length;
   document.getElementById('stat-ok').textContent    = okCount;
   document.getElementById('stat-err').textContent   = errCount;
-  document.getElementById('stat-range').textContent = minMu === maxMu ? `${minMu}%` : `${minMu}% β€“ ${maxMu}%`;
+  document.getElementById('stat-range').textContent = minMu === maxMu ? `${minMu}%` : `${minMu}% – ${maxMu}%`;
 
   const pbdg=document.getElementById('pbadge');
   if(markupData.length>0){const zz=markupData.map(r=>({w:r.weight,p:Math.round(r.prices[0]*100)/100}));let ss=[],bi=0;
   while(bi<zz.length){const bp=zz[bi].p;let bj=bi+1;while(bj<zz.length&&zz[bj].p===bp)bj++;
-  if(bi===0){ss.push({t:'β–οΈ β‰¤2kg',b:bp+'Β·'+bp,u:'β‚¬/Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®'});bi=bj;continue;}
+  if(bi===0){ss.push({t:'⚖️ ≤2kg',b:bp+'·'+bp,u:'€/αποστολή'});bi=bj;continue;}
   const df=Math.round((zz[bi].p-zz[bi-1].p)*10)/10;let bk=bi+1;
   while(bk<zz.length&&Math.round((zz[bk].p-zz[bk-1].p)*10)/10===df)bk++;
-  const lb=bk<zz.length?'β–οΈ '+zz[bi-1].w+'β†’'+zz[bk-1].w+'kg':'β–οΈ '+zz[bi-1].w+'kg+';
-  ss.push({t:lb,b:'+'+df,u:'β‚¬/kg β†‘1kg=β‚¬'+df});bi=bk;}
+  const lb=bk<zz.length?'⚖️ '+zz[bi-1].w+'→'+zz[bk-1].w+'kg':'⚖️ '+zz[bi-1].w+'kg+';
+  ss.push({t:lb,b:'+'+df,u:'€/kg ↑1kg=€'+df});bi=bk;}
   let h='<div style="display:inline-grid;grid-template-columns:repeat('+ss.length+',90px);border:0.5px solid #ccc;border-radius:6px;overflow:hidden;font-family:monospace;font-size:12px;">';
   ss.forEach((s,x)=>{const br=x<ss.length-1?'border-right:0.5px solid #ccc;':'';h+='<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;color:#666;">'+s.t+'</div>';});
   ss.forEach((s,x)=>{const br=x<ss.length-1?'border-right:0.5px solid #ccc;':'';h+='<div style="'+br+'border-bottom:0.5px solid #ccc;padding:4px 0;text-align:center;font-weight:500;">'+s.b+'</div>';});
@@ -419,20 +419,20 @@ function renderTable() {
   document.getElementById('print-btn').style.display = okCount > 0 ? 'inline-block' : 'none';
   document.getElementById('save-btn2').disabled = !saveOk;
   document.getElementById('save-info').textContent =
-    saveOk ? `β… ${okCount} Ξ³ΟΞ±ΞΌΞΌΞ­Ο‚ Ξ­Ξ³ΞΊΟ…ΟΞµΟ‚ β€” Ξ­Ο„ΞΏΞΉΞΌΞΏ Ξ³ΞΉΞ± Ξ±Ο€ΞΏΞΈΞ®ΞΊΞµΟ…ΟƒΞ·`
-           : `π”΄ ${errCount} Ο€Ξ±ΟΞ±Ξ²ΞΉΞ¬ΟƒΞµΞΉΟ‚ ΞΌΞΏΞ½ΞΏΟ„ΞΏΞ½ΞΉΞΊΟΟ„Ξ·Ο„Ξ±Ο‚ β€” Ξ΄ΞΉΞΏΟΞΈΟΟƒΟ„Ξµ Ο€ΟΞΉΞ½ Ξ±Ο€ΞΏΞΈΞ·ΞΊΞµΟΟƒΞµΟ„Ξµ`;
+    saveOk ? `✅ ${okCount} γραμμές έγκυρες — έτοιμο για αποθήκευση`
+           : `🔴 ${errCount} παραβιάσεις μονοτονικότητας — διορθώστε πριν αποθηκεύσετε`;
   document.getElementById('save-info').style.color = saveOk ? '#2e7d32' : '#c62828';
 
   let prev_step = null;
   let html = `<div class="table-wrap"><table>
     <thead><tr>
-      <th class="weight-col">Ξ’Ξ¬ΟΞΏΟ‚</th>
-      ${IS_COMBI_SVC ? `<th style="background:#fffde7;color:#7c6d00;font-size:10px;">Surcharge<br>${URL_SURCHARGE}β‚¬/kg</th>` : ''}
+      <th class="weight-col">Βάρος</th>
+      ${IS_COMBI_SVC ? `<th style="background:#fffde7;color:#7c6d00;font-size:10px;">Surcharge<br>${URL_SURCHARGE}€/kg</th>` : ''}
       ${IS_CY ? `<th style="background:#e3f2fd;color:#1565c0;font-size:10px;min-width:60px;">+1kg<br>diff</th>` : ''}
       <th class="valid-col">R1</th>
       <th class="markup-col" style="background:#e8f5e9;color:#2e7d32;">Min%</th>
       <th class="markup-col">Markup %</th>
-      ${ZONE_LABELS.map(z => `<th class="zone-col">${z}<br><span style="font-size:9px;color:#aaa;font-weight:400">DHL Β· Ξ¤ΞΉΞΌΞ®</span></th>`).join('')}
+      ${ZONE_LABELS.map(z => `<th class="zone-col">${z}<br><span style="font-size:9px;color:#aaa;font-weight:400">DHL · Τιμή</span></th>`).join('')}
     </tr></thead><tbody>`;
 
   for (let i = 0; i < markupData.length; i++) {
@@ -474,20 +474,20 @@ function renderTable() {
     const rowClass      = !row.valid ? 'has-error' : '';
     const grpClass      = groupStart ? 'group-start' : '';
 
-    // Surcharge column value Ξ³ΞΉΞ± COMBI
+    // Surcharge column value για COMBI
     const surchargeTotal = IS_COMBI_SVC ? (URL_SURCHARGE * row.weight).toFixed(2) : null;
 
     html += `<tr class="${rowClass} ${grpClass}" id="row-${i}">
       <td class="weight-cell">${row.weight.toFixed(1)} kg</td>
-      ${IS_COMBI_SVC ? `<td style="background:#fffde7;font-size:10px;color:#7c6d00;font-weight:600;">${surchargeTotal}β‚¬</td>` : ''}
+      ${IS_COMBI_SVC ? `<td style="background:#fffde7;font-size:10px;color:#7c6d00;font-weight:600;">${surchargeTotal}€</td>` : ''}
       ${IS_CY ? `<td style="background:#e3f2fd;padding:2px;">${i > 0 ? `<input type="number" step="0.01"
         value="${(row.prices[0] - markupData[i-1].prices[0]).toFixed(2)}"
         style="width:52px;border:1px solid #90caf9;border-radius:3px;font-size:11px;color:#1565c0;font-weight:600;text-align:center;padding:2px;"
         onchange="applyDiff(${i}, parseFloat(this.value))"
-        ondblclick="cascadeDiff(${i}, parseFloat(this.value))" />` : 'β€”'}</td>` : ''}
-      <td class="valid-cell">${row.valid ? 'β…' : 'π”΄'}</td>
+        ondblclick="cascadeDiff(${i}, parseFloat(this.value))" />` : '—'}</td>` : ''}
+      <td class="valid-cell">${row.valid ? '✅' : '🔴'}</td>
       <td class="markup-cell" style="background:#f1f8f1;font-size:11px;font-weight:600;color:${minPctColor};cursor:pointer;"
-          title="1 ΞΊΞ»ΞΉΞΊ β†’ ΟƒΟ„Ξ±ΞΈΞµΟΟ Min% Β· 2 ΞΊΞ»ΞΉΞΊ β†’ cascade"
+          title="1 κλικ → σταθερό Min% · 2 κλικ → cascade"
           onclick="applyMinFlat(${i})" ondblclick="applyMinCascade(${i})">${minPctDisplay}</td>
       <td class="markup-cell">
         <input class="markup-field ${row.changed ? 'changed' : ''}"
@@ -504,7 +504,7 @@ function renderTable() {
       const isErr = row.error_zones && row.error_zones.includes(zi);
       html += `<td class="zone-cell">
         <span style="color:#1565c0;font-size:10px">${dhl.toFixed(2)}</span>
-        <span style="color:#888;font-size:9px"> β†’ </span>
+        <span style="color:#888;font-size:9px"> → </span>
         <span class="${isErr ? 'zone-val error' : 'zone-val'}">${price.toFixed(2)}</span>
       </td>`;
     }
@@ -513,7 +513,7 @@ function renderTable() {
 
   html += '</tbody></table></div>';
 
-  // Ξ“ΟΞ±ΞΌΞΌΞ® +1kg
+  // Γραμμή +1kg
   if (markupData.length > 0) {
     const lastRow    = markupData[markupData.length - 1];
     const lastMarkup = lastRow.markup;
@@ -524,7 +524,7 @@ function renderTable() {
       if (beyond.length < 2) return 0;
       return parseFloat((beyond[1].cost - beyond[0].cost).toFixed(2));
     });
-    // COMBI: adder ΞµΟ€Ξ―ΟƒΞ·Ο‚ Ο€ΟΞΏΟƒΞΈΞ­Ο„ΞµΞΉ surcharge per kg
+    // COMBI: adder επίσης προσθέτει surcharge per kg
     const adderEffective = IS_COMBI_SVC
       ? adderCosts.map(c => parseFloat((c + URL_SURCHARGE).toFixed(2)))
       : adderCosts;
@@ -533,18 +533,18 @@ function renderTable() {
 
     html += `<div style="margin-top:8px;border:1px solid #00BCD4;border-radius:4px;overflow:hidden;">
       <div style="background:#00BCD4;color:white;font-size:11px;font-weight:600;padding:4px 10px;">
-        ${MAX_WEIGHT}kg+ β€” ΞΟΟƒΟ„ΞΏΟ‚ Ξ±Ξ½Ξ¬ ΞµΟ€ΞΉΟ€Ξ»Ξ­ΞΏΞ½ kg (markup: ${lastMarkup}%)
+        ${MAX_WEIGHT}kg+ — Κόστος ανά επιπλέον kg (markup: ${lastMarkup}%)
       </div>
       <div class="table-wrap"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px;">
         <tr style="background:#f0fdff;">
           <td class="weight-cell" style="padding:4px 6px;">${MAX_WEIGHT}+ kg</td>
-          ${IS_COMBI_SVC ? `<td style="background:#fffde7;font-size:10px;color:#7c6d00;">+${URL_SURCHARGE}β‚¬</td>` : ''}
-          <td class="valid-cell">β€”</td>
-          <td class="markup-cell" style="background:#f1f8f1;font-size:11px;color:#555;text-align:center;">Ξ±Ξ½Ξ¬ kg</td>
+          ${IS_COMBI_SVC ? `<td style="background:#fffde7;font-size:10px;color:#7c6d00;">+${URL_SURCHARGE}€</td>` : ''}
+          <td class="valid-cell">—</td>
+          <td class="markup-cell" style="background:#f1f8f1;font-size:11px;color:#555;text-align:center;">ανά kg</td>
           <td class="markup-cell" style="text-align:center;font-weight:700;">${lastMarkup}%</td>
           ${ZONES.map((z,zi) => `<td class="zone-cell">
             <span style="color:#1565c0;font-size:10px">${adderEffective[zi].toFixed(2)}</span>
-            <span style="color:#888;font-size:9px"> β†’ </span>
+            <span style="color:#888;font-size:9px"> → </span>
             <span style="color:#333;font-size:11px">${(adderPrices[zi]||adderPrices[0]||0).toFixed(2)}</span>
           </td>`).join('')}
         </tr>
@@ -555,7 +555,7 @@ function renderTable() {
   document.getElementById('table-container').innerHTML = html;
 }
 
-// β”€β”€β”€ ROW MARKUP β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── ROW MARKUP ───────────────────────────────────────────────────────────────
 function onRowMarkup(idx, value) {
   const val = parseFloat(value);
   if (!val || val <= 0) return;
@@ -581,7 +581,7 @@ function cascadeMarkup(idx, value) {
   renderTable();
 }
 
-// β”€β”€β”€ MIN% FLAT & CASCADE β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── MIN% FLAT & CASCADE ──────────────────────────────────────────────────────
 function applyMinFlat(startIdx) {
   const flatMarkup = markupData[startIdx].minPct || 0;
   if (flatMarkup <= 0) return;
@@ -609,7 +609,7 @@ function applyMinCascade(startIdx) {
   validateAll(); renderTable();
 }
 
-// β”€β”€β”€ RESET β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── RESET ────────────────────────────────────────────────────────────────────
 function resetMarkups() {
   for (const row of markupData) {
     row.markup = globalMarkup; row.changed = false; row.error_zones = [];
@@ -619,7 +619,7 @@ function resetMarkups() {
   validateAll(); renderTable();
 }
 
-// β”€β”€β”€ DIFF (Z9) β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── DIFF (Z9) ────────────────────────────────────────────────────────────────
 function applyDiff(idx, diff) {
   if (idx === 0 || !diff) return;
   const targetPrice = markupData[idx-1].prices[0] + diff;
@@ -653,15 +653,15 @@ function cascadeDiff(idx, diff) {
   validateAll(); renderTable();
 }
 
-// β”€β”€β”€ SAVE β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+// ─── SAVE ─────────────────────────────────────────────────────────────────────
 function savePricelist() {
   const errCount = markupData.filter(r => !r.valid).length;
-  if (errCount > 0) { alert(`π”΄ ${errCount} Ο€Ξ±ΟΞ±Ξ²ΞΉΞ¬ΟƒΞµΞΉΟ‚ β€” Ξ΄ΞµΞ½ ΞµΟ€ΞΉΟ„ΟΞ­Ο€ΞµΟ„Ξ±ΞΉ Ξ±Ο€ΞΏΞΈΞ®ΞΊΞµΟ…ΟƒΞ·`); return; }
+  if (errCount > 0) { alert(`🔴 ${errCount} παραβιάσεις — δεν επιτρέπεται αποθήκευση`); return; }
   const isCustom = markupData.some(r => r.markup !== globalMarkup);
   document.getElementById('modal-service-id').textContent = SERVICE_ID;
-  const z1r=markupData.filter(r=>r.prices&&r.prices[0]!==undefined);let sg=[],ii=0;while(ii<z1r.length){const bp=z1r[ii].prices[0];let jj=ii+1;while(jj<z1r.length&&z1r[jj].prices[0]===bp)jj++;if(ii===0){sg.push(bp+"β†”2");ii=jj;continue;}const df=Math.round((z1r[ii].prices[0]-z1r[ii-1].prices[0])*10)/10;let kk=ii+1;while(kk<z1r.length&&Math.round((z1r[kk].prices[0]-z1r[kk-1].prices[0])*10)/10===df)kk++;sg.push(df+(kk<z1r.length?"β†‘"+z1r[kk-1].weight:"β†‘"));ii=kk;}document.getElementById("modal-name").value=SERVICE_ID+" Β· "+sg.join(" | ");
+  const z1r=markupData.filter(r=>r.prices&&r.prices[0]!==undefined);let sg=[],ii=0;while(ii<z1r.length){const bp=z1r[ii].prices[0];let jj=ii+1;while(jj<z1r.length&&z1r[jj].prices[0]===bp)jj++;if(ii===0){sg.push(bp+"↔2");ii=jj;continue;}const df=Math.round((z1r[ii].prices[0]-z1r[ii-1].prices[0])*10)/10;let kk=ii+1;while(kk<z1r.length&&Math.round((z1r[kk].prices[0]-z1r[kk-1].prices[0])*10)/10===df)kk++;sg.push(df+(kk<z1r.length?"↑"+z1r[kk-1].weight:"↑"));ii=kk;}document.getElementById("modal-name").value=SERVICE_ID+" · "+sg.join(" | ");
   document.getElementById('modal-type').textContent =
-    isCustom ? 'β™οΈ Custom β€” Ξ΄ΞΉΞ±Ο†ΞΏΟΞµΟ„ΞΉΞΊΟ markup Ξ±Ξ½Ξ¬ Ξ²Ξ¬ΟΞΏΟ‚' : `π“ Flat β€” ΞµΞ½ΞΉΞ±Ξ―ΞΏ markup ${globalMarkup}%`;
+    isCustom ? '⚙️ Custom — διαφορετικό markup ανά βάρος' : `📌 Flat — ενιαίο markup ${globalMarkup}%`;
   document.getElementById('modal-type').style.color = isCustom ? '#e65100' : '#1565c0';
   document.getElementById('modal-bg').style.display = 'flex';
 }
@@ -670,7 +670,7 @@ function closeModal() { document.getElementById('modal-bg').style.display = 'non
  function printTable() {
   const rr = markupData;
   const col = Math.ceil(rr.length / 3);
-  const mkT = (sl) => '<table style="border-collapse:collapse;width:100%"><thead><tr><th style="padding:2px 8px;font-size:9px;color:#888;text-align:left;">kg</th>' + Array.from({length:rr[0]?.prices?.length||1},(_,zi)=>'<th style="padding:2px 6px;font-size:9px;color:#888;">Z'+(zi+1)+'</th>').join('') + '</tr></thead><tbody>' + sl.map((r,idx) => '<tr style="background:' + (idx%2?'#f5f5f5':'#fff') + '"><td style="padding:2px 8px;font-size:10px;color:#555;">' + r.weight + 'kg</td>' + r.prices.map(p => '<td style="padding:2px 6px;text-align:right;font-size:10px;">β‚¬' + p.toFixed(2) + '</td>').join('') + '</tr>').join('') + '</tbody></table>';
+  const mkT = (sl) => '<table style="border-collapse:collapse;width:100%"><thead><tr><th style="padding:2px 8px;font-size:9px;color:#888;text-align:left;">kg</th>' + Array.from({length:rr[0]?.prices?.length||1},(_,zi)=>'<th style="padding:2px 6px;font-size:9px;color:#888;">Z'+(zi+1)+'</th>').join('') + '</tr></thead><tbody>' + sl.map((r,idx) => '<tr style="background:' + (idx%2?'#f5f5f5':'#fff') + '"><td style="padding:2px 8px;font-size:10px;color:#555;">' + r.weight + 'kg</td>' + r.prices.map(p => '<td style="padding:2px 6px;text-align:right;font-size:10px;">€' + p.toFixed(2) + '</td>').join('') + '</tr>').join('') + '</tbody></table>';
   const w = window.open('', '_blank');
   w.document.write('<html><head><title>' + SERVICE_ID + '</title><style>body{font-family:Arial,sans-serif;margin:10mm}.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}h2{font-size:13px;margin:0 0 4px}h3{font-size:10px;color:#666;font-weight:normal;margin:0 0 10px}</style></head><body>');
   w.document.write('<h2>4A Express \u2014 ' + SERVICE_ID + '</h2>');
@@ -684,7 +684,7 @@ function closeModal() { document.getElementById('modal-bg').style.display = 'non
 function confirmSave() {
   const name    = document.getElementById('modal-name').value.trim();
   const account = document.getElementById('modal-account').value.trim();
-  if (!name) { alert('Ξ•ΞΉΟƒΞ¬Ξ³ΞµΟ„Ξµ ΟΞ½ΞΏΞΌΞ±'); return; }
+  if (!name) { alert('Εισάγετε όνομα'); return; }
 
   const isCustom  = markupData.some(r => r.markup !== globalMarkup);
   const savedUser = JSON.parse(localStorage.getItem('4a_current_user') || 'null');
@@ -695,7 +695,7 @@ function confirmSave() {
     id: Date.now(), name,
     service_id:    SERVICE_ID,
     service_name:  svcMeta.name,
-    account:       account || 'β€”',
+    account:       account || '—',
     global_markup: globalMarkup,
     markup:        globalMarkup,
     markup_z9:     0,
@@ -704,8 +704,8 @@ function confirmSave() {
     is_combi:      IS_COMBI_SVC,
     rows:          [...markupData.map(r => ({ weight: r.weight, price: r.prices[0] })), ...(svcMeta.extraKg && window._adderPrices ? [{ weight: MAX_WEIGHT+"+", price: window._adderPrices[0], extraKg: true }] : [])],
     fc:            fuelFc,
-    user:          savedUser?.name   || 'β€”',
-    office:        savedUser?.office || 'β€”',
+    user:          savedUser?.name   || '—',
+    office:        savedUser?.office || '—',
     date:          todayFormatted(),
     created_at:    new Date().toISOString()
   };
@@ -720,7 +720,7 @@ function confirmSave() {
   }).catch(e => console.error('API shelf error:', e));
 
   closeModal();
-  alert(`β… "${name}" Ξ±Ο€ΞΏΞΈΞ·ΞΊΞµΟΟ„Ξ·ΞΊΞµ ΟƒΟ„ΞΏ Ξ΅Ξ¬Ο†ΞΉ ${SERVICE_ID}!`);
+  alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${SERVICE_ID}!`);
 }
 
 // Init
@@ -728,4 +728,3 @@ loadData();
 </script>
 </body>
 </html>
-
