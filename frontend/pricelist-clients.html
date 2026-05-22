@@ -659,8 +659,10 @@ async function previewPDF(){
     {z:'Z9',name:'Κύπρος',    desc:'Κύπρος — μόνο αεροπορικά μέσω S1003 / S1012',                          svcs:'S1003, S1012'},
   ];
   const OFFICE_MAP=Object.fromEntries(officesFromAPI.map(o=>[o.prefix,o]));
-  const officeCode=((currentUser?.stations||currentUser?.office||'ATH').split(',')[0]).trim().toUpperCase();
-  const issuerOffice=OFFICE_MAP[officeCode]||OFFICE_MAP['ATH']||{};
+  const STATION_PREFIX={'0107':'ATH','0108':'NIC','0109':'QLI','0110':'LCA'};
+  const rawCode=((currentUser?.stations||currentUser?.office||'').split(',')[0]).trim().toUpperCase();
+  const officeCode=OFFICE_MAP[rawCode] ? rawCode : (STATION_PREFIX[rawCode]||'ATH');
+  const issuerOffice=OFFICE_MAP[officeCode]||Object.values(OFFICE_MAP)[0]||{};
   const issuerName=currentUser?.name||'—';
 
   const H=(num)=>`<div class="ph"><div class="ph-l"><span class="lb">4A</span><span class="lt">WORLDWIDE<br>EXPRESS</span></div><div class="ph-r">${num}</div></div>`;
@@ -804,10 +806,12 @@ async function previewPDF(){
   </div>
   ${S('ΕΚΔΟΤΗΣ ΠΡΟΣΦΟΡΑΣ')}
   <div class="issuer-bar">
+    <div class="issuer-item"><div class="lbl">Εταιρεία</div><div class="val">${issuerOffice.company||'4A Express Worldwide'}</div></div>
+    <div class="issuer-item"><div class="lbl">ΑΦΜ</div><div class="val">${issuerOffice.vat||'—'}</div></div>
     <div class="issuer-item"><div class="lbl">Στέλεχος</div><div class="val">${issuerName}</div></div>
-    <div class="issuer-item"><div class="lbl">Γραφείο</div><div class="val">${issuerOffice.city}</div></div>
-    <div class="issuer-item"><div class="lbl">Διεύθυνση</div><div class="val">${issuerOffice.addr}</div></div>
-    <div class="issuer-item"><div class="lbl">Τηλέφωνο</div><div class="val">${issuerOffice.tel}</div></div>
+    <div class="issuer-item"><div class="lbl">Γραφείο</div><div class="val">${issuerOffice.city||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Διεύθυνση</div><div class="val">${issuerOffice.addr||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Τηλέφωνο</div><div class="val">${issuerOffice.tel||'—'}</div></div>
   </div>
   ${S('ΣΤΟΙΧΕΙΑ ΠΕΛΑΤΗ')}
   <div class="cgrid">
