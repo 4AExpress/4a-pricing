@@ -1,0 +1,376 @@
+{
+  "tariff": {
+    "carrier_id": "4A",
+    "service_id": "S1059",
+    "service_name": "Export ShipCourier Point to Point",
+    "mode": "SEA",
+    "region": "GR-CY",
+    "valid_from": "2026-01-01",
+    "valid_to": null,
+    "max_weight_kg": 70.0,
+    "notes": "4A Express 2026 — SEA GR→CY — base 3kg €7.00 + €0.50/kg extra"
+  },
+  "docs_types": [
+    "DOCS",
+    "NON_DOCS"
+  ],
+  "zones_count": 1,
+  "entries_count": 71,
+  "entries": [
+    {
+      "zone_code": "z9",
+      "weight_kg": 1,
+      "cost": 7.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 2,
+      "cost": 7.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 3,
+      "cost": 7.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 4,
+      "cost": 7.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 5,
+      "cost": 8.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 6,
+      "cost": 8.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 7,
+      "cost": 9.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 8,
+      "cost": 9.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 9,
+      "cost": 10.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 10,
+      "cost": 10.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 11,
+      "cost": 11.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 12,
+      "cost": 11.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 13,
+      "cost": 12.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 14,
+      "cost": 12.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 15,
+      "cost": 13.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 16,
+      "cost": 13.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 17,
+      "cost": 14.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 18,
+      "cost": 14.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 19,
+      "cost": 15.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 20,
+      "cost": 15.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 21,
+      "cost": 16.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 22,
+      "cost": 16.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 23,
+      "cost": 17.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 24,
+      "cost": 17.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 25,
+      "cost": 18.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 26,
+      "cost": 18.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 27,
+      "cost": 19.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 28,
+      "cost": 19.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 29,
+      "cost": 20.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 30,
+      "cost": 20.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 31,
+      "cost": 21.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 32,
+      "cost": 21.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 33,
+      "cost": 22.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 34,
+      "cost": 22.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 35,
+      "cost": 23.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 36,
+      "cost": 23.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 37,
+      "cost": 24.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 38,
+      "cost": 24.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 39,
+      "cost": 25.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 40,
+      "cost": 25.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 41,
+      "cost": 26.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 42,
+      "cost": 26.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 43,
+      "cost": 27.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 44,
+      "cost": 27.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 45,
+      "cost": 28.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 46,
+      "cost": 28.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 47,
+      "cost": 29.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 48,
+      "cost": 29.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 49,
+      "cost": 30.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 50,
+      "cost": 30.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 51,
+      "cost": 31.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 52,
+      "cost": 31.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 53,
+      "cost": 32.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 54,
+      "cost": 32.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 55,
+      "cost": 33.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 56,
+      "cost": 33.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 57,
+      "cost": 34.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 58,
+      "cost": 34.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 59,
+      "cost": 35.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 60,
+      "cost": 35.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 61,
+      "cost": 36.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 62,
+      "cost": 36.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 63,
+      "cost": 37.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 64,
+      "cost": 37.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 65,
+      "cost": 38.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 66,
+      "cost": 38.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 67,
+      "cost": 39.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 68,
+      "cost": 39.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 69,
+      "cost": 40.0
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 70,
+      "cost": 40.5
+    },
+    {
+      "zone_code": "z9",
+      "weight_kg": 71,
+      "cost": 0.5
+    }
+  ]
+}

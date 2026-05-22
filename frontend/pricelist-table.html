@@ -203,6 +203,8 @@ const SVC_INFO = {
   // COMBI: χρησιμοποιεί ROAD JSON + surcharge CY
   S1050:    { file: 'dhl_tariff_2026_S1010.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🇨🇾 ✈️ 🇬🇷 🚛➡️ 🌍 Export CY→GR→World', combi: true, surcharge_label: 'CY→GR AIR surcharge' },
   S1051:    { file: 'dhl_tariff_2026_S1041.json', mode: 'ROAD', maxW: 100, zones: ['z1','z2','z3'],                      name: '🌍 🚛⬅️ 🇬🇷 ✈️ 🇨🇾 Import World→GR→CY', combi: true, surcharge_label: 'GR→CY AIR surcharge' },
+  S1039:    { file: '4a_tariff_2026_S1039.json', mode: 'SEA',  maxW: 70,  zones: ['z9'], name: '🚢 Shipping Courier GR-CY', extraKg: true },
+  S1059:    { file: '4a_tariff_2026_S1059.json', mode: 'SEA',  maxW: 70,  zones: ['z9'], name: '🚢 Export ShipCourier P2P', extraKg: true },
 };
 
 const svcMeta = SVC_INFO[SERVICE_ID] || SVC_INFO['S1003'];
