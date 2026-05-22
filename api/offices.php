@@ -14,9 +14,6 @@ db()->exec("CREATE TABLE IF NOT EXISTS `4a_offices` (
     vat     VARCHAR(20)  NOT NULL DEFAULT '',
     active  TINYINT(1)   NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-db()->exec("ALTER TABLE `4a_offices` ADD COLUMN IF NOT EXISTS addr    VARCHAR(200) NOT NULL DEFAULT ''");
-db()->exec("ALTER TABLE `4a_offices` ADD COLUMN IF NOT EXISTS company VARCHAR(200) NOT NULL DEFAULT ''");
-db()->exec("ALTER TABLE `4a_offices` ADD COLUMN IF NOT EXISTS vat     VARCHAR(20)  NOT NULL DEFAULT ''");
 
 $method = $_SERVER['REQUEST_METHOD'];
 
