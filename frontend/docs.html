@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4A Express — Docs Προσφοράς</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
+
+  /* TOPBAR */
+  .topbar { background: #cc0000; color: white; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; height: 48px; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { display: flex; align-items: center; gap: 6px; }
+  .topbar-logo-box { background: white; color: #cc0000; font-weight: 900; font-size: 13px; padding: 2px 5px; border-radius: 2px; }
+  .topbar-logo-text { font-size: 8px; font-weight: 600; line-height: 1.2; opacity: 0.85; }
+  .topbar-title { font-size: 14px; font-weight: 600; }
+  .topbar-user { font-size: 12px; opacity: 0.85; }
+  .topbar-logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 12px; }
+  .topbar-logout:hover { background: rgba(255,255,255,0.3); }
+
+  /* NAV */
+  .nav { background: white; border-bottom: 1px solid #ddd; display: flex; gap: 0; }
+  .nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer; color: #555; border-bottom: 2px solid transparent; text-decoration: none; display: inline-block; }
+  .nav-btn.active { color: #cc0000; border-bottom-color: #cc0000; font-weight: 600; }
+  .nav-btn:hover { background: #f8f8f8; }
+
+  /* CONTAINER */
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+  .page-header { margin-bottom: 24px; }
+  .page-title { font-size: 20px; font-weight: 700; color: #222; }
+  .page-sub { font-size: 13px; color: #888; margin-top: 4px; }
+
+  /* SECTION */
+  .section { background: white; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 24px; overflow: hidden; }
+  .section-header { background: #cc0000; color: white; padding: 12px 16px; font-size: 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+  .section-body { padding: 0; }
+
+  /* DOCS LIST */
+  .doc-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; transition: background 0.15s; }
+  .doc-row:last-child { border-bottom: none; }
+  .doc-row:hover { background: #fafafa; }
+  .doc-order { display: flex; flex-direction: column; gap: 2px; }
+  .order-btn { background: #f0f0f0; border: none; border-radius: 3px; width: 22px; height: 18px; cursor: pointer; font-size: 10px; color: #555; display: flex; align-items: center; justify-content: center; }
+  .order-btn:hover { background: #e0e0e0; }
+  .order-btn:disabled { opacity: 0.3; cursor: default; }
+  .doc-num { font-size: 11px; font-weight: 700; color: #aaa; width: 20px; text-align: center; }
+  .doc-icon { font-size: 20px; width: 30px; text-align: center; }
+  .doc-info { flex: 1; }
+  .doc-name { font-size: 14px; font-weight: 600; color: #222; }
+  .doc-desc { font-size: 11px; color: #888; margin-top: 2px; }
+  .doc-locked { font-size: 10px; color: #aaa; background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 3px; padding: 2px 6px; }
+
+  /* TOGGLE */
+  .toggle { position: relative; width: 42px; height: 22px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: #ddd; border-radius: 22px; cursor: pointer; transition: 0.2s; }
+  .toggle-slider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+  .toggle input:checked + .toggle-slider { background: #2e7d32; }
+  .toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
+  .toggle input:disabled + .toggle-slider { opacity: 0.5; cursor: default; }
+
+  /* SAVE BAR */
+  .save-bar { background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 6px; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .save-bar-text { font-size: 13px; color: #2e7d32; }
+  .btn-save { background: #2e7d32; color: white; border: none; padding: 7px 20px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-save:hover { background: #1b5e20; }
+  .save-bar.hidden { display: none; }
+
+  /* HELP SECTION */
+  .help-toolbar { display: flex; justify-content: flex-end; padding: 8px 16px; border-bottom: 1px solid #f0f0f0; gap: 8px; }
+  .btn-edit { background: #1565c0; color: white; border: none; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .btn-edit:hover { background: #0d47a1; }
+  .btn-cancel { background: #f0f0f0; color: #555; border: none; padding: 6px 14px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+  .help-view { padding: 16px; font-size: 13px; color: #444; line-height: 1.7; min-height: 120px; white-space: pre-wrap; }
+  .help-edit { display: none; padding: 16px; }
+  .help-textarea { width: 100%; min-height: 200px; font-size: 13px; font-family: 'Segoe UI', sans-serif; border: 1px solid #ddd; border-radius: 4px; padding: 10px; resize: vertical; line-height: 1.7; color: #333; }
+  .help-empty { color: #bbb; font-style: italic; }
+
+  /* TAGS */
+  .tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 600; }
+  .tag-default { background: #e3f2fd; color: #1565c0; }
+  .tag-locked { background: #fff3e0; color: #e65100; }
+
+  /* LOGIN */
+  .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f5f5f5; }
+  .login-box { background: white; border-radius: 8px; padding: 32px; width: 320px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+  .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .login-logo-box { background: #cc0000; color: white; font-weight: 900; font-size: 18px; padding: 4px 8px; border-radius: 3px; }
+  .login-logo-text { font-size: 10px; font-weight: 600; color: #888; line-height: 1.3; }
+  .login-title { font-size: 18px; font-weight: 700; color: #222; margin-bottom: 4px; }
+  .login-sub { font-size: 12px; color: #888; margin-bottom: 20px; }
+  .login-label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; display: block; margin-bottom: 4px; margin-top: 12px; }
+  .login-pin { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+  .login-btn { width: 100%; margin-top: 16px; padding: 10px; background: #cc0000; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .login-error { color: #cc0000; font-size: 12px; margin-top: 8px; min-height: 18px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-box">4A</div>
+      <div class="login-logo-text">WORLDWIDE<br>EXPRESS</div>
+    </div>
+    <div class="login-title">Docs Προσφοράς</div>
+    <div class="login-sub">Εισάγετε τα στοιχεία σας για πρόσβαση</div>
+    <label class="login-label">User Code</label>
+    <input class="login-pin" type="text" id="login-user" maxlength="5" placeholder="E1001" style="letter-spacing:4px;" />
+    <div id="otp-section" style="display:none;">
+      <label class="login-label">Κωδικός OTP (6 ψηφία)</label>
+      <input class="login-pin" type="text" id="login-otp" maxlength="6" placeholder="••••••" style="letter-spacing:6px;" />
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Αποστολή OTP</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        <div class="topbar-logo-box">4A</div>
+        <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
+      </div>
+      <span class="topbar-title">Docs Προσφοράς</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span class="topbar-user" id="topbar-user"></span>
+      <button class="topbar-logout" onclick="doLogout()">Έξοδος</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
+    <a class="nav-btn" href="pricelist-clients.html">👥 Πελάτες</a>
+    <a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
+    <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
+    <a class="nav-btn" href="services.html">🔧 Services</a>
+    <a class="nav-btn active" href="docs.html">📄 Docs Προσφοράς</a>
+  </div>
+
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">📄 Docs Προσφοράς</h1>
+      <p class="page-sub">Διαχείριση εγγράφων που συμπεριλαμβάνονται στις προσφορές — σειρά & ενεργοποίηση</p>
+    </div>
+
+    <div id="save-bar" class="save-bar hidden">
+      <span class="save-bar-text">✏️ Υπάρχουν αλλαγές που δεν έχουν αποθηκευτεί</span>
+      <button class="btn-save" onclick="saveDocs()">💾 Αποθήκευση</button>
+    </div>
+
+    <!-- DOCS LIST -->
+    <div class="section">
+      <div class="section-header">
+        <span>📋 Λίστα Εγγράφων</span>
+        <span style="font-size:11px; opacity:0.8;">Drag ↑↓ για αλλαγή σειράς</span>
+      </div>
+      <div class="section-body" id="docs-list">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- HELP -->
+    <div class="section">
+      <div class="section-header">
+        <span>❓ Help & Changelog</span>
+        <span id="help-admin-badge" style="font-size:11px; opacity:0.8; display:none;">✏️ Admin only</span>
+      </div>
+      <div id="help-toolbar" class="help-toolbar" style="display:none;">
+        <button class="btn-cancel" onclick="cancelHelp()">Ακύρωση</button>
+        <button class="btn-edit" onclick="saveHelp()">💾 Αποθήκευση</button>
+      </div>
+      <div id="help-view" class="help-view">
+        <span class="help-empty">Φόρτωση...</span>
+      </div>
+      <div id="help-edit" class="help-edit">
+        <textarea class="help-textarea" id="help-textarea" placeholder="Γράψε εδώ notes, changelog, spec..."></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://4aexpress.com/api';
+let currentUser = null;
+let docs = [];
+let helpText = '';
+let changed = false;
+
+// ── DEFAULT DOCS ──────────────────────────────────────────────────────────────
+const DEFAULT_DOCS = [
+  { id:'volumetric',  name:'Ογκομέτρηση Δεμάτων',              icon:'📊', desc:'Υπολογισμός ογκομετρικού βάρους (Μ×Π×Υ/5000)',      active:true,  locked:false },
+  { id:'surcharges',  name:'Παράρτημα Α — Χρεώσεις',           icon:'📋', desc:'Προαιρετικές υπηρεσίες & επιπλέον χρεώσεις 2026',   active:true,  locked:false },
+  { id:'pallets',     name:'Μη-Στοιβάσιμες Παλέτες',           icon:'🚛', desc:'Διευκρινίσεις & εικόνες για non-stackable pallets', active:true,  locked:false },
+  { id:'packaging',   name:'Οδηγίες Συσκευασίας',              icon:'📦', desc:'Σωστή συσκευασία δεμάτων & απαιτήσεις',            active:false, locked:false },
+  { id:'cod',         name:'Αντικαταβολή (COD)',                icon:'💰', desc:'Υπηρεσία cash on delivery — όροι & χρεώσεις',       active:false, locked:false },
+  { id:'contract',    name:'Αποδοχή Προσφοράς — Σύμβαση',      icon:'✍️', desc:'Σύμβαση παροχής υπηρεσιών ταχυμεταφοράς',          active:true,  locked:true  },
+];
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const userCode = document.getElementById('login-user').value.trim().toUpperCase();
+  const otpSection = document.getElementById('otp-section');
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+
+  if (otpSection.style.display === 'none') {
+    if (!userCode) { err.textContent = 'Εισάγετε User Code'; return; }
+    btn.textContent = 'Αποστολή...'; btn.disabled = true;
+    try {
+      const r = await fetch(`${API}/login.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'send_otp', user_code: userCode}) });
+      const d = await r.json();
+      if (d.ok) { otpSection.style.display=''; btn.textContent='Σύνδεση'; btn.disabled=false; err.textContent=''; }
+      else { err.textContent = d.error||'Σφάλμα'; btn.textContent='Αποστολή OTP'; btn.disabled=false; }
+    } catch(e) { err.textContent='Σφάλμα σύνδεσης'; btn.textContent='Αποστολή OTP'; btn.disabled=false; }
+  } else {
+    const otp = document.getElementById('login-otp').value.trim();
+    if (!otp) { err.textContent='Εισάγετε OTP'; return; }
+    btn.textContent='Σύνδεση...'; btn.disabled=true;
+    try {
+      const r = await fetch(`${API}/login.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'verify_otp', user_code:userCode, otp}) });
+      const d = await r.json();
+      if (d.ok) { currentUser = d.user; localStorage.setItem('4a_user', JSON.stringify(d.user)); initApp(); }
+      else { err.textContent = d.error||'Λάθος OTP'; btn.textContent='Σύνδεση'; btn.disabled=false; }
+    } catch(e) { err.textContent='Σφάλμα σύνδεσης'; btn.textContent='Σύνδεση'; btn.disabled=false; }
+  }
+}
+
+function doLogout() {
+  localStorage.removeItem('4a_user');
+  location.reload();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+async function initApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = '';
+  document.getElementById('topbar-user').textContent = `${currentUser.name} · ${currentUser.role}`;
+
+  await loadDocs();
+  await loadHelp();
+
+  if (currentUser.role === 'admin') {
+    document.getElementById('help-admin-badge').style.display = '';
+    addEditHelpBtn();
+  }
+}
+
+// ── DOCS ──────────────────────────────────────────────────────────────────────
+async function loadDocs() {
+  try {
+    const r = await fetch(`${API}/docs.php`);
+    const d = await r.json();
+    docs = d.docs && d.docs.length ? d.docs : DEFAULT_DOCS;
+  } catch(e) {
+    docs = DEFAULT_DOCS;
+  }
+  renderDocs();
+}
+
+function renderDocs() {
+  const list = document.getElementById('docs-list');
+  const isAdmin = currentUser.role === 'admin';
+  list.innerHTML = docs.map((doc, i) => `
+    <div class="doc-row" id="docrow-${doc.id}">
+      <div class="doc-order">
+        <button class="order-btn" onclick="moveDoc(${i},-1)" ${i===0?'disabled':''}>▲</button>
+        <button class="order-btn" onclick="moveDoc(${i},1)" ${i===docs.length-1?'disabled':''}>▼</button>
+      </div>
+      <div class="doc-num">${i+1}</div>
+      <div class="doc-icon">${doc.icon}</div>
+      <div class="doc-info">
+        <div class="doc-name">${doc.name} ${doc.locked ? '<span class="tag tag-locked">🔒 Τελευταίο</span>' : '<span class="tag tag-default">default ON</span>'}</div>
+        <div class="doc-desc">${doc.desc}</div>
+      </div>
+      ${doc.locked ? '<span class="doc-locked">Πάντα τελευταίο</span>' : `
+      <label class="toggle">
+        <input type="checkbox" ${doc.active?'checked':''} ${!isAdmin?'disabled':''} onchange="toggleDoc(${i}, this.checked)">
+        <span class="toggle-slider"></span>
+      </label>`}
+    </div>
+  `).join('');
+}
+
+function moveDoc(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= docs.length) return;
+  if (docs[j].locked || docs[i].locked) return;
+  [docs[i], docs[j]] = [docs[j], docs[i]];
+  renderDocs();
+  markChanged();
+}
+
+function toggleDoc(i, val) {
+  docs[i].active = val;
+  markChanged();
+}
+
+function markChanged() {
+  changed = true;
+  document.getElementById('save-bar').classList.remove('hidden');
+}
+
+async function saveDocs() {
+  try {
+    const r = await fetch(`${API}/docs.php`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'save_docs', docs})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      changed = false;
+      document.getElementById('save-bar').classList.add('hidden');
+      alert('✅ Αποθηκεύτηκε!');
+    }
+  } catch(e) {
+    alert('❌ Σφάλμα αποθήκευσης');
+  }
+}
+
+// ── HELP ──────────────────────────────────────────────────────────────────────
+async function loadHelp() {
+  try {
+    const r = await fetch(`${API}/docs.php?section=help`);
+    const d = await r.json();
+    helpText = d.help || '';
+  } catch(e) { helpText = ''; }
+  document.getElementById('help-view').textContent = helpText || '(Δεν υπάρχει περιεχόμενο ακόμα)';
+}
+
+function addEditHelpBtn() {
+  const toolbar = document.getElementById('help-toolbar');
+  toolbar.style.display = 'flex';
+  toolbar.innerHTML = `
+    <button class="btn-edit" onclick="startEditHelp()">✏️ Επεξεργασία</button>
+  `;
+}
+
+function startEditHelp() {
+  document.getElementById('help-view').style.display = 'none';
+  document.getElementById('help-edit').style.display = 'block';
+  document.getElementById('help-textarea').value = helpText;
+  document.getElementById('help-toolbar').innerHTML = `
+    <button class="btn-cancel" onclick="cancelHelp()">Ακύρωση</button>
+    <button class="btn-edit" onclick="saveHelp()">💾 Αποθήκευση</button>
+  `;
+}
+
+function cancelHelp() {
+  document.getElementById('help-view').style.display = 'block';
+  document.getElementById('help-edit').style.display = 'none';
+  addEditHelpBtn();
+}
+
+async function saveHelp() {
+  const text = document.getElementById('help-textarea').value;
+  try {
+    const r = await fetch(`${API}/docs.php`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'save_help', help: text})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      helpText = text;
+      document.getElementById('help-view').textContent = helpText || '(Δεν υπάρχει περιεχόμενο ακόμα)';
+      cancelHelp();
+    }
+  } catch(e) { alert('❌ Σφάλμα'); }
+}
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin(); });
+const saved = localStorage.getItem('4a_user');
+if (saved) { try { currentUser = JSON.parse(saved); initApp(); } catch(e) {} }
+</script>
+</body>
+</html>
