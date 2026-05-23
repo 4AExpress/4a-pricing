@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4A Express — Help & Wiki</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
+
+  .topbar { background: #cc0000; color: white; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; height: 48px; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { display: flex; align-items: center; gap: 6px; }
+  .topbar-logo-box { background: white; color: #cc0000; font-weight: 900; font-size: 13px; padding: 2px 5px; border-radius: 2px; }
+  .topbar-logo-text { font-size: 8px; font-weight: 600; line-height: 1.2; opacity: 0.85; }
+  .topbar-title { font-size: 14px; font-weight: 600; }
+  .topbar-user { font-size: 12px; opacity: 0.85; }
+  .topbar-logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 12px; border-radius: 3px; cursor: pointer; font-size: 12px; }
+
+  .nav { background: white; border-bottom: 1px solid #ddd; display: flex; gap: 0; overflow-x: auto; }
+  .nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer; color: #555; border-bottom: 2px solid transparent; text-decoration: none; display: inline-block; white-space: nowrap; }
+  .nav-btn.active { color: #cc0000; border-bottom-color: #cc0000; font-weight: 600; }
+  .nav-btn:hover { background: #f8f8f8; }
+
+  .layout { display: flex; height: calc(100vh - 96px); }
+
+  /* SIDEBAR */
+  .sidebar { width: 240px; background: white; border-right: 1px solid #e0e0e0; overflow-y: auto; flex-shrink: 0; }
+  .sidebar-search { padding: 10px; border-bottom: 1px solid #f0f0f0; }
+  .sidebar-search input { width: 100%; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+  .sidebar-section { padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+  .sidebar-item { padding: 8px 16px; font-size: 13px; cursor: pointer; color: #555; display: flex; align-items: center; gap: 8px; transition: background 0.1s; }
+  .sidebar-item:hover { background: #f5f5f5; }
+  .sidebar-item.active { background: #ffebee; color: #cc0000; font-weight: 600; border-left: 3px solid #cc0000; }
+  .sidebar-add { padding: 8px 16px; font-size: 12px; color: #1565c0; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .sidebar-add:hover { background: #f5f5f5; }
+
+  /* MAIN */
+  .main { flex: 1; overflow-y: auto; padding: 24px; }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .section-title { font-size: 20px; font-weight: 700; color: #222; display: flex; align-items: center; gap: 10px; }
+  .section-actions { display: flex; gap: 8px; }
+  .btn { padding: 6px 14px; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .btn-edit { background: #1565c0; color: white; }
+  .btn-save { background: #2e7d32; color: white; }
+  .btn-cancel { background: #f0f0f0; color: #555; }
+  .btn-delete { background: #ffebee; color: #c62828; }
+  .btn:hover { opacity: 0.85; }
+
+  .content-view { background: white; border-radius: 8px; border: 1px solid #e0e0e0; padding: 20px; min-height: 200px; font-size: 14px; line-height: 1.8; color: #333; white-space: pre-wrap; }
+  .content-edit { display: none; }
+  .content-textarea { width: 100%; min-height: 400px; font-size: 13px; font-family: 'Segoe UI', monospace; border: 1px solid #ddd; border-radius: 4px; padding: 14px; resize: vertical; line-height: 1.8; color: #333; }
+  .content-empty { color: #bbb; font-style: italic; }
+
+  .meta { font-size: 11px; color: #aaa; margin-top: 8px; }
+
+  /* SEARCH RESULTS */
+  .search-results { position: absolute; background: white; border: 1px solid #ddd; border-radius: 4px; width: 220px; max-height: 200px; overflow-y: auto; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .search-result-item { padding: 8px 12px; font-size: 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+  .search-result-item:hover { background: #f5f5f5; }
+  .search-result-item mark { background: #fff3cd; padding: 0 2px; border-radius: 2px; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
+  .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+  .empty-state-text { font-size: 15px; }
+
+  /* NEW SECTION MODAL */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal { background: white; border-radius: 8px; padding: 24px; width: 360px; }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .modal-field { margin-bottom: 12px; }
+  .modal-field label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; display: block; margin-bottom: 4px; }
+  .modal-field input, .modal-field select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  /* LOGIN */
+  .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-box { background: white; border-radius: 8px; padding: 32px; width: 320px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+  .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .login-logo-box { background: #cc0000; color: white; font-weight: 900; font-size: 18px; padding: 4px 8px; border-radius: 3px; }
+  .login-logo-text { font-size: 10px; font-weight: 600; color: #888; line-height: 1.3; }
+  .login-title { font-size: 18px; font-weight: 700; color: #222; margin-bottom: 4px; }
+  .login-sub { font-size: 12px; color: #888; margin-bottom: 20px; }
+  .login-label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; display: block; margin-bottom: 4px; margin-top: 12px; }
+  .login-pin { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+  .login-btn { width: 100%; margin-top: 16px; padding: 10px; background: #cc0000; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .login-error { color: #cc0000; font-size: 12px; margin-top: 8px; min-height: 18px; }
+
+  .tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-left: 6px; }
+  .tag-admin { background: #ffebee; color: #c62828; }
+  .tag-info { background: #e3f2fd; color: #1565c0; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-box">4A</div>
+      <div class="login-logo-text">WORLDWIDE<br>EXPRESS</div>
+    </div>
+    <div class="login-title">Help & Wiki</div>
+    <div class="login-sub">Εισάγετε τα στοιχεία σας</div>
+    <label class="login-label">User Code</label>
+    <input class="login-pin" type="text" id="login-user" maxlength="5" placeholder="E1001" style="letter-spacing:4px;" />
+    <div id="otp-section" style="display:none;">
+      <label class="login-label">OTP</label>
+      <input class="login-pin" type="text" id="login-otp" maxlength="6" placeholder="••••••" style="letter-spacing:6px;" />
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Αποστολή OTP</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        <div class="topbar-logo-box">4A</div>
+        <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
+      </div>
+      <span class="topbar-title">Help & Wiki</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="topbar-user" id="topbar-user"></span>
+      <button class="topbar-logout" onclick="doLogout()">Έξοδος</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
+    <a class="nav-btn" href="pricelist-clients.html">👥 Πελάτες</a>
+    <a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
+    <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
+    <a class="nav-btn" href="services.html">🔧 Services</a>
+    <a class="nav-btn" href="docs.html">📄 Docs</a>
+    <a class="nav-btn active" href="help.html">❓ Help</a>
+  </div>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-search" style="position:relative;">
+        <input type="text" id="search-input" placeholder="🔍 Αναζήτηση..." oninput="searchSections(this.value)" />
+        <div id="search-results" class="search-results" style="display:none;"></div>
+      </div>
+      <div id="sidebar-list"></div>
+      <div id="sidebar-add" class="sidebar-add" style="display:none;" onclick="showAddModal()">
+        ➕ Νέο Section
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main" id="main-content">
+      <div class="empty-state">
+        <div class="empty-state-icon">📖</div>
+        <div class="empty-state-text">Επίλεξε section από αριστερά</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div id="add-modal" class="modal-bg" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">➕ Νέο Section</div>
+    <div class="modal-field">
+      <label>Εικονίδιο</label>
+      <input type="text" id="new-icon" value="📌" maxlength="4" />
+    </div>
+    <div class="modal-field">
+      <label>Τίτλος</label>
+      <input type="text" id="new-title" placeholder="π.χ. DHL Τιμοκατάλογος" />
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-cancel" onclick="closeAddModal()">Ακύρωση</button>
+      <button class="btn btn-save" onclick="addSection()">Δημιουργία</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://4aexpress.com/api';
+let currentUser = null;
+let sections = [];
+let activeId = null;
+let editing = false;
+
+// ── DEFAULT SECTIONS ──────────────────────────────────────────────────────────
+const DEFAULT_SECTIONS = [
+  { id:'arch',      icon:'🏗️', title:'Αρχιτεκτονική Συστήματος', content:'', updated_at:'' },
+  { id:'services',  icon:'📦', title:'Services & Zones',           content:'', updated_at:'' },
+  { id:'dhl',       icon:'💰', title:'DHL Τιμοκατάλογος',          content:'', updated_at:'' },
+  { id:'pdf',       icon:'📄', title:'Παραγωγή PDF Προσφοράς',     content:'', updated_at:'' },
+  { id:'bugs',      icon:'🐛', title:'Γνωστά Προβλήματα & Λύσεις', content:'', updated_at:'' },
+  { id:'changelog', icon:'📝', title:'Changelog',                   content:'', updated_at:'' },
+  { id:'todo',      icon:'✅', title:'TODO / Εκκρεμή',              content:'', updated_at:'' },
+  { id:'deploy',    icon:'🚀', title:'Deploy & Git',                content:'', updated_at:'' },
+];
+
+// ── LOGIN ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const userCode = document.getElementById('login-user').value.trim().toUpperCase();
+  const otpSection = document.getElementById('otp-section');
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  if (otpSection.style.display === 'none') {
+    if (!userCode) { err.textContent = 'Εισάγετε User Code'; return; }
+    btn.textContent = 'Αποστολή...'; btn.disabled = true;
+    try {
+      const r = await fetch(`${API}/login.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'send_otp', user_code: userCode}) });
+      const d = await r.json();
+      if (d.ok) { otpSection.style.display=''; btn.textContent='Σύνδεση'; btn.disabled=false; err.textContent=''; }
+      else { err.textContent = d.error||'Σφάλμα'; btn.textContent='Αποστολή OTP'; btn.disabled=false; }
+    } catch(e) { err.textContent='Σφάλμα'; btn.textContent='Αποστολή OTP'; btn.disabled=false; }
+  } else {
+    const otp = document.getElementById('login-otp').value.trim();
+    if (!otp) { err.textContent='Εισάγετε OTP'; return; }
+    btn.textContent='...'; btn.disabled=true;
+    try {
+      const r = await fetch(`${API}/login.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'verify_otp', user_code:userCode, otp}) });
+      const d = await r.json();
+      if (d.ok) { currentUser = d.user; localStorage.setItem('4a_user', JSON.stringify(d.user)); initApp(); }
+      else { err.textContent = d.error||'Λάθος OTP'; btn.textContent='Σύνδεση'; btn.disabled=false; }
+    } catch(e) { err.textContent='Σφάλμα'; btn.textContent='Σύνδεση'; btn.disabled=false; }
+  }
+}
+
+function doLogout() { localStorage.removeItem('4a_user'); location.reload(); }
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+async function initApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = '';
+  document.getElementById('topbar-user').textContent = `${currentUser.name} · ${currentUser.role}`;
+  if (currentUser.role === 'admin') document.getElementById('sidebar-add').style.display = '';
+  await loadSections();
+  if (sections.length > 0) selectSection(sections[0].id);
+}
+
+// ── SECTIONS ──────────────────────────────────────────────────────────────────
+async function loadSections() {
+  try {
+    const r = await fetch(`${API}/help.php`);
+    const d = await r.json();
+    sections = d.sections && d.sections.length ? d.sections : DEFAULT_SECTIONS;
+  } catch(e) { sections = DEFAULT_SECTIONS; }
+  renderSidebar();
+}
+
+function renderSidebar() {
+  const list = document.getElementById('sidebar-list');
+  list.innerHTML = sections.map(s => `
+    <div class="sidebar-item ${s.id === activeId ? 'active' : ''}" onclick="selectSection('${s.id}')">
+      <span>${s.icon}</span>
+      <span>${s.title}</span>
+    </div>
+  `).join('');
+}
+
+function selectSection(id) {
+  if (editing && !confirm('Υπάρχουν αλλαγές. Να απορριφθούν;')) return;
+  editing = false;
+  activeId = id;
+  renderSidebar();
+  renderMain();
+}
+
+function renderMain() {
+  const s = sections.find(x => x.id === activeId);
+  if (!s) return;
+  const isAdmin = currentUser.role === 'admin';
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">${s.icon} ${s.title}</div>
+      <div class="section-actions">
+        ${isAdmin ? `<button class="btn btn-delete" onclick="deleteSection('${s.id}')">🗑️ Διαγραφή</button>
+        <button class="btn btn-edit" id="edit-btn" onclick="startEdit()">✏️ Επεξεργασία</button>` : ''}
+      </div>
+    </div>
+    <div id="content-view" class="content-view">${s.content ? escHtml(s.content) : '<span class="content-empty">(Δεν υπάρχει περιεχόμενο — πάτα Επεξεργασία)</span>'}</div>
+    <div id="content-edit" class="content-edit">
+      <textarea class="content-textarea" id="content-textarea">${s.content || ''}</textarea>
+      <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;">
+        <button class="btn btn-cancel" onclick="cancelEdit()">Ακύρωση</button>
+        <button class="btn btn-save" onclick="saveSection('${s.id}')">💾 Αποθήκευση</button>
+      </div>
+    </div>
+    ${s.updated_at ? `<div class="meta">Τελευταία ενημέρωση: ${s.updated_at}</div>` : ''}
+  `;
+}
+
+function escHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function startEdit() {
+  editing = true;
+  document.getElementById('content-view').style.display = 'none';
+  document.getElementById('content-edit').style.display = 'block';
+  document.getElementById('content-textarea').focus();
+}
+
+function cancelEdit() {
+  editing = false;
+  document.getElementById('content-view').style.display = 'block';
+  document.getElementById('content-edit').style.display = 'none';
+}
+
+async function saveSection(id) {
+  const text = document.getElementById('content-textarea').value;
+  try {
+    const r = await fetch(`${API}/help.php`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'save_section', id, content: text})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      const s = sections.find(x => x.id === id);
+      if (s) { s.content = text; s.updated_at = new Date().toLocaleString('el-GR'); }
+      editing = false;
+      renderMain();
+    }
+  } catch(e) { alert('❌ Σφάλμα αποθήκευσης'); }
+}
+
+async function deleteSection(id) {
+  if (!confirm('Να διαγραφεί το section;')) return;
+  try {
+    await fetch(`${API}/help.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'delete_section', id}) });
+    sections = sections.filter(x => x.id !== id);
+    activeId = sections.length ? sections[0].id : null;
+    renderSidebar();
+    if (activeId) renderMain();
+    else document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📖</div><div class="empty-state-text">Δεν υπάρχουν sections</div></div>';
+  } catch(e) { alert('❌ Σφάλμα'); }
+}
+
+// ── ADD SECTION ───────────────────────────────────────────────────────────────
+function showAddModal() { document.getElementById('add-modal').style.display = 'flex'; document.getElementById('new-title').focus(); }
+function closeAddModal() { document.getElementById('add-modal').style.display = 'none'; }
+
+async function addSection() {
+  const icon = document.getElementById('new-icon').value.trim() || '📌';
+  const title = document.getElementById('new-title').value.trim();
+  if (!title) { alert('Εισάγετε τίτλο'); return; }
+  const id = 'sec_' + Date.now();
+  try {
+    const r = await fetch(`${API}/help.php`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'add_section', id, icon, title})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      sections.push({id, icon, title, content:'', updated_at:''});
+      closeAddModal();
+      renderSidebar();
+      selectSection(id);
+    }
+  } catch(e) { alert('❌ Σφάλμα'); }
+}
+
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+function searchSections(q) {
+  const box = document.getElementById('search-results');
+  if (!q.trim()) { box.style.display = 'none'; return; }
+  const results = sections.filter(s =>
+    s.title.toLowerCase().includes(q.toLowerCase()) ||
+    (s.content && s.content.toLowerCase().includes(q.toLowerCase()))
+  );
+  if (!results.length) { box.style.display = 'none'; return; }
+  box.innerHTML = results.map(s => {
+    const idx = s.content ? s.content.toLowerCase().indexOf(q.toLowerCase()) : -1;
+    const snippet = idx >= 0 ? '...' + s.content.substring(Math.max(0,idx-20), idx+40) + '...' : '';
+    return `<div class="search-result-item" onclick="selectSection('${s.id}'); document.getElementById('search-results').style.display='none'; document.getElementById('search-input').value=''">
+      <strong>${s.icon} ${s.title}</strong>
+      ${snippet ? `<div style="font-size:11px;color:#888;margin-top:2px;">${snippet}</div>` : ''}
+    </div>`;
+  }).join('');
+  box.style.display = 'block';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.sidebar-search')) document.getElementById('search-results').style.display = 'none';
+});
+
+window.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
+  if (e.key === 'Escape') closeAddModal();
+});
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+const saved = localStorage.getItem('4a_user');
+if (saved) { try { currentUser = JSON.parse(saved); initApp(); } catch(e) {} }
+</script>
+</body>
+</html>
