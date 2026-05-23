@@ -458,6 +458,7 @@ def generate(offer_data, dhl_data, fuel_data):
     # ── ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ ──
     story.append(PageBreak())
     story.append(hdr(offer_num))
+    story.append(Paragraph('<a name="vol"/>',s('anc',fontSize=0.1)))
     story.append(sec('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ'))
     story.append(Spacer(1,5*mm))
     story.append(P(
