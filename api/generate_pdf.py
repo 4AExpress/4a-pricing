@@ -517,6 +517,8 @@ def generate(offer_data, dhl_data, fuel_data):
     story.append(Spacer(1,5*mm))
     story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
     story.append(ftr(offer_num,date,vstamp))
+    story.append(PageBreak())
+    story.append(PageBreak())
 
 
     story.append(hdr(offer_num))
