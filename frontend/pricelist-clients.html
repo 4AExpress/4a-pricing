@@ -571,7 +571,6 @@ async function buildFinalPDF(offerNum){
   const office=(currentUser?.stations||'ATH').split(',')[0];
   const name=document.getElementById('cl-name').value.trim();
   console.log('PDF PAYLOAD:', JSON.stringify({offer:{name, afm:document.getElementById('cl-afm').value.trim(), email:document.getElementById('cl-email').value.trim(), contact:document.getElementById('cl-contact').value.trim(), phone:document.getElementById('cl-phone').value.trim(), user:currentUser.name, office_code:office, date:todayFmt(), validity:document.getElementById('cl-validity').value, offer_number:offerNum, pricelists:selectedPls.map(p=>({service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[]}))}, dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel}));
-  const activeDocs = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||null).catch(()=>null);
   const r=await fetch(`${API}/generate_pdf.php`,{
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
@@ -587,8 +586,7 @@ async function buildFinalPDF(offerNum){
       dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel,
       zones_appendix: selectedPls.some(p => GR_SERVICES.has(p.service_id))
         ? { include:true, code:'zones', description:'Ζώνες 4A Express GR', type:'ΠΑΡΑΡΤΗΜΑ', toc_replace:'net', link:ZONES_PDF_URL, pdf_before_pricelists:true }
-        : null,
-      docs: activeDocs
+        : null
     })
   });
   const d=await r.json();
@@ -969,7 +967,74 @@ async function previewPDF(){
     }
   }
 
+  // ── TERMS PAGE ─────────────────────────────────────────────────
+  const surchRows=surcharges.filter(s=>s.name&&s.value);
+  html+=`<div class="page">
+  ${H(offerNum)}
+  ${S('ΟΡΟΙ, ΕΠΙΝΑΥΛΟΣ & ΧΡΕΩΣΕΙΣ')}
+  <table class="fct">
+    <thead><tr><th>Υπηρεσία</th><th>Τύπος</th><th>Επίναυλος Καυσίμου</th></tr></thead>
+    <tbody>
+      <tr><td>Αεροπορικές (S1003, S1012, S1003_GR, S1012_GR)</td><td>AIR</td><td><strong>${fuelAir}</strong>${fuelWeek?' ('+fuelWeek+')':''}</td></tr>
+      <tr><td>Οδικές (S1010, S1041)</td><td>ROAD</td><td><strong>${fuelRoad}</strong></td></tr>
+    </tbody>
+  </table>
+  ${surchRows.length?`${S('ΕΠΙΠΛΕΟΝ ΧΡΕΩΣΕΙΣ')}<table class="surt">
+    <thead><tr><th>Περιγραφή</th><th>Αξία</th><th>Μονάδα</th></tr></thead>
+    <tbody>${surchRows.map(s=>`<tr><td>${s.name}</td><td>${s.value}</td><td>${s.unit}</td></tr>`).join('')}</tbody>
+  </table>`:''}
+  <div class="tgrid" style="margin-top:10px;">
+    <div class="tbox"><h4>Πληρωμή & Τιμολόγηση</h4><ul>
+      <li>Εξόφληση εντός <strong>${payDays} ημερών</strong> από τιμολόγηση</li>
+      <li>Τιμολόγηση: <strong>${invoiceLbl}</strong></li>
+      <li>Με εμβασμάτιο ή κατάθεση σε τραπεζικό λογαριασμό</li>
+    </ul></div>
+    <div class="tbox"><h4>Ισχύς Τιμοκαταλόγου</h4><ul>
+      <li>Ισχύς προσφοράς: <strong>${validDays} ημέρες</strong> (έως ${validUntil})</li>
+      <li>Επίναυλος καυσίμου αναθεωρείται εβδομαδιαία</li>
+      <li>Βασικοί ναύλοι επικαιροποιούνται ετησίως</li>
+    </ul></div>
+    <div class="tbox"><h4>Εξαιρέσεις & Όρια</h4><ul>
+      <li>Τιμές για αποστολές έως 70 kg</li>
+      <li>Δεν συμπεριλαμβάνονται τελωνειακά &amp; ΦΠΑ εισαγωγής</li>
+      <li>Επικίνδυνα εμπορεύματα κατόπιν ειδικής συμφωνίας</li>
+    </ul></div>
+    <div class="tbox"><h4>Ευθύνη & Ασφάλεια</h4><p>Η 4A EXPRESS αποζημιώνει για απώλεια/καταστροφή εγγράφων έως €50 και δεμάτων ανεξαρτήτως εμπορικής αξίας έως €100. Για πρόσθετη ασφάλεια συνεργαζόμαστε με ασφαλιστικές εταιρείες — απαιτούνται πρωτότυπα τιμολόγια εμπορευμάτων και δήλωση ασφάλισης. Επασφάλιστρο 1-2% επί αξίας αναλόγως είδους εμπορεύματος.</p></div>
+  </div>
+  ${F(String(plPg++))}
+  </div>`;
 
+  // ── CONTRACT PAGE ──────────────────────────────────────────────
+  html+=`<div class="page last">
+  ${H(offerNum)}
+  ${S('ΣΥΜΒΑΣΗ & ΑΠΟΔΟΧΗ ΠΡΟΣΦΟΡΑΣ')}
+  <div class="cbody">
+    <p>Με την υπογραφή του παρόντος, η εταιρεία <strong>${name}</strong> (ΑΦΜ: ${afm||'—'}) αποδέχεται πλήρως τους όρους και τις τιμές της προσφοράς αριθμ. <strong>${offerNum}</strong> της <strong>${issuerOffice.company||'4A Express Worldwide'}</strong>.</p>
+    <p>Η αποδοχή συνεπάγεται δέσμευση ως προς τον τρόπο πληρωμής (${payDays} ημέρες), τη συχνότητα τιμολόγησης (${invoiceLbl}) και τους γενικούς όρους συνεργασίας της 4A Express.</p>
+    <p>Οι τιμές ισχύουν για <strong>${validDays} ημέρες</strong> από ${today} και λήγουν στις <strong>${validUntil}</strong>. Ο επίναυλος καυσίμου αναθεωρείται εβδομαδιαία βάσει διεθνών δεικτών και δεν αποτελεί μέρος της σταθερής τιμής.</p>
+    <p>Υπηρεσίες που καλύπτει η παρούσα προσφορά:</p>
+    <ul>${selectedPls.map(p=>`<li>${p.service_id} — ${p.service_name||p.name||''}</li>`).join('')}</ul>
+  </div>
+  <div class="sigrid">
+    <div class="sigbox">
+      <div class="siglbl">Για λογαριασμό της <strong>${issuerOffice.company||'4A Express Worldwide'}</strong></div>
+      <div class="sigval">${currentUser?.name||'—'} &nbsp;·&nbsp; ${currentUser?.office||'—'}<br><span style="color:#bbb;">${today}</span></div>
+    </div>
+    <div class="sigbox">
+      <div class="siglbl">Για λογαριασμό της <strong>${name}</strong></div>
+      <div class="sigval" style="color:#bbb;">Ονοματεπώνυμο &nbsp;·&nbsp; Σφραγίδα &nbsp;·&nbsp; Ημερομηνία</div>
+    </div>
+  </div>
+  ${F(String(plPg))}
+  </div>`;
+
+  html+=`</body></html>`;
+
+  const w=window.open('','_blank','width=920,height=760');
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),500);
 }
 
 async function sendOffer(){
