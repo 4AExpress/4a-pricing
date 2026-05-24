@@ -681,7 +681,8 @@ async function previewPDF(){
   toc.push({pg:pg++,t:'Πώς Λειτουργεί ο Τιμοκατάλογος & Tracking'});
   toc.push({pg:pg++,t:'Ζώνες Χωρών'});
   for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''}`});
-  // terms και accept αφαιρέθηκαν — dynamic docs
+  toc.push({pg:pg++,t:'Όροι, Επίναυλος & Χρεώσεις'});
+  toc.push({pg:pg,  t:'Σύμβαση & Αποδοχή Προσφοράς'});
 
   const CSS=`
   *{margin:0;padding:0;box-sizing:border-box;}
