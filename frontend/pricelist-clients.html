@@ -964,13 +964,17 @@ async function previewPDF(){
       html+=`<div class="page">${plHdr}<div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>€</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkgV!=null?`<tr class="xr"><td class="wt">${xkgLbl}</td><td>€${xkgV.toFixed(2)}</td></tr>`:''}</tbody></table>`).join('')}</div>${plFtr}</div>`;
     }
   }
-
- 
-
-
-
-   
-
+// ── DYNAMIC DOCS ──
+  const docsCache = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]).catch(()=>[]);
+  if(!docsCache.length || docsCache.find(d=>d.id==='volumetric'&&d.active)){
+    html+=`<div class="page">
+    ${H(offerNum)}
+    ${S('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ')}
+    <p style="font-size:9.5px;color:#444;margin:8px 0;">Η χρέωση γίνεται βάσει του <strong>μεγαλύτερου</strong> από: πραγματικό ή ογκομετρικό βάρος.</p>
+    <div style="background:#f8f8f8;border:1px solid #ddd;padding:10px 15px;margin:8px 0;text-align:center;font-size:11px;font-weight:700;">Ογκομετρικό Βάρος (kg) = Μ × Π × Υ / 5.000</div>
+    ${F(String(plPg++))}
+    </div>`;
+  }
   html+=`</body></html>`;
 
   const w=window.open('','_blank','width=920,height=760');
