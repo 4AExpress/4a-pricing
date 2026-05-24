@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  /* ── PAGE ── */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+    color: #1A1A1A;
+    background: #fff;
+    width: 210mm;
+    min-height: 297mm;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: #950101;
+    width: 100%;
+    height: 22mm;
+    display: flex;
+    align-items: stretch;
+  }
+  .header-logo {
+    background: #C60001;
+    width: 32mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .header-logo span {
+    color: #fff;
+    font-size: 22pt;
+    font-weight: 900;
+    letter-spacing: -1px;
+  }
+  .header-title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 6mm;
+  }
+  .header-title h1 {
+    color: #fff;
+    font-size: 14pt;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .header-title p {
+    color: rgba(255,255,255,0.75);
+    font-size: 8pt;
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── META ROW ── */
+  .meta-row {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+  }
+  .meta-cell {
+    flex: 1;
+    padding: 3mm 4mm;
+    border-right: 0.5px solid #ddd;
+  }
+  .meta-cell:last-child { border-right: none; }
+  .meta-cell .label {
+    font-size: 6.5pt;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 1.5mm;
+  }
+  .meta-cell .value {
+    font-size: 8.5pt;
+    font-weight: 700;
+    color: #1A1A1A;
+  }
+
+  /* ── CONTENT ── */
+  .content {
+    padding: 4mm 8mm 4mm 8mm;
+  }
+
+  /* ── SECTION BAR ── */
+  .section-bar {
+    background: #C60001;
+    color: #fff;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2.5mm 4mm;
+    margin-top: 4mm;
+    margin-bottom: 2.5mm;
+  }
+  .section-bar:first-child { margin-top: 0; }
+
+  /* ── BODY TEXT ── */
+  .body-text {
+    font-size: 8.5pt;
+    color: #1A1A1A;
+    line-height: 1.55;
+    margin-bottom: 2mm;
+  }
+  .body-text.muted {
+    color: #555;
+    font-size: 8pt;
+    padding-left: 3mm;
+  }
+
+  /* ── FORMULA BOX ── */
+  .formula-box {
+    background: #F2F2F2;
+    border: 0.5px solid #C60001;
+    padding: 3mm 5mm;
+    margin: 2mm 0 3mm 0;
+    text-align: center;
+  }
+  .formula-box .formula-main {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #950101;
+    letter-spacing: 0.5px;
+  }
+  .formula-box .formula-legend {
+    font-size: 7.5pt;
+    color: #1D3B6F;
+    margin-top: 1.5mm;
+  }
+
+  /* ── TABLE ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+    margin-bottom: 3mm;
+  }
+  thead tr {
+    background: #950101;
+    color: #fff;
+  }
+  thead th {
+    padding: 2.5mm 3mm;
+    text-align: left;
+    font-weight: 700;
+    font-size: 7.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  tbody tr:nth-child(odd)  { background: #fff; }
+  tbody tr:nth-child(even) { background: #F2F2F2; }
+  tbody tr.highlight {
+    background: #fff3e0;
+    font-weight: 700;
+  }
+  tbody td {
+    padding: 2mm 3mm;
+    color: #1A1A1A;
+    border-bottom: 0.5px solid #e0e0e0;
+    vertical-align: middle;
+  }
+  tbody td.col-label {
+    font-weight: 700;
+    color: #950101;
+  }
+  tbody td.col-highlight {
+    font-weight: 700;
+    color: #C60001;
+  }
+
+  /* ── BOX DIAGRAM ── */
+  .box-diagram-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5mm;
+    margin: 2mm 0 3mm 0;
+  }
+  .box-diagram-wrap svg {
+    flex-shrink: 0;
+  }
+  .box-diagram-caption {
+    font-size: 8pt;
+    color: #555;
+    line-height: 1.6;
+  }
+  .box-diagram-caption strong {
+    color: #950101;
+    font-size: 8.5pt;
+  }
+
+  /* ── BULLET POINTS ── */
+  .bullets { margin: 1mm 0 3mm 0; }
+  .bullet-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 2.5mm;
+    margin-bottom: 2mm;
+    font-size: 8.5pt;
+    line-height: 1.45;
+  }
+  .bullet-mark {
+    color: #C60001;
+    font-weight: 700;
+    font-size: 9pt;
+    flex-shrink: 0;
+    margin-top: 0.5px;
+  }
+
+  /* ── PLATFORM LINE ── */
+  .platform-line {
+    background: #F2F2F2;
+    border-left: 3px solid #1D3B6F;
+    padding: 2.5mm 4mm;
+    margin-top: 4mm;
+    font-size: 8pt;
+    color: #1A1A1A;
+    line-height: 1.55;
+  }
+  .platform-line strong {
+    color: #1D3B6F;
+  }
+
+  /* ── FOOTER ── */
+  .footer-bar {
+    background: #950101;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2mm 6mm;
+  }
+  .footer-bar span {
+    color: rgba(255,255,255,0.8);
+    font-size: 6.5pt;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo"><span>4A</span></div>
+  <div class="header-title">
+    <h1>{{ doc_title }}</h1>
+    <p>{{ doc_subtitle }}</p>
+  </div>
+</div>
+
+<!-- META ROW -->
+<div class="meta-row">
+  <div class="meta-cell">
+    <div class="label">Ημερομηνία</div>
+    <div class="value">{{ date }}</div>
+  </div>
+  <div class="meta-cell">
+    <div class="label">Θέμα</div>
+    <div class="value">{{ subject }}</div>
+  </div>
+  <div class="meta-cell">
+    <div class="label">Κατηγορία</div>
+    <div class="value">{{ category }}</div>
+  </div>
+  <div class="meta-cell">
+    <div class="label">Κωδικός</div>
+    <div class="value">{{ doc_code }}</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="content">
+
+  {% for section in sections %}
+
+  <div class="section-bar">{{ section.title }}</div>
+
+  {% if section.type == "text" %}
+    {% for line in section.lines %}
+      <p class="body-text {% if line.muted %}muted{% endif %}">{{ line.text }}</p>
+    {% endfor %}
+
+  {% elif section.type == "formula" %}
+    <div class="formula-box">
+      <div class="formula-main">{{ section.formula }}</div>
+      <div class="formula-legend">{{ section.legend }}</div>
+    </div>
+
+  {% elif section.type == "table" %}
+    <table>
+      <thead>
+        <tr>
+          {% for col in section.columns %}
+          <th>{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in section.rows %}
+        <tr {% if row.highlight %}class="highlight"{% endif %}>
+          {% for i, cell in enumerate(row.cells) %}
+          <td {% if i == 0 %}class="col-label"{% elif row.highlight and i == 1 %}class="col-highlight"{% endif %}>{{ cell }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  {% elif section.type == "box_diagram" %}
+    <div class="box-diagram-wrap">
+      <!-- SVG κουτί με βέλη Μ/Π/Υ — isometric-style, χωρίς χρώμα πλευρών -->
+      <svg width="135" height="120" viewBox="0 0 135 120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M1 1L9 5L1 9" fill="none" stroke="#950101" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+          <marker id="arr-rev" viewBox="0 0 10 10" refX="1" refY="5"
+                  markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M9 1L1 5L9 9" fill="none" stroke="#950101" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- ΚΟΥΤΙ (μεγαλύτερο, scale 1.35x) -->
+        <!-- Μπροστά πλευρά -->
+        <rect x="21" y="30" width="70" height="59"
+              fill="none" stroke="#CCCCCC" stroke-width="1.2" rx="1"/>
+        <!-- Πάνω πλευρά -->
+        <polygon points="21,30 91,30 113,11 42,11"
+                 fill="none" stroke="#CCCCCC" stroke-width="1.2"/>
+        <!-- Δεξιά πλευρά -->
+        <polygon points="91,30 113,11 113,70 91,89"
+                 fill="none" stroke="#CCCCCC" stroke-width="1.2"/>
+
+        <!-- ΜΗΚΟΣ: βέλος κάτω, 10px από μπροστινή πλευρά -->
+        <line x1="21" y1="99" x2="91" y2="99"
+              stroke="#950101" stroke-width="1.2"
+              marker-start="url(#arr-rev)" marker-end="url(#arr)"/>
+        <text x="56" y="109" text-anchor="middle"
+              font-family="Arial,sans-serif" font-size="8" font-weight="700" fill="#950101">Μ</text>
+
+        <!-- ΥΨΟΣ: βέλος αριστερά, 10px από μπροστινή πλευρά -->
+        <line x1="11" y1="30" x2="11" y2="89"
+              stroke="#950101" stroke-width="1.2"
+              marker-start="url(#arr-rev)" marker-end="url(#arr)"/>
+        <text x="5" y="62" text-anchor="middle"
+              font-family="Arial,sans-serif" font-size="8" font-weight="700" fill="#950101">Υ</text>
+
+        <!-- ΠΛΑΤΟΣ: παράλληλο στην κάτω ακμή βάθους (91,89)→(113,70), offset 11px εξωτερικά -->
+        <line x1="98" y1="97" x2="120" y2="78"
+              stroke="#950101" stroke-width="1.2"
+              marker-start="url(#arr-rev)" marker-end="url(#arr)"/>
+        <text x="113" y="105" text-anchor="middle"
+              font-family="Arial,sans-serif" font-size="8" font-weight="700" fill="#950101">Π</text>
+      </svg>
+      <div class="box-diagram-caption">
+        <strong>Μετράμε και τις 3 διαστάσεις σε cm:</strong><br/>
+        <strong>Μ</strong> = Μήκος &nbsp;|&nbsp; <strong>Π</strong> = Πλάτος &nbsp;|&nbsp; <strong>Υ</strong> = Ύψος<br/><br/>
+        Χρησιμοποιείται για υπολογισμό<br/>
+        ογκομετρικού βάρους σε:<br/>
+        <strong>Όχημα / Αποθήκη / Αεροπλάνο / Container</strong>
+      </div>
+    </div>
+
+  {% elif section.type == "bullets" %}
+    <div class="bullets">
+      {% for item in section.lines %}
+      <div class="bullet-item">
+        <span class="bullet-mark">✔</span>
+        <span>{{ item }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+  {% endif %}
+
+  {% endfor %}
+
+</div>
+
+
+<!-- PLATFORM LINE -->
+<div style="padding: 0 8mm;">
+  <div class="platform-line">
+    <strong>4A Web Client — Αυτόματος Υπολογισμός Ογκομέτρησης:</strong>
+    Με την καταχώριση της αποστολής στην πλατφόρμα μας και τον ορισμό του διαστασιολογίου (Μ × Π × Υ),
+    το σύστημα υπολογίζει αυτόματα το ογκομετρικό βάρος και εφαρμόζει την ανάλογη χρέωση.
+  </div>
+</div>
+
+<div class="footer-bar">
+  <span>Ε.Σ.Τ.Τ. 025-00  |  ΑΦΜ: 044978638  |  www.4aexpress.com</span>
+  <span>{{ doc_code }}</span>
+</div>
+
+</body>
+</html>
