@@ -2,7 +2,7 @@ from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
 import os
 
-TEMPLATE_DIR = "/home/claude/4a_docs"
+import os`nBASE_DIR = os.path.dirname(os.path.abspath(__file__))`nTEMPLATE_DIR = BASE_DIR
 OUTPUT      = "/mnt/user-data/outputs/4A_Ogkometria_v9.pdf"
 
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
