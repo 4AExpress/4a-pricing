@@ -2,8 +2,11 @@ from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
 import os
 
-import os`nBASE_DIR = os.path.dirname(os.path.abspath(__file__))`nTEMPLATE_DIR = BASE_DIR
-OUTPUT      = "/mnt/user-data/outputs/4A_Ogkometria_v9.pdf"
+import os
+
+TEMPLATE_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT   = os.path.join(BASE_DIR, "4A_Ogkometria.pdf")
 
 env = Environment(loader=FileSystemLoader(TEMPLATE_DIR))
 env.globals["enumerate"] = enumerate   # expose enumerate to Jinja2
