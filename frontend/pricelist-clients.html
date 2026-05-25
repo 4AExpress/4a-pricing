@@ -263,6 +263,7 @@
 
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="resetForm()">Ακύρωση</button>
+      <button class="btn btn-secondary" id="draft-btn"  onclick="draftPreview()" disabled>⚡ Draft (γρήγορο)</button>
       <button class="btn btn-orange"  id="preview-btn" onclick="previewPDF()" disabled>📄 Προεπισκόπηση PDF</button>
       <button class="btn btn-green"   id="send-btn"    onclick="sendOffer()"  disabled>✉️ Αποστολή Προσφοράς</button>
       <button class="btn btn-primary" id="save-btn"    onclick="saveClient()" disabled>💾 Αποθήκευση</button>
@@ -376,6 +377,7 @@ function checkForm(){
            document.getElementById('cl-afm').value.trim()&&
            document.getElementById('cl-email').value.trim();
   document.getElementById('save-btn').disabled=!ok;
+  document.getElementById('draft-btn').disabled=!ok;
   document.getElementById('preview-btn').disabled=!ok;
   document.getElementById('send-btn').disabled=!(ok&&selectedPls.length>0);
 }
@@ -593,29 +595,71 @@ async function buildFinalPDF(offerNum){
   const d=await r.json();
   if(!d.ok) throw new Error(d.error||'Άγνωστο σφάλμα');
   const offerBytes = Uint8Array.from(atob(d.pdf), c => c.charCodeAt(0));
-  if(!selectedPls.some(p => GR_SERVICES.has(p.service_id))) return offerBytes;
-  try{
-    const { PDFDocument } = PDFLib;
-    const zonesResp = await fetch(ZONES_PDF_URL);
-    const zonesBytes = new Uint8Array(await zonesResp.arrayBuffer());
-    const offerDoc = await PDFDocument.load(offerBytes);
-    const zonesDoc = await PDFDocument.load(zonesBytes);
-    // Server PDF: page 0 = cover, page 1 = TOC, pages 2+ = rest (how/track/net/pricelists/terms)
-    // Zones insert immediately after TOC (index 1), before everything else
-    const INSERT_AFTER = 1;
-    const merged = await PDFDocument.create();
-    const offerPages = await merged.copyPages(offerDoc, offerDoc.getPageIndices());
-    offerPages.slice(0, INSERT_AFTER + 1).forEach(p => merged.addPage(p));
-    (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
-    offerPages.slice(INSERT_AFTER + 1).forEach(p => merged.addPage(p));
-    return await merged.save();
-  } catch(mergeErr){
-    console.warn('[PDF] Zones merge failed, offer-only fallback:', mergeErr);
-    return offerBytes;
+  const { PDFDocument } = PDFLib;
+  const offerDoc = await PDFDocument.load(offerBytes);
+  const merged = await PDFDocument.create();
+  const offerPages = await merged.copyPages(offerDoc, offerDoc.getPageIndices());
+  const hasGR = selectedPls.some(p => GR_SERVICES.has(p.service_id));
+  if(hasGR){
+    try {
+      const zonesResp = await fetch(ZONES_PDF_URL);
+      const zonesBytes = new Uint8Array(await zonesResp.arrayBuffer());
+      const zonesDoc = await PDFDocument.load(zonesBytes);
+      // Server PDF: page 0 = cover, page 1 = TOC, pages 2+ = rest
+      // Zones insert immediately after TOC (index 1)
+      const INSERT_AFTER = 1;
+      offerPages.slice(0, INSERT_AFTER + 1).forEach(p => merged.addPage(p));
+      (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
+      offerPages.slice(INSERT_AFTER + 1).forEach(p => merged.addPage(p));
+    } catch(zErr) {
+      console.warn('[PDF] Zones merge failed, including offer-only:', zErr);
+      offerPages.forEach(p => merged.addPage(p));
+    }
+  } else {
+    offerPages.forEach(p => merged.addPage(p));
   }
+  // Append active docs PDFs at the end (Ογκομέτρηση κλπ)
+  try {
+    const docsResp = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json());
+    const activeDocs = (docsResp.docs||[]).filter(d=>d.active && d.pdf_url && d.id!=='contract');
+    for(const doc of activeDocs){
+      try {
+        const pdfBytes = await fetch(doc.pdf_url).then(r=>r.arrayBuffer());
+        const srcDoc = await PDFDocument.load(pdfBytes);
+        const docPages = await merged.copyPages(srcDoc, srcDoc.getPageIndices());
+        docPages.forEach(p => merged.addPage(p));
+      } catch(dErr){ console.warn('[PDF] Doc skipped:', doc.id, dErr); }
+    }
+  } catch(docsErr) {
+    console.warn('[PDF] Docs fetch failed, continuing without docs:', docsErr);
+  }
+  return await merged.save();
 }
 
 async function previewPDF(){
+  const name=document.getElementById('cl-name').value.trim();
+  if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
+  if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
+  const btn=document.getElementById('preview-btn');
+  const oldTxt=btn.textContent;
+  btn.textContent='⏳ Δημιουργία PDF...';
+  btn.disabled=true;
+  try {
+    const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+    const finalBytes=await buildFinalPDF(offerNum);
+    const blob=new Blob([finalBytes], {type:'application/pdf'});
+    const url=URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  } catch(e){
+    alert('Σφάλμα στη δημιουργία PDF: '+e.message);
+    console.error('Preview PDF failed:', e);
+  } finally {
+    btn.textContent=oldTxt;
+    btn.disabled=false;
+  }
+}
+
+async function draftPreview(){
   const name=document.getElementById('cl-name').value.trim();
   if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
   if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
@@ -967,40 +1011,7 @@ async function previewPDF(){
   }
   html+=`</body></html>`;
 
-  // ── MERGE DOCS PDFs ──
-  try {
-    const docsResp = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json());
-    const activeDocs = (docsResp.docs||[]).filter(d=>d.active && d.pdf_url && d.id!=='contract');
-    if(activeDocs.length > 0){
-      const { PDFDocument } = PDFLib;
-      // Convert HTML to blob first
-      const htmlBlob = new Blob([html], {type:'text/html'});
-      // Merge active doc PDFs after the HTML preview
-      const mergedPdf = await PDFDocument.create();
-      for(const doc of activeDocs){
-        try {
-          const pdfBytes = await fetch(doc.pdf_url).then(r=>r.arrayBuffer());
-          const srcDoc = await PDFDocument.load(pdfBytes);
-          const pages = await mergedPdf.copyPages(srcDoc, srcDoc.getPageIndices());
-          pages.forEach(p=>mergedPdf.addPage(p));
-        } catch(e){ console.warn('Doc PDF failed:', doc.id, e); }
-      }
-      if(mergedPdf.getPageCount() > 0){
-        const mergedBytes = await mergedPdf.save();
-        const blob = new Blob([mergedBytes], {type:'application/pdf'});
-        const url = URL.createObjectURL(blob);
-        window.open(url,'_blank');
-        // Also show the HTML preview
-        const w=window.open('','_blank','width=920,height=760');
-        w.document.write(html);
-        w.document.close();
-        w.focus();
-        setTimeout(()=>w.print(),500);
-        return;
-      }
-    }
-  } catch(e){ console.warn('Docs merge failed:', e); }
-
+  // ── FAST HTML DRAFT (client-side, no server roundtrip, no docs merge) ──
   const w=window.open('','_blank','width=920,height=760');
   w.document.write(html);
   w.document.close();
