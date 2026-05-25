@@ -1028,12 +1028,15 @@ async function draftPreview(opts={}){
     }
   }
   // Append active docs (e.g. Ογκομέτρηση) as rendered images at the end
-  const btn=opts.silent?null:document.getElementById('draft-btn');
-  const oldTxt=btn?btn.textContent:'';
-  if(btn){ btn.textContent='⏳ Φόρτωση docs...'; btn.disabled=true; }
-  try { html += await buildActiveDocsImagesHTML(); }
-  catch(e){ console.warn('[Draft] Docs append failed:', e); }
-  if(btn){ btn.textContent=oldTxt; btn.disabled=false; }
+  // Skipped when building HTML for email — docs go as separate PDF attachments
+  if(!opts.skipDocs){
+    const btn=opts.silent?null:document.getElementById('draft-btn');
+    const oldTxt=btn?btn.textContent:'';
+    if(btn){ btn.textContent='⏳ Φόρτωση docs...'; btn.disabled=true; }
+    try { html += await buildActiveDocsImagesHTML(); }
+    catch(e){ console.warn('[Draft] Docs append failed:', e); }
+    if(btn){ btn.textContent=oldTxt; btn.disabled=false; }
+  }
 
   html+=`</body></html>`;
 
@@ -1070,6 +1073,41 @@ async function buildClientPDF(){
   }
 }
 
+// Build email attachments: 1 HTML (draft body, no docs images) + 1 PDF per active doc
+async function buildOfferEmailAttachments(offerNum){
+  const html = await draftPreview({returnHTML:true, silent:true, skipDocs:true});
+  if(!html) throw new Error('Δεν δημιουργήθηκε HTML προσφοράς');
+
+  const htmlBytes = new TextEncoder().encode(html);
+  let htmlBin = '';
+  for(let i=0; i<htmlBytes.length; i++) htmlBin += String.fromCharCode(htmlBytes[i]);
+  const attachments = [{
+    filename: `Προσφορά_4A_Express_${offerNum}.html`,
+    content_base64: btoa(htmlBin),
+    mime: 'text/html; charset=utf-8'
+  }];
+
+  try {
+    const docsResp = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json());
+    const activeDocs = (docsResp.docs||[]).filter(d=>d.active && d.pdf_url && d.id!=='contract');
+    for(const doc of activeDocs){
+      try {
+        const pdfArr = new Uint8Array(await fetch(doc.pdf_url).then(r=>r.arrayBuffer()));
+        let bin = '';
+        for(let i=0; i<pdfArr.length; i++) bin += String.fromCharCode(pdfArr[i]);
+        const safeName = (doc.title || doc.id || 'doc').replace(/[\\/:*?"<>|]/g, '_');
+        attachments.push({
+          filename: `${safeName}.pdf`,
+          content_base64: btoa(bin),
+          mime: 'application/pdf'
+        });
+      } catch(e){ console.warn('[Email] Doc skipped:', doc.id, e); }
+    }
+  } catch(e){ console.warn('[Email] Docs fetch failed:', e); }
+
+  return attachments;
+}
+
 async function sendOffer(){
   const name=document.getElementById('cl-name').value.trim();
   const email=document.getElementById('cl-email').value.trim();
@@ -1080,18 +1118,15 @@ async function sendOffer(){
   document.getElementById('send-btn').disabled=true;
   try {
     const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
-    const finalBytes = await buildClientPDF();
-    let binary='';
-    for(let i=0;i<finalBytes.length;i++) binary+=String.fromCharCode(finalBytes[i]);
-    const pdf_base64 = btoa(binary);
+    const attachments = await buildOfferEmailAttachments(offerNum);
+    const docList = attachments.slice(1).map(a => `• ${a.filename}`).join('\n');
     const r = await fetch(`${API}/send_email.php`,{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         to: email,
         subject: `Προσφορά 4A Express — ${offerNum}`,
-        body: `Αγαπητέ/ή ${name},\n\nΣας αποστέλλουμε την προσφορά μας.\n\nΜε εκτίμηση,\nΗ ομάδα 4A Express`,
-        pdf_base64,
-        filename: `Προσφορά_4A_Express_${offerNum}.pdf`
+        body: `Αγαπητέ/ή ${name},\n\nΣας αποστέλλουμε την προσφορά μας. Παρακαλούμε ανοίξτε το επισυναπτόμενο αρχείο προσφοράς (Προσφορά_4A_Express_${offerNum}.html) στον browser σας για να τη δείτε.\n\n${docList ? 'Παραρτήματα:\n'+docList+'\n\n' : ''}Με εκτίμηση,\nΗ ομάδα 4A Express`,
+        attachments
       })
     });
     const d = await r.json();
