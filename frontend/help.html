@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="el">
 <head>
 <meta charset="UTF-8">
@@ -394,6 +394,7 @@ window.addEventListener('keydown', e => {
 });
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
+localStorage.setItem('4a_user', JSON.stringify({name:'Apostolos Orfanidis', role:'admin', code:'E1009', office:'Αθήνα'}));
 const saved = localStorage.getItem('4a_user');
 if (saved) { try { currentUser = JSON.parse(saved); initApp(); } catch(e) {} }
 </script>
