@@ -673,25 +673,8 @@ async function buildActiveDocsImagesHTML(){
 }
 
 async function previewPDF(){
-  const name=document.getElementById('cl-name').value.trim();
-  if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
-  if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
-  const btn=document.getElementById('preview-btn');
-  const oldTxt=btn.textContent;
-  btn.textContent='⏳ Δημιουργία PDF...';
-  btn.disabled=true;
-  try {
-    const finalBytes=await buildClientPDF();
-    const blob=new Blob([finalBytes], {type:'application/pdf'});
-    const url=URL.createObjectURL(blob);
-    window.open(url, '_blank');
-  } catch(e){
-    alert('Σφάλμα στη δημιουργία PDF: '+e.message);
-    console.error('Preview PDF failed:', e);
-  } finally {
-    btn.textContent=oldTxt;
-    btn.disabled=false;
-  }
+  // Preview = same as Draft (HTML window) — browser renders correctly (CSS Grid/Flex supported)
+  return draftPreview();
 }
 
 async function draftPreview(opts={}){
