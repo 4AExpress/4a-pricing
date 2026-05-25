@@ -299,7 +299,11 @@
   </div>
 </div>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
 const API = 'https://4aexpress.com/api';
 
 const SVC_NAMES = {
@@ -634,6 +638,37 @@ async function buildFinalPDF(offerNum){
     console.warn('[PDF] Docs fetch failed, continuing without docs:', docsErr);
   }
   return await merged.save();
+}
+
+async function pdfUrlToImagesHTML(pdfUrl, scale=2){
+  if(typeof pdfjsLib === 'undefined') throw new Error('PDF.js not loaded');
+  const loadingTask = pdfjsLib.getDocument(pdfUrl);
+  const pdf = await loadingTask.promise;
+  let out = '';
+  for(let i=1; i<=pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({scale});
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    out += `<div class="page" style="padding:0;page-break-before:always;"><img src="${dataUrl}" style="width:100%;height:auto;display:block;"/></div>`;
+  }
+  return out;
+}
+
+async function buildActiveDocsImagesHTML(){
+  let out = '';
+  try {
+    const docsResp = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json());
+    const activeDocs = (docsResp.docs||[]).filter(d=>d.active && d.pdf_url && d.id!=='contract');
+    for(const doc of activeDocs){
+      try { out += await pdfUrlToImagesHTML(doc.pdf_url); }
+      catch(e){ console.warn('[Draft] Doc skipped:', doc.id, e); }
+    }
+  } catch(e){ console.warn('[Draft] Docs fetch failed:', e); }
+  return out;
 }
 
 async function previewPDF(){
@@ -1009,14 +1044,22 @@ async function draftPreview(){
       html+=`<div class="page">${plHdr}<div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>€</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkgV!=null?`<tr class="xr"><td class="wt">${xkgLbl}</td><td>€${xkgV.toFixed(2)}</td></tr>`:''}</tbody></table>`).join('')}</div>${plFtr}</div>`;
     }
   }
+  // Append active docs (e.g. Ογκομέτρηση) as rendered images at the end
+  const btn=document.getElementById('draft-btn');
+  const oldTxt=btn?btn.textContent:'';
+  if(btn){ btn.textContent='⏳ Φόρτωση docs...'; btn.disabled=true; }
+  try { html += await buildActiveDocsImagesHTML(); }
+  catch(e){ console.warn('[Draft] Docs append failed:', e); }
+  if(btn){ btn.textContent=oldTxt; btn.disabled=false; }
+
   html+=`</body></html>`;
 
-  // ── FAST HTML DRAFT (client-side, no server roundtrip, no docs merge) ──
+  // ── FAST HTML DRAFT (client-side, no server roundtrip) + docs as images ──
   const w=window.open('','_blank','width=920,height=760');
   w.document.write(html);
   w.document.close();
   w.focus();
-  setTimeout(()=>w.print(),500);
+  setTimeout(()=>w.print(),800);
 }
 
 async function sendOffer(){
