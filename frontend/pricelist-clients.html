@@ -965,21 +965,6 @@ async function previewPDF(){
       html+=`<div class="page">${plHdr}<div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>€</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkgV!=null?`<tr class="xr"><td class="wt">${xkgLbl}</td><td>€${xkgV.toFixed(2)}</td></tr>`:''}</tbody></table>`).join('')}</div>${plFtr}</div>`;
     }
   }
-// ── DYNAMIC DOCS ──
-  const docsCache = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]).catch(()=>[]);
-  if(!docsCache.length || docsCache.find(d=>d.id==='volumetric'&&d.active)){
-    html+=`<div class="page">
-    ${H(offerNum)}
-    ${S('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ')}
-    <p style="font-size:9px;color:#555;margin:6px 0;">Κάθε δέμα χρεώνεται βάσει του <strong>μεγαλύτερου</strong>: πραγματικό ή ογκομετρικό βάρος.</p>
-    <div style="background:#f2f2f2;border:0.5px solid #cc0000;padding:12px;margin:8px 0;text-align:center;font-size:12px;font-weight:700;color:#990000;">Ογκομετρικό Βάρος (kg) = ( Μ x Π x Υ ) / 5.000</div>
-    <div style="font-size:8px;color:#1D3B6F;text-align:center;margin-bottom:8px;">Μ=Μήκος | Π=Πλάτος | Υ=Ύψος (σε cm)</div>
-    <p style="font-size:8px;color:#555;margin-top:6px;">Ισχύει για: όχημα, αποθήκη, αεροπλάνο, container. Χρησιμοποιείτε το ΜΕΓΑΛΥΤΕΡΟ βάρος.</p>
-    <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:10px 0;"><thead><tr style="background:#cc0000;color:#fff;"><th style="padding:5px 8px;text-align:left;">Διαστάσεις</th><th style="padding:5px 8px;text-align:center;">Τύπος</th><th style="padding:5px 8px;text-align:center;">Αποτέλεσμα</th></tr></thead><tbody><tr style="background:#fff;"><td style="padding:5px 8px;">50x50x50 cm</td><td style="padding:5px 8px;text-align:center;">50x50x50/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">25 kg</td></tr><tr style="background:#f2f2f2;"><td style="padding:5px 8px;">60x40x30 cm</td><td style="padding:5px 8px;text-align:center;">60x40x30/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">14.4 kg</td></tr><tr style="background:#fff;"><td style="padding:5px 8px;">100x30x20 cm</td><td style="padding:5px 8px;text-align:center;">100x30x20/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">12 kg</td></tr></tbody></table>
-    <div style="background:#fff3cd;border:0.5px solid #ffc107;padding:8px 12px;font-size:8.5px;font-weight:700;margin-top:6px;">Χρησιμοποιειτε παντα το ΜΕΓΑΛΥΤΕΡΟ: πραγματικο η ογκομετρικο βαρος.</div>
-    ${F(String(plPg++))}
-    </div>`;
-  }
   html+=`</body></html>`;
 
   // ── MERGE DOCS PDFs ──
