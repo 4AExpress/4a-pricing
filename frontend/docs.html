@@ -281,6 +281,8 @@ function renderDocs() {
         <div class="doc-name">${doc.name} ${doc.locked ? '<span class="tag tag-locked">🔒 Τελευταίο</span>' : '<span class="tag tag-default">default ON</span>'}</div>
         <div class="doc-desc">${doc.desc}</div>
       </div>
+      ${doc.pdf_filename ? `
+      <button onclick="window.open('https://4aexpress.com/api/pdf_proxy.php?f=${doc.pdf_filename}','_blank')" style="padding:3px 8px;font-size:11px;background:#1D3B6F;color:white;border:none;border-radius:3px;cursor:pointer;margin-right:4px;">👁 Preview</button><button onclick="(()=>{const a=document.createElement('a');a.href='https://4aexpress.com/api/pdf_proxy.php?f=${doc.pdf_filename}';a.download='${doc.pdf_filename}';a.click();})()" style="padding:3px 8px;font-size:11px;background:#2e7d32;color:white;border:none;border-radius:3px;cursor:pointer;margin-right:4px;">⬇ Download</button>` : ''}
       ${doc.locked ? '<span class="doc-locked">Πάντα τελευταίο</span>' : `
       <label class="toggle">
         <input type="checkbox" ${doc.active?'checked':''} ${!isAdmin?'disabled':''} onchange="toggleDoc(${i}, this.checked)">
