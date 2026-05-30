@@ -1,5 +1,5 @@
 <?php
-// shipments/cod.php | v1.0 | 28-05-2026
+// shipments/cod.php | v1.1 | 30-05-2026
 // POST /api/shipments/{id}/cod  — set or clear COD on a shipment
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth.php';
@@ -38,6 +38,20 @@ db()->exec("CREATE TABLE IF NOT EXISTS `4a_shipment_services` (
     PRIMARY KEY (`shipment_id`, `service_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+// Bootstrap config table so this endpoint works even before admin/cod/config is hit
+db()->exec("CREATE TABLE IF NOT EXISTS `4a_cod_config` (
+    `id`          INT           NOT NULL DEFAULT 1,
+    `min_fee`     DECIMAL(10,2) NOT NULL DEFAULT 1.30,
+    `default_fee` DECIMAL(10,2) NOT NULL DEFAULT 5.00,
+    `threshold`   DECIMAL(10,2) NOT NULL DEFAULT 1000.00,
+    `percentage`  DECIMAL(5,2)  NOT NULL DEFAULT 1.00,
+    `updated_by`  INT           DEFAULT NULL,
+    `updated_at`  DATETIME      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+db()->exec("INSERT IGNORE INTO `4a_cod_config` (id, min_fee, default_fee, threshold, percentage)
+            VALUES (1, 1.30, 5.00, 1000.00, 1.00)");
+
 db()->exec("CREATE TABLE IF NOT EXISTS `4a_cod_audit_log` (
     `id`          INT           AUTO_INCREMENT PRIMARY KEY,
     `shipment_id` INT           NOT NULL,
@@ -59,11 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $actor       = require_user();
 $shipment_id = (int)($_GET['id'] ?? 0);
-if (!$shipment_id) respond(['error' => 'Invalid shipment ID'], 400);
+if (!$shipment_id) respond(['error' => 'Μη έγκυρο ID αποστολής'], 400);
 
 $b           = body();
 $cod_enabled = isset($b['cod_enabled']) ? (bool)$b['cod_enabled'] : null;
-if ($cod_enabled === null) respond(['error' => 'cod_enabled is required'], 400);
+if ($cod_enabled === null) respond(['error' => 'Το πεδίο cod_enabled είναι υποχρεωτικό'], 400);
 
 // ── 1. Verify shipment exists ─────────────────────────────────────────────────
 
@@ -72,7 +86,7 @@ $shipment = db()->prepare(
 );
 $shipment->execute([$shipment_id]);
 $shipment = $shipment->fetch(PDO::FETCH_ASSOC);
-if (!$shipment) respond(['error' => 'Shipment not found'], 404);
+if (!$shipment) respond(['error' => 'Η αποστολή δεν βρέθηκε'], 404);
 
 // ── 2. Verify at least one COD-capable service ────────────────────────────────
 
@@ -119,8 +133,8 @@ if (!$cod_enabled) {
 $cod_amount      = isset($b['cod_amount'])      ? (float)$b['cod_amount']      : null;
 $declared_value  = isset($b['declared_value'])  ? (float)$b['declared_value']  : null;
 
-if ($cod_amount === null)     respond(['error' => 'cod_amount is required'],     400);
-if ($declared_value === null) respond(['error' => 'declared_value is required'], 400);
+if ($cod_amount === null)     respond(['error' => 'Το ποσό αντικαταβολής είναι υποχρεωτικό'], 400);
+if ($declared_value === null) respond(['error' => 'Η δηλωθείσα αξία είναι υποχρεωτική'],    400);
 
 // Load config
 $cfg = db()->query(

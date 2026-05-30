@@ -1,5 +1,5 @@
 <?php
-// admin/cod/config.php | v1.1 | 28-05-2026
+// admin/cod/config.php | v1.2 | 30-05-2026
 require_once __DIR__ . '/../../config.php';
 require_once __DIR__ . '/../../auth.php';
 
@@ -63,19 +63,19 @@ if ($method === 'PUT') {
     $percentage  = isset($b['percentage'])  ? (float)$b['percentage']  : null;
 
     if ($min_fee === null || $default_fee === null || $threshold === null || $percentage === null) {
-        respond(['error' => 'min_fee, default_fee, threshold, percentage are required'], 400);
+        respond(['error' => 'Τα πεδία min_fee, default_fee, threshold, percentage είναι υποχρεωτικά'], 400);
     }
     if ($min_fee <= 0 || $default_fee <= 0 || $threshold <= 0 || $percentage <= 0) {
-        respond(['error' => 'All values must be greater than 0'], 400);
+        respond(['error' => 'Όλες οι τιμές πρέπει να είναι θετικές'], 400);
     }
     if ($percentage > 100) {
-        respond(['error' => 'percentage must be <= 100'], 400);
+        respond(['error' => 'Το ποσοστό (percentage) πρέπει να είναι ≤ 100'], 400);
     }
     if ($min_fee > $threshold) {
-        respond(['error' => 'min_fee must be <= threshold'], 400);
+        respond(['error' => 'Το min_fee πρέπει να είναι ≤ threshold'], 400);
     }
     if ($default_fee < $min_fee) {
-        respond(['error' => 'default_fee must be >= min_fee'], 400);
+        respond(['error' => 'Το default_fee πρέπει να είναι ≥ min_fee'], 400);
     }
 
     $pdo = db();

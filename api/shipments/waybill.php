@@ -1,5 +1,5 @@
 <?php
-// shipments/waybill.php | v1.0 | 30-05-2026
+// shipments/waybill.php | v1.1 | 30-05-2026
 // GET /api/shipments/{id}/waybill          — JSON waybill data with COD section
 // GET /api/shipments/{id}/waybill?format=pdf — same data as PDF
 require_once __DIR__ . '/../config.php';
@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 $actor       = require_user();
 $shipment_id = (int)($_GET['id'] ?? 0);
-if (!$shipment_id) respond(['error' => 'Invalid shipment ID'], 400);
+if (!$shipment_id) respond(['error' => 'Μη έγκυρο ID αποστολής'], 400);
 
 $stmt = db()->prepare(
     "SELECT id, cod_enabled, cod_amount, cod_fee, cod_declared_val,
@@ -20,7 +20,7 @@ $stmt = db()->prepare(
 );
 $stmt->execute([$shipment_id]);
 $shipment = $stmt->fetch(PDO::FETCH_ASSOC);
-if (!$shipment) respond(['error' => 'Shipment not found'], 404);
+if (!$shipment) respond(['error' => 'Η αποστολή δεν βρέθηκε'], 404);
 
 $cod_enabled = (bool)$shipment['cod_enabled'];
 
