@@ -3,6 +3,7 @@
 // POST /api/shipments/{id}/cod  — set or clear COD on a shipment
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth.php';
+require_once __DIR__ . '/../cod_constants.php';
 
 // ── Table definitions ─────────────────────────────────────────────────────────
 
@@ -90,7 +91,6 @@ if (!$shipment) respond(['error' => 'Η αποστολή δεν βρέθηκε']
 
 // ── 2. Verify at least one COD-capable service ────────────────────────────────
 
-const COD_CAPABLE_SERVICES = ['S1003_GR', 'S1012_GR', 'S1039', 'S1059'];
 $placeholders = implode(',', array_fill(0, count(COD_CAPABLE_SERVICES), '?'));
 
 $capable = db()->prepare(
