@@ -592,7 +592,6 @@ function calculateCodFee(){
     codFee=0; feeEl.textContent='Χρέωση αντικαταβολής: —'; return;
   }
   warn.style.display='none';
-  if(amount<=0){ codFee=0; feeEl.textContent='Χρέωση αντικαταβολής: —'; return; }
   codFee=amount<=flat_limit ? flat_fee : Math.max(min_fee,amount*percentage/100);
   codFee=Math.round(codFee*100)/100;
   feeEl.textContent=`Χρέωση αντικαταβολής: €${codFee.toFixed(2)}`;
@@ -671,7 +670,7 @@ function editClient(id){
     codEnabled=true;
     document.getElementById('cod-toggle').checked=true;
     document.getElementById('cod-fields').style.display='block';
-    document.getElementById('cod-amount').value=(c.cod.cod_amount||0).toFixed(2);
+    document.getElementById('cod-amount').value=parseFloat(c.cod.cod_amount||0).toFixed(2);
     if(codConfig)calculateCodFee();
   }
   window.scrollTo({top:0,behavior:'smooth'});
@@ -707,7 +706,7 @@ function renderClients(){
         </div>
         <div class="client-meta">ΑΦΜ: ${c.afm||'—'} · ${c.contact||'—'} · ${c.email||'—'}${c.phone?' · '+c.phone:''}${c.website?' · '+c.website:''} · ${c.date||'—'} · ${c.user||'—'} · ${c.office||'—'}</div>
         <div class="client-pls">📋 ${plStr}</div>
-        ${c.cod?.cod_enabled?`<div class="client-cod-badge">💳 COD: €${(c.cod.cod_amount||0).toFixed(2)} · Χρέωση: €${(c.cod.cod_fee||0).toFixed(2)}</div>`:''}
+        ${c.cod?.cod_enabled?`<div class="client-cod-badge">💳 COD: €${parseFloat(c.cod.cod_amount||0).toFixed(2)} · Χρέωση: €${parseFloat(c.cod.cod_fee||0).toFixed(2)}</div>`:''}
       </div>
       <div class="client-actions">
         ${c.status==='active'?`<button class="action-btn cms" onclick="exportCMS(${c.id})">↓ CMS Export</button>`:''}
