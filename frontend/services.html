@@ -287,6 +287,7 @@ function renderTable(data) {
           <input type="checkbox" id="cod-chk-${s.code}" onchange="toggleCodPanel('${s.code}',this)">
           <span style="font-size:12px;color:#555;">Επιτρέπει COD</span>
         </label>
+        <div id="cod-badge-${s.code}" style="display:none;font-size:11px;color:#4a7c59;margin-top:4px;line-height:1.4;"></div>
       </td>
       <td>
         <button class="action-btn" onclick="editService(${JSON.stringify(s).split('"').join('&quot;')})" title="Επεξεργασία">✏️</button>
@@ -299,19 +300,19 @@ function renderTable(data) {
           <div class="cod-fields-grid">
             <div>
               <label>Όριο παγίας (€)</label>
-              <input type="number" id="cod-flat_limit-${s.code}" value="500.00" step="0.01" min="0">
+              <input type="number" id="cod-flat_limit-${s.code}" value="500.00" step="0.01" min="0" oninput="updateCodBadge('${s.code}')">
             </div>
             <div>
               <label>Παγία χρέωση (€)</label>
-              <input type="number" id="cod-flat_fee-${s.code}" value="3.00" step="0.01" min="0">
+              <input type="number" id="cod-flat_fee-${s.code}" value="3.00" step="0.01" min="0" oninput="updateCodBadge('${s.code}')">
             </div>
             <div>
               <label>Ελάχιστη χρέωση (€)</label>
-              <input type="number" id="cod-min_fee-${s.code}" value="1.30" step="0.01" min="0">
+              <input type="number" id="cod-min_fee-${s.code}" value="1.30" step="0.01" min="0" oninput="updateCodBadge('${s.code}')">
             </div>
             <div>
               <label>Ποσοστό άνω του ορίου (%)</label>
-              <input type="number" id="cod-percentage-${s.code}" value="1.00" step="0.01" min="0" max="100">
+              <input type="number" id="cod-percentage-${s.code}" value="1.00" step="0.01" min="0" max="100" oninput="updateCodBadge('${s.code}')">
             </div>
           </div>
           <button class="btn btn-green" onclick="saveCodConfig('${s.code}')">💾 Αποθήκευση COD</button>
@@ -437,11 +438,24 @@ async function loadCodConfig(code) {
     set('flat_fee',   d.flat_fee    ?? 3.00);
     set('min_fee',    d.min_fee     ?? 1.30);
     set('percentage', d.percentage  ?? 1.00);
+    updateCodBadge(code);
   } catch(e) { /* keep defaults on error */ }
+}
+
+function updateCodBadge(code) {
+  const badge = document.getElementById(`cod-badge-${code}`);
+  const chk   = document.getElementById(`cod-chk-${code}`);
+  if (!badge || !chk || !chk.checked) { if (badge) badge.style.display = 'none'; return; }
+  const get = f => document.getElementById(`cod-${f}-${code}`)?.value ?? '0';
+  const fmt = v => { const n = parseFloat(v); return n % 1 === 0 ? String(Math.round(n)) : n.toFixed(2); };
+  const fl = get('flat_limit'), ff = get('flat_fee'), mf = get('min_fee'), pct = get('percentage');
+  badge.textContent = `📊 ≤€${fmt(fl)}:€${fmt(ff)} flat 🔺min €${fmt(mf)} | >€${fmt(fl)} 📈+${fmt(pct)}%`;
+  badge.style.display = '';
 }
 
 function toggleCodPanel(code, chk) {
   document.getElementById(`cod-row-${code}`).style.display = chk.checked ? '' : 'none';
+  updateCodBadge(code);
 }
 
 async function saveCodConfig(code) {
