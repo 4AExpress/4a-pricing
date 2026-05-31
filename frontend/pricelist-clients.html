@@ -125,6 +125,7 @@
   .cod-toggle-wrap input[type=checkbox] { width:16px; height:16px; cursor:pointer; accent-color:#43a047; }
   .cod-fee-box { background:#e8f5e9; border:1px solid #a5d6a7; padding:8px 12px; border-radius:4px; font-size:13px; font-weight:600; color:#2e7d32; margin-top:4px; }
   .cod-warn { background:#fff3cd; border:1px solid #ffc107; padding:6px 10px; border-radius:4px; font-size:11px; color:#7c6d00; margin-bottom:6px; }
+  .client-cod-badge { font-size:11px; color:#2e7d32; margin-top:2px; }
 </style>
 </head>
 <body>
@@ -266,18 +267,13 @@
             <span style="font-size:12px;color:#333;">Ενεργοποίηση</span>
           </label>
         </div>
+        <div id="cod-formula-badge" style="font-size:11px;color:#4a7c59;margin-top:4px;display:none;"></div>
         <div id="cod-fields" style="display:none;margin-top:10px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
-            <div class="form-group">
-              <label>Δηλωθείσα Αξία (€)</label>
-              <input type="number" id="cod-declared" min="0" step="0.01" placeholder="0.00" oninput="onCodDeclaredChange()">
-            </div>
-            <div class="form-group">
-              <label>Ποσό Αντικαταβολής (€)</label>
-              <input type="number" id="cod-amount" min="0" step="0.01" placeholder="0.00" oninput="onCodAmountChange()">
-            </div>
+          <div class="form-group" style="margin-bottom:8px;">
+            <label>Ποσό Αντικαταβολής (€)</label>
+            <input type="number" id="cod-amount" min="0" step="0.01" placeholder="0.00" oninput="onCodAmountChange()">
           </div>
-          <div id="cod-floor-warn" class="cod-warn" style="display:none;">⚠️ Το ποσό χαμηλό — εφαρμόζεται ελάχιστη χρέωση €1.30</div>
+          <div id="cod-floor-warn" class="cod-warn" style="display:none;"></div>
           <div id="cod-fee-display" class="cod-fee-box">Χρέωση αντικαταβολής: —</div>
         </div>
       </div>
@@ -328,16 +324,6 @@
   </div>
 </div>
 
-<div id="cod-confirm-modal" class="modal-overlay">
-  <div class="modal-box" style="width:420px;">
-    <div class="modal-title">Ενεργοποίηση Αντικαταβολής (COD)</div>
-    <p id="cod-confirm-msg" style="font-size:13px;color:#555;line-height:1.65;margin-bottom:18px;"></p>
-    <div class="modal-footer" style="gap:8px;">
-      <button class="btn btn-secondary" onclick="cancelCodEnable()">Άκυρο</button>
-      <button class="btn btn-green" onclick="confirmCodEnable()">Ενεργοποίηση</button>
-    </div>
-  </div>
-</div>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -375,7 +361,7 @@ let clients=[], shelf={}, currentUser=null;
 let editingId=null, currentStatus='prospect';
 let selectedPls=[], surcharges=[], managers=[];
 let filterStatus='all', filterSearch='';
-let codEnabled=false, codServices=[], codMinFee=1.30, codDefaultValue=5.00, codFee=0, codFeeTimer=null, codConfirmedForService=null;
+let codEnabled=false, codConfig=null, codFee=0, codFeeTimer=null;
 
 function formatDate(iso){ const d=new Date(iso); if(isNaN(d))return iso; return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
 function todayFmt(){ return formatDate(new Date().toISOString()); }
@@ -404,7 +390,6 @@ async function init(){
     clients = JSON.parse(localStorage.getItem('4a_clients')||'[]');
   }
   managers=currentUser.email?[currentUser.email]:[];
-  fetchCodServices();
   updateOfferNum(); renderManagers(); renderClients();
 }
 
@@ -441,7 +426,7 @@ function resetForm(){
   document.getElementById('form-title').textContent='Νέος Πελάτης';
   document.querySelectorAll('.status-pill').forEach(p=>p.classList.remove('active'));
   document.querySelector('.st-prospect').classList.add('active');
-  resetCod(); codConfirmedForService=null;
+  resetCod();
   renderPlTags(); renderSurcharges(); renderManagers(); updateOfferNum(); checkForm();
 }
 
@@ -515,77 +500,59 @@ function renderManagers(){
     <span class="manager-tag">${m}<button onclick="managers.splice(${i},1);renderManagers()">✕</button></span>`).join('');
 }
 
-async function fetchCodServices(){
+async function fetchCodConfig(serviceCode){
   try{
-    const r=await fetch(`${API}/cod.php?action=services`);
+    const r=await fetch(`${API}/cod_service_config.php?service_code=${encodeURIComponent(serviceCode)}`);
     const d=await r.json();
-    codServices=d.services||['S1003_GR','S1012_GR','S1039','S1059'];
-    codMinFee=d.min_fee||1.30;
-    codDefaultValue=d.default_value||5.00;
-  }catch(e){
-    codServices=['S1003_GR','S1012_GR','S1039','S1059'];
-  }
+    return parseInt(d.cod_enabled)===1?d:null;
+  }catch(e){ return null; }
 }
 
-function checkCodVisibility(){
-  const hasCod=selectedPls.some(p=>codServices.includes(p.service_id));
-  document.getElementById('cod-section').style.display=hasCod?'block':'none';
-  if(!hasCod&&codEnabled)resetCod();
+async function checkCodVisibility(){
+  let config=null;
+  for(const p of selectedPls){
+    const cfg=await fetchCodConfig(p.service_id);
+    if(cfg){ config=cfg; break; }
+  }
+  const section=document.getElementById('cod-section');
+  if(!config){ section.style.display='none'; if(codEnabled)resetCod(); return; }
+  codConfig=config;
+  section.style.display='block';
+  updateCodFormula();
+}
+
+function updateCodFormula(){
+  const badge=document.getElementById('cod-formula-badge');
+  if(!badge||!codConfig)return;
+  const fmt=v=>{ const n=parseFloat(v); return n%1===0?String(Math.round(n)):n.toFixed(2); };
+  const {flat_limit:fl,flat_fee:ff,min_fee:mf,percentage:pct}=codConfig;
+  badge.textContent=`📊 ≤€${fmt(fl)}:€${fmt(ff)} flat 🔺min €${fmt(mf)} | >€${fmt(fl)} 📈+${fmt(pct)}%`;
+  badge.style.display='';
 }
 
 function resetCod(){
-  codEnabled=false; codFee=0;
+  codEnabled=false; codFee=0; codConfig=null;
   const chk=document.getElementById('cod-toggle');
   if(chk)chk.checked=false;
   document.getElementById('cod-fields').style.display='none';
   document.getElementById('cod-fee-display').textContent='Χρέωση αντικαταβολής: —';
   document.getElementById('cod-floor-warn').style.display='none';
+  const badge=document.getElementById('cod-formula-badge');
+  if(badge)badge.style.display='none';
 }
 
 function toggleCod(){
   const chk=document.getElementById('cod-toggle');
   if(chk.checked){
-    const svc=selectedPls.find(p=>codServices.includes(p.service_id));
-    if(svc&&codConfirmedForService!==svc.service_id){
-      document.getElementById('cod-confirm-msg').textContent=
-        `Πρόκειται να ενεργοποιήσετε αντικαταβολή (COD) για την υπηρεσία ${svc.service_id}. Η χρέωση αντικαταβολής προστίθεται στη ναύλωση. Επιβεβαιώνετε;`;
-      document.getElementById('cod-confirm-modal').classList.add('open');
-      chk.checked=false;
-    } else {
-      activateCod();
-    }
-  } else {
+    codEnabled=true;
+    document.getElementById('cod-fields').style.display='block';
+    calculateCodFee();
+  }else{
     codEnabled=false; codFee=0;
     document.getElementById('cod-fields').style.display='none';
     document.getElementById('cod-floor-warn').style.display='none';
     document.getElementById('cod-fee-display').textContent='Χρέωση αντικαταβολής: —';
   }
-}
-
-function cancelCodEnable(){
-  document.getElementById('cod-confirm-modal').classList.remove('open');
-}
-
-function confirmCodEnable(){
-  document.getElementById('cod-confirm-modal').classList.remove('open');
-  const svc=selectedPls.find(p=>codServices.includes(p.service_id));
-  if(svc)codConfirmedForService=svc.service_id;
-  document.getElementById('cod-toggle').checked=true;
-  activateCod();
-}
-
-function activateCod(){
-  codEnabled=true;
-  document.getElementById('cod-fields').style.display='block';
-  document.getElementById('cod-declared').value=codDefaultValue.toFixed(2);
-  document.getElementById('cod-amount').value=codDefaultValue.toFixed(2);
-  calculateCodFee();
-}
-
-function onCodDeclaredChange(){
-  const v=parseFloat(document.getElementById('cod-declared').value)||0;
-  document.getElementById('cod-amount').value=v.toFixed(2);
-  scheduleCodCalc();
 }
 
 function onCodAmountChange(){ scheduleCodCalc(); }
@@ -595,25 +562,26 @@ function scheduleCodCalc(){
   codFeeTimer=setTimeout(calculateCodFee,400);
 }
 
-async function calculateCodFee(){
+function calculateCodFee(){
+  if(!codConfig)return;
   const amount=parseFloat(document.getElementById('cod-amount').value)||0;
-  const declared=parseFloat(document.getElementById('cod-declared').value)||0;
-  const svc=selectedPls.find(p=>codServices.includes(p.service_id));
+  const {flat_limit,flat_fee,min_fee,percentage}=codConfig;
   const warn=document.getElementById('cod-floor-warn');
   const feeEl=document.getElementById('cod-fee-display');
-  const floored=(amount*0.015)<codMinFee;
-  try{
-    const r=await fetch(`${API}/cod.php`,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'calculate',service_id:svc?.service_id,declared_value:declared,cod_amount:amount})});
-    const d=await r.json();
-    codFee=d.cod_fee;
-    warn.style.display=(amount>0&&(amount*0.015)<(d.min_fee||codMinFee))?'block':'none';
-    feeEl.textContent=`Χρέωση αντικαταβολής: €${codFee.toFixed(2)}`;
-  }catch(e){
-    codFee=parseFloat(Math.max(codMinFee,amount*0.015).toFixed(2));
-    warn.style.display=(amount>0&&floored)?'block':'none';
-    feeEl.textContent=`Χρέωση αντικαταβολής: €${codFee.toFixed(2)}`;
+  if(amount>0&&amount<parseFloat(min_fee)){
+    warn.textContent=`⚠️ Το ποσό πρέπει να είναι τουλάχιστον €${parseFloat(min_fee).toFixed(2)}`;
+    warn.style.display='block';
+    codFee=0; feeEl.textContent='Χρέωση αντικαταβολής: —'; return;
   }
+  warn.style.display='none';
+  if(amount<=0){ codFee=0; feeEl.textContent='Χρέωση αντικαταβολής: —'; return; }
+  if(amount<=parseFloat(flat_limit)){
+    codFee=parseFloat(flat_fee);
+  }else{
+    codFee=Math.max(parseFloat(min_fee),amount*parseFloat(percentage)/100);
+  }
+  codFee=Math.round(codFee*100)/100;
+  feeEl.textContent=`Χρέωση αντικαταβολής: €${codFee.toFixed(2)}`;
 }
 
 function saveClient(){
@@ -621,6 +589,11 @@ function saveClient(){
   const afm=document.getElementById('cl-afm').value.trim();
   const email=document.getElementById('cl-email').value.trim();
   if(!name||!afm||!email){ alert('Συμπλήρωσε Επωνυμία, ΑΦΜ και Email'); return; }
+  if(codEnabled){
+    const _codAmt=parseFloat(document.getElementById('cod-amount').value)||0;
+    const _minFee=codConfig?parseFloat(codConfig.min_fee):0;
+    if(_codAmt<_minFee){ alert(`⚠️ Το ποσό COD πρέπει να είναι τουλάχιστον €${_minFee.toFixed(2)}`); return; }
+  }
   const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
   const client={
     id:editingId||Date.now(), name, afm,
@@ -631,7 +604,7 @@ function saveClient(){
     status:currentStatus,
     pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[]})),
     surcharges:[...surcharges], managers:[...managers],
-    cod:codEnabled?{declared_value:parseFloat(document.getElementById('cod-declared').value)||0,amount:parseFloat(document.getElementById('cod-amount').value)||0,fee:codFee}:null,
+    cod:codEnabled?{cod_enabled:true,cod_amount:parseFloat(document.getElementById('cod-amount').value)||0,cod_fee:codFee}:null,
     payment:document.getElementById('cl-payment').value,
     invoice:document.getElementById('cl-invoice').value,
     validity:document.getElementById('cl-validity').value,
@@ -669,15 +642,12 @@ function editClient(id){
   document.getElementById('form-title').textContent=`✏️ Επεξεργασία: ${c.name}`;
   renderPlTags(); renderSurcharges(); renderManagers(); updateOfferNum(); checkForm();
   resetCod();
-  if(c.cod&&c.cod.amount){
-    const svc=(c.pricelists||[]).find(p=>codServices.includes(p.service_id));
-    if(svc)codConfirmedForService=svc.service_id;
+  if(c.cod&&c.cod.cod_enabled){
     codEnabled=true;
     document.getElementById('cod-toggle').checked=true;
     document.getElementById('cod-fields').style.display='block';
-    document.getElementById('cod-declared').value=(c.cod.declared_value||0).toFixed(2);
-    document.getElementById('cod-amount').value=(c.cod.amount||0).toFixed(2);
-    calculateCodFee();
+    document.getElementById('cod-amount').value=(c.cod.cod_amount||0).toFixed(2);
+    if(codConfig)calculateCodFee();
   }
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -712,6 +682,7 @@ function renderClients(){
         </div>
         <div class="client-meta">ΑΦΜ: ${c.afm||'—'} · ${c.contact||'—'} · ${c.email||'—'}${c.phone?' · '+c.phone:''}${c.website?' · '+c.website:''} · ${c.date||'—'} · ${c.user||'—'} · ${c.office||'—'}</div>
         <div class="client-pls">📋 ${plStr}</div>
+        ${c.cod?.cod_enabled?`<div class="client-cod-badge">💳 COD: €${(c.cod.cod_amount||0).toFixed(2)} · Χρέωση: €${(c.cod.cod_fee||0).toFixed(2)}</div>`:''}
       </div>
       <div class="client-actions">
         ${c.status==='active'?`<button class="action-btn cms" onclick="exportCMS(${c.id})">↓ CMS Export</button>`:''}
