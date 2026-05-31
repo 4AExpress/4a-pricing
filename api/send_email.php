@@ -19,8 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $input = json_decode(file_get_contents('php://input'), true);
 
-if (empty($input['to']) || empty($input['subject']) || empty($input['pdf_base64'])) {
-    echo json_encode(['ok' => false, 'error' => 'Missing required fields: to, subject, pdf_base64']);
+$hasAttachments = !empty($input['attachments']) && is_array($input['attachments']);
+$hasLegacyPdf = !empty($input['pdf_base64']);
+
+if (empty($input['to']) || empty($input['subject']) || (!$hasAttachments && !$hasLegacyPdf)) {
+    echo json_encode(['ok' => false, 'error' => 'Missing required fields: to, subject, attachments|pdf_base64']);
     exit;
 }
 
@@ -42,9 +45,19 @@ try {
     $mail->isHTML(false);
     $mail->Body = $input['body'] ?? '';
 
-    $pdfData = base64_decode($input['pdf_base64']);
-    $filename = $input['filename'] ?? 'offer.pdf';
-    $mail->addStringAttachment($pdfData, $filename, 'base64', 'application/pdf');
+    if ($hasAttachments) {
+        foreach ($input['attachments'] as $att) {
+            if (empty($att['content_base64']) || empty($att['filename'])) continue;
+            $data = base64_decode($att['content_base64']);
+            $mime = $att['mime'] ?? 'application/octet-stream';
+            $mail->addStringAttachment($data, $att['filename'], 'base64', $mime);
+        }
+    } else {
+        // Legacy single PDF attachment
+        $pdfData = base64_decode($input['pdf_base64']);
+        $filename = $input['filename'] ?? 'offer.pdf';
+        $mail->addStringAttachment($pdfData, $filename, 'base64', 'application/pdf');
+    }
 
     $mail->send();
     echo json_encode(['ok' => true]);

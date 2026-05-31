@@ -1,0 +1,22 @@
+RewriteEngine On
+RewriteBase /api/
+
+# Route /api/admin/cod/config → admin/cod/config.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^admin/cod/config/?$ admin/cod/config.php [L,QSA]
+
+# Route /api/cod/calculate → cod/calculate.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^cod/calculate/?$ cod/calculate.php [L,QSA]
+
+# Route /api/cod/services → cod/services.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^cod/services/?$ cod/services.php [L,QSA]
+
+# Route /api/shipments/{id}/cod → shipments/cod.php?id={id}
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^shipments/([0-9]+)/cod/?$ shipments/cod.php?id=$1 [L,QSA]
+
+# Route /api/shipments/{id}/waybill → shipments/waybill.php?id={id}
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^shipments/([0-9]+)/waybill/?$ shipments/waybill.php?id=$1 [L,QSA]

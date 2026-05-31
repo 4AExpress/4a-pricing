@@ -201,6 +201,7 @@ const DEFAULT_DOCS = [
   { id:'pallets',     name:'Μη-Στοιβάσιμες Παλέτες',           icon:'🚛', desc:'Διευκρινίσεις & εικόνες για non-stackable pallets', active:true,  locked:false },
   { id:'packaging',   name:'Οδηγίες Συσκευασίας',              icon:'📦', desc:'Σωστή συσκευασία δεμάτων & απαιτήσεις',            active:false, locked:false },
   { id:'cod',         name:'Αντικαταβολή (COD)',                icon:'💰', desc:'Υπηρεσία cash on delivery — όροι & χρεώσεις',       active:false, locked:false },
+  { id:'fuel', name:'Επίναυλος Καυσίμων', icon:'⛽', desc:'Fuel surcharge — κατηγορίες υπηρεσιών & εξαιρέσεις', active:false, locked:false, pdf_filename:'4A-EXPLAIN-002-FuelSurcharge.pdf' },
   { id:'contract',    name:'Αποδοχή Προσφοράς — Σύμβαση',      icon:'✍️', desc:'Σύμβαση παροχής υπηρεσιών ταχυμεταφοράς',          active:true,  locked:true  },
 ];
 
@@ -280,6 +281,7 @@ function renderDocs() {
         <div class="doc-name">${doc.name} ${doc.locked ? '<span class="tag tag-locked">🔒 Τελευταίο</span>' : '<span class="tag tag-default">default ON</span>'}</div>
         <div class="doc-desc">${doc.desc}</div>
       </div>
+      ${(doc.pdf_url||doc.pdf_filename) ? `<button onclick="window.open('${doc.pdf_url||doc.pdf_filename}','_blank')" style="padding:3px 8px;font-size:11px;background:#1D3B6F;color:white;border:none;border-radius:3px;cursor:pointer;margin-right:4px;">👁 Preview</button><button onclick="(()=>{const a=document.createElement('a');a.href='${doc.pdf_url||doc.pdf_filename}';a.download='${(doc.pdf_url||'x').split('/').pop()}';a.click();})()" style="padding:3px 8px;font-size:11px;background:#2e7d32;color:white;border:none;border-radius:3px;cursor:pointer;margin-right:4px;">⬇ Download</button>` : ''}
       ${doc.locked ? '<span class="doc-locked">Πάντα τελευταίο</span>' : `
       <label class="toggle">
         <input type="checkbox" ${doc.active?'checked':''} ${!isAdmin?'disabled':''} onchange="toggleDoc(${i}, this.checked)">
