@@ -277,7 +277,7 @@ function renderTable(data) {
     <tr>
       <td style="font-size:20px;white-space:nowrap;">${s.emoji || '—'}</td>
       <td style="white-space:nowrap;"><span class="code-badge">${esc(s.code)}</span></td>
-      <td style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;">${esc(s.name)}</td>
+      <td style="font-weight:600;white-space:normal;max-width:140px;">${esc(s.name)}</td>
       <td><span class="desc-preview" title="${esc(s.description)}">${esc(s.description) || '—'}</span></td>
       <td><span class="type-badge type-${esc(s.type)}">${esc(s.type)}</span></td>
       <td><span class="color-dot" style="background:${COLOR_HEX[s.color]||'#999'};"></span> ${esc(s.color)}</td>
