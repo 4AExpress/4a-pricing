@@ -96,6 +96,17 @@
 
   /* EMPTY */
   .empty { text-align: center; padding: 40px; color: #aaa; font-size: 14px; }
+
+  /* COD PANEL */
+  .cod-toggle-wrap { display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
+  .cod-toggle-wrap input[type=checkbox] { width:14px; height:14px; cursor:pointer; accent-color:#2e7d32; }
+  .cod-panel { background:#f0faf1; border-top:1px solid #c8e6c9; padding:12px 14px; }
+  .cod-fields-grid { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-bottom:10px; }
+  .cod-fields-grid label { font-size:10px; font-weight:600; color:#555; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:3px; }
+  .cod-fields-grid input { border:1px solid #ddd; border-radius:4px; padding:5px 8px; font-size:12px; width:100%; font-family:inherit; outline:none; }
+  .cod-fields-grid input:focus { border-color:#2e7d32; }
+  .btn-green { background:#2e7d32; color:white; }
+  .btn-green:hover { background:#1b5e20; }
 </style>
 </head>
 <body>
@@ -203,7 +214,7 @@
   <div class="card">
     <div class="card-title">📋 Services <span id="svc-count" style="font-size:12px;color:#999;font-weight:400;"></span></div>
     <table class="svc-table">
-      <colgroup><col style="width:5%"><col style="width:9%"><col style="width:14%"><col style="width:32%"><col style="width:8%"><col style="width:9%"><col style="width:10%"><col style="width:9%"></colgroup><thead>
+      <colgroup><col style="width:5%"><col style="width:8%"><col style="width:12%"><col style="width:26%"><col style="width:7%"><col style="width:7%"><col style="width:8%"><col style="width:18%"><col style="width:9%"></colgroup><thead>
         <tr>
           <th>Emoji</th>
           <th>Κωδικός</th>
@@ -212,11 +223,12 @@
           <th>Τύπος</th>
           <th>Χρώμα</th>
           <th>Κατάσταση</th>
+          <th>COD</th>
           <th>Ενέργειες</th>
         </tr>
       </thead>
       <tbody id="svc-tbody">
-        <tr><td colspan="8" class="empty">Φόρτωση...</td></tr>
+        <tr><td colspan="9" class="empty">Φόρτωση...</td></tr>
       </tbody>
     </table>
   </div>
@@ -247,8 +259,9 @@ async function loadServices() {
     const r = await fetch(`${API}/services.php?v=${Date.now()}`);
     const data = await r.json();
     renderTable(data);
+    await Promise.all(data.map(s => loadCodConfig(s.code)));
   } catch(e) {
-    document.getElementById('svc-tbody').innerHTML = '<tr><td colspan="8" class="empty">⚠️ Σφάλμα σύνδεσης με API</td></tr>';
+    document.getElementById('svc-tbody').innerHTML = '<tr><td colspan="9" class="empty">⚠️ Σφάλμα σύνδεσης με API</td></tr>';
   }
 }
 
@@ -257,21 +270,54 @@ const COLOR_HEX = { blue:'#1565c0', yellow:'#f9a825', green:'#2e7d32', red:'#c62
 function renderTable(data) {
   document.getElementById('svc-count').textContent = `(${data.length})`;
   if (!data.length) {
-    document.getElementById('svc-tbody').innerHTML = '<tr><td colspan="8" class="empty">Δεν υπάρχουν services</td></tr>';
+    document.getElementById('svc-tbody').innerHTML = '<tr><td colspan="9" class="empty">Δεν υπάρχουν services</td></tr>';
     return;
   }
   document.getElementById('svc-tbody').innerHTML = data.map(s => `
     <tr>
-      <td style="font-size:20px;">${s.emoji || '—'}</td>
-      <td><span class="code-badge">${esc(s.code)}</span></td>
-      <td style="font-weight:600;">${esc(s.name)}</td>
+      <td style="font-size:20px;white-space:nowrap;">${s.emoji || '—'}</td>
+      <td style="white-space:nowrap;"><span class="code-badge">${esc(s.code)}</span></td>
+      <td style="font-weight:600;white-space:normal;max-width:140px;">${esc(s.name)}</td>
       <td><span class="desc-preview" title="${esc(s.description)}">${esc(s.description) || '—'}</span></td>
       <td><span class="type-badge type-${esc(s.type)}">${esc(s.type)}</span></td>
       <td><span class="color-dot" style="background:${COLOR_HEX[s.color]||'#999'};"></span> ${esc(s.color)}</td>
       <td><span class="active-pill ${s.active=='1'?'on':'off'}">${s.active=='1'?'Ενεργό':'Ανενεργό'}</span></td>
       <td>
+        <label class="cod-toggle-wrap">
+          <input type="checkbox" id="cod-chk-${s.code}" onchange="toggleCodPanel('${s.code}',this)">
+          <span style="font-size:12px;color:#555;">Επιτρέπει COD</span>
+        </label>
+        <div id="cod-badge-${s.code}" style="display:none;font-size:11px;color:#4a7c59;margin-top:4px;line-height:1.4;"></div>
+      </td>
+      <td>
         <button class="action-btn" onclick="editService(${JSON.stringify(s).split('"').join('&quot;')})" title="Επεξεργασία">✏️</button>
         <button class="action-btn" onclick="deleteService('${esc(s.code)}')" title="Διαγραφή">🗑️</button>
+      </td>
+    </tr>
+    <tr id="cod-row-${s.code}" style="display:none;">
+      <td colspan="9" style="padding:0;border-bottom:1px solid #e0e0e0;">
+        <div class="cod-panel">
+          <div class="cod-fields-grid">
+            <div>
+              <label>Όριο παγίας (€)</label>
+              <input type="number" id="cod-flat_limit-${s.code}" value="500.00" step="0.01" min="0" oninput="updateCodBadge('${s.code}')">
+            </div>
+            <div>
+              <label>Παγία χρέωση (€)</label>
+              <input type="number" id="cod-flat_fee-${s.code}" value="3.00" step="0.01" min="0" oninput="updateCodBadge('${s.code}')">
+            </div>
+            <div>
+              <label>Ελάχιστη χρέωση (€)</label>
+              <input type="number" id="cod-min_fee-${s.code}" value="1.30" step="0.01" min="0" oninput="updateCodBadge('${s.code}')">
+            </div>
+            <div>
+              <label>Ποσοστό άνω του ορίου (%)</label>
+              <input type="number" id="cod-percentage-${s.code}" value="1.00" step="0.01" min="0" max="100" oninput="updateCodBadge('${s.code}')">
+            </div>
+          </div>
+          <button class="btn btn-green" onclick="saveCodConfig('${s.code}')">💾 Αποθήκευση COD</button>
+          <span id="cod-status-${s.code}" style="font-size:12px;margin-left:8px;color:#555;"></span>
+        </div>
       </td>
     </tr>
   `).join('');
@@ -375,6 +421,67 @@ async function deleteService(code) {
   } catch(e) {
     alert('Σφάλμα σύνδεσης με API');
   }
+}
+
+// COD CONFIG
+async function loadCodConfig(code) {
+  try {
+    const r = await fetch(`${API}/cod_service_config.php?service_code=${encodeURIComponent(code)}`);
+    const d = await r.json();
+    const chk = document.getElementById(`cod-chk-${code}`);
+    if (chk) chk.checked = !!parseInt(d.cod_enabled);
+    const set = (field, val) => {
+      const el = document.getElementById(`cod-${field}-${code}`);
+      if (el) el.value = parseFloat(val).toFixed(2);
+    };
+    set('flat_limit', d.flat_limit  ?? 500.00);
+    set('flat_fee',   d.flat_fee    ?? 3.00);
+    set('min_fee',    d.min_fee     ?? 1.30);
+    set('percentage', d.percentage  ?? 1.00);
+    updateCodBadge(code);
+  } catch(e) { /* keep defaults on error */ }
+}
+
+function updateCodBadge(code) {
+  const badge = document.getElementById(`cod-badge-${code}`);
+  const chk   = document.getElementById(`cod-chk-${code}`);
+  if (!badge || !chk || !chk.checked) { if (badge) badge.style.display = 'none'; return; }
+  const get = f => document.getElementById(`cod-${f}-${code}`)?.value ?? '0';
+  const fmt = v => { const n = parseFloat(v); return n % 1 === 0 ? String(Math.round(n)) : n.toFixed(2); };
+  const fl = get('flat_limit'), ff = get('flat_fee'), mf = get('min_fee'), pct = get('percentage');
+  badge.textContent = `📊 ≤€${fmt(fl)}:€${fmt(ff)} flat 🔺min €${fmt(mf)} | >€${fmt(fl)} 📈+${fmt(pct)}%`;
+  badge.style.display = '';
+}
+
+function toggleCodPanel(code, chk) {
+  document.getElementById(`cod-row-${code}`).style.display = chk.checked ? '' : 'none';
+  updateCodBadge(code);
+}
+
+async function saveCodConfig(code) {
+  const get = field => parseFloat(document.getElementById(`cod-${field}-${code}`).value) || 0;
+  const chk      = document.getElementById(`cod-chk-${code}`);
+  const statusEl = document.getElementById(`cod-status-${code}`);
+  statusEl.textContent = '⏳ Αποθήκευση...';
+  try {
+    const r = await fetch(`${API}/cod_service_config.php`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_code: code,
+        cod_enabled:  chk.checked ? 1 : 0,
+        flat_limit:   get('flat_limit'),
+        flat_fee:     get('flat_fee'),
+        min_fee:      get('min_fee'),
+        percentage:   get('percentage'),
+      }),
+    });
+    const d = await r.json();
+    statusEl.textContent = d.ok ? '✅ Αποθηκεύτηκε' : `❌ ${d.error || 'Σφάλμα'}`;
+  } catch(e) {
+    statusEl.textContent = '❌ Σφάλμα σύνδεσης';
+  }
+  setTimeout(() => { statusEl.textContent = ''; }, 3000);
 }
 
 init();
