@@ -126,37 +126,6 @@
   .cod-fee-box { background:#e8f5e9; border:1px solid #a5d6a7; padding:8px 12px; border-radius:4px; font-size:13px; font-weight:600; color:#2e7d32; margin-top:4px; }
   .cod-warn { background:#fff3cd; border:1px solid #ffc107; padding:6px 10px; border-radius:4px; font-size:11px; color:#7c6d00; margin-bottom:6px; }
   .client-cod-badge { font-size:11px; color:#2e7d32; margin-top:2px; }
-  /* ===== Νέο Ράφι (grouped picker) ===== */
-  #pl-modal .modal-box { width: 600px; }
-  .rg-search { display:flex; align-items:center; gap:8px; border:1px solid #ddd; border-radius:6px; padding:0 10px; margin-bottom:10px; }
-  .rg-search input { border:none; outline:none; flex:1; height:34px; font-family:inherit; font-size:13px; background:transparent; }
-  .rg-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#777; }
-  .rg-toolbar input[type=checkbox]{ width:14px; height:14px; vertical-align:-2px; }
-  .rg-group { border:1px solid #e0e0e0; border-radius:8px; margin-bottom:8px; overflow:hidden; }
-  .rg-group.empty { opacity:.55; }
-  .rg-head { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; background:#f7f7f9; cursor:pointer; }
-  .rg-emoji { font-size:18px; line-height:1.2; }
-  .rg-h-main { flex:1; min-width:0; }
-  .rg-h-name { font-size:14px; font-weight:600; color:#333; }
-  .rg-h-meta { font-size:11px; color:#999; margin-top:1px; }
-  .rg-h-desc { font-size:12px; color:#666; margin-top:3px; line-height:1.4; }
-  .rg-count { font-size:12px; color:#999; align-self:center; }
-  .rg-count.sel { color:#2e7d32; font-weight:600; }
-  .rg-body { padding:6px 10px 8px; }
-  .rg-pl { border:1px solid #eee; border-radius:6px; padding:8px 10px; margin-bottom:6px; }
-  .rg-pl.sel { background:#e8f5e9; border-color:#a5d6a7; }
-  .rg-pl-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-  .rg-pl-name { font-size:13px; font-weight:600; color:#333; }
-  .rg-pl-meta { font-size:11px; color:#999; margin-top:1px; }
-  .rg-btn { padding:3px 10px; border-radius:4px; font-size:11px; cursor:pointer; border:1px solid; }
-  .rg-btn-add { border-color:#90caf9; background:#e3f2fd; color:#1565c0; }
-  .rg-btn-rem { border-color:#ef9a9a; background:#ffebee; color:#c62828; }
-  .rg-btn-eye { border-color:#ddd; background:#fafafa; color:#666; }
-  .rg-prev { margin-top:8px; padding:9px; border-radius:6px; background:#f4f8ff; }
-  .rg-zones { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
-  .rg-z { font-size:11px; font-weight:700; padding:3px 9px; border-radius:5px; cursor:pointer; border:1px solid #cfd8e3; background:#fff; color:#555; }
-  .rg-z.on { background:#1565c0; color:#fff; border-color:#1565c0; }
-  .rg-prev-out { display:flex; align-items:flex-end; justify-content:space-between; margin-top:8px; padding-top:8px; border-top:1px solid #e0e0e0; }
 </style>
 </head>
 <body>
@@ -328,6 +297,7 @@
 
     <div class="btn-row">
       <button class="btn btn-secondary" onclick="resetForm()">Ακύρωση</button>
+      <button class="btn btn-secondary" id="draft-btn"  onclick="draftPreview()" disabled>⚡ Draft (γρήγορο)</button>
       <button class="btn btn-orange"  id="preview-btn" onclick="previewPDF()" disabled>📄 Προεπισκόπηση PDF</button>
       <button class="btn btn-green"   id="send-btn"    onclick="sendOffer()"  disabled>✉️ Αποστολή Προσφοράς</button>
       <button class="btn btn-orange"  id="draft-btn"   onclick="draftOffer()" disabled>⚡ Draft (γρήγορο)</button>
@@ -365,7 +335,12 @@
 </div>
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
 const API = 'https://4aexpress.com/api';
 
 const SVC_NAMES = {
@@ -373,6 +348,7 @@ const SVC_NAMES = {
   S1012:    '🌍 ↙️ ✈️ 🇬🇷',
   S1010:    '🇬🇷 🚛 ↗️ 🇪🇺',
   S1041:    '🇪🇺 ↙️ 🚛 🇬🇷',
+  S1039:    '🚢 GR ↗️ CY',
   S1003_GR: '🇬🇷 ✈️ ↗️ 🇨🇾',
   S1012_GR: '🇨🇾 ↙️ ✈️ 🇬🇷',
   S1003_CY: '🇨🇾 ✈️ ↗️ 🌍',
@@ -443,6 +419,7 @@ function checkForm(){
            document.getElementById('cl-afm').value.trim()&&
            document.getElementById('cl-email').value.trim();
   document.getElementById('save-btn').disabled=!ok;
+  document.getElementById('draft-btn').disabled=!ok;
   document.getElementById('preview-btn').disabled=!ok;
   document.getElementById('send-btn').disabled=!(ok&&selectedPls.length>0);
   document.getElementById('draft-btn').disabled=!(ok&&selectedPls.length>0);
@@ -463,138 +440,42 @@ function resetForm(){
   renderPlTags(); renderSurcharges(); renderManagers(); updateOfferNum(); checkForm();
 }
 
-let servicesCache=null, _modalDhl=null, _modalQ="", _modalHideEmpty=true, _modalPrev={};
-const _MODAL_ZN={S1003:7,S1012:7,S1003_CY:7,S1012_CY:7,S1050:7,S1051:7,S1010:3,S1041:3,S1003_GR:1,S1012_GR:1};
-const _MODAL_ALIAS={S1003_GR:"S1003",S1012_GR:"S1012",S1003_CY:"S1003",S1012_CY:"S1012",S1050:"S1003",S1051:"S1012"};
-const _MODAL_COLOR={blue:"#1565c0",yellow:"#f9a825",green:"#2e7d32",red:"#c62828",purple:"#6a1b9a",gray:"#546e7a"};
-
-async function loadServices(){
-  if(servicesCache) return servicesCache;
-  try{ const r=await fetch(`${API}/services.php?v=${Date.now()}`); const d=await r.json(); servicesCache=Array.isArray(d)?d:[]; }
-  catch(e){ servicesCache=[]; }
-  return servicesCache;
-}
-async function ensureDhlAll(){
-  let all=null; try{ all=JSON.parse(localStorage.getItem("dhl_all")||"null"); }catch(e){}
-  if(all) return all;
-  try{
-    const arr=await Promise.all(["S1003","S1012","S1010","S1041"].map(s=>
-      fetch(`https://raw.githubusercontent.com/4AExpress/4a-pricing/main/dhl_tariff_2026_${s}.json`)
-        .then(r=>r.json()).then(d=>({[s]:d.entries})).catch(()=>({}))));
-    all=Object.assign({},...arr); localStorage.setItem("dhl_all",JSON.stringify(all)); return all;
-  }catch(e){ return null; }
-}
-function _dhlMap(svcId){
-  const key=_MODAL_ALIAS[svcId]||svcId; const ent=(_modalDhl&&_modalDhl[key])||[]; const m={};
-  ent.forEach(e=>{const w=parseFloat(e.weight_kg),z=parseInt(String(e.zone_code).replace(/[^0-9]/g,""));if(!isNaN(w)){if(!m[w])m[w]={};m[w][z]=parseFloat(e.cost);}});
-  return m;
-}
-function modalPrice(svcId,pl,weight,zone){
-  const rows=pl.rows||[]; if(!rows.length) return null;
-  let row=rows.find(r=>parseFloat(r.weight)===weight);
-  if(!row){ let best=null,bd=1e9; rows.forEach(r=>{const d=Math.abs(parseFloat(r.weight)-weight); if(d<bd){bd=d;best=r;}}); row=best; }
-  if(!row) return null;
-  const w=parseFloat(row.weight), sp=parseFloat(row.price);
-  const dm=_dhlMap(svcId); const z1c=dm[w]&&dm[w][1];
-  if(zone===1 || z1c==null) return {w, price:sp, cost:(z1c!=null?+(+z1c).toFixed(2):null)};
-  const mk=sp/z1c-1; const zc=dm[w]&&dm[w][zone];
-  if(zc==null) return {w, price:null, cost:null};
-  return {w, price:+(zc*(1+mk)).toFixed(2), cost:+(+zc).toFixed(2)};
-}
-
-async function showPlModal(){
-  shelf=JSON.parse(localStorage.getItem("4a_shelf")||"{}");
-  document.getElementById("pl-modal").classList.add("open");
-  const cont=document.getElementById("pl-modal-content");
-  cont.innerHTML='<div style="padding:24px;text-align:center;color:#999;">Φόρτωση ραφιού…</div>';
-  const res=await Promise.all([loadServices(),ensureDhlAll()]); _modalDhl=res[1];
-  cont.innerHTML=
-    '<div class="rg-search"><span>🔍</span><input type="text" id="rg-q" placeholder="Αναζήτηση service, περιγραφή ή τιμοκαταλόγου…" oninput="_modalQ=this.value;renderPlGroups();"></div>'+
-    '<div class="rg-toolbar"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" '+(_modalHideEmpty?"checked":"")+' onchange="_modalHideEmpty=this.checked;renderPlGroups();"> Απόκρυψη κενών services</label><span>🔒 ένας ανά service</span></div>'+
-    '<div id="rg-list"></div>';
-  const qi=document.getElementById("rg-q"); if(qi) qi.value=_modalQ;
-  renderPlGroups();
-}
-function _svcOrder(services){ return services.slice().sort((a,b)=>((+a.sort_order||0)-(+b.sort_order||0))||String(a.code).localeCompare(String(b.code))); }
-function renderPlGroups(){
-  const list=document.getElementById("rg-list"); if(!list) return;
-  const services=servicesCache||[];
-  const q=(_modalQ||"").toLowerCase().trim();
-  const reg={}; services.forEach(s=>reg[s.code]=s);
-  const order=_svcOrder(services.filter(s=>s.active!="0")).map(s=>s.code);
-  Object.keys(shelf).forEach(k=>{ if(order.indexOf(k)<0) order.push(k); });
-  let html="";
-  order.forEach(code=>{
-    const s=reg[code]||{code:code,name:(SVC_NAMES[code]||code),description:"",type:"",color:"blue",emoji:(SVC_NAMES[code]||"")};
-    const items=shelf[code]||[];
-    const sel=selectedPls.find(p=>p.service_id===code);
-    const txt=(code+" "+(s.name||"")+" "+(s.description||"")+" "+items.map(p=>p.name).join(" ")).toLowerCase();
-    if(q && txt.indexOf(q)<0) return;
-    if(!q && _modalHideEmpty && items.length===0) return;
-    const accent=_MODAL_COLOR[s.color]||"#1565c0";
-    const open=items.length>0;
-    html+='<div class="rg-group'+(items.length?"":" empty")+'" style="border-left:3px solid '+accent+';">';
-    html+='<div class="rg-head" onclick="toggleGroup(&quot;'+code+'&quot;)">'+
-      '<span class="rg-emoji">'+(s.emoji||"📦")+'</span>'+
-      '<div class="rg-h-main"><div class="rg-h-name">'+(s.name||code)+'</div>'+
-      '<div class="rg-h-meta">'+code+(s.type?(" · "+s.type):"")+'</div>'+
-      (s.description?('<div class="rg-h-desc">'+s.description+'</div>'):"")+'</div>'+
-      (sel?'<span class="rg-count sel">✓ 1</span>':'<span class="rg-count">'+items.length+'</span>')+
-      '</div>';
-    html+='<div class="rg-body" id="rg-body-'+code+'" style="display:'+(open?"block":"none")+';">';
-    if(!items.length){ html+='<div style="font-size:12px;color:#aaa;padding:6px 4px;">Δεν υπάρχουν αποθηκευμένοι τιμοκατάλογοι.</div>'; }
-    items.forEach(p=>{
-      const isSel=sel&&sel.id===p.id; const mk=(p.global_markup!=null?p.global_markup:p.markup);
-      html+='<div class="rg-pl'+(isSel?" sel":"")+'">';
-      html+='<div class="rg-pl-top"><div style="min-width:0;"><div class="rg-pl-name">'+(p.name||"")+(isSel?' <span style=&quot;color:#2e7d32;font-size:11px;&quot;>✓ επιλεγμένο</span>':"")+'</div>'+
-        '<div class="rg-pl-meta">'+(p.date||"")+(mk!=null?(" · markup "+mk+"%"):"")+'</div></div>'+
-        '<div style="display:flex;gap:6px;flex-shrink:0;">'+
-        '<button class="rg-btn rg-btn-eye" onclick="togglePrev(&quot;'+code+'&quot;,'+p.id+')">👁 τιμές</button>'+
-        (isSel?'<button class="rg-btn rg-btn-rem" onclick="removePl('+p.id+')">✕ Αφαίρεση</button>':'<button class="rg-btn rg-btn-add" onclick="addPl(&quot;'+code+'&quot;,'+p.id+')">+ Προσθήκη</button>')+
-        '</div></div>';
-      html+='<div id="rg-prev-'+code+"-"+p.id+'"></div>';
-      html+='</div>';
+function showPlModal(){
+  shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
+  let html='';
+  const SVC_ORDER = Object.keys(SVC_NAMES);
+  SVC_ORDER.forEach(svcId => {
+    const items = shelf[svcId] || [];
+    if (!items.length) return;
+    const isCY = SVC_IS_CY(svcId);
+    items.forEach(p => {
+      const already = selectedPls.find(s => s.id === p.id);
+      html += `<div class="pl-card ${isCY?'cy':'gr'}">
+        <div class="pl-card-svc ${isCY?'cy':'gr'}">${SVC_NAMES[svcId]}</div>
+        <div class="pl-card-name">${p.name}</div>
+        <div class="pl-card-footer">
+          <span class="pl-card-date">${p.date||''}</span>
+          ${already
+            ? `<button class="modal-btn-rem" onclick="removePl(${p.id})">✕ Αφαίρεση</button>`
+            : `<button class="modal-btn-add" onclick="addPl('${svcId}',${p.id})">+ Προσθήκη</button>`}
+        </div>
+      </div>`;
     });
-    html+='</div></div>';
   });
-  if(!html) html='<div style="color:#aaa;text-align:center;padding:24px;">Δεν βρέθηκαν τιμοκατάλογοι.</div>';
-  list.innerHTML=html;
-  Object.keys(_modalPrev).forEach(pid=>{ const st=_modalPrev[pid]; if(st&&st.open){ const el=document.getElementById("rg-prev-"+st.code+"-"+pid); if(el) renderPrev(st.code,pid); } });
+  if(!html) html='<div style="color:#aaa;text-align:center;padding:24px;">Δεν υπάρχουν τιμοκατάλογοι στο ράφι.</div>';
+  document.getElementById('pl-modal-content').innerHTML=html;
+  document.getElementById('pl-modal').classList.add('open');
 }
-function toggleGroup(code){ const b=document.getElementById("rg-body-"+code); if(b) b.style.display=(b.style.display==="none"?"block":"none"); }
-function _findPl(code,plId){ return (shelf[code]||[]).find(p=>p.id==plId); }
-function togglePrev(code,plId){ const st=_modalPrev[plId]||(_modalPrev[plId]={code:code,zone:1,weight:5,open:false}); st.open=!st.open; st.code=code; renderPrev(code,plId); }
-function setPrevZone(code,plId,z){ const st=_modalPrev[plId]; if(!st)return; st.zone=z; renderPrev(code,plId); }
-function setPrevWeight(code,plId,v){ const st=_modalPrev[plId]; if(!st)return; st.weight=parseFloat(v)||0; const r=modalPrice(code,_findPl(code,plId),st.weight,st.zone); _writePrevOut(plId,r); }
-function _writePrevOut(plId,r){ const po=document.getElementById("rg-out-price-"+plId), co=document.getElementById("rg-out-cost-"+plId); if(po) po.textContent=(r&&r.price!=null)?r.price.toFixed(2):"—"; if(co) co.textContent=(r&&r.cost!=null)?r.cost.toFixed(2):"—"; }
-function renderPrev(code,plId){
-  const wrap=document.getElementById("rg-prev-"+code+"-"+plId); if(!wrap) return;
-  const st=_modalPrev[plId]; const pl=_findPl(code,plId);
-  if(!st||!st.open||!pl){ wrap.innerHTML=""; return; }
-  const zc=_MODAL_ZN[code]||1;
-  const svc=(servicesCache||[]).find(x=>x.code===code)||{}; const accent=_MODAL_COLOR[svc.color]||"#1565c0";
-  let zones="";
-  if(zc>1){ let z=""; for(let i=1;i<=zc;i++){ z+='<span class="rg-z'+(st.zone===i?" on":"")+'" onclick="setPrevZone(&quot;'+code+'&quot;,'+plId+','+i+')">Z'+i+'</span>'; } zones='<div class="rg-zones">'+z+'</div>'; } else { st.zone=1; }
-  const r=modalPrice(code,pl,st.weight,st.zone);
-  wrap.innerHTML='<div class="rg-prev">'+
-    '<div style="font-size:12px;font-weight:600;color:'+accent+';margin-bottom:6px;">🧮 Προεπισκόπηση τιμής'+(zc>1?" · ζώνη × βάρος":" · βάρος → τιμή")+'</div>'+
-    zones+
-    '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:#777;">Βάρος</span>'+
-    '<input type="number" min="0.5" step="0.5" value="'+st.weight+'" oninput="setPrevWeight(&quot;'+code+'&quot;,'+plId+',this.value)" style="width:72px;height:30px;border:1px solid #ddd;border-radius:4px;padding:0 8px;font-family:inherit;"> <span style="font-size:12px;color:#777;">kg</span></div>'+
-    '<div class="rg-prev-out"><div><div style="font-size:10px;color:#999;">Κόστος DHL</div><div style="font-size:13px;">€<span id="rg-out-cost-'+plId+'">'+(r&&r.cost!=null?r.cost.toFixed(2):"—")+'</span></div></div>'+
-    '<div style="text-align:right;"><div style="font-size:10px;color:'+accent+';">Τιμή πελάτη</div><div style="font-size:20px;font-weight:700;color:'+accent+';">€<span id="rg-out-price-'+plId+'">'+(r&&r.price!=null?r.price.toFixed(2):"—")+'</span></div></div></div>'+
-    '<div style="font-size:10px;color:#aaa;margin-top:5px;">+ FC / COD κατά περίπτωση · βάσει αποθηκευμένου Z1 &amp; κόστους DHL</div>'+
-    '</div>';
-}
+
 function closePlModal(){ document.getElementById('pl-modal').classList.remove('open'); checkForm(); }
 function addPl(svcId,plId){
   const item=(shelf[svcId]||[]).find(p=>p.id===plId);
   if(!item)return;
   selectedPls=selectedPls.filter(s=>s.service_id!==svcId);
   selectedPls.push({...item,service_id:svcId});
-  renderPlTags(); renderPlGroups();
+  renderPlTags(); showPlModal();
 }
-function removePl(plId){ selectedPls=selectedPls.filter(p=>p.id!=plId); renderPlTags(); renderPlGroups(); }
+function removePl(plId){ selectedPls=selectedPls.filter(p=>p.id!=plId); renderPlTags(); showPlModal(); }
 function renderPlTags(){
   document.getElementById('pl-tags').innerHTML=
     selectedPls.map(p=>{
@@ -872,32 +753,87 @@ async function buildFinalPDF(offerNum){
   const d=await r.json();
   if(!d.ok) throw new Error(d.error||'Άγνωστο σφάλμα');
   const offerBytes = Uint8Array.from(atob(d.pdf), c => c.charCodeAt(0));
-  if(!selectedPls.some(p => GR_SERVICES.has(p.service_id))) return offerBytes;
-  try{
-    const { PDFDocument } = PDFLib;
-    const zonesResp = await fetch(ZONES_PDF_URL);
-    const zonesBytes = new Uint8Array(await zonesResp.arrayBuffer());
-    const offerDoc = await PDFDocument.load(offerBytes);
-    const zonesDoc = await PDFDocument.load(zonesBytes);
-    // Server PDF: page 0 = cover, page 1 = TOC, pages 2+ = rest (how/track/net/pricelists/terms)
-    // Zones insert immediately after TOC (index 1), before everything else
-    const INSERT_AFTER = 1;
-    const merged = await PDFDocument.create();
-    const offerPages = await merged.copyPages(offerDoc, offerDoc.getPageIndices());
-    offerPages.slice(0, INSERT_AFTER + 1).forEach(p => merged.addPage(p));
-    (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
-    offerPages.slice(INSERT_AFTER + 1).forEach(p => merged.addPage(p));
-    return await merged.save();
-  } catch(mergeErr){
-    console.warn('[PDF] Zones merge failed, offer-only fallback:', mergeErr);
-    return offerBytes;
+  const { PDFDocument } = PDFLib;
+  const offerDoc = await PDFDocument.load(offerBytes);
+  const merged = await PDFDocument.create();
+  const offerPages = await merged.copyPages(offerDoc, offerDoc.getPageIndices());
+  const hasGR = selectedPls.some(p => GR_SERVICES.has(p.service_id));
+  if(hasGR){
+    try {
+      const zonesResp = await fetch(ZONES_PDF_URL);
+      const zonesBytes = new Uint8Array(await zonesResp.arrayBuffer());
+      const zonesDoc = await PDFDocument.load(zonesBytes);
+      // Server PDF: page 0 = cover, page 1 = TOC, pages 2+ = rest
+      // Zones insert immediately after TOC (index 1)
+      const INSERT_AFTER = 1;
+      offerPages.slice(0, INSERT_AFTER + 1).forEach(p => merged.addPage(p));
+      (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
+      offerPages.slice(INSERT_AFTER + 1).forEach(p => merged.addPage(p));
+    } catch(zErr) {
+      console.warn('[PDF] Zones merge failed, including offer-only:', zErr);
+      offerPages.forEach(p => merged.addPage(p));
+    }
+  } else {
+    offerPages.forEach(p => merged.addPage(p));
   }
+  // Append active docs PDFs at the end (Ογκομέτρηση κλπ)
+  try {
+    const docsResp = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json());
+    const activeDocs = (docsResp.docs||[]).filter(d=>d.active && d.pdf_url && d.id!=='contract' && (!d.country || d.country===(currentUser?.active_station_country||'GR')));
+    for(const doc of activeDocs){
+      try {
+        const pdfBytes = await fetch(doc.pdf_url).then(r=>r.arrayBuffer());
+        const srcDoc = await PDFDocument.load(pdfBytes);
+        const docPages = await merged.copyPages(srcDoc, srcDoc.getPageIndices());
+        docPages.forEach(p => merged.addPage(p));
+      } catch(dErr){ console.warn('[PDF] Doc skipped:', doc.id, dErr); }
+    }
+  } catch(docsErr) {
+    console.warn('[PDF] Docs fetch failed, continuing without docs:', docsErr);
+  }
+  return await merged.save();
+}
+
+async function pdfUrlToImagesHTML(pdfUrl, scale=2){
+  if(typeof pdfjsLib === 'undefined') throw new Error('PDF.js not loaded');
+  const loadingTask = pdfjsLib.getDocument(pdfUrl);
+  const pdf = await loadingTask.promise;
+  let out = '';
+  for(let i=1; i<=pdf.numPages; i++){
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({scale});
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    out += `<div class="page" style="padding:0;page-break-before:always;"><img src="${dataUrl}" style="width:100%;height:auto;display:block;"/></div>`;
+  }
+  return out;
+}
+
+async function buildActiveDocsImagesHTML(){
+  let out = '';
+  try {
+    const docsResp = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json());
+    const activeDocs = (docsResp.docs||[]).filter(d=>d.active && d.pdf_url && d.id!=='contract' && (!d.country || d.country===(currentUser?.active_station_country||'GR')));
+    for(const doc of activeDocs){
+      try { out += await pdfUrlToImagesHTML(doc.pdf_url); }
+      catch(e){ console.warn('[Draft] Doc skipped:', doc.id, e); }
+    }
+  } catch(e){ console.warn('[Draft] Docs fetch failed:', e); }
+  return out;
 }
 
 async function previewPDF(){
+  // Preview = same as Draft (HTML window) — browser renders correctly (CSS Grid/Flex supported)
+  return draftPreview();
+}
+
+async function draftPreview(opts={}){
   const name=document.getElementById('cl-name').value.trim();
-  if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
-  if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
+  if(!name){ if(!opts.silent) alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
+  if(!selectedPls.length){ if(!opts.silent) alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
 
   const afm        = document.getElementById('cl-afm').value.trim();
   const contact    = document.getElementById('cl-contact').value.trim();
@@ -960,8 +896,6 @@ async function previewPDF(){
   toc.push({pg:pg++,t:'Πώς Λειτουργεί ο Τιμοκατάλογος & Tracking'});
   toc.push({pg:pg++,t:'Ζώνες Χωρών'});
   for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''}`});
-  toc.push({pg:pg++,t:'Όροι, Επίναυλος & Χρεώσεις'});
-  toc.push({pg:pg,  t:'Σύμβαση & Αποδοχή Προσφοράς'});
 
   const CSS=`
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -1248,75 +1182,85 @@ async function previewPDF(){
       html+=`<div class="page">${plHdr}<div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>€</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkgV!=null?`<tr class="xr"><td class="wt">${xkgLbl}</td><td>€${xkgV.toFixed(2)}</td></tr>`:''}</tbody></table>`).join('')}</div>${plFtr}</div>`;
     }
   }
-
-  // ── TERMS PAGE ─────────────────────────────────────────────────
-  const surchRows=surcharges.filter(s=>s.name&&s.value);
-  html+=`<div class="page">
-  ${H(offerNum)}
-  ${S('ΟΡΟΙ, ΕΠΙΝΑΥΛΟΣ & ΧΡΕΩΣΕΙΣ')}
-  <table class="fct">
-    <thead><tr><th>Υπηρεσία</th><th>Τύπος</th><th>Επίναυλος Καυσίμου</th></tr></thead>
-    <tbody>
-      <tr><td>Αεροπορικές (S1003, S1012, S1003_GR, S1012_GR)</td><td>AIR</td><td><strong>${fuelAir}</strong>${fuelWeek?' ('+fuelWeek+')':''}</td></tr>
-      <tr><td>Οδικές (S1010, S1041)</td><td>ROAD</td><td><strong>${fuelRoad}</strong></td></tr>
-    </tbody>
-  </table>
-  ${surchRows.length?`${S('ΕΠΙΠΛΕΟΝ ΧΡΕΩΣΕΙΣ')}<table class="surt">
-    <thead><tr><th>Περιγραφή</th><th>Αξία</th><th>Μονάδα</th></tr></thead>
-    <tbody>${surchRows.map(s=>`<tr><td>${s.name}</td><td>${s.value}</td><td>${s.unit}</td></tr>`).join('')}</tbody>
-  </table>`:''}
-  <div class="tgrid" style="margin-top:10px;">
-    <div class="tbox"><h4>Πληρωμή & Τιμολόγηση</h4><ul>
-      <li>Εξόφληση εντός <strong>${payDays} ημερών</strong> από τιμολόγηση</li>
-      <li>Τιμολόγηση: <strong>${invoiceLbl}</strong></li>
-      <li>Με εμβασμάτιο ή κατάθεση σε τραπεζικό λογαριασμό</li>
-    </ul></div>
-    <div class="tbox"><h4>Ισχύς Τιμοκαταλόγου</h4><ul>
-      <li>Ισχύς προσφοράς: <strong>${validDays} ημέρες</strong> (έως ${validUntil})</li>
-      <li>Επίναυλος καυσίμου αναθεωρείται εβδομαδιαία</li>
-      <li>Βασικοί ναύλοι επικαιροποιούνται ετησίως</li>
-    </ul></div>
-    <div class="tbox"><h4>Εξαιρέσεις & Όρια</h4><ul>
-      <li>Τιμές για αποστολές έως 70 kg</li>
-      <li>Δεν συμπεριλαμβάνονται τελωνειακά &amp; ΦΠΑ εισαγωγής</li>
-      <li>Επικίνδυνα εμπορεύματα κατόπιν ειδικής συμφωνίας</li>
-    </ul></div>
-    <div class="tbox"><h4>Ευθύνη & Ασφάλεια</h4><p>Η 4A EXPRESS αποζημιώνει για απώλεια/καταστροφή εγγράφων έως €50 και δεμάτων ανεξαρτήτως εμπορικής αξίας έως €100. Για πρόσθετη ασφάλεια συνεργαζόμαστε με ασφαλιστικές εταιρείες — απαιτούνται πρωτότυπα τιμολόγια εμπορευμάτων και δήλωση ασφάλισης. Επασφάλιστρο 1-2% επί αξίας αναλόγως είδους εμπορεύματος.</p></div>
-  </div>
-  ${F(String(plPg++))}
-  </div>`;
-
-  // ── CONTRACT PAGE ──────────────────────────────────────────────
-  html+=`<div class="page last">
-  ${H(offerNum)}
-  ${S('ΣΥΜΒΑΣΗ & ΑΠΟΔΟΧΗ ΠΡΟΣΦΟΡΑΣ')}
-  <div class="cbody">
-    <p>Με την υπογραφή του παρόντος, η εταιρεία <strong>${name}</strong> (ΑΦΜ: ${afm||'—'}) αποδέχεται πλήρως τους όρους και τις τιμές της προσφοράς αριθμ. <strong>${offerNum}</strong> της <strong>${issuerOffice.company||'4A Express Worldwide'}</strong>.</p>
-    <p>Η αποδοχή συνεπάγεται δέσμευση ως προς τον τρόπο πληρωμής (${payDays} ημέρες), τη συχνότητα τιμολόγησης (${invoiceLbl}) και τους γενικούς όρους συνεργασίας της 4A Express.</p>
-    <p>Οι τιμές ισχύουν για <strong>${validDays} ημέρες</strong> από ${today} και λήγουν στις <strong>${validUntil}</strong>. Ο επίναυλος καυσίμου αναθεωρείται εβδομαδιαία βάσει διεθνών δεικτών και δεν αποτελεί μέρος της σταθερής τιμής.</p>
-    <p>Υπηρεσίες που καλύπτει η παρούσα προσφορά:</p>
-    <ul>${selectedPls.map(p=>`<li>${p.service_id} — ${p.service_name||p.name||''}</li>`).join('')}</ul>
-  </div>
-  <div class="sigrid">
-    <div class="sigbox">
-      <div class="siglbl">Για λογαριασμό της <strong>${issuerOffice.company||'4A Express Worldwide'}</strong></div>
-      <div class="sigval">${currentUser?.name||'—'} &nbsp;·&nbsp; ${currentUser?.office||'—'}<br><span style="color:#bbb;">${today}</span></div>
-    </div>
-    <div class="sigbox">
-      <div class="siglbl">Για λογαριασμό της <strong>${name}</strong></div>
-      <div class="sigval" style="color:#bbb;">Ονοματεπώνυμο &nbsp;·&nbsp; Σφραγίδα &nbsp;·&nbsp; Ημερομηνία</div>
-    </div>
-  </div>
-  ${F(String(plPg))}
-  </div>`;
+  // Append active docs (e.g. Ογκομέτρηση) as rendered images at the end
+  // Skipped when building HTML for email — docs go as separate PDF attachments
+  if(!opts.skipDocs){
+    const btn=opts.silent?null:document.getElementById('draft-btn');
+    const oldTxt=btn?btn.textContent:'';
+    if(btn){ btn.textContent='⏳ Φόρτωση docs...'; btn.disabled=true; }
+    try { html += await buildActiveDocsImagesHTML(); }
+    catch(e){ console.warn('[Draft] Docs append failed:', e); }
+    if(btn){ btn.textContent=oldTxt; btn.disabled=false; }
+  }
 
   html+=`</body></html>`;
 
+  if(opts.returnHTML) return html;
+
+  // ── FAST HTML DRAFT (client-side, no server roundtrip) + docs as images ──
   const w=window.open('','_blank','width=920,height=760');
   w.document.write(html);
   w.document.close();
   w.focus();
-  setTimeout(()=>w.print(),500);
+  setTimeout(()=>w.print(),800);
+}
+
+// Build client-side PDF from the draft HTML (bypasses buggy server generate_pdf.php)
+async function buildClientPDF(){
+  if(typeof html2pdf === 'undefined') throw new Error('html2pdf.js δεν φορτώθηκε');
+  const html = await draftPreview({returnHTML:true, silent:true});
+  if(!html) throw new Error('Αδυναμία δημιουργίας HTML προσφοράς');
+  const container = document.createElement('div');
+  container.style.cssText = 'position:absolute;left:-9999px;top:0;width:794px;background:#fff;';
+  container.innerHTML = html;
+  document.body.appendChild(container);
+  try {
+    const blob = await html2pdf().set({
+      margin: 0,
+      image: {type:'jpeg', quality:0.95},
+      html2canvas: {scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff'},
+      jsPDF: {unit:'mm', format:'a4', orientation:'portrait'},
+      pagebreak: {mode: ['css', 'legacy']}
+    }).from(container).output('blob');
+    return new Uint8Array(await blob.arrayBuffer());
+  } finally {
+    document.body.removeChild(container);
+  }
+}
+
+// Build email attachments: 1 HTML (draft body, no docs images) + 1 PDF per active doc
+async function buildOfferEmailAttachments(offerNum){
+  const html = await draftPreview({returnHTML:true, silent:true, skipDocs:true});
+  if(!html) throw new Error('Δεν δημιουργήθηκε HTML προσφοράς');
+
+  const htmlBytes = new TextEncoder().encode(html);
+  let htmlBin = '';
+  for(let i=0; i<htmlBytes.length; i++) htmlBin += String.fromCharCode(htmlBytes[i]);
+  const attachments = [{
+    filename: `Προσφορά_4A_Express_${offerNum}.html`,
+    content_base64: btoa(htmlBin),
+    mime: 'text/html; charset=utf-8'
+  }];
+
+  try {
+    const docsResp = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json());
+    const activeDocs = (docsResp.docs||[]).filter(d=>d.active && d.pdf_url && d.id!=='contract' && (!d.country || d.country===(currentUser?.active_station_country||'GR')));
+    for(const doc of activeDocs){
+      try {
+        const pdfArr = new Uint8Array(await fetch(doc.pdf_url).then(r=>r.arrayBuffer()));
+        let bin = '';
+        for(let i=0; i<pdfArr.length; i++) bin += String.fromCharCode(pdfArr[i]);
+        const safeName = (doc.title || doc.id || 'doc').replace(/[\\/:*?"<>|]/g, '_');
+        attachments.push({
+          filename: `${safeName}.pdf`,
+          content_base64: btoa(bin),
+          mime: 'application/pdf'
+        });
+      } catch(e){ console.warn('[Email] Doc skipped:', doc.id, e); }
+    }
+  } catch(e){ console.warn('[Email] Docs fetch failed:', e); }
+
+  return attachments;
 }
 
 async function buildJsPDF(offerNum){
@@ -1698,18 +1642,15 @@ async function sendOffer(){
   document.getElementById('send-btn').disabled=true;
   try {
     const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
-    const finalBytes = await buildFinalPDF(offerNum);
-    let binary='';
-    for(let i=0;i<finalBytes.length;i++) binary+=String.fromCharCode(finalBytes[i]);
-    const pdf_base64 = btoa(binary);
+    const attachments = await buildOfferEmailAttachments(offerNum);
+    const docList = attachments.slice(1).map(a => `• ${a.filename}`).join('\n');
     const r = await fetch(`${API}/send_email.php`,{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         to: email,
         subject: `Προσφορά 4A Express — ${offerNum}`,
-        body: `Αγαπητέ/ή ${name},\n\nΣας αποστέλλουμε την προσφορά μας.\n\nΜε εκτίμηση,\nΗ ομάδα 4A Express`,
-        pdf_base64,
-        filename: `Προσφορά_4A_Express_${offerNum}.pdf`
+        body: `Αγαπητέ/ή ${name},\n\nΣας αποστέλλουμε την προσφορά μας. Παρακαλούμε ανοίξτε το επισυναπτόμενο αρχείο προσφοράς (Προσφορά_4A_Express_${offerNum}.html) στον browser σας για να τη δείτε.\n\n${docList ? 'Παραρτήματα:\n'+docList+'\n\n' : ''}Με εκτίμηση,\nΗ ομάδα 4A Express`,
+        attachments
       })
     });
     const d = await r.json();
@@ -1735,4 +1676,25 @@ document.addEventListener('visibilitychange',()=>{
 init();
 </script>
 </body>
-</html>
+</html>  // ── DYNAMIC DOCS ──
+  const docsData = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]).catch(()=>[]);
+  if(!docsData.length || docsData.find(d=>d.id==='volumetric'&&d.active)){
+    const volPage = '<div class="page">'
+      + H(offerNum)
+      + S('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ')
+      + '<p style="font-size:9px;color:#555;margin:6px 0 10px;">Καθε δεμα χρεωνεται βασει του <strong>μεγαλυτερου</strong> απο: πραγματικο η ογκομετρικο βαρος.</p>'
+      + '<div style="background:#f2f2f2;border:0.5px solid #cc0000;padding:12px;margin:8px 0;text-align:center;font-size:12px;font-weight:700;color:#990000;">Ογκομετρικο Βαρος (kg) = ( Μ x Π x Υ ) / 5.000</div>'
+      + '<div style="font-size:8px;color:#1D3B6F;text-align:center;margin-bottom:10px;">Μ=Μηκος | Π=Πλατος | Υ=Υψος (σε cm)</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:10px 0;">'
+      + '<thead><tr style="background:#cc0000;color:#fff;"><th style="padding:5px 8px;text-align:left;">Διαστασεις</th><th style="padding:5px 8px;text-align:center;">Τυπος</th><th style="padding:5px 8px;text-align:center;">Αποτελεσμα</th></tr></thead>'
+      + '<tbody>'
+      + '<tr style="background:#fff;"><td style="padding:5px 8px;">50x50x50 cm</td><td style="padding:5px 8px;text-align:center;">50x50x50/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">25 kg</td></tr>'
+      + '<tr style="background:#f2f2f2;"><td style="padding:5px 8px;">60x40x30 cm</td><td style="padding:5px 8px;text-align:center;">60x40x30/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">14.4 kg</td></tr>'
+      + '<tr style="background:#fff;"><td style="padding:5px 8px;">100x30x20 cm</td><td style="padding:5px 8px;text-align:center;">100x30x20/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">12 kg</td></tr>'
+      + '</tbody></table>'
+      + '<div style="background:#fff3cd;border:0.5px solid #ffc107;padding:8px 12px;font-size:8.5px;font-weight:700;margin-top:8px;">Χρησιμοποιειτε παντα το ΜΕΓΑΛΥΤΕΡΟ: πραγματικο η ογκομετρικο βαρος.</div>'
+      + F(String(plPg++))
+      + '</div>';
+    html += volPage;
+  }
+
