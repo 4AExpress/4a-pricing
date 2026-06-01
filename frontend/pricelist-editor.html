@@ -297,7 +297,32 @@ async function doLogin() {
     currentUser = d.user;
   } catch(e) { err.textContent = 'Σφάλμα σύνδεσης'; return; }
 
-  localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
+  
+  const _CMAP={ATH:'GR',LCA:'CY',NIC:'CY',QLI:'CY'};
+  const _SLBL={ATH:'ATH — Αθήνα',LCA:'LCA — Λάρνακα',NIC:'NIC — Λευκωσία',QLI:'QLI — Λεμεσός'};
+  const _allowed=(currentUser.stations||'ATH').split(',').map(s=>s.trim());
+  const _countries=[...new Set(_allowed.map(s=>_CMAP[s]||'GR'))];
+  function _completeLogin(st){
+    currentUser.active_station=st;
+    currentUser.active_station_country=_CMAP[st]||'GR';
+    localStorage.setItem('4a_current_user',JSON.stringify(currentUser));
+    document.getElementById('station-modal').style.display='none';
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app-screen').style.display='';
+    document.getElementById('topbar-user').textContent=currentUser.name+' · '+currentUser.office;
+    _updateBadge();
+    init();
+    fetch(API+'/set_active_station.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({station:st})}).catch(()=>{});
+  }
+  if(_countries.length>1){
+    const _flag=s=>_CMAP[s]==='GR'?'GR':'CY';
+    const _opts=_allowed.map(s=>'<div onclick="_completeLogin(\'' +s+ '\')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #ddd;border-radius:8px;cursor:pointer;margin-bottom:8px;"><span style="font-size:13px;font-weight:700;padding:3px 8px;border-radius:4px;background:#f0f0f0;">'+_flag(s)+'</span><div><div style="font-weight:500;">'+(_SLBL[s]||s)+'</div><div style="font-size:11px;color:#888;">'+(_CMAP[s]==='GR'?'Ελλάδα · ΦΠΑ 24%':'Κύπρος · ΦΠΑ 19%')+'</div></div></div>').join('');
+    document.getElementById('station-modal-body').innerHTML=_opts;
+    document.getElementById('station-modal').style.display='flex';
+  } else {
+    _completeLogin(currentUser.default_station||_allowed[0]);
+  }
+localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display   = '';
   document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
@@ -770,6 +795,16 @@ function showTab(name, btn) {
   btn.classList.add('active');
   if (name === 'shelf') renderShelf();
 }
+
+function _updateBadge(){
+  try{
+    const u=JSON.parse(localStorage.getItem('4a_current_user')||'null');
+    if(!u||!u.active_station) return;
+    let b=document.getElementById('_st_badge');
+    if(!b){b=document.createElement('span');b.id='_st_badge';b.style.cssText='display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:3px 10px;border-radius:20px;background:#1D9E75;color:#E1F5EE;margin-left:8px;';const tb=document.getElementById('topbar-user');if(tb)tb.after(b);}
+    b.textContent='● '+u.active_station;
+  }catch(e){}
+}
 </script>
-</body>
+<div id="station-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;"><div style="background:#fff;border-radius:12px;padding:28px;max-width:380px;width:90%;"><h2 style="font-size:16px;font-weight:600;margin:0 0 6px;">Επιλογή σταθμού</h2><p style="font-size:13px;color:#666;margin:0 0 16px;">Επίλεξε πού εργάζεσαι τώρα.</p><div id="station-modal-body"></div></div></div></body>
 </html>
