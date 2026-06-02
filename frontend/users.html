@@ -187,7 +187,7 @@
             <input type="checkbox" value="QLI" onchange="onStationChange()" /> QLI — Λεμεσός
           </label>
         </div>
-        <div class="admin-note" id="stations-note"></div>
+        <div class="admin-note" id="stations-note"></div><div class="field-row" style="margin-top:10px;"><label class="field-label">Default Station <span style="color:#cc0000">*</span></label><select id="u-default-station" onchange="checkForm()" style="width:100%;padding:8px 10px;border:1.5px solid #ddd;border-radius:8px;font-size:13px;"><option value="ATH">ATH</option><option value="LCA">LCA</option><option value="NIC">NIC</option><option value="QLI">QLI</option></select></div>
       </div>
     </div>
 
@@ -418,6 +418,7 @@ async function saveUser() {
     id: editingId,
    user_code: code,
     name, email, pin, role, office, stations,
+    default_station: (document.getElementById('u-default-station')||{value:'ATH'}).value,
     can_view:   document.getElementById('p-view').checked   ? 1 : 0,
     can_add:    document.getElementById('p-add').checked    ? 1 : 0,
     can_edit:   document.getElementById('p-edit').checked   ? 1 : 0,
@@ -498,7 +499,7 @@ function renderUsers() {
   currentUser.role === 'administrator' || u.role !== 'administrator'
 );
 el.innerHTML = visibleUsers.map(u => {
-    const stationBadges = (u.stations||'ATH').split(',')
+    const activeLabel=u.active_station?' <span style="background:#E1F5EE;color:#085041;font-size:11px;padding:2px 8px;border-radius:10px;">'+u.active_station+'</span>':''; const stationBadges = (u.stations||'ATH').split(',')
       .map(s => `<span class="station-badge">${s}</span>`).join(' ');
     const perms = [
       {k:'View',v:u.can_view},{k:'Add',v:u.can_add},{k:'Edit',v:u.can_edit},
@@ -515,7 +516,7 @@ el.innerHTML = visibleUsers.map(u => {
           <span style="font-family:monospace;font-size:11px;background:#f0f0f0;padding:2px 6px;border-radius:4px;color:#555;">${u.user_code||''}</span>
 ${u.name} ${isMe?'<span style="font-size:10px;color:#888;">(εσύ)</span>':''}
           <span class="role-badge role-${u.role}">${ROLE_LABELS[u.role]||u.role}</span>
-          ${stationBadges}
+          +${stationBadges}+
         </div>
         <div class="user-meta">${u.email||'—'}</div>
         <div class="user-perms">
