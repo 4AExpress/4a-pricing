@@ -120,6 +120,8 @@
       </div>
       <div class="ctrl-group" id="save-group" style="margin-left:auto;display:flex;gap:8px;">
         <button class="btn btn-gray" id="print-btn" onclick="printTable()" style="display:none;">🖨️ Print</button>
+        <button class="btn btn-gray" id="view-slabs-btn" onclick="viewSlabs()" style="display:none;">📊 Σπασίματα</button>
+        <button class="btn btn-cyan" id="export-cms-btn" onclick="exportCMS()" style="display:none;">⬇️ Export CMS</button>
         <button class="btn btn-green" id="save-btn" onclick="savePricelist()" disabled>💾 Αποθήκευση στο Ράφι</button>
       </div>
     </div>
@@ -159,6 +161,16 @@
   </div>
 </div>
 
+<!-- MODAL SLABS -->
+<div id="slabs-modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);align-items:flex-start;justify-content:center;z-index:200;overflow-y:auto;padding:20px;">
+  <div style="background:white;border-radius:8px;width:95%;max-width:1100px;box-shadow:0 4px 24px rgba(0,0,0,0.3);margin:auto;">
+    <div style="background:#00BCD4;color:white;padding:12px 18px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:14px;font-weight:700;">📊 Σπασίματα — <span id="slabs-modal-title"></span></span>
+      <button onclick="closeSlabsModal()" style="background:rgba(255,255,255,0.2);color:white;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:13px;">✕ Κλείσιμο</button>
+    </div>
+    <div id="slabs-modal-body" style="padding:16px;overflow-x:auto;"></div>
+  </div>
+</div>
 <!-- MODAL -->
 <div id="modal-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);align-items:center;justify-content:center;z-index:100;">
   <div style="background:white;border-radius:8px;padding:24px;width:360px;box-shadow:0 4px 20px rgba(0,0,0,0.2);">
@@ -417,6 +429,8 @@ function renderTable() {
   const saveOk = errCount === 0 && okCount > 0;
   document.getElementById('save-btn').disabled  = !saveOk;
   document.getElementById('print-btn').style.display = okCount > 0 ? 'inline-block' : 'none';
+  document.getElementById('view-slabs-btn').style.display  = okCount > 0 ? 'inline-block' : 'none';
+  document.getElementById('export-cms-btn').style.display  = okCount > 0 ? 'inline-block' : 'none';
   document.getElementById('save-btn2').disabled = !saveOk;
   document.getElementById('save-info').textContent =
     saveOk ? `✅ ${okCount} γραμμές έγκυρες — έτοιμο για αποθήκευση`
@@ -723,6 +737,133 @@ function confirmSave() {
   alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${SERVICE_ID}!`);
 }
 
+// ─── BUILD SLABS ─────────────────────────────────────────────────────────────
+function buildSlabs(prices, tolerance) {
+  if (prices.length === 0) return [];
+  const TOL = tolerance || 0.02;
+  const rows = [];
+  let prevPrice = 0;
+  for (let i = 0; i < prices.length; i++) {
+    const { weight, price } = prices[i];
+    const rate  = parseFloat((price - prevPrice).toFixed(2));
+    const fromW = i === 0 ? 0.001 : parseFloat((prices[i-1].weight + 0.001).toFixed(3));
+    rows.push({ fromW, toW: weight, rate, addRate: rate, uptoW: weight });
+    prevPrice = price;
+  }
+  const slabs = [];
+  let i = 0;
+  while (i < rows.length) {
+    const cur = { ...rows[i] };
+    let j = i + 1;
+    while (j < rows.length && Math.abs(rows[j].rate - cur.rate) <= TOL) {
+      cur.uptoW = rows[j].toW;
+      j++;
+    }
+    slabs.push(cur);
+    i = j;
+  }
+  return slabs;
+}
+
+// ─── VIEW SLABS MODAL ─────────────────────────────────────────────────────────
+function viewSlabs() {
+  if (!markupData || markupData.length === 0) return;
+  document.getElementById('slabs-modal-title').textContent = SERVICE_ID + ' · ' + (URL_NAME || svcMeta.name);
+  let html = '';
+  for (let zi = 0; zi < ZONES.length; zi++) {
+    const zone   = ZONES[zi];
+    const prices = markupData.map(r => ({ weight: r.weight, price: r.prices[zi] }));
+    const slabs  = buildSlabs(prices, 0.02);
+    html += `<div style="margin-bottom:20px;">
+      <div style="background:#e3f2fd;color:#1565c0;font-size:12px;font-weight:700;padding:6px 12px;border-radius:4px;margin-bottom:8px;">
+        ${zone.toUpperCase()} — ${slabs.length} slabs
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="background:#f8f8f8;">
+          <th style="padding:6px 10px;text-align:left;border-bottom:2px solid #e0e0e0;color:#555;">#</th>
+          <th style="padding:6px 10px;text-align:center;border-bottom:2px solid #e0e0e0;color:#555;">FromWeight</th>
+          <th style="padding:6px 10px;text-align:center;border-bottom:2px solid #e0e0e0;color:#555;">ToWeight</th>
+          <th style="padding:6px 10px;text-align:right;border-bottom:2px solid #e0e0e0;color:#555;">Rate (€)</th>
+          <th style="padding:6px 10px;text-align:center;border-bottom:2px solid #e0e0e0;color:#555;">AddWeight</th>
+          <th style="padding:6px 10px;text-align:right;border-bottom:2px solid #e0e0e0;color:#555;">AddRate (€)</th>
+          <th style="padding:6px 10px;text-align:center;border-bottom:2px solid #e0e0e0;color:#555;">UptoWeight</th>
+        </tr></thead>
+        <tbody>${slabs.map((s,idx) => `
+          <tr style="background:${idx%2===0?'#fff':'#fafafa'};border-bottom:1px solid #f0f0f0;">
+            <td style="padding:5px 10px;color:#999;">${idx+1}</td>
+            <td style="padding:5px 10px;text-align:center;font-family:monospace;">${s.fromW}</td>
+            <td style="padding:5px 10px;text-align:center;font-family:monospace;">${s.toW}</td>
+            <td style="padding:5px 10px;text-align:right;font-weight:700;color:#cc0000;">${s.rate.toFixed(2)}</td>
+            <td style="padding:5px 10px;text-align:center;">1</td>
+            <td style="padding:5px 10px;text-align:right;font-weight:600;color:#1565c0;">${s.addRate.toFixed(2)}</td>
+            <td style="padding:5px 10px;text-align:center;font-family:monospace;">${s.uptoW}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }
+  document.getElementById('slabs-modal-body').innerHTML = html;
+  document.getElementById('slabs-modal-bg').style.display = 'flex';
+}
+
+function closeSlabsModal() {
+  document.getElementById('slabs-modal-bg').style.display = 'none';
+}
+
+// ─── EXPORT CMS ───────────────────────────────────────────────────────────────
+async function exportCMS() {
+  if (!markupData || markupData.length === 0) { alert('Φορτώστε πρώτα τον πίνακα'); return; }
+  if (typeof XLSX === 'undefined') {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  const accountNo = prompt('AccountNo πελάτη (π.χ. 30004041):', '');
+  if (!accountNo) return;
+  const weFrom = prompt('Ημερομηνία έναρξης (DD-MON-YYYY):', '01-JAN-2026');
+  if (!weFrom) return;
+
+  const isImport       = SERVICE_ID.includes('S1012') || SERVICE_ID === 'S1041';
+  const originType     = isImport ? 'ZONE'    : 'COUNTRY';
+  const destType       = isImport ? 'COUNTRY' : 'ZONE';
+  const stationCountry = SERVICE_ID.includes('_CY') ? 'CY' : 'GR';
+  const fixedOrigin    = SERVICE_ID.includes('_CY') ? 'CY' : 'GR';
+  const fixedDest      = SERVICE_ID.includes('_CY') ? 'CY' : 'GR';
+
+  const header = ['AccountNo','StationCountry','RateType','MinWeight','WEFrom','ShipmentType',
+                  'OriginType','DestinationType','Origin','Destination','Service','DocsType',
+                  'FromWeight','ToWeight','Rate','AddWeight','AddRate','UptoWeight'];
+  const allRows = [header];
+
+  for (let zi = 0; zi < ZONES.length; zi++) {
+    const zone   = ZONES[zi];
+    const prices = markupData.map(r => ({ weight: r.weight, price: r.prices[zi] }));
+    const slabs  = buildSlabs(prices, 0.02);
+    const minW   = slabs[0]?.toW || 0.5;
+    for (const docsType of ['docs', 'non docs']) {
+      for (const slab of slabs) {
+        const orig = isImport ? zone : fixedOrigin;
+        const dest = isImport ? fixedDest : zone;
+        allRows.push([
+          accountNo, stationCountry, 'Slab Rate', minW, weFrom,
+          'Normal', originType, destType, orig, dest,
+          SERVICE_ID, docsType,
+          slab.fromW, slab.toW, slab.rate, 1, slab.addRate, slab.uptoW
+        ]);
+      }
+    }
+  }
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(allRows);
+  ws['!cols'] = [12,16,12,12,14,14,12,16,10,12,12,12,14,12,10,12,10,12].map(w => ({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws, 'CMS_Import');
+  const fname = `ClientRateImport_${accountNo}_${SERVICE_ID}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
 // Init
 loadData();
 </script>
