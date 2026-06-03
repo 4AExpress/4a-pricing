@@ -747,7 +747,9 @@ function buildSlabs(prices, tolerance) {
     const { weight, price } = prices[i];
     const rate  = parseFloat((price - prevPrice).toFixed(2));
     const fromW = i === 0 ? 0.001 : parseFloat((prices[i-1].weight + 0.001).toFixed(3));
-    rows.push({ fromW, toW: weight, rate, addRate: rate, uptoW: weight });
+    const step = i > 0 ? parseFloat((prices[i].weight - prices[i-1].weight).toFixed(3)) : parseFloat((prices[1].weight - prices[0].weight).toFixed(3));
+    rows.push({ fromW, toW: weight, rate, addRate: rate, addWeight: step, uptoW: weight });
+
     prevPrice = price;
   }
   const slabs = [];
@@ -851,7 +853,7 @@ async function exportCMS() {
           accountNo, stationCountry, 'Slab Rate', minW, weFrom,
           'Normal', originType, destType, orig, dest,
           SERVICE_ID, docsType,
-          slab.fromW, slab.toW, slab.rate, 1, slab.addRate, slab.uptoW
+          slab.fromW, slab.toW, slab.rate, slab.addWeight, slab.addRate, slab.uptoW
         ]);
       }
     }
