@@ -537,12 +537,13 @@ function renderPlGroups(){
   const services=servicesCache||[];
   const q=(_modalQ||"").toLowerCase().trim();
   const reg={}; services.forEach(s=>reg[s.code]=s);
-    const _uc2=getUserCountries();
+      const _uc2=getUserCountries();
   const order=_svcOrder(services.filter(s=>s.active!="0")).map(s=>s.code).filter(function(code){
     if(_uc2.includes("GR") && _uc2.includes("CY")) return true;
-    if(_uc2.includes("CY") && !_uc2.includes("GR")) return SVC_IS_CY(code);
-    if(_uc2.includes("GR") && !_uc2.includes("CY")) return !SVC_IS_CY(code);
-    return true;
+    const svcDef=(servicesCache||[]).find(x=>x.code===code);
+    const svcCountry=svcDef ? svcDef.country : 'GR';
+    if(svcCountry==='BOTH') return true;
+    return _uc2.includes(svcCountry);
   });
   Object.keys(shelf).forEach(k=>{ if(order.indexOf(k)<0) order.push(k); });
   let html="";
