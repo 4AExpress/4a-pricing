@@ -392,6 +392,7 @@ function getUserCountries(){
   const countries=[...new Set(stations.map(s=>(OFFICES.find(o=>o.code===s)||{}).country).filter(Boolean))];
   return countries.length ? countries : ['GR','CY'];
 }
+}
 function clientCountry(c){
   const o=OFFICES.find(x=>x.city===c.office);
   return o ? o.country : 'GR';
@@ -424,7 +425,8 @@ function nextOfferNumber(){
 async function init(){
   currentUser=JSON.parse(localStorage.getItem('4a_current_user')||'null');
   if(!currentUser){ window.location.href='pricelist-editor.html'; return; }
-  document.getElementById('topbar-user').textContent=`${currentUser.name} · ${currentUser.office}`;
+  const _activeLabel=currentUser.active_station||currentUser.office||'';
+  document.getElementById('topbar-user').textContent=`${currentUser.name} · ${_activeLabel}`;
   shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
   try {
     const rc = await fetch(`${API}/clients.php?v=${Date.now()}`);
