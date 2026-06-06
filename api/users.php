@@ -59,3 +59,4 @@ if ($method === 'POST') {
 }
 
 respond(['error' => 'Bad request'], 400);
+
