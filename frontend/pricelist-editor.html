@@ -316,7 +316,7 @@ async function doLogin() {
     _updateBadge();
     init();
   }
-  if(_countries.length>1){
+  if(_allowed.length>1){
     const _flag=s=>_CMAP[s]==='GR'?'GR':'CY';
     const _opts=_allowed.map(s=>'<div onclick="_completeLogin(\'' +s+ '\')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #ddd;border-radius:8px;cursor:pointer;margin-bottom:8px;"><span style="font-size:13px;font-weight:700;padding:3px 8px;border-radius:4px;background:#f0f0f0;">'+_flag(s)+'</span><div><div style="font-weight:500;">'+(_SLBL[s]||s)+'</div><div style="font-size:11px;color:#888;">'+(_CMAP[s]==='GR'?'Ελλάδα · ΦΠΑ 24%':'Κύπρος · ΦΠΑ 19%')+'</div></div></div>').join('');
     document.getElementById('station-modal-body').innerHTML=_opts;
@@ -798,3 +798,4 @@ function _updateBadge(){
 </script>
 <div id="station-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;"><div style="background:#fff;border-radius:12px;padding:28px;max-width:380px;width:90%;"><h2 style="font-size:16px;font-weight:600;margin:0 0 6px;">Επιλογή σταθμού</h2><p style="font-size:13px;color:#666;margin:0 0 16px;">Επίλεξε πού εργάζεσαι τώρα.</p><div id="station-modal-body"></div></div></div></body>
 </html>
+
