@@ -240,7 +240,7 @@
         </tr>
       </thead>
       <tbody id="svc-tbody">
-        <tr><td colspan="9" class="empty">Φόρτωση...</td></tr>
+        <tr><td colspan="10" class="empty">Φόρτωση...</td></tr>
       </tbody>
     </table>
   </div>
@@ -273,7 +273,7 @@ async function loadServices() {
     renderTable(data);
     await Promise.all(data.map(s => loadCodConfig(s.code)));
   } catch(e) {
-    document.getElementById('svc-tbody').innerHTML = '<tr><td colspan="9" class="empty">⚠️ Σφάλμα σύνδεσης με API</td></tr>';
+    document.getElementById('svc-tbody').innerHTML = '<tr><td colspan="10" class="empty">⚠️ Σφάλμα σύνδεσης με API</td></tr>';
   }
 }
 
@@ -282,7 +282,7 @@ const COLOR_HEX = { blue:'#1565c0', yellow:'#f9a825', green:'#2e7d32', red:'#c62
 function renderTable(data) {
   document.getElementById('svc-count').textContent = `(${data.length})`;
   if (!data.length) {
-    document.getElementById('svc-tbody').innerHTML = '<tr><td colspan="9" class="empty">Δεν υπάρχουν services</td></tr>';
+    document.getElementById('svc-tbody').innerHTML = '<tr><td colspan="10" class="empty">Δεν υπάρχουν services</td></tr>';
     return;
   }
   document.getElementById('svc-tbody').innerHTML = data.map(s => `
@@ -308,7 +308,7 @@ function renderTable(data) {
       </td>
     </tr>
     <tr id="cod-row-${s.code}" style="display:none;">
-      <td colspan="9" style="padding:0;border-bottom:1px solid #e0e0e0;">
+      <td colspan="10" style="padding:0;border-bottom:1px solid #e0e0e0;">
         <div class="cod-panel">
           <div class="cod-fields-grid">
             <div>
