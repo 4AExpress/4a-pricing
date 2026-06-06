@@ -537,11 +537,11 @@ function renderPlGroups(){
   const services=servicesCache||[];
   const q=(_modalQ||"").toLowerCase().trim();
   const reg={}; services.forEach(s=>reg[s.code]=s);
+    const _uc2=getUserCountries();
   const order=_svcOrder(services.filter(s=>s.active!="0")).map(s=>s.code).filter(function(code){
-    const _m={ATH:"GR","0107":"GR",NIC:"CY",LCA:"CY",QLI:"CY","0108":"CY","0109":"CY","0110":"CY"};
-    const _c=(currentUser&&currentUser.active_station_country)||_m[currentUser&&currentUser.active_station]||"GR";
-    if(_c==="GR") return GR_SERVICES.has(code);
-    if(_c==="CY") return SVC_IS_CY(code);
+    if(_uc2.includes("GR") && _uc2.includes("CY")) return true;
+    if(_uc2.includes("CY") && !_uc2.includes("GR")) return SVC_IS_CY(code);
+    if(_uc2.includes("GR") && !_uc2.includes("CY")) return !SVC_IS_CY(code);
     return true;
   });
   Object.keys(shelf).forEach(k=>{ if(order.indexOf(k)<0) order.push(k); });
