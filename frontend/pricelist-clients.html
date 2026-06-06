@@ -1,4 +1,4 @@
-﻿<!-- pricelist-clients.html | v1.5 | 17-05-2026 -->
+<!-- pricelist-clients.html | v1.5 | 17-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -381,6 +381,21 @@ const SVC_NAMES = {
   S1051:    '🌍 🚛 🇬🇷 ↙️ ✈️ 🇨🇾'
 };
 const SVC_IS_CY   = id => id.includes('_CY') || id === 'S1050' || id === 'S1051';
+let OFFICES = [];
+async function loadOffices(){
+  try { const r=await fetch(`${API}/offices.php`); OFFICES=await r.json(); } catch(e){ OFFICES=[]; }
+}
+function getUserCountries(){
+  if(!currentUser) return ['GR','CY'];
+  if(currentUser.role==='administrator') return ['GR','CY'];
+  const stations=(currentUser.stations||'').split(',').map(s=>s.trim().toUpperCase());
+  const countries=[...new Set(stations.map(s=>(OFFICES.find(o=>o.prefix===s)||{}).country).filter(Boolean))];
+  return countries.length ? countries : ['GR','CY'];
+}
+function clientCountry(c){
+  const o=OFFICES.find(x=>x.city===c.office);
+  return o ? o.country : 'GR';
+}
 const GR_SERVICES  = new Set(['S1003','S1012','S1010','S1041','S1003_GR','S1012_GR']);
 const ZONES_PDF_URL = 'https://4aexpress.github.io/4a-pricing/docs/4A_Express_Zones_2026.pdf';
 
@@ -424,6 +439,7 @@ async function init(){
     clients = JSON.parse(localStorage.getItem('4a_clients')||'[]');
   }
   managers=currentUser.email?[currentUser.email]:[];
+  await loadOffices();
   updateOfferNum(); renderManagers(); renderClients();
 }
 
@@ -815,6 +831,8 @@ function renderClients(){
   const el=document.getElementById('clients-list');
   document.getElementById('client-count').textContent=clients.length;
   let list=[...clients];
+  const _uc=getUserCountries();
+  if(_uc.length<2) list=list.filter(c=>_uc.includes(clientCountry(c)));
   if(filterStatus!=='all')list=list.filter(c=>c.status===filterStatus);
   if(filterSearch){ const q=filterSearch.toLowerCase(); list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.afm||'').includes(q)||(c.contact||'').toLowerCase().includes(q)); }
   if(!list.length){ el.innerHTML='<div class="empty">Δεν βρέθηκαν πελάτες</div>'; return; }
