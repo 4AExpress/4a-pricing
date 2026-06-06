@@ -829,10 +829,10 @@ function deleteClient(id){
 
 function renderClients(){
   const el=document.getElementById('clients-list');
-  document.getElementById('client-count').textContent=clients.length;
   let list=[...clients];
   const _uc=getUserCountries();
   if(_uc.length<2) list=list.filter(c=>_uc.includes(clientCountry(c)));
+  document.getElementById('client-count').textContent=list.length;
   if(filterStatus!=='all')list=list.filter(c=>c.status===filterStatus);
   if(filterSearch){ const q=filterSearch.toLowerCase(); list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.afm||'').includes(q)||(c.contact||'').toLowerCase().includes(q)); }
   if(!list.length){ el.innerHTML='<div class="empty">Δεν βρέθηκαν πελάτες</div>'; return; }
