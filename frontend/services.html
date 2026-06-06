@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="el">
 <head>
 <meta charset="UTF-8">
@@ -85,8 +85,11 @@
   .type-SEA   { background: #e0f7fa; color: #006064; }
   .color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 
+      <td><span style="font-size:11px;font-weight:600;color:#555;">${s.country||'GR'}</span></td>
   .active-pill { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+      <td><span style="font-size:11px;font-weight:600;color:#555;">${s.country||'GR'}</span></td>
   .active-pill.on  { background: #e8f5e9; color: #2e7d32; }
+      <td><span style="font-size:11px;font-weight:600;color:#555;">${s.country||'GR'}</span></td>
   .active-pill.off { background: #fce4ec; color: #c62828; }
 
   .action-btn { background: none; border: none; cursor: pointer; font-size: 15px; padding: 3px 6px; border-radius: 4px; transition: background 0.1s; }
@@ -169,6 +172,14 @@
           <option value="0">❌ Ανενεργό</option>
         </select>
       </div>
+      <div class="form-group">
+        <label>Χώρα</label>
+        <select id="f-country">
+          <option value="GR">🇬🇷 GR — Ελλάδα</option>
+          <option value="CY">🇨🇾 CY — Κύπρος</option>
+          <option value="BOTH">🌍 BOTH — Και οι δύο</option>
+        </select>
+      </div>
       <div class="form-group full">
         <label>Περιγραφή (εμφανίζεται στην προσφορά)</label>
         <textarea id="f-desc" placeholder="π.χ. Αεροπορική μεταφορά εγγράφων και δεμάτων από Ελλάδα προς Κύπρο."></textarea>
@@ -222,6 +233,7 @@
           <th>Περιγραφή</th>
           <th>Τύπος</th>
           <th>Χρώμα</th>
+          <th>Χώρα</th>
           <th>Κατάσταση</th>
           <th>COD</th>
           <th>Ενέργειες</th>
@@ -281,6 +293,7 @@ function renderTable(data) {
       <td><span class="desc-preview" title="${esc(s.description)}">${esc(s.description) || '—'}</span></td>
       <td><span class="type-badge type-${esc(s.type)}">${esc(s.type)}</span></td>
       <td><span class="color-dot" style="background:${COLOR_HEX[s.color]||'#999'};"></span> ${esc(s.color)}</td>
+      <td><span style="font-size:11px;font-weight:600;color:#555;">${s.country||'GR'}</span></td>
       <td><span class="active-pill ${s.active=='1'?'on':'off'}">${s.active=='1'?'Ενεργό':'Ανενεργό'}</span></td>
       <td>
         <label class="cod-toggle-wrap">
@@ -349,6 +362,7 @@ function editService(s) {
   document.getElementById('f-type').value = s.type || 'AIR';
   document.getElementById('f-active').value = s.active ?? '1';
   document.getElementById('f-emoji').value = s.emoji || '';
+  document.getElementById('f-country').value = s.country || 'GR';
   pickColor(s.color || 'blue');
   if (s.emoji) pickEmoji(s.emoji);
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -385,6 +399,7 @@ async function saveService() {
     active:      document.getElementById('f-active').value,
     emoji:       document.getElementById('f-emoji').value.trim(),
     color:       document.getElementById('f-color').value,
+    country:     document.getElementById('f-country').value,
     sort_order:  0
   };
 

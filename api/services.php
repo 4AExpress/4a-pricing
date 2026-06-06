@@ -55,13 +55,13 @@ if ($method === 'POST') {
         $code = strtoupper(trim($b['code'] ?? ''));
         if (!$code) respond(['error' => 'Ο κωδικός είναι υποχρεωτικός'], 400);
 
-        $stmt = db()->prepare("INSERT INTO `4a_services` (`code`,`name`,`description`,`type`,`color`,`emoji`,`active`,`sort_order`)
-            VALUES (?,?,?,?,?,?,?,?)
+        $stmt = db()->prepare("INSERT INTO `4a_services` (`code`,`name`,`description`,`type`,`color`,`emoji`,`active`,`sort_order`,`country`)
+            VALUES (?,?,?,?,?,?,?,?,?)
             ON DUPLICATE KEY UPDATE
             `name`=VALUES(`name`), `description`=VALUES(`description`),
             `type`=VALUES(`type`), `color`=VALUES(`color`),
             `emoji`=VALUES(`emoji`), `active`=VALUES(`active`),
-            `sort_order`=VALUES(`sort_order`), `updated_at`=NOW()");
+            `sort_order`=VALUES(`sort_order`), `country`=VALUES(`country`), `updated_at`=NOW()");
         $stmt->execute([
             $code,
             trim($b['name'] ?? ''),
@@ -70,7 +70,8 @@ if ($method === 'POST') {
             $b['color'] ?? 'blue',
             $b['emoji'] ?? '',
             isset($b['active']) ? (int)$b['active'] : 1,
-            (int)($b['sort_order'] ?? 0)
+            (int)($b['sort_order'] ?? 0),
+            strtoupper(trim($b['country'] ?? 'GR'))
         ]);
         respond(['ok' => true]);
     }
