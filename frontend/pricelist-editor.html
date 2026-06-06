@@ -227,18 +227,20 @@ const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 const API  = 'https://4aexpress.com/api';
 
 const SERVICES = [
+  // ── ΓΑΛΑΖΙΑ (GR) ──
   { id:'S1003',    name:'✈️↗️ Express Export',              mode:'AIR / Διεθνής',            file:'dhl_tariff_2026_S1003.json', greece: true },
   { id:'S1012',    name:'✈️🇬🇷↙️ Express Import',           mode:'AIR / Διεθνής',            file:'dhl_tariff_2026_S1012.json', greece: true },
   { id:'S1010',    name:'🚛↗️ Economy Export',              mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1010.json', greece: true },
   { id:'S1041',    name:'🚛🇬🇷↙️ Economy Import',           mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1041.json', greece: true },
   { id:'S1003_GR', name:'🇬🇷✈️↗️ Export Ελλάδα→Κύπρος',    mode:'AIR / Ελλάδα Z9',          file:'dhl_tariff_2026_S1003.json', zone:'z9', greece: true },
   { id:'S1012_GR', name:'🇬🇷✈️↙️ Import Κύπρος→Ελλάδα',    mode:'AIR / Ελλάδα Z9',          file:'dhl_tariff_2026_S1012.json', zone:'z9', greece: true },
+  // ── ΚΙΤΡΙΝΑ (CY) ──
   { id:'S1003_CY', name:'🇨🇾✈️↗️ Express Export Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1003.json', zone:'z9', greece: true },
   { id:'S1012_CY', name:'🇨🇾✈️↙️ Express Import Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1012.json', zone:'z9', greece: true },
   { id:'S1050',    name:'🇨🇾 ✈️ 🇬🇷 🚛➡️ 🌍 Export CY→GR→World', mode:'COMBI AIR+ROAD / Κύπρος→Κόσμος', file:'dhl_tariff_2026_S1010.json', cy_surcharge: true, combi: true, surcharge_key: 'surcharge_cy_gr' },
   { id:'S1051',    name:'🌍 🚛⬅️ 🇬🇷 ✈️ 🇨🇾 Import World→GR→CY', mode:'COMBI ROAD+AIR / Κόσμος→Κύπρος', file:'dhl_tariff_2026_S1041.json', cy_surcharge: true, combi: true, surcharge_key: 'surcharge_gr_cy' },
-  { id:'S1039', name:'🚢↗️ Shipping Courier GR-CY', mode:'SEA / Ελλάδα Z9', file:'4a_tariff_2026_S1039.json', zone:'z9', greece: true },
-  { id:'S1059', name:'🚢↗️ Export ShipCourier P2P',  mode:'SEA / Ελλάδα Z9', file:'4a_tariff_2026_S1059.json', zone:'z9', greece: true },
+  { id:'S1039',    name:'🚢↗️ Shipping Courier GR-CY',      mode:'SEA / Ελλάδα Z9',          file:'4a_tariff_2026_S1039.json', zone:'z9', greece: true },
+  { id:'S1059',    name:'🚢↗️ Export ShipCourier P2P',      mode:'SEA / Ελλάδα Z9',          file:'4a_tariff_2026_S1059.json', zone:'z9', greece: true },
 ];
 
 // ─── Ποια AIR services εμφανίζουν Z9 block (Διεθνή μόνο, όχι CY/cy_surcharge) ───
