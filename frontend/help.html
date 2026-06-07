@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>4A Express — Help & Wiki</title>
+<title>4A Express β€” Help & Wiki</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
@@ -102,15 +102,15 @@
       <div class="login-logo-text">WORLDWIDE<br>EXPRESS</div>
     </div>
     <div class="login-title">Help & Wiki</div>
-    <div class="login-sub">Εισάγετε τα στοιχεία σας</div>
+    <div class="login-sub">Ξ•ΞΉΟƒΞ¬Ξ³ΞµΟ„Ξµ Ο„Ξ± ΟƒΟ„ΞΏΞΉΟ‡ΞµΞ―Ξ± ΟƒΞ±Ο‚</div>
     <label class="login-label">User Code</label>
     <input class="login-pin" type="text" id="login-user" maxlength="5" placeholder="E1001" style="letter-spacing:4px;" />
     <div id="otp-section" style="display:none;">
       <label class="login-label">OTP</label>
-      <input class="login-pin" type="text" id="login-otp" maxlength="6" placeholder="••••••" style="letter-spacing:6px;" />
+      <input class="login-pin" type="text" id="login-otp" maxlength="6" placeholder="β€Άβ€Άβ€Άβ€Άβ€Άβ€Ά" style="letter-spacing:6px;" />
     </div>
     <div class="login-error" id="login-error"></div>
-    <button class="login-btn" id="login-btn" onclick="doLogin()">Αποστολή OTP</button>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Ξ‘Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ® OTP</button>
   </div>
 </div>
 
@@ -126,15 +126,15 @@
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <span class="topbar-user" id="topbar-user"></span>
-      <button class="topbar-logout" onclick="doLogout()">Έξοδος</button>
+      <button class="topbar-logout" onclick="doLogout()">ΞΞΎΞΏΞ΄ΞΏΟ‚</button>
     </div>
   </div>
 
   <div class="nav">
-    <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
-    <a class="nav-btn" href="pricelist-clients.html">?? Πελάτες</a>
-    <a class="nav-btn" href="zones.html">?? Ζώνες</a>
-    <a class="nav-btn" href="users.html">?? Χρήστες</a>
+    <a class="nav-btn" href="pricelist-editor.html">+ ΞΞ­ΞΏΟ‚ Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΟ‚</a>
+    <a class="nav-btn" href="pricelist-clients.html">?? Ξ ΞµΞ»Ξ¬Ο„ΞµΟ‚</a>
+    <a class="nav-btn" href="zones.html">?? Ξ–ΟΞ½ΞµΟ‚</a>
+    <a class="nav-btn" href="users.html">?? Ξ§ΟΞ®ΟƒΟ„ΞµΟ‚</a>
     <a class="nav-btn" href="services.html">?? Services</a>
     <a class="nav-btn" href="docs.html">?? Docs</a>
     <a class="nav-btn active" href="help.html">? Help</a>
@@ -144,12 +144,12 @@
     <!-- SIDEBAR -->
     <div class="sidebar">
       <div class="sidebar-search" style="position:relative;">
-        <input type="text" id="search-input" placeholder="?? Αναζήτηση..." oninput="searchSections(this.value)" />
+        <input type="text" id="search-input" placeholder="?? Ξ‘Ξ½Ξ±Ξ¶Ξ®Ο„Ξ·ΟƒΞ·..." oninput="searchSections(this.value)" />
         <div id="search-results" class="search-results" style="display:none;"></div>
       </div>
       <div id="sidebar-list"></div>
       <div id="sidebar-add" class="sidebar-add" style="display:none;" onclick="showAddModal()">
-        ? Νέο Section
+        ? ΞΞ­ΞΏ Section
       </div>
     </div>
 
@@ -157,7 +157,7 @@
     <div class="main" id="main-content">
       <div class="empty-state">
         <div class="empty-state-icon">??</div>
-        <div class="empty-state-text">Επίλεξε section από αριστερά</div>
+        <div class="empty-state-text">Ξ•Ο€Ξ―Ξ»ΞµΞΎΞµ section Ξ±Ο€Ο Ξ±ΟΞΉΟƒΟ„ΞµΟΞ¬</div>
       </div>
     </div>
   </div>
@@ -166,18 +166,18 @@
 <!-- ADD MODAL -->
 <div id="add-modal" class="modal-bg" style="display:none;">
   <div class="modal">
-    <div class="modal-title">? Νέο Section</div>
+    <div class="modal-title">? ΞΞ­ΞΏ Section</div>
     <div class="modal-field">
-      <label>Εικονίδιο</label>
+      <label>Ξ•ΞΉΞΊΞΏΞ½Ξ―Ξ΄ΞΉΞΏ</label>
       <input type="text" id="new-icon" value="??" maxlength="4" />
     </div>
     <div class="modal-field">
-      <label>Τίτλος</label>
-      <input type="text" id="new-title" placeholder="π.χ. DHL Τιμοκατάλογος" />
+      <label>Ξ¤Ξ―Ο„Ξ»ΞΏΟ‚</label>
+      <input type="text" id="new-title" placeholder="Ο€.Ο‡. DHL Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΟ‚" />
     </div>
     <div class="modal-btns">
-      <button class="btn btn-cancel" onclick="closeAddModal()">Ακύρωση</button>
-      <button class="btn btn-save" onclick="addSection()">Δημιουργία</button>
+      <button class="btn btn-cancel" onclick="closeAddModal()">Ξ‘ΞΊΟΟΟ‰ΟƒΞ·</button>
+      <button class="btn btn-save" onclick="addSection()">Ξ”Ξ·ΞΌΞΉΞΏΟ…ΟΞ³Ξ―Ξ±</button>
     </div>
   </div>
 </div>
@@ -191,13 +191,13 @@ let editing = false;
 
 // -- DEFAULT SECTIONS ----------------------------------------------------------
 const DEFAULT_SECTIONS = [
-  { id:'arch',      icon:'???', title:'Αρχιτεκτονική Συστήματος', content:'', updated_at:'' },
+  { id:'arch',      icon:'???', title:'Ξ‘ΟΟ‡ΞΉΟ„ΞµΞΊΟ„ΞΏΞ½ΞΉΞΊΞ® Ξ£Ο…ΟƒΟ„Ξ®ΞΌΞ±Ο„ΞΏΟ‚', content:'', updated_at:'' },
   { id:'services',  icon:'??', title:'Services & Zones',           content:'', updated_at:'' },
-  { id:'dhl',       icon:'??', title:'DHL Τιμοκατάλογος',          content:'', updated_at:'' },
-  { id:'pdf',       icon:'??', title:'Παραγωγή PDF Προσφοράς',     content:'', updated_at:'' },
-  { id:'bugs',      icon:'??', title:'Γνωστά Προβλήματα & Λύσεις', content:'', updated_at:'' },
+  { id:'dhl',       icon:'??', title:'DHL Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΟ‚',          content:'', updated_at:'' },
+  { id:'pdf',       icon:'??', title:'Ξ Ξ±ΟΞ±Ξ³Ο‰Ξ³Ξ® PDF Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚',     content:'', updated_at:'' },
+  { id:'bugs',      icon:'??', title:'Ξ“Ξ½Ο‰ΟƒΟ„Ξ¬ Ξ ΟΞΏΞ²Ξ»Ξ®ΞΌΞ±Ο„Ξ± & Ξ›ΟΟƒΞµΞΉΟ‚', content:'', updated_at:'' },
   { id:'changelog', icon:'??', title:'Changelog',                   content:'', updated_at:'' },
-  { id:'todo',      icon:'?', title:'TODO / Εκκρεμή',              content:'', updated_at:'' },
+  { id:'todo',      icon:'?', title:'TODO / Ξ•ΞΊΞΊΟΞµΞΌΞ®',              content:'', updated_at:'' },
   { id:'deploy',    icon:'??', title:'Deploy & Git',                content:'', updated_at:'' },
 ];
 
@@ -208,24 +208,24 @@ async function doLogin() {
   const btn = document.getElementById('login-btn');
   const err = document.getElementById('login-error');
   if (otpSection.style.display === 'none') {
-    if (!userCode) { err.textContent = 'Εισάγετε User Code'; return; }
-    btn.textContent = 'Αποστολή...'; btn.disabled = true;
+    if (!userCode) { err.textContent = 'Ξ•ΞΉΟƒΞ¬Ξ³ΞµΟ„Ξµ User Code'; return; }
+    btn.textContent = 'Ξ‘Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®...'; btn.disabled = true;
     try {
       const r = await fetch(`${API}/login.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'send_otp', user_code: userCode}) });
       const d = await r.json();
-      if (d.ok) { otpSection.style.display=''; btn.textContent='Σύνδεση'; btn.disabled=false; err.textContent=''; }
-      else { err.textContent = d.error||'Σφάλμα'; btn.textContent='Αποστολή OTP'; btn.disabled=false; }
-    } catch(e) { err.textContent='Σφάλμα'; btn.textContent='Αποστολή OTP'; btn.disabled=false; }
+      if (d.ok) { otpSection.style.display=''; btn.textContent='Ξ£ΟΞ½Ξ΄ΞµΟƒΞ·'; btn.disabled=false; err.textContent=''; }
+      else { err.textContent = d.error||'Ξ£Ο†Ξ¬Ξ»ΞΌΞ±'; btn.textContent='Ξ‘Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ® OTP'; btn.disabled=false; }
+    } catch(e) { err.textContent='Ξ£Ο†Ξ¬Ξ»ΞΌΞ±'; btn.textContent='Ξ‘Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ® OTP'; btn.disabled=false; }
   } else {
     const otp = document.getElementById('login-otp').value.trim();
-    if (!otp) { err.textContent='Εισάγετε OTP'; return; }
+    if (!otp) { err.textContent='Ξ•ΞΉΟƒΞ¬Ξ³ΞµΟ„Ξµ OTP'; return; }
     btn.textContent='...'; btn.disabled=true;
     try {
       const r = await fetch(`${API}/login.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'verify_otp', user_code:userCode, otp}) });
       const d = await r.json();
       if (d.ok) { currentUser = d.user; localStorage.setItem('4a_current_user', JSON.stringify(d.user)); initApp(); }
-      else { err.textContent = d.error||'Λάθος OTP'; btn.textContent='Σύνδεση'; btn.disabled=false; }
-    } catch(e) { err.textContent='Σφάλμα'; btn.textContent='Σύνδεση'; btn.disabled=false; }
+      else { err.textContent = d.error||'Ξ›Ξ¬ΞΈΞΏΟ‚ OTP'; btn.textContent='Ξ£ΟΞ½Ξ΄ΞµΟƒΞ·'; btn.disabled=false; }
+    } catch(e) { err.textContent='Ξ£Ο†Ξ¬Ξ»ΞΌΞ±'; btn.textContent='Ξ£ΟΞ½Ξ΄ΞµΟƒΞ·'; btn.disabled=false; }
   }
 }
 
@@ -235,7 +235,7 @@ function doLogout() { localStorage.removeItem('4a_current_user'); window.locatio
 async function initApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = '';
-  document.getElementById('topbar-user').textContent = `${currentUser.name} · ${currentUser.role}`;
+  document.getElementById('topbar-user').textContent = `${currentUser.name} Β· ${currentUser.role}`;
   if (currentUser.role === 'admin') document.getElementById('sidebar-add').style.display = '';
   await loadSections();
   if (sections.length > 0) selectSection(sections[0].id);
@@ -262,7 +262,7 @@ function renderSidebar() {
 }
 
 function selectSection(id) {
-  if (editing && !confirm('Υπάρχουν αλλαγές. Να απορριφθούν;')) return;
+  if (editing && !confirm('Ξ¥Ο€Ξ¬ΟΟ‡ΞΏΟ…Ξ½ Ξ±Ξ»Ξ»Ξ±Ξ³Ξ­Ο‚. ΞΞ± Ξ±Ο€ΞΏΟΟΞΉΟ†ΞΈΞΏΟΞ½;')) return;
   editing = false;
   activeId = id;
   renderSidebar();
@@ -278,19 +278,19 @@ function renderMain() {
     <div class="section-header">
       <div class="section-title">${s.icon} ${s.title}</div>
       <div class="section-actions">
-        ${isAdmin ? `<button class="btn btn-delete" onclick="deleteSection('${s.id}')">??? Διαγραφή</button>
-        <button class="btn btn-edit" id="edit-btn" onclick="startEdit()">?? Επεξεργασία</button>` : ''}
+        ${isAdmin ? `<button class="btn btn-delete" onclick="deleteSection('${s.id}')">??? Ξ”ΞΉΞ±Ξ³ΟΞ±Ο†Ξ®</button>
+        <button class="btn btn-edit" id="edit-btn" onclick="startEdit()">?? Ξ•Ο€ΞµΞΎΞµΟΞ³Ξ±ΟƒΞ―Ξ±</button>` : ''}
       </div>
     </div>
-    <div id="content-view" class="content-view">${s.content ? escHtml(s.content) : '<span class="content-empty">(Δεν υπάρχει περιεχόμενο — πάτα Επεξεργασία)</span>'}</div>
+    <div id="content-view" class="content-view">${s.content ? escHtml(s.content) : '<span class="content-empty">(Ξ”ΞµΞ½ Ο…Ο€Ξ¬ΟΟ‡ΞµΞΉ Ο€ΞµΟΞΉΞµΟ‡ΟΞΌΞµΞ½ΞΏ β€” Ο€Ξ¬Ο„Ξ± Ξ•Ο€ΞµΞΎΞµΟΞ³Ξ±ΟƒΞ―Ξ±)</span>'}</div>
     <div id="content-edit" class="content-edit">
       <textarea class="content-textarea" id="content-textarea">${s.content || ''}</textarea>
       <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;">
-        <button class="btn btn-cancel" onclick="cancelEdit()">Ακύρωση</button>
-        <button class="btn btn-save" onclick="saveSection('${s.id}')">?? Αποθήκευση</button>
+        <button class="btn btn-cancel" onclick="cancelEdit()">Ξ‘ΞΊΟΟΟ‰ΟƒΞ·</button>
+        <button class="btn btn-save" onclick="saveSection('${s.id}')">?? Ξ‘Ο€ΞΏΞΈΞ®ΞΊΞµΟ…ΟƒΞ·</button>
       </div>
     </div>
-    ${s.updated_at ? `<div class="meta">Τελευταία ενημέρωση: ${s.updated_at}</div>` : ''}
+    ${s.updated_at ? `<div class="meta">Ξ¤ΞµΞ»ΞµΟ…Ο„Ξ±Ξ―Ξ± ΞµΞ½Ξ·ΞΌΞ­ΟΟ‰ΟƒΞ·: ${s.updated_at}</div>` : ''}
   `;
 }
 
@@ -324,19 +324,19 @@ async function saveSection(id) {
       editing = false;
       renderMain();
     }
-  } catch(e) { alert('? Σφάλμα αποθήκευσης'); }
+  } catch(e) { alert('? Ξ£Ο†Ξ¬Ξ»ΞΌΞ± Ξ±Ο€ΞΏΞΈΞ®ΞΊΞµΟ…ΟƒΞ·Ο‚'); }
 }
 
 async function deleteSection(id) {
-  if (!confirm('Να διαγραφεί το section;')) return;
+  if (!confirm('ΞΞ± Ξ΄ΞΉΞ±Ξ³ΟΞ±Ο†ΞµΞ― Ο„ΞΏ section;')) return;
   try {
     await fetch(`${API}/help.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'delete_section', id}) });
     sections = sections.filter(x => x.id !== id);
     activeId = sections.length ? sections[0].id : null;
     renderSidebar();
     if (activeId) renderMain();
-    else document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">??</div><div class="empty-state-text">Δεν υπάρχουν sections</div></div>';
-  } catch(e) { alert('? Σφάλμα'); }
+    else document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">??</div><div class="empty-state-text">Ξ”ΞµΞ½ Ο…Ο€Ξ¬ΟΟ‡ΞΏΟ…Ξ½ sections</div></div>';
+  } catch(e) { alert('? Ξ£Ο†Ξ¬Ξ»ΞΌΞ±'); }
 }
 
 // -- ADD SECTION ---------------------------------------------------------------
@@ -346,7 +346,7 @@ function closeAddModal() { document.getElementById('add-modal').style.display = 
 async function addSection() {
   const icon = document.getElementById('new-icon').value.trim() || '??';
   const title = document.getElementById('new-title').value.trim();
-  if (!title) { alert('Εισάγετε τίτλο'); return; }
+  if (!title) { alert('Ξ•ΞΉΟƒΞ¬Ξ³ΞµΟ„Ξµ Ο„Ξ―Ο„Ξ»ΞΏ'); return; }
   const id = 'sec_' + Date.now();
   try {
     const r = await fetch(`${API}/help.php`, {
@@ -361,7 +361,7 @@ async function addSection() {
       renderSidebar();
       selectSection(id);
     }
-  } catch(e) { alert('? Σφάλμα'); }
+  } catch(e) { alert('? Ξ£Ο†Ξ¬Ξ»ΞΌΞ±'); }
 }
 
 // -- SEARCH --------------------------------------------------------------------
