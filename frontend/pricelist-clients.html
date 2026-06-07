@@ -424,7 +424,7 @@ function nextOfferNumber(){
 
 async function init(){
   currentUser=JSON.parse(localStorage.getItem('4a_current_user')||'null');
-  if(!currentUser){ window.location.href='pricelist-editor.html'; return; }
+  if(!currentUser||!currentUser.active_station){ window.location.href='pricelist-editor.html'; return; }
   const _activeLabel=currentUser.active_station||currentUser.office||'';
   document.getElementById('topbar-user').textContent=`${currentUser.name} · ${_activeLabel}`;
   shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
