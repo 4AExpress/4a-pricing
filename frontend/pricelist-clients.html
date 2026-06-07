@@ -390,6 +390,7 @@ function getUserCountries(){
   const stations=(currentUser.stations||'').split(',').map(s=>s.trim().toUpperCase());
   const countries=[...new Set(stations.map(s=>(OFFICES.find(o=>o.code===s)||{}).country).filter(Boolean))];
   return countries.length ? countries : ['GR','CY'];
+}  
 function clientCountry(c){
   const o=OFFICES.find(x=>x.city===c.office);
   return o ? o.country : 'GR';
