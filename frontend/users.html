@@ -309,7 +309,7 @@ let editingId = null;
 function init() {
   currentUser = JSON.parse(localStorage.getItem('4a_current_user') || 'null');
   if (!currentUser) { window.location.href = 'pricelist-editor.html'; return; }
-  document.getElementById('topbar-user').textContent = `${currentUser.name} · ${currentUser.office}`;
+  document.getElementById('topbar-user').textContent = `${currentUser.name} · ${currentUser.active_station||currentUser.office}`;
   if (currentUser.role !== 'administrator') {
     document.getElementById('form-body').innerHTML = '<div class="no-access">⛔ Μόνο οι Administrator μπορούν να διαχειριστούν χρήστες.</div>';
   }
