@@ -228,15 +228,15 @@ async function doLogin() {
     try {
       const r = await fetch(`${API}/login.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'verify_otp', user_code:userCode, otp}) });
       const d = await r.json();
-      if (d.ok) { currentUser = d.user; localStorage.setItem('4a_user', JSON.stringify(d.user)); initApp(); }
-      else { err.textContent = d.error||'Λάθος OTP'; btn.textContent='Σύνδεση'; btn.disabled=false; }
+      if (d.ok) { currentUser = d.user; localStorage.setItem('4a_current_user', JSON.stringify(d.user)); initApp(); }
+else { err.textContent = d.error||'Λάθος OTP'; btn.textContent='Σύνδεση'; btn.disabled=false; }
     } catch(e) { err.textContent='Σφάλμα σύνδεσης'; btn.textContent='Σύνδεση'; btn.disabled=false; }
   }
 }
 
 function doLogout() {
-  localStorage.removeItem('4a_user');
-  location.reload();
+  localStorage.removeItem('4a_current_user');
+  window.location.href = 'pricelist-editor.html';
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -381,9 +381,8 @@ async function saveHelp() {
 
 // ── BOOT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin(); });
-localStorage.setItem('4a_user', JSON.stringify({name:'Apostolos Orfanidis', role:'admin', code:'E1009', office:'Αθήνα'}));
-const saved = localStorage.getItem('4a_user');
-if (saved) { try { currentUser = JSON.parse(saved); initApp(); } catch(e) {} }
+const saved = localStorage.getItem('4a_current_user');
+if (saved) { try { currentUser = JSON.parse(saved); if(currentUser.active_station) initApp(); else window.location.href='pricelist-editor.html'; } catch(e) {} }
 </script>
 </body>
 </html>
