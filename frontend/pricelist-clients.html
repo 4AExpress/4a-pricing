@@ -1,4 +1,4 @@
-﻿<!-- pricelist-clients.html | v1.5 | 17-05-2026 -->
+<!-- pricelist-clients.html | v1.5 | 17-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -388,6 +388,7 @@ async function loadOffices(){
 function getUserCountries(){
   if(!currentUser) return ['GR','CY'];
   if(currentUser.role==='administrator') return ['GR','CY'];
+  if(currentUser.active_station_country) return [currentUser.active_station_country];
   const stations=(currentUser.stations||'').split(',').map(s=>s.trim().toUpperCase());
   const countries=[...new Set(stations.map(s=>(OFFICES.find(o=>o.code===s)||{}).country).filter(Boolean))];
   return countries.length ? countries : ['GR','CY'];
