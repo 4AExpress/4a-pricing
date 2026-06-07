@@ -1,4 +1,4 @@
-<!-- pricelist-clients.html | v1.5 | 17-05-2026 -->
+﻿<!-- pricelist-clients.html | v1.5 | 17-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -384,15 +384,12 @@ const SVC_IS_CY   = id => id.includes('_CY') || id === 'S1050' || id === 'S1051'
 let OFFICES = [];
 async function loadOffices(){
   try { const r=await fetch(`${API}/offices.php`); const d=await r.json(); OFFICES=Array.isArray(d)?d:[]; } catch(e){ OFFICES=[]; }
-}
 function getUserCountries(){
   if(!currentUser) return ['GR','CY'];
   if(currentUser.role==='administrator') return ['GR','CY'];
   const stations=(currentUser.stations||'').split(',').map(s=>s.trim().toUpperCase());
   const countries=[...new Set(stations.map(s=>(OFFICES.find(o=>o.code===s)||{}).country).filter(Boolean))];
   return countries.length ? countries : ['GR','CY'];
-}
-}
 function clientCountry(c){
   const o=OFFICES.find(x=>x.city===c.office);
   return o ? o.country : 'GR';
