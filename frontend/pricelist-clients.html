@@ -1,11 +1,11 @@
-ο»Ώ<!-- pricelist-clients.html | v1.5 | 17-05-2026 -->
+<!-- pricelist-clients.html | v1.5 | 17-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>4A Express β€” Ξ ΞµΞ»Ξ¬Ο„ΞµΟ‚</title>
+<title>4A Express — Πελάτες</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #1a1a1a; min-height: 100vh; }
@@ -126,7 +126,7 @@
   .cod-fee-box { background:#e8f5e9; border:1px solid #a5d6a7; padding:8px 12px; border-radius:4px; font-size:13px; font-weight:600; color:#2e7d32; margin-top:4px; }
   .cod-warn { background:#fff3cd; border:1px solid #ffc107; padding:6px 10px; border-radius:4px; font-size:11px; color:#7c6d00; margin-bottom:6px; }
   .client-cod-badge { font-size:11px; color:#2e7d32; margin-top:2px; }
-  /* ===== ΞΞ­ΞΏ Ξ΅Ξ¬Ο†ΞΉ (grouped picker) ===== */
+  /* ===== Νέο Ράφι (grouped picker) ===== */
   #pl-modal .modal-box { width: 600px; }
   .rg-search { display:flex; align-items:center; gap:8px; border:1px solid #ddd; border-radius:6px; padding:0 10px; margin-bottom:10px; }
   .rg-search input { border:none; outline:none; flex:1; height:34px; font-family:inherit; font-size:13px; background:transparent; }
@@ -166,46 +166,46 @@
       <div class="topbar-logo-box">4A</div>
       <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
     </div>
-    <span class="topbar-title">Ξ”ΞΉΞ±Ο‡ΞµΞ―ΟΞΉΟƒΞ· Ξ ΞµΞ»Ξ±Ο„ΟΞ½</span>
+    <span class="topbar-title">Διαχείριση Πελατών</span>
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
     <span class="topbar-user" id="topbar-user"></span>
-    <button class="topbar-logout" onclick="doLogout()">ΞΞΎΞΏΞ΄ΞΏΟ‚</button>
+    <button class="topbar-logout" onclick="doLogout()">Έξοδος</button>
   </div>
 </div>
 
 <div class="nav">
-  <a class="nav-btn" href="pricelist-editor.html">+ ΞΞ­ΞΏΟ‚ Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΟ‚</a>
-  <a class="nav-btn" href="pricelist-editor.html#shelf">π“¦ Ξ΅Ξ¬Ο†ΞΉ</a>
-  <a class="nav-btn active" href="pricelist-clients.html">π‘¥ Ξ ΞµΞ»Ξ¬Ο„ΞµΟ‚</a>
-  <a class="nav-btn" href="zones.html">π Ξ–ΟΞ½ΞµΟ‚</a>
-  <a class="nav-btn" href="users.html">β™οΈ Ξ§ΟΞ®ΟƒΟ„ΞµΟ‚</a>
-    <a class="nav-btn" href="services.html">π”§ Services</a>
-    <a class="nav-btn" href="docs.html">π“„ Docs Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚</a>
-    <a class="nav-btn" href="fuel-surcharge-dashboard.html">β›½ Ξ•Ο€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏΟ‚</a>
-    <a class="nav-btn" href="help.html">β“ Help</a>
+  <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
+  <a class="nav-btn" href="pricelist-editor.html#shelf">?? Ράφι</a>
+  <a class="nav-btn active" href="pricelist-clients.html">?? Πελάτες</a>
+  <a class="nav-btn" href="zones.html">?? Ζώνες</a>
+  <a class="nav-btn" href="users.html">?? Χρήστες</a>
+    <a class="nav-btn" href="services.html">?? Services</a>
+    <a class="nav-btn" href="docs.html">?? Docs Προσφοράς</a>
+    <a class="nav-btn" href="fuel-surcharge-dashboard.html">? Επίναυλος</a>
+    <a class="nav-btn" href="help.html">? Help</a>
 </div>
 
 <div class="container">
 
   <div class="section-header">
-    <span id="form-title">ΞΞ­ΞΏΟ‚ Ξ ΞµΞ»Ξ¬Ο„Ξ·Ο‚</span>
-    <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="resetForm()">β• ΞΞ±ΞΈΞ±ΟΞΉΟƒΞΌΟΟ‚</button>
+    <span id="form-title">Νέος Πελάτης</span>
+    <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="resetForm()">? Καθαρισμός</button>
   </div>
   <div class="section-body">
 
     <div class="form-grid3">
       <div class="form-group">
-        <label>Ξ•Ο€Ο‰Ξ½Ο…ΞΌΞ―Ξ± *</label>
-        <input type="text" id="cl-name" placeholder="ALPHA LOGISTICS Ξ‘Ξ•" oninput="checkForm()" />
+        <label>Επωνυμία *</label>
+        <input type="text" id="cl-name" placeholder="ALPHA LOGISTICS ΑΕ" oninput="checkForm()" />
       </div>
       <div class="form-group">
-        <label>Ξ‘Ξ¦Ξ *</label>
+        <label>ΑΦΜ *</label>
         <input type="text" id="cl-afm" placeholder="998877665" oninput="checkForm()" />
       </div>
       <div class="form-group">
-        <label>Ξ¥Ο€ΞµΟΞΈΟ…Ξ½ΞΏΟ‚ *</label>
-        <input type="text" id="cl-contact" placeholder="ΞΞ―ΞΊΞΏΟ‚ Ξ Ξ±Ο€Ξ±Ξ΄ΟΟ€ΞΏΟ…Ξ»ΞΏΟ‚" oninput="checkForm()" />
+        <label>Υπεύθυνος *</label>
+        <input type="text" id="cl-contact" placeholder="Νίκος Παπαδόπουλος" oninput="checkForm()" />
       </div>
     </div>
 
@@ -215,7 +215,7 @@
         <input type="email" id="cl-email" placeholder="nikos@company.gr" oninput="checkForm()" />
       </div>
       <div class="form-group">
-        <label>Ξ¤Ξ·Ξ»Ξ­Ο†Ο‰Ξ½ΞΏ</label>
+        <label>Τηλέφωνο</label>
         <input type="text" id="cl-phone" placeholder="+30 210 1234567" />
       </div>
       <div class="form-group">
@@ -227,128 +227,128 @@
     <div class="form-grid2">
       <div class="form-group">
         <label>AccountNo CMS</label>
-        <input type="text" id="cl-account" placeholder="β€” (Ξ±Ο…Ο„ΟΞΌΞ±Ο„Ξ± ΞΌΞµΟ„Ξ¬ Ξ±Ο€ΞΏΞ΄ΞΏΟ‡Ξ®)" />
+        <input type="text" id="cl-account" placeholder="— (αυτόματα μετά αποδοχή)" />
       </div>
       <div class="form-group">
-        <label>ΞΞ±Ο„Ξ¬ΟƒΟ„Ξ±ΟƒΞ·</label>
+        <label>Κατάσταση</label>
         <div class="status-pills">
-          <span class="status-pill st-prospect active" onclick="setStatus('prospect',this)">Ξ¥Ο€ΞΏΟΞ®Ο†ΞΉΞΏΟ‚</span>
-          <span class="status-pill st-negotiate"       onclick="setStatus('negotiate',this)">Ξ£Ξµ Ξ΄ΞΉΞ±Ο€ΟΞ±Ξ³ΞΌΞ¬Ο„ΞµΟ…ΟƒΞ·</span>
-          <span class="status-pill st-accepted"        onclick="setStatus('accepted',this)">Ξ‘Ο€ΞΏΞ΄Ξ­Ο‡Ο„Ξ·ΞΊΞµ</span>
-          <span class="status-pill st-rejected"        onclick="setStatus('rejected',this)">Ξ‘ΟΞ½Ξ®ΞΈΞ·ΞΊΞµ</span>
-          <span class="status-pill st-active"          onclick="setStatus('active',this)">Ξ•Ξ½ΞµΟΞ³ΟΟ‚</span>
+          <span class="status-pill st-prospect active" onclick="setStatus('prospect',this)">Υποψήφιος</span>
+          <span class="status-pill st-negotiate"       onclick="setStatus('negotiate',this)">Σε διαπραγμάτευση</span>
+          <span class="status-pill st-accepted"        onclick="setStatus('accepted',this)">Αποδέχτηκε</span>
+          <span class="status-pill st-rejected"        onclick="setStatus('rejected',this)">Αρνήθηκε</span>
+          <span class="status-pill st-active"          onclick="setStatus('active',this)">Ενεργός</span>
         </div>
       </div>
     </div>
 
     <div class="form-group" style="margin-bottom:12px;">
-      <label>Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΞΉ Ξ±Ο€Ο Ξ΅Ξ¬Ο†ΞΉ</label>
+      <label>Τιμοκατάλογοι από Ράφι</label>
       <div style="display:flex;align-items:flex-start;gap:10px;">
         <div class="pricelist-tags" id="pl-tags" style="flex:1;">
-          <button class="add-pl-btn" onclick="showPlModal()">+ Ξ ΟΞΏΟƒΞΈΞ®ΞΊΞ· Ξ±Ο€Ο ΟΞ¬Ο†ΞΉ</button>
+          <button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>
         </div>
         <div id="zone-pdf-badge-wrap" style="display:none;align-self:flex-start;padding-top:4px;">
-          <a class="zone-pdf-badge" href="https://4aexpress.github.io/4a-pricing/docs/4A_Express_Zones_2026.pdf" target="_blank" rel="noopener">π“„ Ξ–ΟΞ½ΞµΟ‚ 4A GR</a>
+          <a class="zone-pdf-badge" href="https://4aexpress.github.io/4a-pricing/docs/4A_Express_Zones_2026.pdf" target="_blank" rel="noopener">?? Ζώνες 4A GR</a>
         </div>
       </div>
     </div>
 
     <div class="offer-terms">
       <div class="offer-terms-title">
-        ΞΟΞΏΞΉ Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚
+        Όροι Προσφοράς
         <span id="offer-num-display" style="font-family:monospace;font-size:11px;color:#6a1b9a;font-weight:700;margin-left:10px;"></span>
       </div>
       <div class="terms-grid">
         <div class="form-group">
-          <label>Ξ¤ΟΟΟ€ΞΏΟ‚ Ξ Ξ»Ξ·ΟΟ‰ΞΌΞ®Ο‚</label>
+          <label>Τρόπος Πληρωμής</label>
           <select id="cl-payment">
-            <option value="10">10 Ξ·ΞΌΞ­ΟΞµΟ‚</option>
-            <option value="30" selected>30 Ξ·ΞΌΞ­ΟΞµΟ‚</option>
-            <option value="60">60 Ξ·ΞΌΞ­ΟΞµΟ‚</option>
+            <option value="10">10 ημέρες</option>
+            <option value="30" selected>30 ημέρες</option>
+            <option value="60">60 ημέρες</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Ξ¤ΞΉΞΌΞΏΞ»ΟΞ³Ξ·ΟƒΞ·</label>
+          <label>Τιμολόγηση</label>
           <select id="cl-invoice">
-            <option value="weekly">Ξ•Ξ²Ξ΄ΞΏΞΌΞ±Ξ΄ΞΉΞ±Ξ―Ξ±</option>
-            <option value="monthly" selected>ΞΞ·Ξ½ΞΉΞ±Ξ―Ξ±</option>
+            <option value="weekly">Εβδομαδιαία</option>
+            <option value="monthly" selected>Μηνιαία</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Ξ™ΟƒΟ‡ΟΟ‚ Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚</label>
+          <label>Ισχύς Προσφοράς</label>
           <select id="cl-validity">
-            <option value="15">15 Ξ·ΞΌΞ­ΟΞµΟ‚</option>
-            <option value="30" selected>30 Ξ·ΞΌΞ­ΟΞµΟ‚</option>
-            <option value="60">60 Ξ·ΞΌΞ­ΟΞµΟ‚</option>
+            <option value="15">15 ημέρες</option>
+            <option value="30" selected>30 ημέρες</option>
+            <option value="60">60 ημέρες</option>
           </select>
         </div>
       </div>
 
       <div style="margin-top:14px;">
-        <div class="offer-terms-title">Ξ•Ο€ΞΉΟ€Ξ»Ξ­ΞΏΞ½ Ξ§ΟΞµΟΟƒΞµΞΉΟ‚</div>
+        <div class="offer-terms-title">Επιπλέον Χρεώσεις</div>
         <div class="surcharges-list" id="surcharges-list"></div>
-        <button class="add-surcharge-btn" onclick="addSurcharge()">+ Ξ ΟΞΏΟƒΞΈΞ®ΞΊΞ· Ο‡ΟΞ­Ο‰ΟƒΞ·Ο‚</button>
+        <button class="add-surcharge-btn" onclick="addSurcharge()">+ Προσθήκη χρέωσης</button>
       </div>
 
       <div id="cod-section" style="margin-top:14px;display:none;">
         <div class="offer-terms-title" style="display:flex;align-items:center;gap:10px;">
-          Ξ‘Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ® (COD)
+          Αντικαταβολή (COD)
           <label class="cod-toggle-wrap">
             <input type="checkbox" id="cod-toggle" onchange="toggleCod()">
-            <span style="font-size:12px;color:#333;">Ξ•Ξ½ΞµΟΞ³ΞΏΟ€ΞΏΞ―Ξ·ΟƒΞ·</span>
+            <span style="font-size:12px;color:#333;">Ενεργοποίηση</span>
           </label>
         </div>
         <div id="cod-formula-badge" style="font-size:11px;color:#4a7c59;margin-top:4px;display:none;"></div>
         <div id="cod-fields" style="display:none;margin-top:10px;">
           <div class="form-group" style="margin-bottom:8px;">
-            <label>Ξ ΞΏΟƒΟ Ξ‘Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ®Ο‚ (β‚¬)</label>
+            <label>Ποσό Αντικαταβολής (€)</label>
             <input type="number" id="cod-amount" min="0" step="0.01" placeholder="0.00" oninput="onCodAmountChange()">
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
             <div class="form-group">
-              <label>ΞΟΞΉΞΏ Ο€Ξ±Ξ³Ξ―Ξ±Ο‚ (β‚¬)</label>
+              <label>Όριο παγίας (€)</label>
               <input type="number" id="cod-flat_limit" min="0" step="0.01" placeholder="500.00" oninput="scheduleCodCalc()">
             </div>
             <div class="form-group">
-              <label>Ξ ΞΏΟƒΞΏΟƒΟ„Ο Ξ¬Ξ½Ο‰ ΞΏΟΞ―ΞΏΟ… (%)</label>
+              <label>Ποσοστό άνω ορίου (%)</label>
               <input type="number" id="cod-percentage" min="0" step="0.01" max="100" placeholder="1.00" oninput="scheduleCodCalc()">
             </div>
           </div>
           <div id="cod-floor-warn" class="cod-warn" style="display:none;"></div>
-          <div id="cod-fee-display" class="cod-fee-box">Ξ§ΟΞ­Ο‰ΟƒΞ· Ξ±Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ®Ο‚: β€”</div>
+          <div id="cod-fee-display" class="cod-fee-box">Χρέωση αντικαταβολής: —</div>
         </div>
       </div>
 
       <div style="margin-top:14px;">
-        <div class="offer-terms-title">Ξ•ΞΉΞ΄ΞΏΟ€ΞΏΞ―Ξ·ΟƒΞ· Managers</div>
+        <div class="offer-terms-title">Ειδοποίηση Managers</div>
         <div class="managers-list" id="managers-list"></div>
-        <button class="add-surcharge-btn" style="margin-top:6px;" onclick="addManager()">+ Ξ ΟΞΏΟƒΞΈΞ®ΞΊΞ· email</button>
+        <button class="add-surcharge-btn" style="margin-top:6px;" onclick="addManager()">+ Προσθήκη email</button>
       </div>
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="resetForm()">Ξ‘ΞΊΟΟΟ‰ΟƒΞ·</button>
-      <button class="btn btn-orange"  id="preview-btn" onclick="previewPDF()" disabled>π“„ Ξ ΟΞΏΞµΟ€ΞΉΟƒΞΊΟΟ€Ξ·ΟƒΞ· PDF</button>
-      <button class="btn btn-green"   id="send-btn"    onclick="sendOffer()"  disabled>β‰οΈ Ξ‘Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ® Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚</button>
-      <button class="btn btn-orange"  id="draft-btn"   onclick="draftOffer()" disabled>β΅ Draft (Ξ³ΟΞ®Ξ³ΞΏΟΞΏ)</button>
-      <button class="btn btn-primary" id="save-btn"    onclick="saveClient()" disabled>π’Ύ Ξ‘Ο€ΞΏΞΈΞ®ΞΊΞµΟ…ΟƒΞ·</button>
+      <button class="btn btn-secondary" onclick="resetForm()">Ακύρωση</button>
+      <button class="btn btn-orange"  id="preview-btn" onclick="previewPDF()" disabled>?? Προεπισκόπηση PDF</button>
+      <button class="btn btn-green"   id="send-btn"    onclick="sendOffer()"  disabled>?? Αποστολή Προσφοράς</button>
+      <button class="btn btn-orange"  id="draft-btn"   onclick="draftOffer()" disabled>? Draft (γρήγορο)</button>
+      <button class="btn btn-primary" id="save-btn"    onclick="saveClient()" disabled>?? Αποθήκευση</button>
     </div>
   </div>
 
   <div class="section-header">
-    <span>Ξ›Ξ―ΟƒΟ„Ξ± Ξ ΞµΞ»Ξ±Ο„ΟΞ½ (<span id="client-count">0</span>)</span>
+    <span>Λίστα Πελατών (<span id="client-count">0</span>)</span>
   </div>
   <div class="section-body">
     <div class="filter-bar">
-      <input class="search-input" type="text" placeholder="π” Ξ‘Ξ½Ξ±Ξ¶Ξ®Ο„Ξ·ΟƒΞ· ΞµΟ€Ο‰Ξ½Ο…ΞΌΞ―Ξ± / Ξ‘Ξ¦Ξ / Ο…Ο€ΞµΟΞΈΟ…Ξ½ΞΏΟ‚..." oninput="filterClients(this.value)" />
-      <button class="filter-btn active" onclick="filterByStatus('all',this)">ΞΞ»ΞΏΞΉ</button>
-      <button class="filter-btn" onclick="filterByStatus('prospect',this)">π”µ Ξ¥Ο€ΞΏΟΞ®Ο†ΞΉΞΏΞΉ</button>
-      <button class="filter-btn" onclick="filterByStatus('negotiate',this)">π΅ Ξ”ΞΉΞ±Ο€ΟΞ±Ξ³ΞΌΞ¬Ο„ΞµΟ…ΟƒΞ·</button>
-      <button class="filter-btn" onclick="filterByStatus('accepted',this)">πΆ Ξ‘Ο€ΞΏΞ΄Ξ­Ο‡Ο„Ξ·ΞΊΞ±Ξ½</button>
-      <button class="filter-btn" onclick="filterByStatus('active',this)">π£ Ξ•Ξ½ΞµΟΞ³ΞΏΞ―</button>
-      <button class="filter-btn" onclick="filterByStatus('rejected',this)">π”΄ Ξ‘ΟΞ½Ξ®ΞΈΞ·ΞΊΞ±Ξ½</button>
+      <input class="search-input" type="text" placeholder="?? Αναζήτηση επωνυμία / ΑΦΜ / υπεύθυνος..." oninput="filterClients(this.value)" />
+      <button class="filter-btn active" onclick="filterByStatus('all',this)">Όλοι</button>
+      <button class="filter-btn" onclick="filterByStatus('prospect',this)">?? Υποψήφιοι</button>
+      <button class="filter-btn" onclick="filterByStatus('negotiate',this)">?? Διαπραγμάτευση</button>
+      <button class="filter-btn" onclick="filterByStatus('accepted',this)">?? Αποδέχτηκαν</button>
+      <button class="filter-btn" onclick="filterByStatus('active',this)">?? Ενεργοί</button>
+      <button class="filter-btn" onclick="filterByStatus('rejected',this)">?? Αρνήθηκαν</button>
     </div>
-    <div id="clients-list"><div class="empty">Ξ”ΞµΞ½ Ο…Ο€Ξ¬ΟΟ‡ΞΏΟ…Ξ½ Ο€ΞµΞ»Ξ¬Ο„ΞµΟ‚ Ξ±ΞΊΟΞΌΞ±</div></div>
+    <div id="clients-list"><div class="empty">Δεν υπάρχουν πελάτες ακόμα</div></div>
   </div>
 
 </div>
@@ -356,10 +356,10 @@
 <!-- MODAL -->
 <div id="pl-modal" class="modal-overlay">
   <div class="modal-box">
-    <div class="modal-title">Ξ•Ο€ΞΉΞ»ΞΏΞ³Ξ® Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ±Ξ»ΟΞ³ΞΏΟ… Ξ±Ο€Ο Ξ΅Ξ¬Ο†ΞΉ</div>
+    <div class="modal-title">Επιλογή Τιμοκαταλόγου από Ράφι</div>
     <div id="pl-modal-content"></div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closePlModal()">ΞΞ»ΞµΞ―ΟƒΞΉΞΌΞΏ</button>
+      <button class="btn btn-secondary" onclick="closePlModal()">Κλείσιμο</button>
     </div>
   </div>
 </div>
@@ -369,21 +369,22 @@
 const API = 'https://4aexpress.com/api';
 
 const SVC_NAMES = {
-  S1003:    'π‡¬π‡· βοΈ β†—οΈ π',
-  S1012:    'π β†™οΈ βοΈ π‡¬π‡·',
-  S1010:    'π‡¬π‡· π› β†—οΈ π‡ªπ‡Ί',
-  S1041:    'π‡ªπ‡Ί β†™οΈ π› π‡¬π‡·',
-  S1003_GR: 'π‡¬π‡· βοΈ β†—οΈ π‡¨π‡Ύ',
-  S1012_GR: 'π‡¨π‡Ύ β†™οΈ βοΈ π‡¬π‡·',
-  S1003_CY: 'π‡¨π‡Ύ βοΈ β†—οΈ π',
-  S1012_CY: 'π β†™οΈ βοΈ π‡¨π‡Ύ',
-  S1050:    'π‡¨π‡Ύ βοΈ π‡¬π‡· π› β†—οΈ π',
-  S1051:    'π π› π‡¬π‡· β†™οΈ βοΈ π‡¨π‡Ύ'
+  S1003:    '???? ?? ?? ??',
+  S1012:    '?? ?? ?? ????',
+  S1010:    '???? ?? ?? ????',
+  S1041:    '???? ?? ?? ????',
+  S1003_GR: '???? ?? ?? ????',
+  S1012_GR: '???? ?? ?? ????',
+  S1003_CY: '???? ?? ?? ??',
+  S1012_CY: '?? ?? ?? ????',
+  S1050:    '???? ?? ???? ?? ?? ??',
+  S1051:    '?? ?? ???? ?? ?? ????'
 };
 const SVC_IS_CY   = id => id.includes('_CY') || id === 'S1050' || id === 'S1051';
 let OFFICES = [];
 async function loadOffices(){
   try { const r=await fetch(`${API}/offices.php`); const d=await r.json(); OFFICES=Array.isArray(d)?d:[]; } catch(e){ OFFICES=[]; }
+}
 function getUserCountries(){
   if(!currentUser) return ['GR','CY'];
   if(currentUser.role==='administrator') return ['GR','CY'];
@@ -399,8 +400,8 @@ const GR_SERVICES  = new Set(['S1003','S1012','S1010','S1041','S1003_GR','S1012_
 const ZONES_PDF_URL = 'https://4aexpress.github.io/4a-pricing/docs/4A_Express_Zones_2026.pdf';
 
 const STATUS_LABELS = {
-  prospect:'Ξ¥Ο€ΞΏΟΞ®Ο†ΞΉΞΏΟ‚', negotiate:'Ξ£Ξµ Ξ΄ΞΉΞ±Ο€ΟΞ±Ξ³ΞΌΞ¬Ο„ΞµΟ…ΟƒΞ·',
-  accepted:'Ξ‘Ο€ΞΏΞ΄Ξ­Ο‡Ο„Ξ·ΞΊΞµ', rejected:'Ξ‘ΟΞ½Ξ®ΞΈΞ·ΞΊΞµ', active:'Ξ•Ξ½ΞµΟΞ³ΟΟ‚'
+  prospect:'Υποψήφιος', negotiate:'Σε διαπραγμάτευση',
+  accepted:'Αποδέχτηκε', rejected:'Αρνήθηκε', active:'Ενεργός'
 };
 const STATUS_BG    = { prospect:'#e3f2fd', negotiate:'#fff8e1', accepted:'#e8f5e9', rejected:'#ffebee', active:'#f3e5f5' };
 const STATUS_COLOR = { prospect:'#1565c0', negotiate:'#f57f17', accepted:'#2e7d32', rejected:'#c62828', active:'#6a1b9a' };
@@ -424,7 +425,7 @@ async function init(){
   currentUser=JSON.parse(localStorage.getItem('4a_current_user')||'null');
   if(!currentUser||!currentUser.active_station){ window.location.href='pricelist-editor.html'; return; }
   const _activeLabel=currentUser.active_station||currentUser.office||'';
-  document.getElementById('topbar-user').textContent=`${currentUser.name} Β· ${_activeLabel}`;
+  document.getElementById('topbar-user').textContent=`${currentUser.name} · ${_activeLabel}`;
   shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
   try {
     const rc = await fetch(`${API}/clients.php?v=${Date.now()}`);
@@ -472,7 +473,7 @@ function resetForm(){
   document.getElementById('cl-payment').value='30';
   document.getElementById('cl-invoice').value='monthly';
   document.getElementById('cl-validity').value='30';
-  document.getElementById('form-title').textContent='ΞΞ­ΞΏΟ‚ Ξ ΞµΞ»Ξ¬Ο„Ξ·Ο‚';
+  document.getElementById('form-title').textContent='Νέος Πελάτης';
   document.querySelectorAll('.status-pill').forEach(p=>p.classList.remove('active'));
   document.querySelector('.st-prospect').classList.add('active');
   resetCod();
@@ -522,11 +523,11 @@ async function showPlModal(){
   shelf=JSON.parse(localStorage.getItem("4a_shelf")||"{}");
   document.getElementById("pl-modal").classList.add("open");
   const cont=document.getElementById("pl-modal-content");
-  cont.innerHTML='<div style="padding:24px;text-align:center;color:#999;">Ξ¦ΟΟΟ„Ο‰ΟƒΞ· ΟΞ±Ο†ΞΉΞΏΟβ€¦</div>';
+  cont.innerHTML='<div style="padding:24px;text-align:center;color:#999;">Φόρτωση ραφιού…</div>';
   const res=await Promise.all([loadServices(),ensureDhlAll()]); _modalDhl=res[1];
   cont.innerHTML=
-    '<div class="rg-search"><span>π”</span><input type="text" id="rg-q" placeholder="Ξ‘Ξ½Ξ±Ξ¶Ξ®Ο„Ξ·ΟƒΞ· service, Ο€ΞµΟΞΉΞ³ΟΞ±Ο†Ξ® Ξ® Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ±Ξ»ΟΞ³ΞΏΟ…β€¦" oninput="_modalQ=this.value;renderPlGroups();"></div>'+
-    '<div class="rg-toolbar"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" '+(_modalHideEmpty?"checked":"")+' onchange="_modalHideEmpty=this.checked;renderPlGroups();"> Ξ‘Ο€ΟΞΊΟΟ…ΟΞ· ΞΊΞµΞ½ΟΞ½ services</label><span>π”’ Ξ­Ξ½Ξ±Ο‚ Ξ±Ξ½Ξ¬ service</span></div>'+
+    '<div class="rg-search"><span>??</span><input type="text" id="rg-q" placeholder="Αναζήτηση service, περιγραφή ή τιμοκαταλόγου…" oninput="_modalQ=this.value;renderPlGroups();"></div>'+
+    '<div class="rg-toolbar"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" '+(_modalHideEmpty?"checked":"")+' onchange="_modalHideEmpty=this.checked;renderPlGroups();"> Απόκρυψη κενών services</label><span>?? ένας ανά service</span></div>'+
     '<div id="rg-list"></div>';
   const qi=document.getElementById("rg-q"); if(qi) qi.value=_modalQ;
   renderPlGroups();
@@ -558,29 +559,29 @@ function renderPlGroups(){
     const open=items.length>0;
     html+='<div class="rg-group'+(items.length?"":" empty")+'" style="border-left:3px solid '+accent+';">';
     html+='<div class="rg-head" onclick="toggleGroup(&quot;'+code+'&quot;)">'+
-      '<span class="rg-emoji">'+(s.emoji||"π“¦")+'</span>'+
+      '<span class="rg-emoji">'+(s.emoji||"??")+'</span>'+
       '<div class="rg-h-main"><div class="rg-h-name">'+(s.name||code)+'</div>'+
-      '<div class="rg-h-meta">'+code+(s.type?(" Β· "+s.type):"")+'</div>'+
+      '<div class="rg-h-meta">'+code+(s.type?(" · "+s.type):"")+'</div>'+
       (s.description?('<div class="rg-h-desc">'+s.description+'</div>'):"")+'</div>'+
-      (sel?'<span class="rg-count sel">β“ 1</span>':'<span class="rg-count">'+items.length+'</span>')+
+      (sel?'<span class="rg-count sel">? 1</span>':'<span class="rg-count">'+items.length+'</span>')+
       '</div>';
     html+='<div class="rg-body" id="rg-body-'+code+'" style="display:'+(open?"block":"none")+';">';
-    if(!items.length){ html+='<div style="font-size:12px;color:#aaa;padding:6px 4px;">Ξ”ΞµΞ½ Ο…Ο€Ξ¬ΟΟ‡ΞΏΟ…Ξ½ Ξ±Ο€ΞΏΞΈΞ·ΞΊΞµΟ…ΞΌΞ­Ξ½ΞΏΞΉ Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΞΉ.</div>'; }
+    if(!items.length){ html+='<div style="font-size:12px;color:#aaa;padding:6px 4px;">Δεν υπάρχουν αποθηκευμένοι τιμοκατάλογοι.</div>'; }
     items.forEach(p=>{
       const isSel=sel&&sel.id===p.id; const mk=(p.global_markup!=null?p.global_markup:p.markup);
       html+='<div class="rg-pl'+(isSel?" sel":"")+'">';
-      html+='<div class="rg-pl-top"><div style="min-width:0;"><div class="rg-pl-name">'+(p.name||"")+(isSel?' <span style=&quot;color:#2e7d32;font-size:11px;&quot;>β“ ΞµΟ€ΞΉΞ»ΞµΞ³ΞΌΞ­Ξ½ΞΏ</span>':"")+'</div>'+
-        '<div class="rg-pl-meta">'+(p.date||"")+(mk!=null?(" Β· markup "+mk+"%"):"")+'</div></div>'+
+      html+='<div class="rg-pl-top"><div style="min-width:0;"><div class="rg-pl-name">'+(p.name||"")+(isSel?' <span style=&quot;color:#2e7d32;font-size:11px;&quot;>? επιλεγμένο</span>':"")+'</div>'+
+        '<div class="rg-pl-meta">'+(p.date||"")+(mk!=null?(" · markup "+mk+"%"):"")+'</div></div>'+
         '<div style="display:flex;gap:6px;flex-shrink:0;">'+
-        '<button class="rg-btn rg-btn-eye" onclick="togglePrev(&quot;'+code+'&quot;,'+p.id+')">π‘ Ο„ΞΉΞΌΞ­Ο‚</button>'+
-        (isSel?'<button class="rg-btn rg-btn-rem" onclick="removePl('+p.id+')">β• Ξ‘Ο†Ξ±Ξ―ΟΞµΟƒΞ·</button>':'<button class="rg-btn rg-btn-add" onclick="addPl(&quot;'+code+'&quot;,'+p.id+')">+ Ξ ΟΞΏΟƒΞΈΞ®ΞΊΞ·</button>')+
+        '<button class="rg-btn rg-btn-eye" onclick="togglePrev(&quot;'+code+'&quot;,'+p.id+')">?? τιμές</button>'+
+        (isSel?'<button class="rg-btn rg-btn-rem" onclick="removePl('+p.id+')">? Αφαίρεση</button>':'<button class="rg-btn rg-btn-add" onclick="addPl(&quot;'+code+'&quot;,'+p.id+')">+ Προσθήκη</button>')+
         '</div></div>';
       html+='<div id="rg-prev-'+code+"-"+p.id+'"></div>';
       html+='</div>';
     });
     html+='</div></div>';
   });
-  if(!html) html='<div style="color:#aaa;text-align:center;padding:24px;">Ξ”ΞµΞ½ Ξ²ΟΞ­ΞΈΞ·ΞΊΞ±Ξ½ Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΞΉ.</div>';
+  if(!html) html='<div style="color:#aaa;text-align:center;padding:24px;">Δεν βρέθηκαν τιμοκατάλογοι.</div>';
   list.innerHTML=html;
   Object.keys(_modalPrev).forEach(pid=>{ const st=_modalPrev[pid]; if(st&&st.open){ const el=document.getElementById("rg-prev-"+st.code+"-"+pid); if(el) renderPrev(st.code,pid); } });
 }
@@ -589,7 +590,7 @@ function _findPl(code,plId){ return (shelf[code]||[]).find(p=>p.id==plId); }
 function togglePrev(code,plId){ const st=_modalPrev[plId]||(_modalPrev[plId]={code:code,zone:1,weight:5,open:false}); st.open=!st.open; st.code=code; renderPrev(code,plId); }
 function setPrevZone(code,plId,z){ const st=_modalPrev[plId]; if(!st)return; st.zone=z; renderPrev(code,plId); }
 function setPrevWeight(code,plId,v){ const st=_modalPrev[plId]; if(!st)return; st.weight=parseFloat(v)||0; const r=modalPrice(code,_findPl(code,plId),st.weight,st.zone); _writePrevOut(plId,r); }
-function _writePrevOut(plId,r){ const po=document.getElementById("rg-out-price-"+plId), co=document.getElementById("rg-out-cost-"+plId); if(po) po.textContent=(r&&r.price!=null)?r.price.toFixed(2):"β€”"; if(co) co.textContent=(r&&r.cost!=null)?r.cost.toFixed(2):"β€”"; }
+function _writePrevOut(plId,r){ const po=document.getElementById("rg-out-price-"+plId), co=document.getElementById("rg-out-cost-"+plId); if(po) po.textContent=(r&&r.price!=null)?r.price.toFixed(2):"—"; if(co) co.textContent=(r&&r.cost!=null)?r.cost.toFixed(2):"—"; }
 function renderPrev(code,plId){
   const wrap=document.getElementById("rg-prev-"+code+"-"+plId); if(!wrap) return;
   const st=_modalPrev[plId]; const pl=_findPl(code,plId);
@@ -600,13 +601,13 @@ function renderPrev(code,plId){
   if(zc>1){ let z=""; for(let i=1;i<=zc;i++){ z+='<span class="rg-z'+(st.zone===i?" on":"")+'" onclick="setPrevZone(&quot;'+code+'&quot;,'+plId+','+i+')">Z'+i+'</span>'; } zones='<div class="rg-zones">'+z+'</div>'; } else { st.zone=1; }
   const r=modalPrice(code,pl,st.weight,st.zone);
   wrap.innerHTML='<div class="rg-prev">'+
-    '<div style="font-size:12px;font-weight:600;color:'+accent+';margin-bottom:6px;">π§® Ξ ΟΞΏΞµΟ€ΞΉΟƒΞΊΟΟ€Ξ·ΟƒΞ· Ο„ΞΉΞΌΞ®Ο‚'+(zc>1?" Β· Ξ¶ΟΞ½Ξ· Γ— Ξ²Ξ¬ΟΞΏΟ‚":" Β· Ξ²Ξ¬ΟΞΏΟ‚ β†’ Ο„ΞΉΞΌΞ®")+'</div>'+
+    '<div style="font-size:12px;font-weight:600;color:'+accent+';margin-bottom:6px;">?? Προεπισκόπηση τιμής'+(zc>1?" · ζώνη ? βάρος":" · βάρος > τιμή")+'</div>'+
     zones+
-    '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:#777;">Ξ’Ξ¬ΟΞΏΟ‚</span>'+
+    '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:#777;">Βάρος</span>'+
     '<input type="number" min="0.5" step="0.5" value="'+st.weight+'" oninput="setPrevWeight(&quot;'+code+'&quot;,'+plId+',this.value)" style="width:72px;height:30px;border:1px solid #ddd;border-radius:4px;padding:0 8px;font-family:inherit;"> <span style="font-size:12px;color:#777;">kg</span></div>'+
-    '<div class="rg-prev-out"><div><div style="font-size:10px;color:#999;">ΞΟΟƒΟ„ΞΏΟ‚ DHL</div><div style="font-size:13px;">β‚¬<span id="rg-out-cost-'+plId+'">'+(r&&r.cost!=null?r.cost.toFixed(2):"β€”")+'</span></div></div>'+
-    '<div style="text-align:right;"><div style="font-size:10px;color:'+accent+';">Ξ¤ΞΉΞΌΞ® Ο€ΞµΞ»Ξ¬Ο„Ξ·</div><div style="font-size:20px;font-weight:700;color:'+accent+';">β‚¬<span id="rg-out-price-'+plId+'">'+(r&&r.price!=null?r.price.toFixed(2):"β€”")+'</span></div></div></div>'+
-    '<div style="font-size:10px;color:#aaa;margin-top:5px;">+ FC / COD ΞΊΞ±Ο„Ξ¬ Ο€ΞµΟΞ―Ο€Ο„Ο‰ΟƒΞ· Β· Ξ²Ξ¬ΟƒΞµΞΉ Ξ±Ο€ΞΏΞΈΞ·ΞΊΞµΟ…ΞΌΞ­Ξ½ΞΏΟ… Z1 &amp; ΞΊΟΟƒΟ„ΞΏΟ…Ο‚ DHL</div>'+
+    '<div class="rg-prev-out"><div><div style="font-size:10px;color:#999;">Κόστος DHL</div><div style="font-size:13px;">€<span id="rg-out-cost-'+plId+'">'+(r&&r.cost!=null?r.cost.toFixed(2):"—")+'</span></div></div>'+
+    '<div style="text-align:right;"><div style="font-size:10px;color:'+accent+';">Τιμή πελάτη</div><div style="font-size:20px;font-weight:700;color:'+accent+';">€<span id="rg-out-price-'+plId+'">'+(r&&r.price!=null?r.price.toFixed(2):"—")+'</span></div></div></div>'+
+    '<div style="font-size:10px;color:#aaa;margin-top:5px;">+ FC / COD κατά περίπτωση · βάσει αποθηκευμένου Z1 &amp; κόστους DHL</div>'+
     '</div>';
 }
 function closePlModal(){ document.getElementById('pl-modal').classList.remove('open'); checkForm(); }
@@ -622,34 +623,34 @@ function renderPlTags(){
   document.getElementById('pl-tags').innerHTML=
     selectedPls.map(p=>{
       const isCY=SVC_IS_CY(p.service_id);
-      return `<span class="pl-tag ${isCY?'cy':''}">${SVC_NAMES[p.service_id]||p.service_id} β€” ${p.name}<button onclick="removePl(${p.id})">β•</button></span>`;
+      return `<span class="pl-tag ${isCY?'cy':''}">${SVC_NAMES[p.service_id]||p.service_id} — ${p.name}<button onclick="removePl(${p.id})">?</button></span>`;
     }).join('')+
-    `<button class="add-pl-btn" onclick="showPlModal()">+ Ξ ΟΞΏΟƒΞΈΞ®ΞΊΞ· Ξ±Ο€Ο ΟΞ¬Ο†ΞΉ</button>`;
+    `<button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>`;
   const hasGR = selectedPls.some(p => GR_SERVICES.has(p.service_id));
   document.getElementById('zone-pdf-badge-wrap').style.display = hasGR ? 'block' : 'none';
   checkCodVisibility();
 }
 
-function addSurcharge(){ surcharges.push({name:'',value:'',unit:'β‚¬/Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®'}); renderSurcharges(); }
+function addSurcharge(){ surcharges.push({name:'',value:'',unit:'€/αποστολή'}); renderSurcharges(); }
 function renderSurcharges(){
   document.getElementById('surcharges-list').innerHTML=surcharges.map((s,i)=>`
     <div class="surcharge-row">
-      <input type="text" value="${s.name}" placeholder="Ο€.Ο‡. Ξ£Ο…ΟƒΞΊΞµΟ…Ξ±ΟƒΞ―Ξ±" oninput="surcharges[${i}].name=this.value"/>
+      <input type="text" value="${s.name}" placeholder="π.χ. Συσκευασία" oninput="surcharges[${i}].name=this.value"/>
       <input type="text" value="${s.value}" placeholder="2.50" oninput="surcharges[${i}].value=this.value"/>
       <select oninput="surcharges[${i}].unit=this.value">
-        <option ${s.unit==='β‚¬/Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®'?'selected':''}>β‚¬/Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®</option>
-        <option ${s.unit==='% ΞµΟ€Ξ― Ξ±ΞΎΞ―Ξ±Ο‚'?'selected':''}>% ΞµΟ€Ξ― Ξ±ΞΎΞ―Ξ±Ο‚</option>
-        <option ${s.unit==='β‚¬/Ο€Ξ±Ξ»Ξ­Ο„Ξ±'?'selected':''}>β‚¬/Ο€Ξ±Ξ»Ξ­Ο„Ξ±</option>
-        <option ${s.unit==='β‚¬/kg'?'selected':''}>β‚¬/kg</option>
+        <option ${s.unit==='€/αποστολή'?'selected':''}>€/αποστολή</option>
+        <option ${s.unit==='% επί αξίας'?'selected':''}>% επί αξίας</option>
+        <option ${s.unit==='€/παλέτα'?'selected':''}>€/παλέτα</option>
+        <option ${s.unit==='€/kg'?'selected':''}>€/kg</option>
       </select>
-      <button class="del-btn" onclick="surcharges.splice(${i},1);renderSurcharges()">β•</button>
+      <button class="del-btn" onclick="surcharges.splice(${i},1);renderSurcharges()">?</button>
     </div>`).join('');
 }
 
 function addManager(){ const e=prompt('Email manager:'); if(e&&e.includes('@')){ managers.push(e.trim()); renderManagers(); } }
 function renderManagers(){
   document.getElementById('managers-list').innerHTML=managers.map((m,i)=>`
-    <span class="manager-tag">${m}<button onclick="managers.splice(${i},1);renderManagers()">β•</button></span>`).join('');
+    <span class="manager-tag">${m}<button onclick="managers.splice(${i},1);renderManagers()">?</button></span>`).join('');
 }
 
 async function fetchCodConfig(serviceCode){
@@ -683,7 +684,7 @@ function updateCodFormula(){
   if(!badge||!codConfig)return;
   const fmt=v=>{ const n=parseFloat(v); return n%1===0?String(Math.round(n)):n.toFixed(2); };
   const {flat_limit:fl,flat_fee:ff,min_fee:mf,percentage:pct}=codConfig;
-  badge.textContent=`π“ β‰¤β‚¬${fmt(fl)}:β‚¬${fmt(ff)} flat π”Ίmin β‚¬${fmt(mf)} | >β‚¬${fmt(fl)} π“+${fmt(pct)}%`;
+  badge.textContent=`?? ?€${fmt(fl)}:€${fmt(ff)} flat ??min €${fmt(mf)} | >€${fmt(fl)} ??+${fmt(pct)}%`;
   badge.style.display='';
 }
 
@@ -692,7 +693,7 @@ function resetCod(){
   const chk=document.getElementById('cod-toggle');
   if(chk)chk.checked=false;
   document.getElementById('cod-fields').style.display='none';
-  document.getElementById('cod-fee-display').textContent='Ξ§ΟΞ­Ο‰ΟƒΞ· Ξ±Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ®Ο‚: β€”';
+  document.getElementById('cod-fee-display').textContent='Χρέωση αντικαταβολής: —';
   document.getElementById('cod-floor-warn').style.display='none';
   const badge=document.getElementById('cod-formula-badge');
   if(badge)badge.style.display='none';
@@ -708,7 +709,7 @@ function toggleCod(){
     codEnabled=false; codFee=0;
     document.getElementById('cod-fields').style.display='none';
     document.getElementById('cod-floor-warn').style.display='none';
-    document.getElementById('cod-fee-display').textContent='Ξ§ΟΞ­Ο‰ΟƒΞ· Ξ±Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ®Ο‚: β€”';
+    document.getElementById('cod-fee-display').textContent='Χρέωση αντικαταβολής: —';
   }
 }
 
@@ -729,25 +730,25 @@ function calculateCodFee(){
   const warn=document.getElementById('cod-floor-warn');
   const feeEl=document.getElementById('cod-fee-display');
   if(amount>0&&amount<min_fee){
-    warn.textContent=`β οΈ Ξ¤ΞΏ Ο€ΞΏΟƒΟ Ο€ΟΞ­Ο€ΞµΞΉ Ξ½Ξ± ΞµΞ―Ξ½Ξ±ΞΉ Ο„ΞΏΟ…Ξ»Ξ¬Ο‡ΞΉΟƒΟ„ΞΏΞ½ β‚¬${min_fee.toFixed(2)}`;
+    warn.textContent=`?? Το ποσό πρέπει να είναι τουλάχιστον €${min_fee.toFixed(2)}`;
     warn.style.display='block';
-    codFee=0; feeEl.textContent='Ξ§ΟΞ­Ο‰ΟƒΞ· Ξ±Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ®Ο‚: β€”'; return;
+    codFee=0; feeEl.textContent='Χρέωση αντικαταβολής: —'; return;
   }
   warn.style.display='none';
   codFee=amount<=flat_limit ? flat_fee : Math.max(min_fee,amount*percentage/100);
   codFee=Math.round(codFee*100)/100;
-  feeEl.textContent=`Ξ§ΟΞ­Ο‰ΟƒΞ· Ξ±Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ®Ο‚: β‚¬${codFee.toFixed(2)}`;
+  feeEl.textContent=`Χρέωση αντικαταβολής: €${codFee.toFixed(2)}`;
 }
 
 function saveClient(){
   const name=document.getElementById('cl-name').value.trim();
   const afm=document.getElementById('cl-afm').value.trim();
   const email=document.getElementById('cl-email').value.trim();
-  if(!name||!afm||!email){ alert('Ξ£Ο…ΞΌΟ€Ξ»Ξ®ΟΟ‰ΟƒΞµ Ξ•Ο€Ο‰Ξ½Ο…ΞΌΞ―Ξ±, Ξ‘Ξ¦Ξ ΞΊΞ±ΞΉ Email'); return; }
+  if(!name||!afm||!email){ alert('Συμπλήρωσε Επωνυμία, ΑΦΜ και Email'); return; }
   if(codEnabled){
     const _codAmt=parseFloat(document.getElementById('cod-amount').value)||0;
     const _minFee=codConfig?parseFloat(codConfig.min_fee):0;
-    if(_codAmt<_minFee){ alert(`β οΈ Ξ¤ΞΏ Ο€ΞΏΟƒΟ COD Ο€ΟΞ­Ο€ΞµΞΉ Ξ½Ξ± ΞµΞ―Ξ½Ξ±ΞΉ Ο„ΞΏΟ…Ξ»Ξ¬Ο‡ΞΉΟƒΟ„ΞΏΞ½ β‚¬${_minFee.toFixed(2)}`); return; }
+    if(_codAmt<_minFee){ alert(`?? Το ποσό COD πρέπει να είναι τουλάχιστον €${_minFee.toFixed(2)}`); return; }
     if(codConfig){
       const newFl=parseFloat(document.getElementById('cod-flat_limit').value)||parseFloat(codConfig.flat_limit);
       const newPct=parseFloat(document.getElementById('cod-percentage').value)||parseFloat(codConfig.percentage);
@@ -766,7 +767,7 @@ function saveClient(){
     contact:document.getElementById('cl-contact').value.trim(),
     email, phone:document.getElementById('cl-phone').value.trim(),
     website:document.getElementById('cl-website').value.trim(),
-    account:document.getElementById('cl-account').value.trim()||'β€”',
+    account:document.getElementById('cl-account').value.trim()||'—',
     status:currentStatus,
     pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[]})),
     surcharges:[...surcharges], managers:[...managers],
@@ -782,7 +783,7 @@ function saveClient(){
   localStorage.setItem('4a_clients',JSON.stringify(clients));
   fetch(`${API}/clients.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',...client})})
     .then(r=>r.json()).then(d=>console.log('API client save:',d)).catch(e=>console.error(e));
-  alert(`β… "${name}" Ξ±Ο€ΞΏΞΈΞ·ΞΊΞµΟΟ„Ξ·ΞΊΞµ\nΞ‘Ο. Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚: ${offerNum}`);
+  alert(`? "${name}" αποθηκεύτηκε\nΑρ. Προσφοράς: ${offerNum}`);
   resetForm(); renderClients();
 }
 
@@ -795,7 +796,7 @@ function editClient(id){
   document.getElementById('cl-email').value=c.email||'';
   document.getElementById('cl-phone').value=c.phone||'';
   document.getElementById('cl-website').value=c.website||'';
-  document.getElementById('cl-account').value=(c.account!=='β€”')?c.account:'';
+  document.getElementById('cl-account').value=(c.account!=='—')?c.account:'';
   document.getElementById('cl-payment').value=c.payment||'30';
   document.getElementById('cl-invoice').value=c.invoice||'monthly';
   document.getElementById('cl-validity').value=c.validity||'30';
@@ -805,7 +806,7 @@ function editClient(id){
   managers=c.managers?[...c.managers]:[];
   document.querySelectorAll('.status-pill').forEach(p=>p.classList.remove('active'));
   document.querySelector(`.st-${currentStatus}`)?.classList.add('active');
-  document.getElementById('form-title').textContent=`βοΈ Ξ•Ο€ΞµΞΎΞµΟΞ³Ξ±ΟƒΞ―Ξ±: ${c.name}`;
+  document.getElementById('form-title').textContent=`?? Επεξεργασία: ${c.name}`;
   renderPlTags(); renderSurcharges(); renderManagers(); updateOfferNum(); checkForm();
   resetCod();
   if(c.cod&&c.cod.cod_enabled){
@@ -820,7 +821,7 @@ function editClient(id){
 
 function deleteClient(id){
   const c=clients.find(cl=>cl.id===id); if(!c)return;
-  if(!confirm(`Ξ”ΞΉΞ±Ξ³ΟΞ±Ο†Ξ® "${c.name}";`))return;
+  if(!confirm(`Διαγραφή "${c.name}";`))return;
   clients=clients.filter(cl=>cl.id!==id);
   localStorage.setItem('4a_clients',JSON.stringify(clients));
   fetch(`${API}/clients.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})});
@@ -836,27 +837,27 @@ function renderClients(){
   document.getElementById('client-count').textContent=list.length;
   if(filterStatus!=='all')list=list.filter(c=>c.status===filterStatus);
   if(filterSearch){ const q=filterSearch.toLowerCase(); list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.afm||'').includes(q)||(c.contact||'').toLowerCase().includes(q)); }
-  if(!list.length){ el.innerHTML='<div class="empty">Ξ”ΞµΞ½ Ξ²ΟΞ­ΞΈΞ·ΞΊΞ±Ξ½ Ο€ΞµΞ»Ξ¬Ο„ΞµΟ‚</div>'; return; }
+  if(!list.length){ el.innerHTML='<div class="empty">Δεν βρέθηκαν πελάτες</div>'; return; }
   el.innerHTML=list.map(c=>{
-    const plStr=(c.pricelists||[]).map(p=>`${SVC_NAMES[p.service_id]||p.service_id}${p.markup?' '+p.markup+'%':''}`).join(' Β· ')||'β€”';
+    const plStr=(c.pricelists||[]).map(p=>`${SVC_NAMES[p.service_id]||p.service_id}${p.markup?' '+p.markup+'%':''}`).join(' · ')||'—';
     const isRenewal=c.status==='active'||c.status==='rejected';
     return `<div class="client-item">
       <div class="client-avatar" style="background:${STATUS_BG[c.status]||'#f0f0f0'};color:${STATUS_COLOR[c.status]||'#555'};">${initials(c.name)}</div>
       <div class="client-info">
         <div class="client-name">${c.name}
           <span class="status-pill st-${c.status}" style="font-size:10px;padding:2px 8px;cursor:default;">${STATUS_LABELS[c.status]||c.status}</span>
-          ${isRenewal?'<span class="renewal-badge">β†» Ξ‘Ξ½Ξ±Ξ½Ξ­Ο‰ΟƒΞ·</span>':''}
-          <span class="offer-badge">${c.offer_number||'β€”'}</span>
+          ${isRenewal?'<span class="renewal-badge">? Ανανέωση</span>':''}
+          <span class="offer-badge">${c.offer_number||'—'}</span>
         </div>
-        <div class="client-meta">Ξ‘Ξ¦Ξ: ${c.afm||'β€”'} Β· ${c.contact||'β€”'} Β· ${c.email||'β€”'}${c.phone?' Β· '+c.phone:''}${c.website?' Β· '+c.website:''} Β· ${c.date||'β€”'} Β· ${c.user||'β€”'} Β· ${c.office||'β€”'}</div>
-        <div class="client-pls">π“‹ ${plStr}</div>
-        ${c.cod?.cod_enabled?`<div class="client-cod-badge">π’³ COD: β‚¬${parseFloat(c.cod.cod_amount||0).toFixed(2)} Β· Ξ§ΟΞ­Ο‰ΟƒΞ·: β‚¬${parseFloat(c.cod.cod_fee||0).toFixed(2)}</div>`:''}
+        <div class="client-meta">ΑΦΜ: ${c.afm||'—'} · ${c.contact||'—'} · ${c.email||'—'}${c.phone?' · '+c.phone:''}${c.website?' · '+c.website:''} · ${c.date||'—'} · ${c.user||'—'} · ${c.office||'—'}</div>
+        <div class="client-pls">?? ${plStr}</div>
+        ${c.cod?.cod_enabled?`<div class="client-cod-badge">?? COD: €${parseFloat(c.cod.cod_amount||0).toFixed(2)} · Χρέωση: €${parseFloat(c.cod.cod_fee||0).toFixed(2)}</div>`:''}
       </div>
       <div class="client-actions">
-        ${c.status==='active'?`<button class="action-btn cms" onclick="exportCMS(${c.id})">β†“ CMS Export</button>`:''}
-        <button class="action-btn send" onclick="editClient(${c.id})">β‰οΈ Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬</button>
-        <button class="action-btn edit" onclick="editClient(${c.id})">βοΈ Edit</button>
-        <button class="action-btn del"  onclick="deleteClient(${c.id})">π—‘</button>
+        ${c.status==='active'?`<button class="action-btn cms" onclick="exportCMS(${c.id})">v CMS Export</button>`:''}
+        <button class="action-btn send" onclick="editClient(${c.id})">?? Προσφορά</button>
+        <button class="action-btn edit" onclick="editClient(${c.id})">?? Edit</button>
+        <button class="action-btn del"  onclick="deleteClient(${c.id})">??</button>
       </div>
     </div>`;
   }).join('');
@@ -864,7 +865,7 @@ function renderClients(){
 
 function filterByStatus(s,btn){ filterStatus=s; document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderClients(); }
 function filterClients(q){ filterSearch=q; renderClients(); }
-function exportCMS(id){ alert('CMS Export β€” ΞµΟ€ΟΞΌΞµΞ½ΞΏ Ξ²Ξ®ΞΌΞ± (TSV download)'); }
+function exportCMS(id){ alert('CMS Export — επόμενο βήμα (TSV download)'); }
 async function buildFinalPDF(offerNum){
   if(!localStorage.getItem('dhl_all')){
     const arr=await Promise.all(['S1003','S1012','S1010','S1041'].map(s=>
@@ -890,12 +891,12 @@ async function buildFinalPDF(offerNum){
       },
       dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel,
       zones_appendix: selectedPls.some(p => GR_SERVICES.has(p.service_id))
-        ? { include:true, code:'zones', description:'Ξ–ΟΞ½ΞµΟ‚ 4A Express GR', type:'Ξ Ξ‘Ξ΅Ξ‘Ξ΅Ξ¤Ξ—ΞΞ‘', toc_replace:'net', link:ZONES_PDF_URL, pdf_before_pricelists:true }
+        ? { include:true, code:'zones', description:'Ζώνες 4A Express GR', type:'ΠΑΡΑΡΤΗΜΑ', toc_replace:'net', link:ZONES_PDF_URL, pdf_before_pricelists:true }
         : null
     })
   });
   const d=await r.json();
-  if(!d.ok) throw new Error(d.error||'Ξ†Ξ³Ξ½Ο‰ΟƒΟ„ΞΏ ΟƒΟ†Ξ¬Ξ»ΞΌΞ±');
+  if(!d.ok) throw new Error(d.error||'Άγνωστο σφάλμα');
   const offerBytes = Uint8Array.from(atob(d.pdf), c => c.charCodeAt(0));
   if(!selectedPls.some(p => GR_SERVICES.has(p.service_id))) return offerBytes;
   try{
@@ -921,8 +922,8 @@ async function buildFinalPDF(offerNum){
 
 async function previewPDF(){
   const name=document.getElementById('cl-name').value.trim();
-  if(!name){ alert('Ξ£Ο…ΞΌΟ€Ξ»Ξ®ΟΟ‰ΟƒΞµ Ο€ΟΟΟ„Ξ± Ο„Ξ± ΟƒΟ„ΞΏΞΉΟ‡ΞµΞ―Ξ± Ο€ΞµΞ»Ξ¬Ο„Ξ·'); return; }
-  if(!selectedPls.length){ alert('Ξ”ΞµΞ½ Ξ­Ο‡ΞµΞΉΟ‚ ΞµΟ€ΞΉΞ»Ξ­ΞΎΞµΞΉ Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ±Ξ»ΟΞ³ΞΏΟ…Ο‚'); return; }
+  if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
+  if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
 
   const afm        = document.getElementById('cl-afm').value.trim();
   const contact    = document.getElementById('cl-contact').value.trim();
@@ -936,10 +937,10 @@ async function previewPDF(){
   const today      = todayFmt();
   const dd=new Date(); dd.setDate(dd.getDate()+validDays);
   const validUntil = formatDate(dd.toISOString());
-  const invoiceLbl = invoiceMode==='weekly'?'Ξ•Ξ²Ξ΄ΞΏΞΌΞ±Ξ΄ΞΉΞ±Ξ―Ξ±':'ΞΞ·Ξ½ΞΉΞ±Ξ―Ξ±';
+  const invoiceLbl = invoiceMode==='weekly'?'Εβδομαδιαία':'Μηνιαία';
   const codAmt=codEnabled?(parseFloat(document.getElementById('cod-amount').value)||0):0;
 
-  let fuelAir='β€”', fuelRoad='β€”', fuelWeek='';
+  let fuelAir='—', fuelRoad='—', fuelWeek='';
   try {
     let fd=JSON.parse(localStorage.getItem('4a_fuel_cache')||'null');
     if(!fd){ fd=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json()); localStorage.setItem('4a_fuel_cache',JSON.stringify(fd)); }
@@ -959,34 +960,34 @@ async function previewPDF(){
   try { officesFromAPI=await fetch(`${API}/offices.php?v=${Date.now()}`).then(r=>r.json()); } catch(e){}
   const OFFICES=officesFromAPI.filter(o=>parseInt(o.active));
   const ZONES=[
-    {z:'Z1',name:'Ξ•Ξ• Ξ”Ο…Ο„.',   desc:'Ξ“ΞµΟΞΌΞ±Ξ½Ξ―Ξ±, Ξ“Ξ±Ξ»Ξ»Ξ―Ξ±, Ξ’Ξ­Ξ»Ξ³ΞΉΞΏ, ΞΞ»Ξ»Ξ±Ξ½Ξ΄Ξ―Ξ±, Ξ›ΞΏΟ…ΞΎΞµΞΌΞ²ΞΏΟΟΞ³ΞΏ, Ξ”Ξ±Ξ½Ξ―Ξ±',            svcs:'ΞΞ»ΞµΟ‚'},
-    {z:'Z2',name:'Ξ•Ο…ΟΟΟ€Ξ·',    desc:'Ξ‘Ο…ΟƒΟ„ΟΞ―Ξ±, Ξ•Ξ»Ξ²ΞµΟ„Ξ―Ξ±, Ξ¤ΟƒΞµΟ‡Ξ―Ξ±, ΞΟ…Ξ³Ξ³Ξ±ΟΞ―Ξ±, Ξ΅ΞΏΟ…ΞΌΞ±Ξ½Ξ―Ξ±, Ξ’ΞΏΟ…Ξ»Ξ³Ξ±ΟΞ―Ξ±, Ξ£Ξ»ΞΏΞ²Ξ±ΞΊΞ―Ξ±',  svcs:'ΞΞ»ΞµΟ‚'},
-    {z:'Z3',name:'Ξ•Ξ• Ξ ΞµΟΞΉΟ†.', desc:'Ξ ΞΏΟΟ„ΞΏΞ³Ξ±Ξ»Ξ―Ξ±, Ξ™ΟƒΟ€Ξ±Ξ½Ξ―Ξ±, Ξ£ΞΏΟ…Ξ·Ξ΄Ξ―Ξ±, Ξ¦ΞΉΞ½Ξ»Ξ±Ξ½Ξ΄Ξ―Ξ±, ΞΞΏΟΞ²Ξ·Ξ³Ξ―Ξ±, Ξ™ΟΞ»Ξ±Ξ½Ξ΄Ξ―Ξ±, Ξ ΞΏΞ»Ο‰Ξ½Ξ―Ξ±',svcs:'ΞΞ»ΞµΟ‚'},
-    {z:'Z4',name:'Ξ‘ΞΌΞµΟΞΉΞΊΞ®',   desc:'Ξ—Ξ Ξ‘, ΞΞ±Ξ½Ξ±Ξ΄Ξ¬Ο‚, ΞΞµΞΎΞΉΞΊΟ, Ξ’ΟΞ±Ξ¶ΞΉΞ»Ξ―Ξ±, Ξ‘ΟΞ³ΞµΞ½Ο„ΞΉΞ½Ξ®, Ξ›Ξ±Ο„ΞΉΞ½ΞΉΞΊΞ® Ξ‘ΞΌΞµΟΞΉΞΊΞ®',         svcs:'AIR ΞΌΟΞ½ΞΏ'},
-    {z:'Z5',name:'ΞΞ‘ / Ξ‘Ο†Ο.', desc:'Ξ—Ξ‘Ξ•, Ξ£Ξ±ΞΏΟ…Ξ΄ΞΉΞΊΞ® Ξ‘ΟΞ±Ξ²Ξ―Ξ±, Ξ™ΟƒΟΞ±Ξ®Ξ», Ξ¤ΞΏΟ…ΟΞΊΞ―Ξ±, Ξ‘Ξ―Ξ³Ο…Ο€Ο„ΞΏΟ‚, ΞΟΟ„ΞΉΞ± Ξ‘Ο†ΟΞΉΞΊΞ®',      svcs:'AIR ΞΌΟΞ½ΞΏ'},
-    {z:'Z6',name:'Ξ‘ΟƒΞ―Ξ± / Ξ©ΞΊ.',desc:'ΞΞ―Ξ½Ξ±, Ξ™Ξ±Ο€Ο‰Ξ½Ξ―Ξ±, ΞΟΟ„ΞΉΞ± ΞΞΏΟΞ­Ξ±, Ξ™Ξ½Ξ΄Ξ―Ξ±, Ξ‘Ο…ΟƒΟ„ΟΞ±Ξ»Ξ―Ξ±, ΞΞ­Ξ± Ξ–Ξ·Ξ»Ξ±Ξ½Ξ΄Ξ―Ξ±',          svcs:'AIR ΞΌΟΞ½ΞΏ'},
-    {z:'Z7',name:'Ξ¥Ο€ΟΞ»ΞΏΞΉΟ€ΞΏΟ‚', desc:'Ξ¥Ο€ΟΞ»ΞΏΞΉΟ€ΞµΟ‚ Ο‡ΟΟΞµΟ‚ Ο€ΞΏΟ… Ξ΄ΞµΞ½ Ξ±Ξ½Ξ®ΞΊΞΏΟ…Ξ½ ΟƒΞµ Z1β€“Z6',                             svcs:'AIR ΞΌΟΞ½ΞΏ'},
-    {z:'Z9',name:'ΞΟΟ€ΟΞΏΟ‚',    desc:'ΞΟΟ€ΟΞΏΟ‚ β€” ΞΌΟΞ½ΞΏ Ξ±ΞµΟΞΏΟ€ΞΏΟΞΉΞΊΞ¬ ΞΌΞ­ΟƒΟ‰ S1003 / S1012',                          svcs:'S1003, S1012'},
+    {z:'Z1',name:'ΕΕ Δυτ.',   desc:'Γερμανία, Γαλλία, Βέλγιο, Ολλανδία, Λουξεμβούργο, Δανία',            svcs:'Όλες'},
+    {z:'Z2',name:'Ευρώπη',    desc:'Αυστρία, Ελβετία, Τσεχία, Ουγγαρία, Ρουμανία, Βουλγαρία, Σλοβακία',  svcs:'Όλες'},
+    {z:'Z3',name:'ΕΕ Περιφ.', desc:'Πορτογαλία, Ισπανία, Σουηδία, Φινλανδία, Νορβηγία, Ιρλανδία, Πολωνία',svcs:'Όλες'},
+    {z:'Z4',name:'Αμερική',   desc:'ΗΠΑ, Καναδάς, Μεξικό, Βραζιλία, Αργεντινή, Λατινική Αμερική',         svcs:'AIR μόνο'},
+    {z:'Z5',name:'ΜΑ / Αφρ.', desc:'ΗΑΕ, Σαουδική Αραβία, Ισραήλ, Τουρκία, Αίγυπτος, Νότια Αφρική',      svcs:'AIR μόνο'},
+    {z:'Z6',name:'Ασία / Ωκ.',desc:'Κίνα, Ιαπωνία, Νότια Κορέα, Ινδία, Αυστραλία, Νέα Ζηλανδία',          svcs:'AIR μόνο'},
+    {z:'Z7',name:'Υπόλοιπος', desc:'Υπόλοιπες χώρες που δεν ανήκουν σε Z1–Z6',                             svcs:'AIR μόνο'},
+    {z:'Z9',name:'Κύπρος',    desc:'Κύπρος — μόνο αεροπορικά μέσω S1003 / S1012',                          svcs:'S1003, S1012'},
   ];
   const OFFICE_MAP=Object.fromEntries(officesFromAPI.map(o=>[o.prefix,o]));
   const STATION_PREFIX={'0107':'ATH','0108':'NIC','0109':'QLI','0110':'LCA'};
   const rawCode=((currentUser?.stations||currentUser?.office||'').split(',')[0]).trim().toUpperCase();
   const officeCode=OFFICE_MAP[rawCode] ? rawCode : (STATION_PREFIX[rawCode]||'ATH');
   const issuerOffice=OFFICE_MAP[officeCode]||Object.values(OFFICE_MAP)[0]||{};
-  const issuerName=currentUser?.name||'β€”';
+  const issuerName=currentUser?.name||'—';
 
   const H=(num)=>`<div class="ph"><div class="ph-l"><span class="lb">4A</span><span class="lt">WORLDWIDE<br>EXPRESS</span></div><div class="ph-r">${num}</div></div>`;
-  const F=(pg)=>`<div class="pf"><span>Ξ•.Ξ•.Ξ¤.Ξ¤. 033-99 &nbsp;Β·&nbsp; Ξ‘Ξ¦Ξ: ${issuerOffice.vat||'044978638'} &nbsp;Β·&nbsp; www.4aexpress.com</span><span>ΟƒΞµΞ». ${pg}</span></div>`;
+  const F=(pg)=>`<div class="pf"><span>Ε.Ε.Τ.Τ. 033-99 &nbsp;·&nbsp; ΑΦΜ: ${issuerOffice.vat||'044978638'} &nbsp;·&nbsp; www.4aexpress.com</span><span>σελ. ${pg}</span></div>`;
   const S=(t)=>`<div class="st">${t}</div>`;
 
   let pg=2;
   const toc=[];
-  toc.push({pg:pg++,t:'Ξ”Ξ―ΞΊΟ„Ο…ΞΏ Ξ“ΟΞ±Ο†ΞµΞ―Ο‰Ξ½ 4A Express'});
-  toc.push({pg:pg++,t:'Ξ ΟΟ‚ Ξ›ΞµΞΉΟ„ΞΏΟ…ΟΞ³ΞµΞ― ΞΏ Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΟ‚ & Tracking'});
-  toc.push({pg:pg++,t:'Ξ–ΟΞ½ΞµΟ‚ Ξ§Ο‰ΟΟΞ½'});
-  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} β€” ${p.service_name||p.name||''}`});
-  toc.push({pg:pg++,t:'ΞΟΞΏΞΉ, Ξ•Ο€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏΟ‚ & Ξ§ΟΞµΟΟƒΞµΞΉΟ‚'});
-  toc.push({pg:pg,  t:'Ξ£ΟΞΌΞ²Ξ±ΟƒΞ· & Ξ‘Ο€ΞΏΞ΄ΞΏΟ‡Ξ® Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚'});
+  toc.push({pg:pg++,t:'Δίκτυο Γραφείων 4A Express'});
+  toc.push({pg:pg++,t:'Πώς Λειτουργεί ο Τιμοκατάλογος & Tracking'});
+  toc.push({pg:pg++,t:'Ζώνες Χωρών'});
+  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''}`});
+  toc.push({pg:pg++,t:'Όροι, Επίναυλος & Χρεώσεις'});
+  toc.push({pg:pg,  t:'Σύμβαση & Αποδοχή Προσφοράς'});
 
   const CSS=`
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -1096,91 +1097,91 @@ async function previewPDF(){
   @page land{size:A4 landscape;margin:0;}
   @media print{body{margin:0;} .page{margin:0;padding:8mm 12mm 11mm;} .page.land{page:land;} @page{margin:0;size:A4;}}`;
 
-  // β”€β”€ PAGE 1: COVER β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
-  let html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬ ${offerNum}</title><style>${CSS}</style></head><body>`;
+  // -- PAGE 1: COVER ----------------------------------------------
+  let html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Προσφορά ${offerNum}</title><style>${CSS}</style></head><body>`;
 
   html+=`<div class="page">
   ${H(offerNum)}
   <div class="hero">
     <div class="hero-logo"><div class="hero-4a">4A</div></div>
     <div class="hero-main">
-      <h1>Ξ Ξ΅ΞΞ£Ξ¦ΞΞ΅Ξ‘</h1>
-      <h2>OFFER &nbsp;Β·&nbsp; ${offerNum}</h2>
+      <h1>ΠΡΟΣΦΟΡΑ</h1>
+      <h2>OFFER &nbsp;·&nbsp; ${offerNum}</h2>
     </div>
   </div>
   <div class="meta-bar">
-    <div class="meta-item"><div class="lbl">Ξ—ΞΌΞµΟΞΏΞΌΞ·Ξ½Ξ―Ξ±</div><div class="val">${today}</div></div>
-    <div class="meta-item"><div class="lbl">Ξ™ΟƒΟ‡ΟΟ‚ Ξ­Ο‰Ο‚</div><div class="val">${validUntil}</div></div>
-    <div class="meta-item"><div class="lbl">Ξ Ξ»Ξ·ΟΟ‰ΞΌΞ®</div><div class="val">${payDays} Ξ·ΞΌΞ­ΟΞµΟ‚</div></div>
-    <div class="meta-item"><div class="lbl">Ξ¤ΞΉΞΌΞΏΞ»ΟΞ³Ξ·ΟƒΞ·</div><div class="val">${invoiceLbl}</div></div>
+    <div class="meta-item"><div class="lbl">Ημερομηνία</div><div class="val">${today}</div></div>
+    <div class="meta-item"><div class="lbl">Ισχύς έως</div><div class="val">${validUntil}</div></div>
+    <div class="meta-item"><div class="lbl">Πληρωμή</div><div class="val">${payDays} ημέρες</div></div>
+    <div class="meta-item"><div class="lbl">Τιμολόγηση</div><div class="val">${invoiceLbl}</div></div>
   </div>
-  ${codEnabled?`<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-top:none;padding:7px 12px;font-size:11px;font-weight:600;color:#2e7d32;margin-bottom:10px;">COD: ΞΞ‘Ξ™ &nbsp;|&nbsp; Ξ ΞΏΟƒΟ: β‚¬${codAmt.toFixed(2)} &nbsp;|&nbsp; Ξ§ΟΞ­Ο‰ΟƒΞ·: β‚¬${codFee.toFixed(2)}</div>`:''}
-  ${S('Ξ•ΞΞ”ΞΞ¤Ξ—Ξ£ Ξ Ξ΅ΞΞ£Ξ¦ΞΞ΅Ξ‘Ξ£')}
+  ${codEnabled?`<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-top:none;padding:7px 12px;font-size:11px;font-weight:600;color:#2e7d32;margin-bottom:10px;">COD: ΝΑΙ &nbsp;|&nbsp; Ποσό: €${codAmt.toFixed(2)} &nbsp;|&nbsp; Χρέωση: €${codFee.toFixed(2)}</div>`:''}
+  ${S('ΕΚΔΟΤΗΣ ΠΡΟΣΦΟΡΑΣ')}
   <div class="issuer-bar">
-    <div class="issuer-item"><div class="lbl">Ξ•Ο„Ξ±ΞΉΟΞµΞ―Ξ±</div><div class="val">${issuerOffice.company||'4A Express Worldwide'}</div></div>
-    <div class="issuer-item"><div class="lbl">Ξ‘Ξ¦Ξ</div><div class="val">${issuerOffice.vat||'β€”'}</div></div>
-    <div class="issuer-item"><div class="lbl">Ξ£Ο„Ξ­Ξ»ΞµΟ‡ΞΏΟ‚</div><div class="val">${issuerName}</div></div>
-    <div class="issuer-item"><div class="lbl">Ξ“ΟΞ±Ο†ΞµΞ―ΞΏ</div><div class="val">${issuerOffice.city||'β€”'}</div></div>
-    <div class="issuer-item"><div class="lbl">Ξ”ΞΉΞµΟΞΈΟ…Ξ½ΟƒΞ·</div><div class="val">${issuerOffice.addr||'β€”'}</div></div>
-    <div class="issuer-item"><div class="lbl">Ξ¤Ξ·Ξ»Ξ­Ο†Ο‰Ξ½ΞΏ</div><div class="val">${issuerOffice.tel||'β€”'}</div></div>
+    <div class="issuer-item"><div class="lbl">Εταιρεία</div><div class="val">${issuerOffice.company||'4A Express Worldwide'}</div></div>
+    <div class="issuer-item"><div class="lbl">ΑΦΜ</div><div class="val">${issuerOffice.vat||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Στέλεχος</div><div class="val">${issuerName}</div></div>
+    <div class="issuer-item"><div class="lbl">Γραφείο</div><div class="val">${issuerOffice.city||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Διεύθυνση</div><div class="val">${issuerOffice.addr||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Τηλέφωνο</div><div class="val">${issuerOffice.tel||'—'}</div></div>
   </div>
-  ${S('Ξ£Ξ¤ΞΞ™Ξ§Ξ•Ξ™Ξ‘ Ξ Ξ•Ξ›Ξ‘Ξ¤Ξ—')}
+  ${S('ΣΤΟΙΧΕΙΑ ΠΕΛΑΤΗ')}
   <div class="cgrid">
-    <div class="cc"><div class="lbl">Ξ•Ο€Ο‰Ξ½Ο…ΞΌΞ―Ξ±</div><div class="val">${name}</div></div>
-    <div class="cc"><div class="lbl">Ξ‘Ξ¦Ξ</div><div class="val">${afm||'β€”'}</div></div>
-    <div class="cc"><div class="lbl">Ξ¥Ο€ΞµΟΞΈΟ…Ξ½ΞΏΟ‚</div><div class="val">${contact||'β€”'}</div></div>
-    <div class="cc"><div class="lbl">Ξ¤Ξ·Ξ»Ξ­Ο†Ο‰Ξ½ΞΏ</div><div class="val">${phone||'β€”'}</div></div>
-    <div class="cc"><div class="lbl">Email</div><div class="val">${email||'β€”'}</div></div>
-    <div class="cc"><div class="lbl">Website</div><div class="val">${website||'β€”'}</div></div>
+    <div class="cc"><div class="lbl">Επωνυμία</div><div class="val">${name}</div></div>
+    <div class="cc"><div class="lbl">ΑΦΜ</div><div class="val">${afm||'—'}</div></div>
+    <div class="cc"><div class="lbl">Υπεύθυνος</div><div class="val">${contact||'—'}</div></div>
+    <div class="cc"><div class="lbl">Τηλέφωνο</div><div class="val">${phone||'—'}</div></div>
+    <div class="cc"><div class="lbl">Email</div><div class="val">${email||'—'}</div></div>
+    <div class="cc"><div class="lbl">Website</div><div class="val">${website||'—'}</div></div>
   </div>
-  ${S('Ξ Ξ•Ξ΅Ξ™Ξ•Ξ§ΞΞΞ•ΞΞ‘ Ξ Ξ΅ΞΞ£Ξ¦ΞΞ΅Ξ‘Ξ£')}
+  ${S('ΠΕΡΙΕΧΟΜΕΝΑ ΠΡΟΣΦΟΡΑΣ')}
   <table class="toc-t">
-    <thead><tr><th class="tpg">Ξ£ΞµΞ».</th><th>Ξ•Ξ½ΟΟ„Ξ·Ο„Ξ±</th></tr></thead>
+    <thead><tr><th class="tpg">Σελ.</th><th>Ενότητα</th></tr></thead>
     <tbody>${toc.map(r=>`<tr><td class="tpg">${r.pg}</td><td>${r.t}</td></tr>`).join('')}</tbody>
   </table>
   ${F('1')}
   </div>`;
 
-  // β”€β”€ PAGE 2: OFFICES β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+  // -- PAGE 2: OFFICES --------------------------------------------
   html+=`<div class="page">
   ${H(offerNum)}
-  ${S('Ξ”Ξ™ΞΞ¤Ξ¥Ξ Ξ“Ξ΅Ξ‘Ξ¦Ξ•Ξ™Ξ©Ξ 4A EXPRESS')}
+  ${S('ΔΙΚΤΥΟ ΓΡΑΦΕΙΩΝ 4A EXPRESS')}
   <div class="ogrid">
     ${OFFICES.map(o=>`<div class="ocard">
       <div class="ocity">${o.city}</div>
-      <div class="oline"><strong>Ξ”ΞΉΞµΟΞΈΟ…Ξ½ΟƒΞ·:</strong> ${o.addr}</div>
-      <div class="oline"><strong>Ξ¤Ξ·Ξ»Ξ­Ο†Ο‰Ξ½ΞΏ:</strong> ${o.tel}</div>
+      <div class="oline"><strong>Διεύθυνση:</strong> ${o.addr}</div>
+      <div class="oline"><strong>Τηλέφωνο:</strong> ${o.tel}</div>
       <div class="oline"><strong>Email:</strong> ${o.email}</div>
     </div>`).join('')}
   </div>
   <div style="margin-top:14px;font-size:9.5px;color:#555;line-height:1.65;">
-    <p>Ξ— <strong>${issuerOffice.company||'4A Express Worldwide'}</strong> Ο€Ξ±ΟΞ­Ο‡ΞµΞΉ ΞΏΞ»ΞΏΞΊΞ»Ξ·ΟΟ‰ΞΌΞ­Ξ½ΞµΟ‚ Ο…Ο€Ξ·ΟΞµΟƒΞ―ΞµΟ‚ courier &amp; logistics ΟƒΞµ Ξ•Ξ»Ξ»Ξ¬Ξ΄Ξ± ΞΊΞ±ΞΉ ΞΟΟ€ΟΞΏ Ξ±Ο€Ο Ο„ΞΏ 1999.</p>
-    <p style="margin-top:5px;">Ξ“ΞΉΞ± ΞΈΞ­ΞΌΞ±Ο„Ξ± Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»ΟΞ½ ΞΊΞ±ΞΉ tracking, ΞµΟ€ΞΉΞΊΞΏΞΉΞ½Ο‰Ξ½Ξ®ΟƒΟ„Ξµ ΞΌΞµ Ο„ΞΏ Ξ³ΟΞ±Ο†ΞµΞ―ΞΏ Ο„Ξ·Ο‚ Ο€ΞµΟΞΉΞΏΟ‡Ξ®Ο‚ ΟƒΞ±Ο‚ Ξ® ΞµΟ€ΞΉΟƒΞΊΞµΟ†ΞΈΞµΞ―Ο„Ξµ <strong>www.4aexpress.com</strong>.</p>
+    <p>Η <strong>${issuerOffice.company||'4A Express Worldwide'}</strong> παρέχει ολοκληρωμένες υπηρεσίες courier &amp; logistics σε Ελλάδα και Κύπρο από το 1999.</p>
+    <p style="margin-top:5px;">Για θέματα αποστολών και tracking, επικοινωνήστε με το γραφείο της περιοχής σας ή επισκεφθείτε <strong>www.4aexpress.com</strong>.</p>
   </div>
   ${F('2')}
   </div>`;
 
-  // β”€β”€ PAGE 3: HOW IT WORKS + TRACKING β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+  // -- PAGE 3: HOW IT WORKS + TRACKING ---------------------------
   html+=`<div class="page">
   ${H(offerNum)}
-  ${S('Ξ Ξ©Ξ£ Ξ›Ξ•Ξ™Ξ¤ΞΞ¥Ξ΅Ξ“Ξ•Ξ™ Ξ Ξ¤Ξ™ΞΞΞΞ‘Ξ¤Ξ‘Ξ›ΞΞ“ΞΞ£')}
+  ${S('ΠΩΣ ΛΕΙΤΟΥΡΓΕΙ Ο ΤΙΜΟΚΑΤΑΛΟΓΟΣ')}
   <div class="steps">
-    <div class="step"><div class="sn">1</div><div class="sb"><h4>Ξ’ΟΞµΞ―Ο„Ξµ Ο„ΞΏΞ½ Ξ ΟΞΏΞΏΟΞΉΟƒΞΌΟ</h4><p>Ξ‘Ξ½Ξ±Ο„ΟΞ­ΞΎΟ„Ξµ ΟƒΟ„ΞΏΞ½ ΞΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏ Ξ–Ο‰Ξ½ΟΞ½. ΞΞ¬ΞΈΞµ Ο‡ΟΟΞ± Ξ±Ξ½Ο„ΞΉΟƒΟ„ΞΏΞΉΟ‡ΞµΞ― ΟƒΞµ Ξ¶ΟΞ½Ξ· Z1β€“Z7 (AIR) Ξ® Z1β€“Z3 (ROAD).</p></div></div>
-    <div class="step"><div class="sn">2</div><div class="sb"><h4>ΞΞµΟ„ΟΞ®ΟƒΟ„Ξµ Ο„ΞΏ Ξ’Ξ¬ΟΞΏΟ‚</h4><p>Ξ§ΟΞ·ΟƒΞΉΞΌΞΏΟ€ΞΏΞΉΞµΞ―Ο„Ξµ Ο„ΞΏ ΞΌΞµΞ³Ξ±Ξ»ΟΟ„ΞµΟΞΏ Ξ±Ο€Ο: Ο€ΟΞ±Ξ³ΞΌΞ±Ο„ΞΉΞΊΟ Ξ²Ξ¬ΟΞΏΟ‚ Ξ® ΞΏΞ³ΞΊΞΏΞΌΞµΟ„ΟΞΉΞΊΟ (ΞΓ—Ξ Γ—Ξ¥ cm Γ· 5.000).</p></div></div>
-    <div class="step"><div class="sn">3</div><div class="sb"><h4>Ξ’ΟΞµΞ―Ο„Ξµ Ο„Ξ·Ξ½ Ξ¤ΞΉΞΌΞ®</h4><p>Ξ•Ξ½Ο„ΞΏΟ€Ξ―ΟƒΟ„Ξµ Ο„Ξ· Ξ³ΟΞ±ΞΌΞΌΞ® Ξ²Ξ¬ΟΞΏΟ…Ο‚ ΟƒΟ„ΞΏΞ½ Ο€Ξ―Ξ½Ξ±ΞΊΞ± ΞΊΞ±ΞΉ Ξ΄ΞΉΞ±Ξ²Ξ¬ΟƒΟ„Ξµ Ο„Ξ·Ξ½ Ο„ΞΉΞΌΞ® ΟƒΟ„Ξ· ΟƒΟ„Ξ®Ξ»Ξ· Ο„Ξ·Ο‚ Ξ¶ΟΞ½Ξ·Ο‚ ΟƒΞ±Ο‚.</p></div></div>
-    <div class="step"><div class="sn">4</div><div class="sb"><h4>Ξ ΟΞΏΟƒΞΈΞ­ΟƒΟ„Ξµ Ξ•Ο€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏ ΞΞ±Ο…ΟƒΞ―ΞΌΞΏΟ…</h4><p>Ξ ΞµΟ€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏΟ‚ Ξ±Ξ½Ξ±ΞΈΞµΟ‰ΟΞµΞ―Ο„Ξ±ΞΉ ΞµΞ²Ξ΄ΞΏΞΌΞ±Ξ΄ΞΉΞ±Ξ―Ξ± Ξ²Ξ¬ΟƒΞµΞΉ Ξ΄ΞΉΞµΞΈΞ½ΟΞ½ Ξ΄ΞµΞΉΞΊΟ„ΟΞ½. Ξ‘Ξ½Ξ±Ξ³ΟΞ¬Ο†ΞµΟ„Ξ±ΞΉ ΟƒΞµ ΞΊΞ¬ΞΈΞµ Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏ.</p></div></div>
-    <div class="step"><div class="sn">5</div><div class="sb"><h4>Ξ¤ΞµΞ»ΞΉΞΊΞ® Ξ§ΟΞ­Ο‰ΟƒΞ·</h4><p>Ξ¤ΞΉΞΌΞ® Ξ¶ΟΞ½Ξ·Ο‚ Γ— (1 + ΞµΟ€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏΟ‚%). Ξ›ΞΏΞΉΟ€Ξ­Ο‚ Ο‡ΟΞµΟΟƒΞµΞΉΟ‚ (Ξ±ΟƒΟ†Ξ¬Ξ»ΞµΞΉΞ±, ΟƒΟ…ΟƒΞΊΞµΟ…Ξ±ΟƒΞ―Ξ± ΞΊ.Ξ±.) Ο…Ο€ΞΏΞ»ΞΏΞ³Ξ―Ξ¶ΞΏΞ½Ο„Ξ±ΞΉ ΞΎΞµΟ‡Ο‰ΟΞΉΟƒΟ„Ξ¬.</p></div></div>
+    <div class="step"><div class="sn">1</div><div class="sb"><h4>Βρείτε τον Προορισμό</h4><p>Ανατρέξτε στον Κατάλογο Ζωνών. Κάθε χώρα αντιστοιχεί σε ζώνη Z1–Z7 (AIR) ή Z1–Z3 (ROAD).</p></div></div>
+    <div class="step"><div class="sn">2</div><div class="sb"><h4>Μετρήστε το Βάρος</h4><p>Χρησιμοποιείτε το μεγαλύτερο από: πραγματικό βάρος ή ογκομετρικό (Μ?Π?Υ cm ? 5.000).</p></div></div>
+    <div class="step"><div class="sn">3</div><div class="sb"><h4>Βρείτε την Τιμή</h4><p>Εντοπίστε τη γραμμή βάρους στον πίνακα και διαβάστε την τιμή στη στήλη της ζώνης σας.</p></div></div>
+    <div class="step"><div class="sn">4</div><div class="sb"><h4>Προσθέστε Επίναυλο Καυσίμου</h4><p>Ο επίναυλος αναθεωρείται εβδομαδιαία βάσει διεθνών δεικτών. Αναγράφεται σε κάθε τιμοκατάλογο.</p></div></div>
+    <div class="step"><div class="sn">5</div><div class="sb"><h4>Τελική Χρέωση</h4><p>Τιμή ζώνης ? (1 + επίναυλος%). Λοιπές χρεώσεις (ασφάλεια, συσκευασία κ.α.) υπολογίζονται ξεχωριστά.</p></div></div>
   </div>
-  ${S('Ξ Ξ›Ξ—Ξ΅ΞΞ¦ΞΞ΅Ξ™Ξ•Ξ£ Ξ‘Ξ ΞΞ£Ξ¤ΞΞ›Ξ—Ξ£ & TRACKING')}
+  ${S('ΠΛΗΡΟΦΟΡΙΕΣ ΑΠΟΣΤΟΛΗΣ & TRACKING')}
   <div class="igrid">
-    <div class="icard"><h4>Ξ Ξ±ΟΞ±ΞΊΞΏΞ»ΞΏΟΞΈΞ·ΟƒΞ·</h4><p>Ξ‘ΟΞΉΞΈΞΌΟΟ‚ Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®Ο‚ Ξ±ΞΌΞ­ΟƒΟ‰Ο‚ ΞΌΞµΟ„Ξ¬ Ο€Ξ±ΟΞ±Ξ»Ξ±Ξ²Ξ®. Real-time tracking ΟƒΟ„ΞΏ <strong>www.4aexpress.com</strong> Ξ® ΞΌΞ­ΟƒΟ‰ email ΞµΞΉΞ΄ΞΏΟ€ΞΏΞ―Ξ·ΟƒΞ·Ο‚.</p></div>
-    <div class="icard"><h4>Ξ§ΟΟΞ½ΞΏΞΉ Ξ Ξ±ΟΞ¬Ξ΄ΞΏΟƒΞ·Ο‚</h4><p><strong>Ξ‘ΞµΟΞΏΟ€ΞΏΟΞΉΞΊΞ¬ (AIR):</strong> 1β€“2 ΞµΟΞ³Ξ¬ΟƒΞΉΞΌΞµΟ‚.<br><strong>ΞΞ΄ΞΉΞΊΞ¬ (ROAD):</strong> 3β€“5 ΞµΟΞ³Ξ¬ΟƒΞΉΞΌΞµΟ‚.<br>Ξ‘Ξ½Ξ¬Ξ»ΞΏΞ³Ξ± Ο€ΟΞΏΞΏΟΞΉΟƒΞΌΟ.</p></div>
-    <div class="icard"><h4>Ξ‘ΟƒΟ†Ξ¬Ξ»ΞΉΟƒΞ· Ξ¦ΞΏΟΟ„Ξ―ΞΏΟ…</h4><p>Ξ‘Ο…Ο„ΟΞΌΞ±Ο„Ξ· ΞΊΞ¬Ξ»Ο…ΟΞ· Ξ­Ο‰Ο‚ <strong>β‚¬100</strong> Ξ±Ξ½Ξ¬ Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®. Ξ ΟΟΟƒΞΈΞµΟ„Ξ· Ξ±ΟƒΟ†Ξ¬Ξ»ΞΉΟƒΞ· ΞΊΞ±Ο„ΟΟ€ΞΉΞ½ Ξ±ΞΉΟ„Ξ®ΞΌΞ±Ο„ΞΏΟ‚ (0,5% ΞµΟ€Ξ― Ξ±ΞΎΞ―Ξ±Ο‚).</p></div>
+    <div class="icard"><h4>Παρακολούθηση</h4><p>Αριθμός αποστολής αμέσως μετά παραλαβή. Real-time tracking στο <strong>www.4aexpress.com</strong> ή μέσω email ειδοποίησης.</p></div>
+    <div class="icard"><h4>Χρόνοι Παράδοσης</h4><p><strong>Αεροπορικά (AIR):</strong> 1–2 εργάσιμες.<br><strong>Οδικά (ROAD):</strong> 3–5 εργάσιμες.<br>Ανάλογα προορισμό.</p></div>
+    <div class="icard"><h4>Ασφάλιση Φορτίου</h4><p>Αυτόματη κάλυψη έως <strong>€100</strong> ανά αποστολή. Πρόσθετη ασφάλιση κατόπιν αιτήματος (0,5% επί αξίας).</p></div>
   </div>
   ${F('3')}
   </div>`;
 
-  // β”€β”€ PAGE 4: ZONES β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+  // -- PAGE 4: ZONES ----------------------------------------------
   {
     const ZC=['','#2e7d32','#1565c0','#f57f17','#c62828','#6a1b9a','#00838f','#555'];
     if(zonesData){
@@ -1190,16 +1191,16 @@ async function previewPDF(){
       const EU=new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE']);
       const ctrs=Object.values(am).sort((a,b)=>a.name.localeCompare(b.name,'el'));
       const q=Math.ceil(ctrs.length/4);
-      const zp=z=>z?`<span style="display:inline-block;background:${ZC[z]||'#555'};color:#fff;font-size:6.5px;font-weight:700;padding:1px 4px;border-radius:7px;white-space:nowrap;">Z${z}</span>`:'<span style="color:#ddd;font-size:6.5px;">β€”</span>';
+      const zp=z=>z?`<span style="display:inline-block;background:${ZC[z]||'#555'};color:#fff;font-size:6.5px;font-weight:700;padding:1px 4px;border-radius:7px;white-space:nowrap;">Z${z}</span>`:'<span style="color:#ddd;font-size:6.5px;">—</span>';
       const eub='<span style="display:inline-block;background:#003399;color:#ffcc00;font-size:5.5px;font-weight:700;padding:0 2px;border-radius:2px;margin-left:3px;vertical-align:middle;">EU</span>';
-      const makeT=arr=>`<table class="pt pt-zone" style="width:100%"><thead><tr><th class="wt" style="font-size:7px;">Ξ§ΟΟΞ±</th><th style="background:#154360;text-align:center;width:22px;font-size:6.5px;">S1003<br>ββ†—</th><th style="background:#154360;text-align:center;width:22px;font-size:6.5px;">S1012<br>ββ†™</th><th style="background:#1d4e36;text-align:center;width:22px;font-size:6.5px;">S1010<br>π›β†—</th><th style="background:#1d4e36;text-align:center;width:22px;font-size:6.5px;">S1041<br>π›β†™</th></tr></thead><tbody>${arr.map(c=>{const rz=rm[c.code];return `<tr><td class="wt" style="font-size:7px;">${c.name}${EU.has(c.code)?eub:''}</td><td style="text-align:center;padding:1px;">${zp(c.az)}</td><td style="text-align:center;padding:1px;">${zp(c.az)}</td><td style="text-align:center;padding:1px;">${rz!=null?zp(rz):'<span style="color:#ddd;font-size:6.5px;">β€”</span>'}</td><td style="text-align:center;padding:1px;">${rz!=null?zp(rz):'<span style="color:#ddd;font-size:6.5px;">β€”</span>'}</td></tr>`;}).join('')}</tbody></table>`;
-      html+=`<div class="page land">${H(offerNum)}${S('Ξ–Ξ©ΞΞ•Ξ£ Ξ§Ξ©Ξ΅Ξ©Ξ 4A EXPRESS')}<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;">${makeT(ctrs.slice(0,q))}${makeT(ctrs.slice(q,q*2))}${makeT(ctrs.slice(q*2,q*3))}${makeT(ctrs.slice(q*3))}</div><div class="znote" style="margin-top:5px;font-size:8px;">S1003/S1012: AIR Z1β€“Z7 &nbsp;Β·&nbsp; S1010/S1041: ROAD Z1β€“Z3 &nbsp;Β·&nbsp; ΞΟΟ€ΟΞΏΟ‚ (Z9): ΞΌΟΞ½ΞΏ S1003/S1012 &nbsp;Β·&nbsp; <span style="display:inline-block;background:#003399;color:#ffcc00;font-size:6px;font-weight:700;padding:0 3px;border-radius:2px;vertical-align:middle;">EU</span> ΞΞ­Ξ»ΞΏΟ‚ Ξ•Ξ•</div>${F('4')}</div>`;
+      const makeT=arr=>`<table class="pt pt-zone" style="width:100%"><thead><tr><th class="wt" style="font-size:7px;">Χώρα</th><th style="background:#154360;text-align:center;width:22px;font-size:6.5px;">S1003<br>??</th><th style="background:#154360;text-align:center;width:22px;font-size:6.5px;">S1012<br>??</th><th style="background:#1d4e36;text-align:center;width:22px;font-size:6.5px;">S1010<br>???</th><th style="background:#1d4e36;text-align:center;width:22px;font-size:6.5px;">S1041<br>???</th></tr></thead><tbody>${arr.map(c=>{const rz=rm[c.code];return `<tr><td class="wt" style="font-size:7px;">${c.name}${EU.has(c.code)?eub:''}</td><td style="text-align:center;padding:1px;">${zp(c.az)}</td><td style="text-align:center;padding:1px;">${zp(c.az)}</td><td style="text-align:center;padding:1px;">${rz!=null?zp(rz):'<span style="color:#ddd;font-size:6.5px;">—</span>'}</td><td style="text-align:center;padding:1px;">${rz!=null?zp(rz):'<span style="color:#ddd;font-size:6.5px;">—</span>'}</td></tr>`;}).join('')}</tbody></table>`;
+      html+=`<div class="page land">${H(offerNum)}${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;">${makeT(ctrs.slice(0,q))}${makeT(ctrs.slice(q,q*2))}${makeT(ctrs.slice(q*2,q*3))}${makeT(ctrs.slice(q*3))}</div><div class="znote" style="margin-top:5px;font-size:8px;">S1003/S1012: AIR Z1–Z7 &nbsp;·&nbsp; S1010/S1041: ROAD Z1–Z3 &nbsp;·&nbsp; Κύπρος (Z9): μόνο S1003/S1012 &nbsp;·&nbsp; <span style="display:inline-block;background:#003399;color:#ffcc00;font-size:6px;font-weight:700;padding:0 3px;border-radius:2px;vertical-align:middle;">EU</span> Μέλος ΕΕ</div>${F('4')}</div>`;
     } else {
-      html+=`<div class="page">${H(offerNum)}${S('Ξ–Ξ©ΞΞ•Ξ£ Ξ§Ξ©Ξ΅Ξ©Ξ 4A EXPRESS')}<table class="zt"><thead><tr><th style="width:52px">Ξ–ΟΞ½Ξ·</th><th style="width:88px">ΞΞ±Ο„Ξ·Ξ³ΞΏΟΞ―Ξ±</th><th>Ξ§ΟΟΞµΟ‚ / Ξ ΞµΟΞΉΞΏΟ‡Ξ­Ο‚</th><th style="width:90px">Ξ¥Ο€Ξ·ΟΞµΟƒΞ―ΞµΟ‚</th></tr></thead><tbody>${ZONES.map(z=>`<tr><td><span class="zbadge">${z.z}</span></td><td><strong>${z.name}</strong></td><td>${z.desc}</td><td style="font-size:9px;color:#666;">${z.svcs}</td></tr>`).join('')}</tbody></table><div class="znote"><strong>Ξ£Ξ·ΞΌΞµΞ―Ο‰ΟƒΞ·:</strong> AIR Z1β€“Z7, ROAD Z1β€“Z3. ΞΟΟ€ΟΞΏΟ‚ (Z9): ΞΌΟΞ½ΞΏ S1003/S1012.</div>${F('4')}</div>`;
+      html+=`<div class="page">${H(offerNum)}${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}<table class="zt"><thead><tr><th style="width:52px">Ζώνη</th><th style="width:88px">Κατηγορία</th><th>Χώρες / Περιοχές</th><th style="width:90px">Υπηρεσίες</th></tr></thead><tbody>${ZONES.map(z=>`<tr><td><span class="zbadge">${z.z}</span></td><td><strong>${z.name}</strong></td><td>${z.desc}</td><td style="font-size:9px;color:#666;">${z.svcs}</td></tr>`).join('')}</tbody></table><div class="znote"><strong>Σημείωση:</strong> AIR Z1–Z7, ROAD Z1–Z3. Κύπρος (Z9): μόνο S1003/S1012.</div>${F('4')}</div>`;
     }
   }
 
-  // β”€β”€ PAGES 5+: PER-PRICELIST β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+  // -- PAGES 5+: PER-PRICELIST ------------------------------------
   let dhlAll=null;
   try{dhlAll=JSON.parse(localStorage.getItem('dhl_all')||'null');}catch(e){}
   if(!dhlAll){
@@ -1251,85 +1252,85 @@ async function previewPDF(){
       const dp=parseFloat(rows[rows.length-1].price)-parseFloat(rows[rows.length-2].price);
       if(dw>0){xkgLbl=`+${dw} kg`;xkgZP=[parseFloat((dp/dw).toFixed(2))];}
     }
-    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;Β·&nbsp; ${p.service_name||p.name||''}</div><div class="pls">Ξ•Ο€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏΟ‚ ΞΞ±Ο…ΟƒΞ―ΞΌΞΏΟ…: ${fcVal}${fuelWeek?' &nbsp;Β·&nbsp; '+fuelWeek:''}</div></div>`;
-    const plFtr=`<div class="pl-footnote">* Ξ¤ΞΉΞΌΞ­Ο‚ ΞµΞΊΟ„ΟΟ‚ Ξ¦Ξ Ξ‘ 24% ΞΊΞ±ΞΉ ΞµΟ€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏ ΞΊΞ±Ο…ΟƒΞ―ΞΌΟ‰Ξ½</div>${F(String(plPg++))}`;
+    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div><div class="pls">Επίναυλος Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div></div>`;
+    const plFtr=`<div class="pl-footnote">* Τιμές εκτός ΦΠΑ 24% και επίναυλο καυσίμων</div>${F(String(plPg++))}`;
     if(zcount===7&&ztable.length>0){
-      // LANDSCAPE: Ξ’Ξ‘Ξ΅ΞΞ£ + Z1β€“Z7
+      // LANDSCAPE: ΒΑΡΟΣ + Z1–Z7
       const thz=Array.from({length:7},(_,i)=>`<th style="background:${_ZHC[i+1]}">Z${i+1}</th>`).join('');
-      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>β‚¬${v.toFixed(2)}</td>`:'<td>β€”</td>').join('')}</tr>`).join('');
-      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>β‚¬${v.toFixed(2)}</td>`:'<td>β€”</td>').join('')}</tr>`:'';
-      html+=`<div class="page land">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">Ξ’Ξ‘Ξ΅ΞΞ£ kg</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
+      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`).join('');
+      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`:'';
+      html+=`<div class="page land">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">ΒΑΡΟΣ kg</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
     } else if(zcount===3&&ztable.length>0){
-      // PORTRAIT: Ξ’Ξ‘Ξ΅ΞΞ£ + Z1β€“Z3
+      // PORTRAIT: ΒΑΡΟΣ + Z1–Z3
       const thz=Array.from({length:3},(_,i)=>`<th style="background:${_ZHC[i+1]}">Z${i+1}</th>`).join('');
-      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>β‚¬${v.toFixed(2)}</td>`:'<td>β€”</td>').join('')}</tr>`).join('');
-      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>β‚¬${v.toFixed(2)}</td>`:'<td>β€”</td>').join('')}</tr>`:'';
-      html+=`<div class="page">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">Ξ’Ξ‘Ξ΅ΞΞ£ (kg)</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
+      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`).join('');
+      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`:'';
+      html+=`<div class="page">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">ΒΑΡΟΣ (kg)</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
     } else {
       // 1-ZONE: 3-column grid (S1003_GR etc.)
       const xkgV=xkgZP?xkgZP[0]:null;
       const cs3=Math.ceil(rows.length/3);
       const rg=[rows.slice(0,cs3),rows.slice(cs3,cs3*2),rows.slice(cs3*2)];
-      html+=`<div class="page">${plHdr}<div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>β‚¬</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>β‚¬${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkgV!=null?`<tr class="xr"><td class="wt">${xkgLbl}</td><td>β‚¬${xkgV.toFixed(2)}</td></tr>`:''}</tbody></table>`).join('')}</div>${plFtr}</div>`;
+      html+=`<div class="page">${plHdr}<div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>€</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkgV!=null?`<tr class="xr"><td class="wt">${xkgLbl}</td><td>€${xkgV.toFixed(2)}</td></tr>`:''}</tbody></table>`).join('')}</div>${plFtr}</div>`;
     }
   }
 
-  // β”€β”€ TERMS PAGE β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+  // -- TERMS PAGE -------------------------------------------------
   const surchRows=surcharges.filter(s=>s.name&&s.value);
   html+=`<div class="page">
   ${H(offerNum)}
-  ${S('ΞΞ΅ΞΞ™, Ξ•Ξ Ξ™ΞΞ‘Ξ¥Ξ›ΞΞ£ & Ξ§Ξ΅Ξ•Ξ©Ξ£Ξ•Ξ™Ξ£')}
+  ${S('ΟΡΟΙ, ΕΠΙΝΑΥΛΟΣ & ΧΡΕΩΣΕΙΣ')}
   <table class="fct">
-    <thead><tr><th>Ξ¥Ο€Ξ·ΟΞµΟƒΞ―Ξ±</th><th>Ξ¤ΟΟ€ΞΏΟ‚</th><th>Ξ•Ο€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏΟ‚ ΞΞ±Ο…ΟƒΞ―ΞΌΞΏΟ…</th></tr></thead>
+    <thead><tr><th>Υπηρεσία</th><th>Τύπος</th><th>Επίναυλος Καυσίμου</th></tr></thead>
     <tbody>
-      <tr><td>Ξ‘ΞµΟΞΏΟ€ΞΏΟΞΉΞΊΞ­Ο‚ (S1003, S1012, S1003_GR, S1012_GR)</td><td>AIR</td><td><strong>${fuelAir}</strong>${fuelWeek?' ('+fuelWeek+')':''}</td></tr>
-      <tr><td>ΞΞ΄ΞΉΞΊΞ­Ο‚ (S1010, S1041)</td><td>ROAD</td><td><strong>${fuelRoad}</strong></td></tr>
+      <tr><td>Αεροπορικές (S1003, S1012, S1003_GR, S1012_GR)</td><td>AIR</td><td><strong>${fuelAir}</strong>${fuelWeek?' ('+fuelWeek+')':''}</td></tr>
+      <tr><td>Οδικές (S1010, S1041)</td><td>ROAD</td><td><strong>${fuelRoad}</strong></td></tr>
     </tbody>
   </table>
-  ${surchRows.length?`${S('Ξ•Ξ Ξ™Ξ Ξ›Ξ•ΞΞ Ξ§Ξ΅Ξ•Ξ©Ξ£Ξ•Ξ™Ξ£')}<table class="surt">
-    <thead><tr><th>Ξ ΞµΟΞΉΞ³ΟΞ±Ο†Ξ®</th><th>Ξ‘ΞΎΞ―Ξ±</th><th>ΞΞΏΞ½Ξ¬Ξ΄Ξ±</th></tr></thead>
+  ${surchRows.length?`${S('ΕΠΙΠΛΕΟΝ ΧΡΕΩΣΕΙΣ')}<table class="surt">
+    <thead><tr><th>Περιγραφή</th><th>Αξία</th><th>Μονάδα</th></tr></thead>
     <tbody>${surchRows.map(s=>`<tr><td>${s.name}</td><td>${s.value}</td><td>${s.unit}</td></tr>`).join('')}</tbody>
   </table>`:''}
   <div class="tgrid" style="margin-top:10px;">
-    <div class="tbox"><h4>Ξ Ξ»Ξ·ΟΟ‰ΞΌΞ® & Ξ¤ΞΉΞΌΞΏΞ»ΟΞ³Ξ·ΟƒΞ·</h4><ul>
-      <li>Ξ•ΞΎΟΟ†Ξ»Ξ·ΟƒΞ· ΞµΞ½Ο„ΟΟ‚ <strong>${payDays} Ξ·ΞΌΞµΟΟΞ½</strong> Ξ±Ο€Ο Ο„ΞΉΞΌΞΏΞ»ΟΞ³Ξ·ΟƒΞ·</li>
-      <li>Ξ¤ΞΉΞΌΞΏΞ»ΟΞ³Ξ·ΟƒΞ·: <strong>${invoiceLbl}</strong></li>
-      <li>ΞΞµ ΞµΞΌΞ²Ξ±ΟƒΞΌΞ¬Ο„ΞΉΞΏ Ξ® ΞΊΞ±Ο„Ξ¬ΞΈΞµΟƒΞ· ΟƒΞµ Ο„ΟΞ±Ο€ΞµΞ¶ΞΉΞΊΟ Ξ»ΞΏΞ³Ξ±ΟΞΉΞ±ΟƒΞΌΟ</li>
+    <div class="tbox"><h4>Πληρωμή & Τιμολόγηση</h4><ul>
+      <li>Εξόφληση εντός <strong>${payDays} ημερών</strong> από τιμολόγηση</li>
+      <li>Τιμολόγηση: <strong>${invoiceLbl}</strong></li>
+      <li>Με εμβασμάτιο ή κατάθεση σε τραπεζικό λογαριασμό</li>
     </ul></div>
-    <div class="tbox"><h4>Ξ™ΟƒΟ‡ΟΟ‚ Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ±Ξ»ΟΞ³ΞΏΟ…</h4><ul>
-      <li>Ξ™ΟƒΟ‡ΟΟ‚ Ο€ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚: <strong>${validDays} Ξ·ΞΌΞ­ΟΞµΟ‚</strong> (Ξ­Ο‰Ο‚ ${validUntil})</li>
-      <li>Ξ•Ο€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏΟ‚ ΞΊΞ±Ο…ΟƒΞ―ΞΌΞΏΟ… Ξ±Ξ½Ξ±ΞΈΞµΟ‰ΟΞµΞ―Ο„Ξ±ΞΉ ΞµΞ²Ξ΄ΞΏΞΌΞ±Ξ΄ΞΉΞ±Ξ―Ξ±</li>
-      <li>Ξ’Ξ±ΟƒΞΉΞΊΞΏΞ― Ξ½Ξ±ΟΞ»ΞΏΞΉ ΞµΟ€ΞΉΞΊΞ±ΞΉΟΞΏΟ€ΞΏΞΉΞΏΟΞ½Ο„Ξ±ΞΉ ΞµΟ„Ξ·ΟƒΞ―Ο‰Ο‚</li>
+    <div class="tbox"><h4>Ισχύς Τιμοκαταλόγου</h4><ul>
+      <li>Ισχύς προσφοράς: <strong>${validDays} ημέρες</strong> (έως ${validUntil})</li>
+      <li>Επίναυλος καυσίμου αναθεωρείται εβδομαδιαία</li>
+      <li>Βασικοί ναύλοι επικαιροποιούνται ετησίως</li>
     </ul></div>
-    <div class="tbox"><h4>Ξ•ΞΎΞ±ΞΉΟΞ­ΟƒΞµΞΉΟ‚ & ΞΟΞΉΞ±</h4><ul>
-      <li>Ξ¤ΞΉΞΌΞ­Ο‚ Ξ³ΞΉΞ± Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ­Ο‚ Ξ­Ο‰Ο‚ 70 kg</li>
-      <li>Ξ”ΞµΞ½ ΟƒΟ…ΞΌΟ€ΞµΟΞΉΞ»Ξ±ΞΌΞ²Ξ¬Ξ½ΞΏΞ½Ο„Ξ±ΞΉ Ο„ΞµΞ»Ο‰Ξ½ΞµΞΉΞ±ΞΊΞ¬ &amp; Ξ¦Ξ Ξ‘ ΞµΞΉΟƒΞ±Ξ³Ο‰Ξ³Ξ®Ο‚</li>
-      <li>Ξ•Ο€ΞΉΞΊΞ―Ξ½Ξ΄Ο…Ξ½Ξ± ΞµΞΌΟ€ΞΏΟΞµΟΞΌΞ±Ο„Ξ± ΞΊΞ±Ο„ΟΟ€ΞΉΞ½ ΞµΞΉΞ΄ΞΉΞΊΞ®Ο‚ ΟƒΟ…ΞΌΟ†Ο‰Ξ½Ξ―Ξ±Ο‚</li>
+    <div class="tbox"><h4>Εξαιρέσεις & Όρια</h4><ul>
+      <li>Τιμές για αποστολές έως 70 kg</li>
+      <li>Δεν συμπεριλαμβάνονται τελωνειακά &amp; ΦΠΑ εισαγωγής</li>
+      <li>Επικίνδυνα εμπορεύματα κατόπιν ειδικής συμφωνίας</li>
     </ul></div>
-    <div class="tbox"><h4>Ξ•Ο…ΞΈΟΞ½Ξ· & Ξ‘ΟƒΟ†Ξ¬Ξ»ΞµΞΉΞ±</h4><p>Ξ— 4A EXPRESS Ξ±Ο€ΞΏΞ¶Ξ·ΞΌΞΉΟΞ½ΞµΞΉ Ξ³ΞΉΞ± Ξ±Ο€ΟΞ»ΞµΞΉΞ±/ΞΊΞ±Ο„Ξ±ΟƒΟ„ΟΞΏΟ†Ξ® ΞµΞ³Ξ³ΟΞ¬Ο†Ο‰Ξ½ Ξ­Ο‰Ο‚ β‚¬50 ΞΊΞ±ΞΉ Ξ΄ΞµΞΌΞ¬Ο„Ο‰Ξ½ Ξ±Ξ½ΞµΞΎΞ±ΟΟ„Ξ®Ο„Ο‰Ο‚ ΞµΞΌΟ€ΞΏΟΞΉΞΊΞ®Ο‚ Ξ±ΞΎΞ―Ξ±Ο‚ Ξ­Ο‰Ο‚ β‚¬100. Ξ“ΞΉΞ± Ο€ΟΟΟƒΞΈΞµΟ„Ξ· Ξ±ΟƒΟ†Ξ¬Ξ»ΞµΞΉΞ± ΟƒΟ…Ξ½ΞµΟΞ³Ξ±Ξ¶ΟΞΌΞ±ΟƒΟ„Ξµ ΞΌΞµ Ξ±ΟƒΟ†Ξ±Ξ»ΞΉΟƒΟ„ΞΉΞΊΞ­Ο‚ ΞµΟ„Ξ±ΞΉΟΞµΞ―ΞµΟ‚ β€” Ξ±Ο€Ξ±ΞΉΟ„ΞΏΟΞ½Ο„Ξ±ΞΉ Ο€ΟΟ‰Ο„ΟΟ„Ο…Ο€Ξ± Ο„ΞΉΞΌΞΏΞ»ΟΞ³ΞΉΞ± ΞµΞΌΟ€ΞΏΟΞµΟ…ΞΌΞ¬Ο„Ο‰Ξ½ ΞΊΞ±ΞΉ Ξ΄Ξ®Ξ»Ο‰ΟƒΞ· Ξ±ΟƒΟ†Ξ¬Ξ»ΞΉΟƒΞ·Ο‚. Ξ•Ο€Ξ±ΟƒΟ†Ξ¬Ξ»ΞΉΟƒΟ„ΟΞΏ 1-2% ΞµΟ€Ξ― Ξ±ΞΎΞ―Ξ±Ο‚ Ξ±Ξ½Ξ±Ξ»ΟΞ³Ο‰Ο‚ ΞµΞ―Ξ΄ΞΏΟ…Ο‚ ΞµΞΌΟ€ΞΏΟΞµΟΞΌΞ±Ο„ΞΏΟ‚.</p></div>
+    <div class="tbox"><h4>Ευθύνη & Ασφάλεια</h4><p>Η 4A EXPRESS αποζημιώνει για απώλεια/καταστροφή εγγράφων έως €50 και δεμάτων ανεξαρτήτως εμπορικής αξίας έως €100. Για πρόσθετη ασφάλεια συνεργαζόμαστε με ασφαλιστικές εταιρείες — απαιτούνται πρωτότυπα τιμολόγια εμπορευμάτων και δήλωση ασφάλισης. Επασφάλιστρο 1-2% επί αξίας αναλόγως είδους εμπορεύματος.</p></div>
   </div>
   ${F(String(plPg++))}
   </div>`;
 
-  // β”€β”€ CONTRACT PAGE β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+  // -- CONTRACT PAGE ----------------------------------------------
   html+=`<div class="page last">
   ${H(offerNum)}
-  ${S('Ξ£Ξ¥ΞΞ’Ξ‘Ξ£Ξ— & Ξ‘Ξ ΞΞ”ΞΞ§Ξ— Ξ Ξ΅ΞΞ£Ξ¦ΞΞ΅Ξ‘Ξ£')}
+  ${S('ΣΥΜΒΑΣΗ & ΑΠΟΔΟΧΗ ΠΡΟΣΦΟΡΑΣ')}
   <div class="cbody">
-    <p>ΞΞµ Ο„Ξ·Ξ½ Ο…Ο€ΞΏΞ³ΟΞ±Ο†Ξ® Ο„ΞΏΟ… Ο€Ξ±ΟΟΞ½Ο„ΞΏΟ‚, Ξ· ΞµΟ„Ξ±ΞΉΟΞµΞ―Ξ± <strong>${name}</strong> (Ξ‘Ξ¦Ξ: ${afm||'β€”'}) Ξ±Ο€ΞΏΞ΄Ξ­Ο‡ΞµΟ„Ξ±ΞΉ Ο€Ξ»Ξ®ΟΟ‰Ο‚ Ο„ΞΏΟ…Ο‚ ΟΟΞΏΟ…Ο‚ ΞΊΞ±ΞΉ Ο„ΞΉΟ‚ Ο„ΞΉΞΌΞ­Ο‚ Ο„Ξ·Ο‚ Ο€ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚ Ξ±ΟΞΉΞΈΞΌ. <strong>${offerNum}</strong> Ο„Ξ·Ο‚ <strong>${issuerOffice.company||'4A Express Worldwide'}</strong>.</p>
-    <p>Ξ— Ξ±Ο€ΞΏΞ΄ΞΏΟ‡Ξ® ΟƒΟ…Ξ½ΞµΟ€Ξ¬Ξ³ΞµΟ„Ξ±ΞΉ Ξ΄Ξ­ΟƒΞΌΞµΟ…ΟƒΞ· Ο‰Ο‚ Ο€ΟΞΏΟ‚ Ο„ΞΏΞ½ Ο„ΟΟΟ€ΞΏ Ο€Ξ»Ξ·ΟΟ‰ΞΌΞ®Ο‚ (${payDays} Ξ·ΞΌΞ­ΟΞµΟ‚), Ο„Ξ· ΟƒΟ…Ο‡Ξ½ΟΟ„Ξ·Ο„Ξ± Ο„ΞΉΞΌΞΏΞ»ΟΞ³Ξ·ΟƒΞ·Ο‚ (${invoiceLbl}) ΞΊΞ±ΞΉ Ο„ΞΏΟ…Ο‚ Ξ³ΞµΞ½ΞΉΞΊΞΏΟΟ‚ ΟΟΞΏΟ…Ο‚ ΟƒΟ…Ξ½ΞµΟΞ³Ξ±ΟƒΞ―Ξ±Ο‚ Ο„Ξ·Ο‚ 4A Express.</p>
-    <p>ΞΞΉ Ο„ΞΉΞΌΞ­Ο‚ ΞΉΟƒΟ‡ΟΞΏΟ…Ξ½ Ξ³ΞΉΞ± <strong>${validDays} Ξ·ΞΌΞ­ΟΞµΟ‚</strong> Ξ±Ο€Ο ${today} ΞΊΞ±ΞΉ Ξ»Ξ®Ξ³ΞΏΟ…Ξ½ ΟƒΟ„ΞΉΟ‚ <strong>${validUntil}</strong>. Ξ ΞµΟ€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏΟ‚ ΞΊΞ±Ο…ΟƒΞ―ΞΌΞΏΟ… Ξ±Ξ½Ξ±ΞΈΞµΟ‰ΟΞµΞ―Ο„Ξ±ΞΉ ΞµΞ²Ξ΄ΞΏΞΌΞ±Ξ΄ΞΉΞ±Ξ―Ξ± Ξ²Ξ¬ΟƒΞµΞΉ Ξ΄ΞΉΞµΞΈΞ½ΟΞ½ Ξ΄ΞµΞΉΞΊΟ„ΟΞ½ ΞΊΞ±ΞΉ Ξ΄ΞµΞ½ Ξ±Ο€ΞΏΟ„ΞµΞ»ΞµΞ― ΞΌΞ­ΟΞΏΟ‚ Ο„Ξ·Ο‚ ΟƒΟ„Ξ±ΞΈΞµΟΞ®Ο‚ Ο„ΞΉΞΌΞ®Ο‚.</p>
-    <p>Ξ¥Ο€Ξ·ΟΞµΟƒΞ―ΞµΟ‚ Ο€ΞΏΟ… ΞΊΞ±Ξ»ΟΟ€Ο„ΞµΞΉ Ξ· Ο€Ξ±ΟΞΏΟΟƒΞ± Ο€ΟΞΏΟƒΟ†ΞΏΟΞ¬:</p>
-    <ul>${selectedPls.map(p=>`<li>${p.service_id} β€” ${p.service_name||p.name||''}</li>`).join('')}</ul>
+    <p>Με την υπογραφή του παρόντος, η εταιρεία <strong>${name}</strong> (ΑΦΜ: ${afm||'—'}) αποδέχεται πλήρως τους όρους και τις τιμές της προσφοράς αριθμ. <strong>${offerNum}</strong> της <strong>${issuerOffice.company||'4A Express Worldwide'}</strong>.</p>
+    <p>Η αποδοχή συνεπάγεται δέσμευση ως προς τον τρόπο πληρωμής (${payDays} ημέρες), τη συχνότητα τιμολόγησης (${invoiceLbl}) και τους γενικούς όρους συνεργασίας της 4A Express.</p>
+    <p>Οι τιμές ισχύουν για <strong>${validDays} ημέρες</strong> από ${today} και λήγουν στις <strong>${validUntil}</strong>. Ο επίναυλος καυσίμου αναθεωρείται εβδομαδιαία βάσει διεθνών δεικτών και δεν αποτελεί μέρος της σταθερής τιμής.</p>
+    <p>Υπηρεσίες που καλύπτει η παρούσα προσφορά:</p>
+    <ul>${selectedPls.map(p=>`<li>${p.service_id} — ${p.service_name||p.name||''}</li>`).join('')}</ul>
   </div>
   <div class="sigrid">
     <div class="sigbox">
-      <div class="siglbl">Ξ“ΞΉΞ± Ξ»ΞΏΞ³Ξ±ΟΞΉΞ±ΟƒΞΌΟ Ο„Ξ·Ο‚ <strong>${issuerOffice.company||'4A Express Worldwide'}</strong></div>
-      <div class="sigval">${currentUser?.name||'β€”'} &nbsp;Β·&nbsp; ${currentUser?.office||'β€”'}<br><span style="color:#bbb;">${today}</span></div>
+      <div class="siglbl">Για λογαριασμό της <strong>${issuerOffice.company||'4A Express Worldwide'}</strong></div>
+      <div class="sigval">${currentUser?.name||'—'} &nbsp;·&nbsp; ${currentUser?.office||'—'}<br><span style="color:#bbb;">${today}</span></div>
     </div>
     <div class="sigbox">
-      <div class="siglbl">Ξ“ΞΉΞ± Ξ»ΞΏΞ³Ξ±ΟΞΉΞ±ΟƒΞΌΟ Ο„Ξ·Ο‚ <strong>${name}</strong></div>
-      <div class="sigval" style="color:#bbb;">ΞΞ½ΞΏΞΌΞ±Ο„ΞµΟ€ΟΞ½Ο…ΞΌΞΏ &nbsp;Β·&nbsp; Ξ£Ο†ΟΞ±Ξ³Ξ―Ξ΄Ξ± &nbsp;Β·&nbsp; Ξ—ΞΌΞµΟΞΏΞΌΞ·Ξ½Ξ―Ξ±</div>
+      <div class="siglbl">Για λογαριασμό της <strong>${name}</strong></div>
+      <div class="sigval" style="color:#bbb;">Ονοματεπώνυμο &nbsp;·&nbsp; Σφραγίδα &nbsp;·&nbsp; Ημερομηνία</div>
     </div>
   </div>
   ${F(String(plPg))}
@@ -1357,10 +1358,10 @@ async function buildJsPDF(offerNum){
   const today      = todayFmt();
   const dd=new Date(); dd.setDate(dd.getDate()+validDays);
   const validUntil = formatDate(dd.toISOString());
-  const invoiceLbl = invoiceMode==='weekly'?'Ξ•Ξ²Ξ΄ΞΏΞΌΞ±Ξ΄ΞΉΞ±Ξ―Ξ±':'ΞΞ·Ξ½ΞΉΞ±Ξ―Ξ±';
+  const invoiceLbl = invoiceMode==='weekly'?'Εβδομαδιαία':'Μηνιαία';
   const codAmt=codEnabled?(parseFloat(document.getElementById('cod-amount').value)||0):0;
 
-  let fuelAir='β€”', fuelRoad='β€”', fuelWeek='';
+  let fuelAir='—', fuelRoad='—', fuelWeek='';
   try {
     let fd=JSON.parse(localStorage.getItem('4a_fuel_cache')||'null');
     if(!fd){ fd=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json()); localStorage.setItem('4a_fuel_cache',JSON.stringify(fd)); }
@@ -1380,32 +1381,32 @@ async function buildJsPDF(offerNum){
   try { officesFromAPI=await fetch(`${API}/offices.php?v=${Date.now()}`).then(r=>r.json()); } catch(e){}
   const OFFICES=officesFromAPI.filter(o=>parseInt(o.active));
   const ZONES=[
-    {z:'Z1',name:'Ξ•Ξ• Ξ”Ο…Ο„.',   desc:'Ξ“ΞµΟΞΌΞ±Ξ½Ξ―Ξ±, Ξ“Ξ±Ξ»Ξ»Ξ―Ξ±, Ξ’Ξ­Ξ»Ξ³ΞΉΞΏ, ΞΞ»Ξ»Ξ±Ξ½Ξ΄Ξ―Ξ±, Ξ›ΞΏΟ…ΞΎΞµΞΌΞ²ΞΏΟΟΞ³ΞΏ, Ξ”Ξ±Ξ½Ξ―Ξ±',            svcs:'ΞΞ»ΞµΟ‚'},
-    {z:'Z2',name:'Ξ•Ο…ΟΟΟ€Ξ·',    desc:'Ξ‘Ο…ΟƒΟ„ΟΞ―Ξ±, Ξ•Ξ»Ξ²ΞµΟ„Ξ―Ξ±, Ξ¤ΟƒΞµΟ‡Ξ―Ξ±, ΞΟ…Ξ³Ξ³Ξ±ΟΞ―Ξ±, Ξ΅ΞΏΟ…ΞΌΞ±Ξ½Ξ―Ξ±, Ξ’ΞΏΟ…Ξ»Ξ³Ξ±ΟΞ―Ξ±, Ξ£Ξ»ΞΏΞ²Ξ±ΞΊΞ―Ξ±',  svcs:'ΞΞ»ΞµΟ‚'},
-    {z:'Z3',name:'Ξ•Ξ• Ξ ΞµΟΞΉΟ†.', desc:'Ξ ΞΏΟΟ„ΞΏΞ³Ξ±Ξ»Ξ―Ξ±, Ξ™ΟƒΟ€Ξ±Ξ½Ξ―Ξ±, Ξ£ΞΏΟ…Ξ·Ξ΄Ξ―Ξ±, Ξ¦ΞΉΞ½Ξ»Ξ±Ξ½Ξ΄Ξ―Ξ±, ΞΞΏΟΞ²Ξ·Ξ³Ξ―Ξ±, Ξ™ΟΞ»Ξ±Ξ½Ξ΄Ξ―Ξ±, Ξ ΞΏΞ»Ο‰Ξ½Ξ―Ξ±',svcs:'ΞΞ»ΞµΟ‚'},
-    {z:'Z4',name:'Ξ‘ΞΌΞµΟΞΉΞΊΞ®',   desc:'Ξ—Ξ Ξ‘, ΞΞ±Ξ½Ξ±Ξ΄Ξ¬Ο‚, ΞΞµΞΎΞΉΞΊΟ, Ξ’ΟΞ±Ξ¶ΞΉΞ»Ξ―Ξ±, Ξ‘ΟΞ³ΞµΞ½Ο„ΞΉΞ½Ξ®, Ξ›Ξ±Ο„ΞΉΞ½ΞΉΞΊΞ® Ξ‘ΞΌΞµΟΞΉΞΊΞ®',         svcs:'AIR ΞΌΟΞ½ΞΏ'},
-    {z:'Z5',name:'ΞΞ‘ / Ξ‘Ο†Ο.', desc:'Ξ—Ξ‘Ξ•, Ξ£Ξ±ΞΏΟ…Ξ΄ΞΉΞΊΞ® Ξ‘ΟΞ±Ξ²Ξ―Ξ±, Ξ™ΟƒΟΞ±Ξ®Ξ», Ξ¤ΞΏΟ…ΟΞΊΞ―Ξ±, Ξ‘Ξ―Ξ³Ο…Ο€Ο„ΞΏΟ‚, ΞΟΟ„ΞΉΞ± Ξ‘Ο†ΟΞΉΞΊΞ®',      svcs:'AIR ΞΌΟΞ½ΞΏ'},
-    {z:'Z6',name:'Ξ‘ΟƒΞ―Ξ± / Ξ©ΞΊ.',desc:'ΞΞ―Ξ½Ξ±, Ξ™Ξ±Ο€Ο‰Ξ½Ξ―Ξ±, ΞΟΟ„ΞΉΞ± ΞΞΏΟΞ­Ξ±, Ξ™Ξ½Ξ΄Ξ―Ξ±, Ξ‘Ο…ΟƒΟ„ΟΞ±Ξ»Ξ―Ξ±, ΞΞ­Ξ± Ξ–Ξ·Ξ»Ξ±Ξ½Ξ΄Ξ―Ξ±',          svcs:'AIR ΞΌΟΞ½ΞΏ'},
-    {z:'Z7',name:'Ξ¥Ο€ΟΞ»ΞΏΞΉΟ€ΞΏΟ‚', desc:'Ξ¥Ο€ΟΞ»ΞΏΞΉΟ€ΞµΟ‚ Ο‡ΟΟΞµΟ‚ Ο€ΞΏΟ… Ξ΄ΞµΞ½ Ξ±Ξ½Ξ®ΞΊΞΏΟ…Ξ½ ΟƒΞµ Z1β€“Z6',                             svcs:'AIR ΞΌΟΞ½ΞΏ'},
-    {z:'Z9',name:'ΞΟΟ€ΟΞΏΟ‚',    desc:'ΞΟΟ€ΟΞΏΟ‚ β€” ΞΌΟΞ½ΞΏ Ξ±ΞµΟΞΏΟ€ΞΏΟΞΉΞΊΞ¬ ΞΌΞ­ΟƒΟ‰ S1003 / S1012',                          svcs:'S1003, S1012'},
+    {z:'Z1',name:'ΕΕ Δυτ.',   desc:'Γερμανία, Γαλλία, Βέλγιο, Ολλανδία, Λουξεμβούργο, Δανία',            svcs:'Όλες'},
+    {z:'Z2',name:'Ευρώπη',    desc:'Αυστρία, Ελβετία, Τσεχία, Ουγγαρία, Ρουμανία, Βουλγαρία, Σλοβακία',  svcs:'Όλες'},
+    {z:'Z3',name:'ΕΕ Περιφ.', desc:'Πορτογαλία, Ισπανία, Σουηδία, Φινλανδία, Νορβηγία, Ιρλανδία, Πολωνία',svcs:'Όλες'},
+    {z:'Z4',name:'Αμερική',   desc:'ΗΠΑ, Καναδάς, Μεξικό, Βραζιλία, Αργεντινή, Λατινική Αμερική',         svcs:'AIR μόνο'},
+    {z:'Z5',name:'ΜΑ / Αφρ.', desc:'ΗΑΕ, Σαουδική Αραβία, Ισραήλ, Τουρκία, Αίγυπτος, Νότια Αφρική',      svcs:'AIR μόνο'},
+    {z:'Z6',name:'Ασία / Ωκ.',desc:'Κίνα, Ιαπωνία, Νότια Κορέα, Ινδία, Αυστραλία, Νέα Ζηλανδία',          svcs:'AIR μόνο'},
+    {z:'Z7',name:'Υπόλοιπος', desc:'Υπόλοιπες χώρες που δεν ανήκουν σε Z1–Z6',                             svcs:'AIR μόνο'},
+    {z:'Z9',name:'Κύπρος',    desc:'Κύπρος — μόνο αεροπορικά μέσω S1003 / S1012',                          svcs:'S1003, S1012'},
   ];
   const OFFICE_MAP=Object.fromEntries(officesFromAPI.map(o=>[o.prefix,o]));
   const STATION_PREFIX={'0107':'ATH','0108':'NIC','0109':'QLI','0110':'LCA'};
   const rawCode=((currentUser?.stations||currentUser?.office||'').split(',')[0]).trim().toUpperCase();
   const officeCode=OFFICE_MAP[rawCode] ? rawCode : (STATION_PREFIX[rawCode]||'ATH');
   const issuerOffice=OFFICE_MAP[officeCode]||Object.values(OFFICE_MAP)[0]||{};
-  const issuerName=currentUser?.name||'β€”';
+  const issuerName=currentUser?.name||'—';
 
   const H=(num)=>`<div class="ph"><div class="ph-l"><span class="lb">4A</span><span class="lt">WORLDWIDE<br>EXPRESS</span></div><div class="ph-r">${num}</div></div>`;
-  const F=(pg)=>`<div class="pf"><span>Ξ•.Ξ•.Ξ¤.Ξ¤. 033-99 &nbsp;Β·&nbsp; Ξ‘Ξ¦Ξ: ${issuerOffice.vat||'044978638'} &nbsp;Β·&nbsp; www.4aexpress.com</span><span>ΟƒΞµΞ». ${pg}</span></div>`;
+  const F=(pg)=>`<div class="pf"><span>Ε.Ε.Τ.Τ. 033-99 &nbsp;·&nbsp; ΑΦΜ: ${issuerOffice.vat||'044978638'} &nbsp;·&nbsp; www.4aexpress.com</span><span>σελ. ${pg}</span></div>`;
   const S=(t)=>`<div class="st">${t}</div>`;
 
   let pg=2;
   const toc=[];
-  toc.push({pg:pg++,t:'Ξ”Ξ―ΞΊΟ„Ο…ΞΏ Ξ“ΟΞ±Ο†ΞµΞ―Ο‰Ξ½ 4A Express'});
-  toc.push({pg:pg++,t:'Ξ ΟΟ‚ Ξ›ΞµΞΉΟ„ΞΏΟ…ΟΞ³ΞµΞ― ΞΏ Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΟ‚ & Tracking'});
-  toc.push({pg:pg++,t:'Ξ–ΟΞ½ΞµΟ‚ Ξ§Ο‰ΟΟΞ½'});
-  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} β€” ${p.service_name||p.name||''}`});
+  toc.push({pg:pg++,t:'Δίκτυο Γραφείων 4A Express'});
+  toc.push({pg:pg++,t:'Πώς Λειτουργεί ο Τιμοκατάλογος & Tracking'});
+  toc.push({pg:pg++,t:'Ζώνες Χωρών'});
+  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''}`});
 
   const CSS=`
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -1505,45 +1506,45 @@ async function buildJsPDF(offerNum){
   @page land{size:A4 landscape;margin:0;}
   @media print{body{margin:0;} .page{margin:0;padding:8mm 12mm 11mm;} .page.land{page:land;} @page{margin:0;size:A4;}}`;
 
-  let html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬ ${offerNum}</title><style>${CSS}</style></head><body>`;
+  let html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Προσφορά ${offerNum}</title><style>${CSS}</style></head><body>`;
 
   html+=`<div class="page">
   ${H(offerNum)}
   <div class="hero">
     <div class="hero-logo"><div class="hero-4a">4A</div></div>
     <div class="hero-main">
-      <h1>Ξ Ξ΅ΞΞ£Ξ¦ΞΞ΅Ξ‘</h1>
-      <h2>OFFER &nbsp;Β·&nbsp; ${offerNum}</h2>
+      <h1>ΠΡΟΣΦΟΡΑ</h1>
+      <h2>OFFER &nbsp;·&nbsp; ${offerNum}</h2>
     </div>
   </div>
   <div class="meta-bar">
-    <div class="meta-item"><div class="lbl">Ξ—ΞΌΞµΟΞΏΞΌΞ·Ξ½Ξ―Ξ±</div><div class="val">${today}</div></div>
-    <div class="meta-item"><div class="lbl">Ξ™ΟƒΟ‡ΟΟ‚ Ξ­Ο‰Ο‚</div><div class="val">${validUntil}</div></div>
-    <div class="meta-item"><div class="lbl">Ξ Ξ»Ξ·ΟΟ‰ΞΌΞ®</div><div class="val">${payDays} Ξ·ΞΌΞ­ΟΞµΟ‚</div></div>
-    <div class="meta-item"><div class="lbl">Ξ¤ΞΉΞΌΞΏΞ»ΟΞ³Ξ·ΟƒΞ·</div><div class="val">${invoiceLbl}</div></div>
+    <div class="meta-item"><div class="lbl">Ημερομηνία</div><div class="val">${today}</div></div>
+    <div class="meta-item"><div class="lbl">Ισχύς έως</div><div class="val">${validUntil}</div></div>
+    <div class="meta-item"><div class="lbl">Πληρωμή</div><div class="val">${payDays} ημέρες</div></div>
+    <div class="meta-item"><div class="lbl">Τιμολόγηση</div><div class="val">${invoiceLbl}</div></div>
   </div>
-  ${codEnabled?`<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-top:none;padding:7px 12px;font-size:11px;font-weight:600;color:#2e7d32;margin-bottom:10px;">COD: ΞΞ‘Ξ™ &nbsp;|&nbsp; Ξ ΞΏΟƒΟ: β‚¬${codAmt.toFixed(2)} &nbsp;|&nbsp; Ξ§ΟΞ­Ο‰ΟƒΞ·: β‚¬${codFee.toFixed(2)}</div>`:''}
-  ${S('Ξ•ΞΞ”ΞΞ¤Ξ—Ξ£ Ξ Ξ΅ΞΞ£Ξ¦ΞΞ΅Ξ‘Ξ£')}
+  ${codEnabled?`<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-top:none;padding:7px 12px;font-size:11px;font-weight:600;color:#2e7d32;margin-bottom:10px;">COD: ΝΑΙ &nbsp;|&nbsp; Ποσό: €${codAmt.toFixed(2)} &nbsp;|&nbsp; Χρέωση: €${codFee.toFixed(2)}</div>`:''}
+  ${S('ΕΚΔΟΤΗΣ ΠΡΟΣΦΟΡΑΣ')}
   <div class="issuer-bar">
-    <div class="issuer-item"><div class="lbl">Ξ•Ο„Ξ±ΞΉΟΞµΞ―Ξ±</div><div class="val">${issuerOffice.company||'4A Express Worldwide'}</div></div>
-    <div class="issuer-item"><div class="lbl">Ξ‘Ξ¦Ξ</div><div class="val">${issuerOffice.vat||'β€”'}</div></div>
-    <div class="issuer-item"><div class="lbl">Ξ£Ο„Ξ­Ξ»ΞµΟ‡ΞΏΟ‚</div><div class="val">${issuerName}</div></div>
-    <div class="issuer-item"><div class="lbl">Ξ“ΟΞ±Ο†ΞµΞ―ΞΏ</div><div class="val">${issuerOffice.city||'β€”'}</div></div>
-    <div class="issuer-item"><div class="lbl">Ξ”ΞΉΞµΟΞΈΟ…Ξ½ΟƒΞ·</div><div class="val">${issuerOffice.addr||'β€”'}</div></div>
-    <div class="issuer-item"><div class="lbl">Ξ¤Ξ·Ξ»Ξ­Ο†Ο‰Ξ½ΞΏ</div><div class="val">${issuerOffice.tel||'β€”'}</div></div>
+    <div class="issuer-item"><div class="lbl">Εταιρεία</div><div class="val">${issuerOffice.company||'4A Express Worldwide'}</div></div>
+    <div class="issuer-item"><div class="lbl">ΑΦΜ</div><div class="val">${issuerOffice.vat||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Στέλεχος</div><div class="val">${issuerName}</div></div>
+    <div class="issuer-item"><div class="lbl">Γραφείο</div><div class="val">${issuerOffice.city||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Διεύθυνση</div><div class="val">${issuerOffice.addr||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Τηλέφωνο</div><div class="val">${issuerOffice.tel||'—'}</div></div>
   </div>
-  ${S('Ξ£Ξ¤ΞΞ™Ξ§Ξ•Ξ™Ξ‘ Ξ Ξ•Ξ›Ξ‘Ξ¤Ξ—')}
+  ${S('ΣΤΟΙΧΕΙΑ ΠΕΛΑΤΗ')}
   <div class="cgrid">
-    <div class="cc"><div class="lbl">Ξ•Ο€Ο‰Ξ½Ο…ΞΌΞ―Ξ±</div><div class="val">${name}</div></div>
-    <div class="cc"><div class="lbl">Ξ‘Ξ¦Ξ</div><div class="val">${afm||'β€”'}</div></div>
-    <div class="cc"><div class="lbl">Ξ¥Ο€ΞµΟΞΈΟ…Ξ½ΞΏΟ‚</div><div class="val">${contact||'β€”'}</div></div>
-    <div class="cc"><div class="lbl">Ξ¤Ξ·Ξ»Ξ­Ο†Ο‰Ξ½ΞΏ</div><div class="val">${phone||'β€”'}</div></div>
-    <div class="cc"><div class="lbl">Email</div><div class="val">${email||'β€”'}</div></div>
-    <div class="cc"><div class="lbl">Website</div><div class="val">${website||'β€”'}</div></div>
+    <div class="cc"><div class="lbl">Επωνυμία</div><div class="val">${name}</div></div>
+    <div class="cc"><div class="lbl">ΑΦΜ</div><div class="val">${afm||'—'}</div></div>
+    <div class="cc"><div class="lbl">Υπεύθυνος</div><div class="val">${contact||'—'}</div></div>
+    <div class="cc"><div class="lbl">Τηλέφωνο</div><div class="val">${phone||'—'}</div></div>
+    <div class="cc"><div class="lbl">Email</div><div class="val">${email||'—'}</div></div>
+    <div class="cc"><div class="lbl">Website</div><div class="val">${website||'—'}</div></div>
   </div>
-  ${S('Ξ Ξ•Ξ΅Ξ™Ξ•Ξ§ΞΞΞ•ΞΞ‘ Ξ Ξ΅ΞΞ£Ξ¦ΞΞ΅Ξ‘Ξ£')}
+  ${S('ΠΕΡΙΕΧΟΜΕΝΑ ΠΡΟΣΦΟΡΑΣ')}
   <table class="toc-t">
-    <thead><tr><th class="tpg">Ξ£ΞµΞ».</th><th>Ξ•Ξ½ΟΟ„Ξ·Ο„Ξ±</th></tr></thead>
+    <thead><tr><th class="tpg">Σελ.</th><th>Ενότητα</th></tr></thead>
     <tbody>${toc.map(r=>`<tr><td class="tpg">${r.pg}</td><td>${r.t}</td></tr>`).join('')}</tbody>
   </table>
   ${F('1')}
@@ -1551,37 +1552,37 @@ async function buildJsPDF(offerNum){
 
   html+=`<div class="page">
   ${H(offerNum)}
-  ${S('Ξ”Ξ™ΞΞ¤Ξ¥Ξ Ξ“Ξ΅Ξ‘Ξ¦Ξ•Ξ™Ξ©Ξ 4A EXPRESS')}
+  ${S('ΔΙΚΤΥΟ ΓΡΑΦΕΙΩΝ 4A EXPRESS')}
   <div class="ogrid">
     ${OFFICES.map(o=>`<div class="ocard">
       <div class="ocity">${o.city}</div>
-      <div class="oline"><strong>Ξ”ΞΉΞµΟΞΈΟ…Ξ½ΟƒΞ·:</strong> ${o.addr}</div>
-      <div class="oline"><strong>Ξ¤Ξ·Ξ»Ξ­Ο†Ο‰Ξ½ΞΏ:</strong> ${o.tel}</div>
+      <div class="oline"><strong>Διεύθυνση:</strong> ${o.addr}</div>
+      <div class="oline"><strong>Τηλέφωνο:</strong> ${o.tel}</div>
       <div class="oline"><strong>Email:</strong> ${o.email}</div>
     </div>`).join('')}
   </div>
   <div style="margin-top:14px;font-size:9.5px;color:#555;line-height:1.65;">
-    <p>Ξ— <strong>${issuerOffice.company||'4A Express Worldwide'}</strong> Ο€Ξ±ΟΞ­Ο‡ΞµΞΉ ΞΏΞ»ΞΏΞΊΞ»Ξ·ΟΟ‰ΞΌΞ­Ξ½ΞµΟ‚ Ο…Ο€Ξ·ΟΞµΟƒΞ―ΞµΟ‚ courier &amp; logistics ΟƒΞµ Ξ•Ξ»Ξ»Ξ¬Ξ΄Ξ± ΞΊΞ±ΞΉ ΞΟΟ€ΟΞΏ Ξ±Ο€Ο Ο„ΞΏ 1999.</p>
-    <p style="margin-top:5px;">Ξ“ΞΉΞ± ΞΈΞ­ΞΌΞ±Ο„Ξ± Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»ΟΞ½ ΞΊΞ±ΞΉ tracking, ΞµΟ€ΞΉΞΊΞΏΞΉΞ½Ο‰Ξ½Ξ®ΟƒΟ„Ξµ ΞΌΞµ Ο„ΞΏ Ξ³ΟΞ±Ο†ΞµΞ―ΞΏ Ο„Ξ·Ο‚ Ο€ΞµΟΞΉΞΏΟ‡Ξ®Ο‚ ΟƒΞ±Ο‚ Ξ® ΞµΟ€ΞΉΟƒΞΊΞµΟ†ΞΈΞµΞ―Ο„Ξµ <strong>www.4aexpress.com</strong>.</p>
+    <p>Η <strong>${issuerOffice.company||'4A Express Worldwide'}</strong> παρέχει ολοκληρωμένες υπηρεσίες courier &amp; logistics σε Ελλάδα και Κύπρο από το 1999.</p>
+    <p style="margin-top:5px;">Για θέματα αποστολών και tracking, επικοινωνήστε με το γραφείο της περιοχής σας ή επισκεφθείτε <strong>www.4aexpress.com</strong>.</p>
   </div>
   ${F('2')}
   </div>`;
 
   html+=`<div class="page">
   ${H(offerNum)}
-  ${S('Ξ Ξ©Ξ£ Ξ›Ξ•Ξ™Ξ¤ΞΞ¥Ξ΅Ξ“Ξ•Ξ™ Ξ Ξ¤Ξ™ΞΞΞΞ‘Ξ¤Ξ‘Ξ›ΞΞ“ΞΞ£')}
+  ${S('ΠΩΣ ΛΕΙΤΟΥΡΓΕΙ Ο ΤΙΜΟΚΑΤΑΛΟΓΟΣ')}
   <div class="steps">
-    <div class="step"><div class="sn">1</div><div class="sb"><h4>Ξ’ΟΞµΞ―Ο„Ξµ Ο„ΞΏΞ½ Ξ ΟΞΏΞΏΟΞΉΟƒΞΌΟ</h4><p>Ξ‘Ξ½Ξ±Ο„ΟΞ­ΞΎΟ„Ξµ ΟƒΟ„ΞΏΞ½ ΞΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏ Ξ–Ο‰Ξ½ΟΞ½. ΞΞ¬ΞΈΞµ Ο‡ΟΟΞ± Ξ±Ξ½Ο„ΞΉΟƒΟ„ΞΏΞΉΟ‡ΞµΞ― ΟƒΞµ Ξ¶ΟΞ½Ξ· Z1β€“Z7 (AIR) Ξ® Z1β€“Z3 (ROAD).</p></div></div>
-    <div class="step"><div class="sn">2</div><div class="sb"><h4>ΞΞµΟ„ΟΞ®ΟƒΟ„Ξµ Ο„ΞΏ Ξ’Ξ¬ΟΞΏΟ‚</h4><p>Ξ§ΟΞ·ΟƒΞΉΞΌΞΏΟ€ΞΏΞΉΞµΞ―Ο„Ξµ Ο„ΞΏ ΞΌΞµΞ³Ξ±Ξ»ΟΟ„ΞµΟΞΏ Ξ±Ο€Ο: Ο€ΟΞ±Ξ³ΞΌΞ±Ο„ΞΉΞΊΟ Ξ²Ξ¬ΟΞΏΟ‚ Ξ® ΞΏΞ³ΞΊΞΏΞΌΞµΟ„ΟΞΉΞΊΟ (ΞΓ—Ξ Γ—Ξ¥ cm Γ· 5.000).</p></div></div>
-    <div class="step"><div class="sn">3</div><div class="sb"><h4>Ξ’ΟΞµΞ―Ο„Ξµ Ο„Ξ·Ξ½ Ξ¤ΞΉΞΌΞ®</h4><p>Ξ•Ξ½Ο„ΞΏΟ€Ξ―ΟƒΟ„Ξµ Ο„Ξ· Ξ³ΟΞ±ΞΌΞΌΞ® Ξ²Ξ¬ΟΞΏΟ…Ο‚ ΟƒΟ„ΞΏΞ½ Ο€Ξ―Ξ½Ξ±ΞΊΞ± ΞΊΞ±ΞΉ Ξ΄ΞΉΞ±Ξ²Ξ¬ΟƒΟ„Ξµ Ο„Ξ·Ξ½ Ο„ΞΉΞΌΞ® ΟƒΟ„Ξ· ΟƒΟ„Ξ®Ξ»Ξ· Ο„Ξ·Ο‚ Ξ¶ΟΞ½Ξ·Ο‚ ΟƒΞ±Ο‚.</p></div></div>
-    <div class="step"><div class="sn">4</div><div class="sb"><h4>Ξ ΟΞΏΟƒΞΈΞ­ΟƒΟ„Ξµ Ξ•Ο€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏ ΞΞ±Ο…ΟƒΞ―ΞΌΞΏΟ…</h4><p>Ξ ΞµΟ€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏΟ‚ Ξ±Ξ½Ξ±ΞΈΞµΟ‰ΟΞµΞ―Ο„Ξ±ΞΉ ΞµΞ²Ξ΄ΞΏΞΌΞ±Ξ΄ΞΉΞ±Ξ―Ξ± Ξ²Ξ¬ΟƒΞµΞΉ Ξ΄ΞΉΞµΞΈΞ½ΟΞ½ Ξ΄ΞµΞΉΞΊΟ„ΟΞ½. Ξ‘Ξ½Ξ±Ξ³ΟΞ¬Ο†ΞµΟ„Ξ±ΞΉ ΟƒΞµ ΞΊΞ¬ΞΈΞµ Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏ.</p></div></div>
-    <div class="step"><div class="sn">5</div><div class="sb"><h4>Ξ¤ΞµΞ»ΞΉΞΊΞ® Ξ§ΟΞ­Ο‰ΟƒΞ·</h4><p>Ξ¤ΞΉΞΌΞ® Ξ¶ΟΞ½Ξ·Ο‚ Γ— (1 + ΞµΟ€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏΟ‚%). Ξ›ΞΏΞΉΟ€Ξ­Ο‚ Ο‡ΟΞµΟΟƒΞµΞΉΟ‚ (Ξ±ΟƒΟ†Ξ¬Ξ»ΞµΞΉΞ±, ΟƒΟ…ΟƒΞΊΞµΟ…Ξ±ΟƒΞ―Ξ± ΞΊ.Ξ±.) Ο…Ο€ΞΏΞ»ΞΏΞ³Ξ―Ξ¶ΞΏΞ½Ο„Ξ±ΞΉ ΞΎΞµΟ‡Ο‰ΟΞΉΟƒΟ„Ξ¬.</p></div></div>
+    <div class="step"><div class="sn">1</div><div class="sb"><h4>Βρείτε τον Προορισμό</h4><p>Ανατρέξτε στον Κατάλογο Ζωνών. Κάθε χώρα αντιστοιχεί σε ζώνη Z1–Z7 (AIR) ή Z1–Z3 (ROAD).</p></div></div>
+    <div class="step"><div class="sn">2</div><div class="sb"><h4>Μετρήστε το Βάρος</h4><p>Χρησιμοποιείτε το μεγαλύτερο από: πραγματικό βάρος ή ογκομετρικό (Μ?Π?Υ cm ? 5.000).</p></div></div>
+    <div class="step"><div class="sn">3</div><div class="sb"><h4>Βρείτε την Τιμή</h4><p>Εντοπίστε τη γραμμή βάρους στον πίνακα και διαβάστε την τιμή στη στήλη της ζώνης σας.</p></div></div>
+    <div class="step"><div class="sn">4</div><div class="sb"><h4>Προσθέστε Επίναυλο Καυσίμου</h4><p>Ο επίναυλος αναθεωρείται εβδομαδιαία βάσει διεθνών δεικτών. Αναγράφεται σε κάθε τιμοκατάλογο.</p></div></div>
+    <div class="step"><div class="sn">5</div><div class="sb"><h4>Τελική Χρέωση</h4><p>Τιμή ζώνης ? (1 + επίναυλος%). Λοιπές χρεώσεις (ασφάλεια, συσκευασία κ.α.) υπολογίζονται ξεχωριστά.</p></div></div>
   </div>
-  ${S('Ξ Ξ›Ξ—Ξ΅ΞΞ¦ΞΞ΅Ξ™Ξ•Ξ£ Ξ‘Ξ ΞΞ£Ξ¤ΞΞ›Ξ—Ξ£ & TRACKING')}
+  ${S('ΠΛΗΡΟΦΟΡΙΕΣ ΑΠΟΣΤΟΛΗΣ & TRACKING')}
   <div class="igrid">
-    <div class="icard"><h4>Ξ Ξ±ΟΞ±ΞΊΞΏΞ»ΞΏΟΞΈΞ·ΟƒΞ·</h4><p>Ξ‘ΟΞΉΞΈΞΌΟΟ‚ Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®Ο‚ Ξ±ΞΌΞ­ΟƒΟ‰Ο‚ ΞΌΞµΟ„Ξ¬ Ο€Ξ±ΟΞ±Ξ»Ξ±Ξ²Ξ®. Real-time tracking ΟƒΟ„ΞΏ <strong>www.4aexpress.com</strong> Ξ® ΞΌΞ­ΟƒΟ‰ email ΞµΞΉΞ΄ΞΏΟ€ΞΏΞ―Ξ·ΟƒΞ·Ο‚.</p></div>
-    <div class="icard"><h4>Ξ§ΟΟΞ½ΞΏΞΉ Ξ Ξ±ΟΞ¬Ξ΄ΞΏΟƒΞ·Ο‚</h4><p><strong>Ξ‘ΞµΟΞΏΟ€ΞΏΟΞΉΞΊΞ¬ (AIR):</strong> 1β€“2 ΞµΟΞ³Ξ¬ΟƒΞΉΞΌΞµΟ‚.<br><strong>ΞΞ΄ΞΉΞΊΞ¬ (ROAD):</strong> 3β€“5 ΞµΟΞ³Ξ¬ΟƒΞΉΞΌΞµΟ‚.<br>Ξ‘Ξ½Ξ¬Ξ»ΞΏΞ³Ξ± Ο€ΟΞΏΞΏΟΞΉΟƒΞΌΟ.</p></div>
-    <div class="icard"><h4>Ξ‘ΟƒΟ†Ξ¬Ξ»ΞΉΟƒΞ· Ξ¦ΞΏΟΟ„Ξ―ΞΏΟ…</h4><p>Ξ‘Ο…Ο„ΟΞΌΞ±Ο„Ξ· ΞΊΞ¬Ξ»Ο…ΟΞ· Ξ­Ο‰Ο‚ <strong>β‚¬100</strong> Ξ±Ξ½Ξ¬ Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®. Ξ ΟΟΟƒΞΈΞµΟ„Ξ· Ξ±ΟƒΟ†Ξ¬Ξ»ΞΉΟƒΞ· ΞΊΞ±Ο„ΟΟ€ΞΉΞ½ Ξ±ΞΉΟ„Ξ®ΞΌΞ±Ο„ΞΏΟ‚ (0,5% ΞµΟ€Ξ― Ξ±ΞΎΞ―Ξ±Ο‚).</p></div>
+    <div class="icard"><h4>Παρακολούθηση</h4><p>Αριθμός αποστολής αμέσως μετά παραλαβή. Real-time tracking στο <strong>www.4aexpress.com</strong> ή μέσω email ειδοποίησης.</p></div>
+    <div class="icard"><h4>Χρόνοι Παράδοσης</h4><p><strong>Αεροπορικά (AIR):</strong> 1–2 εργάσιμες.<br><strong>Οδικά (ROAD):</strong> 3–5 εργάσιμες.<br>Ανάλογα προορισμό.</p></div>
+    <div class="icard"><h4>Ασφάλιση Φορτίου</h4><p>Αυτόματη κάλυψη έως <strong>€100</strong> ανά αποστολή. Πρόσθετη ασφάλιση κατόπιν αιτήματος (0,5% επί αξίας).</p></div>
   </div>
   ${F('3')}
   </div>`;
@@ -1595,12 +1596,12 @@ async function buildJsPDF(offerNum){
       const EU=new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE']);
       const ctrs=Object.values(am).sort((a,b)=>a.name.localeCompare(b.name,'el'));
       const q=Math.ceil(ctrs.length/4);
-      const zp=z=>z?`<span style="display:inline-block;background:${ZC[z]||'#555'};color:#fff;font-size:6.5px;font-weight:700;padding:1px 4px;border-radius:7px;white-space:nowrap;">Z${z}</span>`:'<span style="color:#ddd;font-size:6.5px;">β€”</span>';
+      const zp=z=>z?`<span style="display:inline-block;background:${ZC[z]||'#555'};color:#fff;font-size:6.5px;font-weight:700;padding:1px 4px;border-radius:7px;white-space:nowrap;">Z${z}</span>`:'<span style="color:#ddd;font-size:6.5px;">—</span>';
       const eub='<span style="display:inline-block;background:#003399;color:#ffcc00;font-size:5.5px;font-weight:700;padding:0 2px;border-radius:2px;margin-left:3px;vertical-align:middle;">EU</span>';
-      const makeT=arr=>`<table class="pt pt-zone" style="width:100%"><thead><tr><th class="wt" style="font-size:7px;">Ξ§ΟΟΞ±</th><th style="background:#154360;text-align:center;width:22px;font-size:6.5px;">S1003<br>ββ†—</th><th style="background:#154360;text-align:center;width:22px;font-size:6.5px;">S1012<br>ββ†™</th><th style="background:#1d4e36;text-align:center;width:22px;font-size:6.5px;">S1010<br>π›β†—</th><th style="background:#1d4e36;text-align:center;width:22px;font-size:6.5px;">S1041<br>π›β†™</th></tr></thead><tbody>${arr.map(c=>{const rz=rm[c.code];return `<tr><td class="wt" style="font-size:7px;">${c.name}${EU.has(c.code)?eub:''}</td><td style="text-align:center;padding:1px;">${zp(c.az)}</td><td style="text-align:center;padding:1px;">${zp(c.az)}</td><td style="text-align:center;padding:1px;">${rz!=null?zp(rz):'<span style="color:#ddd;font-size:6.5px;">β€”</span>'}</td><td style="text-align:center;padding:1px;">${rz!=null?zp(rz):'<span style="color:#ddd;font-size:6.5px;">β€”</span>'}</td></tr>`;}).join('')}</tbody></table>`;
-      html+=`<div class="page land">${H(offerNum)}${S('Ξ–Ξ©ΞΞ•Ξ£ Ξ§Ξ©Ξ΅Ξ©Ξ 4A EXPRESS')}<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;">${makeT(ctrs.slice(0,q))}${makeT(ctrs.slice(q,q*2))}${makeT(ctrs.slice(q*2,q*3))}${makeT(ctrs.slice(q*3))}</div><div class="znote" style="margin-top:5px;font-size:8px;">S1003/S1012: AIR Z1β€“Z7 &nbsp;Β·&nbsp; S1010/S1041: ROAD Z1β€“Z3 &nbsp;Β·&nbsp; ΞΟΟ€ΟΞΏΟ‚ (Z9): ΞΌΟΞ½ΞΏ S1003/S1012 &nbsp;Β·&nbsp; <span style="display:inline-block;background:#003399;color:#ffcc00;font-size:6px;font-weight:700;padding:0 3px;border-radius:2px;vertical-align:middle;">EU</span> ΞΞ­Ξ»ΞΏΟ‚ Ξ•Ξ•</div>${F('4')}</div>`;
+      const makeT=arr=>`<table class="pt pt-zone" style="width:100%"><thead><tr><th class="wt" style="font-size:7px;">Χώρα</th><th style="background:#154360;text-align:center;width:22px;font-size:6.5px;">S1003<br>??</th><th style="background:#154360;text-align:center;width:22px;font-size:6.5px;">S1012<br>??</th><th style="background:#1d4e36;text-align:center;width:22px;font-size:6.5px;">S1010<br>???</th><th style="background:#1d4e36;text-align:center;width:22px;font-size:6.5px;">S1041<br>???</th></tr></thead><tbody>${arr.map(c=>{const rz=rm[c.code];return `<tr><td class="wt" style="font-size:7px;">${c.name}${EU.has(c.code)?eub:''}</td><td style="text-align:center;padding:1px;">${zp(c.az)}</td><td style="text-align:center;padding:1px;">${zp(c.az)}</td><td style="text-align:center;padding:1px;">${rz!=null?zp(rz):'<span style="color:#ddd;font-size:6.5px;">—</span>'}</td><td style="text-align:center;padding:1px;">${rz!=null?zp(rz):'<span style="color:#ddd;font-size:6.5px;">—</span>'}</td></tr>`;}).join('')}</tbody></table>`;
+      html+=`<div class="page land">${H(offerNum)}${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;">${makeT(ctrs.slice(0,q))}${makeT(ctrs.slice(q,q*2))}${makeT(ctrs.slice(q*2,q*3))}${makeT(ctrs.slice(q*3))}</div><div class="znote" style="margin-top:5px;font-size:8px;">S1003/S1012: AIR Z1–Z7 &nbsp;·&nbsp; S1010/S1041: ROAD Z1–Z3 &nbsp;·&nbsp; Κύπρος (Z9): μόνο S1003/S1012 &nbsp;·&nbsp; <span style="display:inline-block;background:#003399;color:#ffcc00;font-size:6px;font-weight:700;padding:0 3px;border-radius:2px;vertical-align:middle;">EU</span> Μέλος ΕΕ</div>${F('4')}</div>`;
     } else {
-      html+=`<div class="page">${H(offerNum)}${S('Ξ–Ξ©ΞΞ•Ξ£ Ξ§Ξ©Ξ΅Ξ©Ξ 4A EXPRESS')}<table class="zt"><thead><tr><th style="width:52px">Ξ–ΟΞ½Ξ·</th><th style="width:88px">ΞΞ±Ο„Ξ·Ξ³ΞΏΟΞ―Ξ±</th><th>Ξ§ΟΟΞµΟ‚ / Ξ ΞµΟΞΉΞΏΟ‡Ξ­Ο‚</th><th style="width:90px">Ξ¥Ο€Ξ·ΟΞµΟƒΞ―ΞµΟ‚</th></tr></thead><tbody>${ZONES.map(z=>`<tr><td><span class="zbadge">${z.z}</span></td><td><strong>${z.name}</strong></td><td>${z.desc}</td><td style="font-size:9px;color:#666;">${z.svcs}</td></tr>`).join('')}</tbody></table><div class="znote"><strong>Ξ£Ξ·ΞΌΞµΞ―Ο‰ΟƒΞ·:</strong> AIR Z1β€“Z7, ROAD Z1β€“Z3. ΞΟΟ€ΟΞΏΟ‚ (Z9): ΞΌΟΞ½ΞΏ S1003/S1012.</div>${F('4')}</div>`;
+      html+=`<div class="page">${H(offerNum)}${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}<table class="zt"><thead><tr><th style="width:52px">Ζώνη</th><th style="width:88px">Κατηγορία</th><th>Χώρες / Περιοχές</th><th style="width:90px">Υπηρεσίες</th></tr></thead><tbody>${ZONES.map(z=>`<tr><td><span class="zbadge">${z.z}</span></td><td><strong>${z.name}</strong></td><td>${z.desc}</td><td style="font-size:9px;color:#666;">${z.svcs}</td></tr>`).join('')}</tbody></table><div class="znote"><strong>Σημείωση:</strong> AIR Z1–Z7, ROAD Z1–Z3. Κύπρος (Z9): μόνο S1003/S1012.</div>${F('4')}</div>`;
     }
   }
 
@@ -1653,37 +1654,37 @@ async function buildJsPDF(offerNum){
       const dp=parseFloat(rows[rows.length-1].price)-parseFloat(rows[rows.length-2].price);
       if(dw>0){xkgLbl=`+${dw} kg`;xkgZP=[parseFloat((dp/dw).toFixed(2))];}
     }
-    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;Β·&nbsp; ${p.service_name||p.name||''}</div><div class="pls">Ξ•Ο€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏΟ‚ ΞΞ±Ο…ΟƒΞ―ΞΌΞΏΟ…: ${fcVal}${fuelWeek?' &nbsp;Β·&nbsp; '+fuelWeek:''}</div></div>`;
-    const plFtr=`<div class="pl-footnote">* Ξ¤ΞΉΞΌΞ­Ο‚ ΞµΞΊΟ„ΟΟ‚ Ξ¦Ξ Ξ‘ 24% ΞΊΞ±ΞΉ ΞµΟ€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏ ΞΊΞ±Ο…ΟƒΞ―ΞΌΟ‰Ξ½</div>${F(String(plPg++))}`;
+    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div><div class="pls">Επίναυλος Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div></div>`;
+    const plFtr=`<div class="pl-footnote">* Τιμές εκτός ΦΠΑ 24% και επίναυλο καυσίμων</div>${F(String(plPg++))}`;
     if(zcount===7&&ztable.length>0){
       const thz=Array.from({length:7},(_,i)=>`<th style="background:${_ZHC[i+1]}">Z${i+1}</th>`).join('');
-      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>β‚¬${v.toFixed(2)}</td>`:'<td>β€”</td>').join('')}</tr>`).join('');
-      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>β‚¬${v.toFixed(2)}</td>`:'<td>β€”</td>').join('')}</tr>`:'';
-      html+=`<div class="page land">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">Ξ’Ξ‘Ξ΅ΞΞ£ kg</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
+      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`).join('');
+      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`:'';
+      html+=`<div class="page land">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">ΒΑΡΟΣ kg</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
     } else if(zcount===3&&ztable.length>0){
       const thz=Array.from({length:3},(_,i)=>`<th style="background:${_ZHC[i+1]}">Z${i+1}</th>`).join('');
-      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>β‚¬${v.toFixed(2)}</td>`:'<td>β€”</td>').join('')}</tr>`).join('');
-      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>β‚¬${v.toFixed(2)}</td>`:'<td>β€”</td>').join('')}</tr>`:'';
-      html+=`<div class="page">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">Ξ’Ξ‘Ξ΅ΞΞ£ (kg)</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
+      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`).join('');
+      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`:'';
+      html+=`<div class="page">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">ΒΑΡΟΣ (kg)</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
     } else {
       const xkgV=xkgZP?xkgZP[0]:null;
       const cs3=Math.ceil(rows.length/3);
       const rg=[rows.slice(0,cs3),rows.slice(cs3,cs3*2),rows.slice(cs3*2)];
-      html+=`<div class="page">${plHdr}<div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>β‚¬</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>β‚¬${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkgV!=null?`<tr class="xr"><td class="wt">${xkgLbl}</td><td>β‚¬${xkgV.toFixed(2)}</td></tr>`:''}</tbody></table>`).join('')}</div>${plFtr}</div>`;
+      html+=`<div class="page">${plHdr}<div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>€</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkgV!=null?`<tr class="xr"><td class="wt">${xkgLbl}</td><td>€${xkgV.toFixed(2)}</td></tr>`:''}</tbody></table>`).join('')}</div>${plFtr}</div>`;
     }
   }
-// β”€β”€ DYNAMIC DOCS β”€β”€
+// -- DYNAMIC DOCS --
   const docsCache = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]).catch(()=>[]);
   if(!docsCache.length || docsCache.find(d=>d.id==='volumetric'&&d.active)){
     html+=`<div class="page">
     ${H(offerNum)}
-    ${S('ΞΞ“ΞΞΞΞ•Ξ¤Ξ΅Ξ—Ξ£Ξ— Ξ”Ξ•ΞΞ‘Ξ¤Ξ©Ξ')}
-    <p style="font-size:9px;color:#555;margin:6px 0;">ΞΞ¬ΞΈΞµ Ξ΄Ξ­ΞΌΞ± Ο‡ΟΞµΟΞ½ΞµΟ„Ξ±ΞΉ Ξ²Ξ¬ΟƒΞµΞΉ Ο„ΞΏΟ… <strong>ΞΌΞµΞ³Ξ±Ξ»ΟΟ„ΞµΟΞΏΟ…</strong>: Ο€ΟΞ±Ξ³ΞΌΞ±Ο„ΞΉΞΊΟ Ξ® ΞΏΞ³ΞΊΞΏΞΌΞµΟ„ΟΞΉΞΊΟ Ξ²Ξ¬ΟΞΏΟ‚.</p>
-    <div style="background:#f2f2f2;border:0.5px solid #cc0000;padding:12px;margin:8px 0;text-align:center;font-size:12px;font-weight:700;color:#990000;">ΞΞ³ΞΊΞΏΞΌΞµΟ„ΟΞΉΞΊΟ Ξ’Ξ¬ΟΞΏΟ‚ (kg) = ( Ξ x Ξ  x Ξ¥ ) / 5.000</div>
-    <div style="font-size:8px;color:#1D3B6F;text-align:center;margin-bottom:8px;">Ξ=ΞΞ®ΞΊΞΏΟ‚ | Ξ =Ξ Ξ»Ξ¬Ο„ΞΏΟ‚ | Ξ¥=ΞΟΞΏΟ‚ (ΟƒΞµ cm)</div>
-    <p style="font-size:8px;color:#555;margin-top:6px;">Ξ™ΟƒΟ‡ΟΞµΞΉ Ξ³ΞΉΞ±: ΟΟ‡Ξ·ΞΌΞ±, Ξ±Ο€ΞΏΞΈΞ®ΞΊΞ·, Ξ±ΞµΟΞΏΟ€Ξ»Ξ¬Ξ½ΞΏ, container. Ξ§ΟΞ·ΟƒΞΉΞΌΞΏΟ€ΞΏΞΉΞµΞ―Ο„Ξµ Ο„ΞΏ ΞΞ•Ξ“Ξ‘Ξ›Ξ¥Ξ¤Ξ•Ξ΅Ξ Ξ²Ξ¬ΟΞΏΟ‚.</p>
-    <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:10px 0;"><thead><tr style="background:#cc0000;color:#fff;"><th style="padding:5px 8px;text-align:left;">Ξ”ΞΉΞ±ΟƒΟ„Ξ¬ΟƒΞµΞΉΟ‚</th><th style="padding:5px 8px;text-align:center;">Ξ¤ΟΟ€ΞΏΟ‚</th><th style="padding:5px 8px;text-align:center;">Ξ‘Ο€ΞΏΟ„Ξ­Ξ»ΞµΟƒΞΌΞ±</th></tr></thead><tbody><tr style="background:#fff;"><td style="padding:5px 8px;">50x50x50 cm</td><td style="padding:5px 8px;text-align:center;">50x50x50/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">25 kg</td></tr><tr style="background:#f2f2f2;"><td style="padding:5px 8px;">60x40x30 cm</td><td style="padding:5px 8px;text-align:center;">60x40x30/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">14.4 kg</td></tr><tr style="background:#fff;"><td style="padding:5px 8px;">100x30x20 cm</td><td style="padding:5px 8px;text-align:center;">100x30x20/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">12 kg</td></tr></tbody></table>
-    <div style="background:#fff3cd;border:0.5px solid #ffc107;padding:8px 12px;font-size:8.5px;font-weight:700;margin-top:6px;">Ξ§ΟΞ·ΟƒΞΉΞΌΞΏΟ€ΞΏΞΉΞµΞΉΟ„Ξµ Ο€Ξ±Ξ½Ο„Ξ± Ο„ΞΏ ΞΞ•Ξ“Ξ‘Ξ›Ξ¥Ξ¤Ξ•Ξ΅Ξ: Ο€ΟΞ±Ξ³ΞΌΞ±Ο„ΞΉΞΊΞΏ Ξ· ΞΏΞ³ΞΊΞΏΞΌΞµΟ„ΟΞΉΞΊΞΏ Ξ²Ξ±ΟΞΏΟ‚.</div>
+    ${S('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ')}
+    <p style="font-size:9px;color:#555;margin:6px 0;">Κάθε δέμα χρεώνεται βάσει του <strong>μεγαλύτερου</strong>: πραγματικό ή ογκομετρικό βάρος.</p>
+    <div style="background:#f2f2f2;border:0.5px solid #cc0000;padding:12px;margin:8px 0;text-align:center;font-size:12px;font-weight:700;color:#990000;">Ογκομετρικό Βάρος (kg) = ( Μ x Π x Υ ) / 5.000</div>
+    <div style="font-size:8px;color:#1D3B6F;text-align:center;margin-bottom:8px;">Μ=Μήκος | Π=Πλάτος | Υ=Ύψος (σε cm)</div>
+    <p style="font-size:8px;color:#555;margin-top:6px;">Ισχύει για: όχημα, αποθήκη, αεροπλάνο, container. Χρησιμοποιείτε το ΜΕΓΑΛΥΤΕΡΟ βάρος.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:10px 0;"><thead><tr style="background:#cc0000;color:#fff;"><th style="padding:5px 8px;text-align:left;">Διαστάσεις</th><th style="padding:5px 8px;text-align:center;">Τύπος</th><th style="padding:5px 8px;text-align:center;">Αποτέλεσμα</th></tr></thead><tbody><tr style="background:#fff;"><td style="padding:5px 8px;">50x50x50 cm</td><td style="padding:5px 8px;text-align:center;">50x50x50/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">25 kg</td></tr><tr style="background:#f2f2f2;"><td style="padding:5px 8px;">60x40x30 cm</td><td style="padding:5px 8px;text-align:center;">60x40x30/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">14.4 kg</td></tr><tr style="background:#fff;"><td style="padding:5px 8px;">100x30x20 cm</td><td style="padding:5px 8px;text-align:center;">100x30x20/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">12 kg</td></tr></tbody></table>
+    <div style="background:#fff3cd;border:0.5px solid #ffc107;padding:8px 12px;font-size:8.5px;font-weight:700;margin-top:6px;">Χρησιμοποιειτε παντα το ΜΕΓΑΛΥΤΕΡΟ: πραγματικο η ογκομετρικο βαρος.</div>
     ${F(String(plPg++))}
     </div>`;
   }
@@ -1696,19 +1697,19 @@ async function buildJsPDF(offerNum){
 async function draftOffer(){
   const name=document.getElementById('cl-name').value.trim();
   const email=document.getElementById('cl-email').value.trim();
-  if(!name){ alert('Ξ£Ο…ΞΌΟ€Ξ»Ξ®ΟΟ‰ΟƒΞµ Ο€ΟΟΟ„Ξ± Ο„Ξ± ΟƒΟ„ΞΏΞΉΟ‡ΞµΞ―Ξ± Ο€ΞµΞ»Ξ¬Ο„Ξ·'); return; }
-  if(!email){ alert('Ξ‘Ο€Ξ±ΞΉΟ„ΞµΞ―Ο„Ξ±ΞΉ email Ο€Ξ±ΟΞ±Ξ»Ξ®Ο€Ο„Ξ·'); return; }
-  if(!selectedPls.length){ alert('Ξ”ΞµΞ½ Ξ­Ο‡ΞµΞΉΟ‚ ΞµΟ€ΞΉΞ»Ξ­ΞΎΞµΞΉ Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ±Ξ»ΟΞ³ΞΏΟ…Ο‚'); return; }
-  document.getElementById('draft-btn').textContent='β³ Draft...';
+  if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
+  if(!email){ alert('Απαιτείται email παραλήπτη'); return; }
+  if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
+  document.getElementById('draft-btn').textContent='? Draft...';
   document.getElementById('draft-btn').disabled=true;
   try {
     const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
     const blob = await buildJsPDF(offerNum);
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
-  } catch(e){ alert('Ξ£Ο†Ξ¬Ξ»ΞΌΞ±: '+e.message); }
+  } catch(e){ alert('Σφάλμα: '+e.message); }
   finally {
-    document.getElementById('draft-btn').textContent='β΅ Draft (Ξ³ΟΞ®Ξ³ΞΏΟΞΏ)';
+    document.getElementById('draft-btn').textContent='? Draft (γρήγορο)';
     document.getElementById('draft-btn').disabled=false;
   }
 }
@@ -1716,10 +1717,10 @@ async function draftOffer(){
 async function sendOffer(){
   const name=document.getElementById('cl-name').value.trim();
   const email=document.getElementById('cl-email').value.trim();
-  if(!name){ alert('Ξ£Ο…ΞΌΟ€Ξ»Ξ®ΟΟ‰ΟƒΞµ Ο€ΟΟΟ„Ξ± Ο„Ξ± ΟƒΟ„ΞΏΞΉΟ‡ΞµΞ―Ξ± Ο€ΞµΞ»Ξ¬Ο„Ξ·'); return; }
-  if(!email){ alert('Ξ‘Ο€Ξ±ΞΉΟ„ΞµΞ―Ο„Ξ±ΞΉ email Ο€Ξ±ΟΞ±Ξ»Ξ®Ο€Ο„Ξ·'); return; }
-  if(!selectedPls.length){ alert('Ξ”ΞµΞ½ Ξ­Ο‡ΞµΞΉΟ‚ ΞµΟ€ΞΉΞ»Ξ­ΞΎΞµΞΉ Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ±Ξ»ΟΞ³ΞΏΟ…Ο‚'); return; }
-  document.getElementById('send-btn').textContent='β³ Ξ‘Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®...';
+  if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
+  if(!email){ alert('Απαιτείται email παραλήπτη'); return; }
+  if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
+  document.getElementById('send-btn').textContent='? Αποστολή...';
   document.getElementById('send-btn').disabled=true;
   try {
     const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
@@ -1731,18 +1732,18 @@ async function sendOffer(){
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         to: email,
-        subject: `Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬ 4A Express β€” ${offerNum}`,
-        body: `Ξ‘Ξ³Ξ±Ο€Ξ·Ο„Ξ­/Ξ® ${name},\n\nΞ£Ξ±Ο‚ Ξ±Ο€ΞΏΟƒΟ„Ξ­Ξ»Ξ»ΞΏΟ…ΞΌΞµ Ο„Ξ·Ξ½ Ο€ΟΞΏΟƒΟ†ΞΏΟΞ¬ ΞΌΞ±Ο‚.\n\nΞΞµ ΞµΞΊΟ„Ξ―ΞΌΞ·ΟƒΞ·,\nΞ— ΞΏΞΌΞ¬Ξ΄Ξ± 4A Express`,
+        subject: `Προσφορά 4A Express — ${offerNum}`,
+        body: `Αγαπητέ/ή ${name},\n\nΣας αποστέλλουμε την προσφορά μας.\n\nΜε εκτίμηση,\nΗ ομάδα 4A Express`,
         pdf_base64,
-        filename: `Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬_4A_Express_${offerNum}.pdf`
+        filename: `Προσφορά_4A_Express_${offerNum}.pdf`
       })
     });
     const d = await r.json();
-    if(d.ok){ alert('Ξ— Ο€ΟΞΏΟƒΟ†ΞΏΟΞ¬ ΟƒΟ„Ξ¬Ξ»ΞΈΞ·ΞΊΞµ ΞµΟ€ΞΉΟ„Ο…Ο‡ΟΟ‚!'); }
-    else { alert('Ξ£Ο†Ξ¬Ξ»ΞΌΞ± Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®Ο‚: '+(d.error||'Ξ†Ξ³Ξ½Ο‰ΟƒΟ„ΞΏ')); }
-  } catch(e){ alert('Ξ£Ο†Ξ¬Ξ»ΞΌΞ±: '+e.message); }
+    if(d.ok){ alert('Η προσφορά στάλθηκε επιτυχώς!'); }
+    else { alert('Σφάλμα αποστολής: '+(d.error||'Άγνωστο')); }
+  } catch(e){ alert('Σφάλμα: '+e.message); }
   finally {
-    document.getElementById('send-btn').textContent='β‰οΈ Ξ‘Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ® Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚';
+    document.getElementById('send-btn').textContent='?? Αποστολή Προσφοράς';
     document.getElementById('send-btn').disabled=false;
   }
 }
