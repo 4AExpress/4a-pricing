@@ -312,7 +312,7 @@ async function doLogin() {
     document.getElementById('station-modal').style.display='none';
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app-screen').style.display='';
-    document.getElementById('topbar-user').textContent=currentUser.name+' · '+currentUser.office;
+    document.getElementById('topbar-user').textContent=currentUser.name+' · '+currentUser.active_station||currentUser.active_station||currentUser.office;
     _updateBadge();
     init();
   }
@@ -327,7 +327,7 @@ async function doLogin() {
   localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display   = '';
-  document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
+  document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.active_station||currentUser.active_station||currentUser.office}`;
   init();
 }
 document.getElementById('login-user').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
@@ -341,7 +341,8 @@ if (new URLSearchParams(location.search).get('logout') === '1') {
     currentUser = JSON.parse(u);
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display   = '';
-    document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
+    document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.active_station||currentUser.office}`;
+    _updateBadge();
     init();
   }
 })();
@@ -680,7 +681,7 @@ function confirmSave() {
     markup_z9:    mu_z9,
     account:      account || '—',
     user:         currentUser.name,
-    office:       currentUser.office,
+    office:       currentUser.active_station||currentUser.active_station||currentUser.office,
     date:         todayFormatted(),
     created_at:   new Date().toISOString()
   });
