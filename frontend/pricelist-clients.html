@@ -384,6 +384,7 @@ const SVC_IS_CY   = id => id.includes('_CY') || id === 'S1050' || id === 'S1051'
 let OFFICES = [];
 async function loadOffices(){
   try { const r=await fetch(`${API}/offices.php`); const d=await r.json(); OFFICES=Array.isArray(d)?d:[]; } catch(e){ OFFICES=[]; }
+}
 function getUserCountries(){
   if(!currentUser) return ['GR','CY'];
   if(currentUser.role==='administrator') return ['GR','CY'];
