@@ -850,7 +850,7 @@ async function exportCMS() {
         allRows.push([
           accountNo, stationCountry, 'Slab Rate', minW, weFrom,
           'Normal', originType, destType, orig, dest,
-          SERVICE_ID, docsType,
+          SERVICE_ID.split('_')[0], docsType,
           slab.fromW, slab.toW, slab.rate, 1, slab.addRate, slab.uptoW
         ]);
       }
