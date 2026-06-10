@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="el">
 <head>
 <meta charset="UTF-8">
@@ -132,31 +132,31 @@
 
   <div class="nav">
     <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
-    <a class="nav-btn" href="pricelist-clients.html">👥 Πελάτες</a>
+    <a class="nav-btn" href="pricelist-clients.html">🤝 Πελάτες</a>
     <a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
-    <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
-    <a class="nav-btn" href="services.html">🔧 Services</a>
+    <a class="nav-btn" href="users.html">👥 Χρήστες</a>
+    <a class="nav-btn" href="services.html">⚙️ Services</a>
     <a class="nav-btn" href="docs.html">📄 Docs</a>
-    <a class="nav-btn active" href="help.html">❓ Help</a>
+    <a class="nav-btn active" href="help.html">? Help</a>
   </div>
 
   <div class="layout">
     <!-- SIDEBAR -->
     <div class="sidebar">
       <div class="sidebar-search" style="position:relative;">
-        <input type="text" id="search-input" placeholder="🔍 Αναζήτηση..." oninput="searchSections(this.value)" />
+        <input type="text" id="search-input" placeholder="?? Αναζήτηση..." oninput="searchSections(this.value)" />
         <div id="search-results" class="search-results" style="display:none;"></div>
       </div>
       <div id="sidebar-list"></div>
       <div id="sidebar-add" class="sidebar-add" style="display:none;" onclick="showAddModal()">
-        ➕ Νέο Section
+        ? Νέο Section
       </div>
     </div>
 
     <!-- MAIN -->
     <div class="main" id="main-content">
       <div class="empty-state">
-        <div class="empty-state-icon">📖</div>
+        <div class="empty-state-icon">??</div>
         <div class="empty-state-text">Επίλεξε section από αριστερά</div>
       </div>
     </div>
@@ -166,10 +166,10 @@
 <!-- ADD MODAL -->
 <div id="add-modal" class="modal-bg" style="display:none;">
   <div class="modal">
-    <div class="modal-title">➕ Νέο Section</div>
+    <div class="modal-title">? Νέο Section</div>
     <div class="modal-field">
       <label>Εικονίδιο</label>
-      <input type="text" id="new-icon" value="📌" maxlength="4" />
+      <input type="text" id="new-icon" value="??" maxlength="4" />
     </div>
     <div class="modal-field">
       <label>Τίτλος</label>
@@ -189,19 +189,19 @@ let sections = [];
 let activeId = null;
 let editing = false;
 
-// ── DEFAULT SECTIONS ──────────────────────────────────────────────────────────
+// -- DEFAULT SECTIONS ----------------------------------------------------------
 const DEFAULT_SECTIONS = [
-  { id:'arch',      icon:'🏗️', title:'Αρχιτεκτονική Συστήματος', content:'', updated_at:'' },
-  { id:'services',  icon:'📦', title:'Services & Zones',           content:'', updated_at:'' },
-  { id:'dhl',       icon:'💰', title:'DHL Τιμοκατάλογος',          content:'', updated_at:'' },
-  { id:'pdf',       icon:'📄', title:'Παραγωγή PDF Προσφοράς',     content:'', updated_at:'' },
-  { id:'bugs',      icon:'🐛', title:'Γνωστά Προβλήματα & Λύσεις', content:'', updated_at:'' },
-  { id:'changelog', icon:'📝', title:'Changelog',                   content:'', updated_at:'' },
-  { id:'todo',      icon:'✅', title:'TODO / Εκκρεμή',              content:'', updated_at:'' },
-  { id:'deploy',    icon:'🚀', title:'Deploy & Git',                content:'', updated_at:'' },
+  { id:'arch',      icon:'???', title:'Αρχιτεκτονική Συστήματος', content:'', updated_at:'' },
+  { id:'services',  icon:'??', title:'Services & Zones',           content:'', updated_at:'' },
+  { id:'dhl',       icon:'??', title:'DHL Τιμοκατάλογος',          content:'', updated_at:'' },
+  { id:'pdf',       icon:'??', title:'Παραγωγή PDF Προσφοράς',     content:'', updated_at:'' },
+  { id:'bugs',      icon:'??', title:'Γνωστά Προβλήματα & Λύσεις', content:'', updated_at:'' },
+  { id:'changelog', icon:'??', title:'Changelog',                   content:'', updated_at:'' },
+  { id:'todo',      icon:'?', title:'TODO / Εκκρεμή',              content:'', updated_at:'' },
+  { id:'deploy',    icon:'??', title:'Deploy & Git',                content:'', updated_at:'' },
 ];
 
-// ── LOGIN ─────────────────────────────────────────────────────────────────────
+// -- LOGIN ---------------------------------------------------------------------
 async function doLogin() {
   const userCode = document.getElementById('login-user').value.trim().toUpperCase();
   const otpSection = document.getElementById('otp-section');
@@ -223,15 +223,15 @@ async function doLogin() {
     try {
       const r = await fetch(`${API}/login.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'verify_otp', user_code:userCode, otp}) });
       const d = await r.json();
-      if (d.ok) { currentUser = d.user; localStorage.setItem('4a_user', JSON.stringify(d.user)); initApp(); }
+      if (d.ok) { currentUser = d.user; localStorage.setItem('4a_current_user', JSON.stringify(d.user)); initApp(); }
       else { err.textContent = d.error||'Λάθος OTP'; btn.textContent='Σύνδεση'; btn.disabled=false; }
     } catch(e) { err.textContent='Σφάλμα'; btn.textContent='Σύνδεση'; btn.disabled=false; }
   }
 }
 
-function doLogout() { localStorage.removeItem('4a_user'); location.reload(); }
+function doLogout() { localStorage.removeItem('4a_current_user'); window.location.href='pricelist-editor.html'; }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
+// -- INIT ----------------------------------------------------------------------
 async function initApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = '';
@@ -241,7 +241,7 @@ async function initApp() {
   if (sections.length > 0) selectSection(sections[0].id);
 }
 
-// ── SECTIONS ──────────────────────────────────────────────────────────────────
+// -- SECTIONS ------------------------------------------------------------------
 async function loadSections() {
   try {
     const r = await fetch(`${API}/help.php`);
@@ -278,8 +278,8 @@ function renderMain() {
     <div class="section-header">
       <div class="section-title">${s.icon} ${s.title}</div>
       <div class="section-actions">
-        ${isAdmin ? `<button class="btn btn-delete" onclick="deleteSection('${s.id}')">🗑️ Διαγραφή</button>
-        <button class="btn btn-edit" id="edit-btn" onclick="startEdit()">✏️ Επεξεργασία</button>` : ''}
+        ${isAdmin ? `<button class="btn btn-delete" onclick="deleteSection('${s.id}')">??? Διαγραφή</button>
+        <button class="btn btn-edit" id="edit-btn" onclick="startEdit()">?? Επεξεργασία</button>` : ''}
       </div>
     </div>
     <div id="content-view" class="content-view">${s.content ? escHtml(s.content) : '<span class="content-empty">(Δεν υπάρχει περιεχόμενο — πάτα Επεξεργασία)</span>'}</div>
@@ -287,7 +287,7 @@ function renderMain() {
       <textarea class="content-textarea" id="content-textarea">${s.content || ''}</textarea>
       <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;">
         <button class="btn btn-cancel" onclick="cancelEdit()">Ακύρωση</button>
-        <button class="btn btn-save" onclick="saveSection('${s.id}')">💾 Αποθήκευση</button>
+        <button class="btn btn-save" onclick="saveSection('${s.id}')">?? Αποθήκευση</button>
       </div>
     </div>
     ${s.updated_at ? `<div class="meta">Τελευταία ενημέρωση: ${s.updated_at}</div>` : ''}
@@ -324,7 +324,7 @@ async function saveSection(id) {
       editing = false;
       renderMain();
     }
-  } catch(e) { alert('❌ Σφάλμα αποθήκευσης'); }
+  } catch(e) { alert('? Σφάλμα αποθήκευσης'); }
 }
 
 async function deleteSection(id) {
@@ -335,16 +335,16 @@ async function deleteSection(id) {
     activeId = sections.length ? sections[0].id : null;
     renderSidebar();
     if (activeId) renderMain();
-    else document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📖</div><div class="empty-state-text">Δεν υπάρχουν sections</div></div>';
-  } catch(e) { alert('❌ Σφάλμα'); }
+    else document.getElementById('main-content').innerHTML = '<div class="empty-state"><div class="empty-state-icon">??</div><div class="empty-state-text">Δεν υπάρχουν sections</div></div>';
+  } catch(e) { alert('? Σφάλμα'); }
 }
 
-// ── ADD SECTION ───────────────────────────────────────────────────────────────
+// -- ADD SECTION ---------------------------------------------------------------
 function showAddModal() { document.getElementById('add-modal').style.display = 'flex'; document.getElementById('new-title').focus(); }
 function closeAddModal() { document.getElementById('add-modal').style.display = 'none'; }
 
 async function addSection() {
-  const icon = document.getElementById('new-icon').value.trim() || '📌';
+  const icon = document.getElementById('new-icon').value.trim() || '??';
   const title = document.getElementById('new-title').value.trim();
   if (!title) { alert('Εισάγετε τίτλο'); return; }
   const id = 'sec_' + Date.now();
@@ -361,10 +361,10 @@ async function addSection() {
       renderSidebar();
       selectSection(id);
     }
-  } catch(e) { alert('❌ Σφάλμα'); }
+  } catch(e) { alert('? Σφάλμα'); }
 }
 
-// ── SEARCH ────────────────────────────────────────────────────────────────────
+// -- SEARCH --------------------------------------------------------------------
 function searchSections(q) {
   const box = document.getElementById('search-results');
   if (!q.trim()) { box.style.display = 'none'; return; }
@@ -393,9 +393,8 @@ window.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeAddModal();
 });
 
-// ── BOOT ──────────────────────────────────────────────────────────────────────
-localStorage.setItem('4a_user', JSON.stringify({name:'Apostolos Orfanidis', role:'admin', code:'E1009', office:'Αθήνα'}));
-const saved = localStorage.getItem('4a_user');
+// -- BOOT ----------------------------------------------------------------------
+const saved = localStorage.getItem('4a_current_user');
 if (saved) { try { currentUser = JSON.parse(saved); initApp(); } catch(e) {} }
 </script>
 </body>

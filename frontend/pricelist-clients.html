@@ -1,4 +1,4 @@
-﻿<!-- pricelist-clients.html | v1.5 | 17-05-2026 -->
+<!-- pricelist-clients.html | v1.5 | 17-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -381,6 +381,22 @@ const SVC_NAMES = {
   S1051:    '🌍 🚛 🇬🇷 ↙️ ✈️ 🇨🇾'
 };
 const SVC_IS_CY   = id => id.includes('_CY') || id === 'S1050' || id === 'S1051';
+let OFFICES = [];
+async function loadOffices(){
+  try { const r=await fetch(`${API}/offices.php`); const d=await r.json(); OFFICES=Array.isArray(d)?d:[]; } catch(e){ OFFICES=[]; }
+}
+function getUserCountries(){
+  if(!currentUser) return ['GR','CY'];
+  if(currentUser.role==='administrator') return ['GR','CY'];
+  if(currentUser.active_station_country) return [currentUser.active_station_country];
+  const stations=(currentUser.stations||'').split(',').map(s=>s.trim().toUpperCase());
+  const countries=[...new Set(stations.map(s=>(OFFICES.find(o=>o.code===s)||{}).country).filter(Boolean))];
+  return countries.length ? countries : ['GR','CY'];
+}  
+function clientCountry(c){
+  const o=OFFICES.find(x=>x.city===c.office);
+  return o ? o.country : 'GR';
+}
 const GR_SERVICES  = new Set(['S1003','S1012','S1010','S1041','S1003_GR','S1012_GR']);
 const ZONES_PDF_URL = 'https://4aexpress.github.io/4a-pricing/docs/4A_Express_Zones_2026.pdf';
 
@@ -408,8 +424,9 @@ function nextOfferNumber(){
 
 async function init(){
   currentUser=JSON.parse(localStorage.getItem('4a_current_user')||'null');
-  if(!currentUser){ window.location.href='pricelist-editor.html'; return; }
-  document.getElementById('topbar-user').textContent=`${currentUser.name} · ${currentUser.office}`;
+  if(!currentUser||!currentUser.active_station){ window.location.href='pricelist-editor.html'; return; }
+  const _activeLabel=currentUser.active_station||currentUser.office||'';
+  document.getElementById('topbar-user').textContent=`${currentUser.name} · ${_activeLabel}`;
   shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
   try {
     const rc = await fetch(`${API}/clients.php?v=${Date.now()}`);
@@ -424,6 +441,7 @@ async function init(){
     clients = JSON.parse(localStorage.getItem('4a_clients')||'[]');
   }
   managers=currentUser.email?[currentUser.email]:[];
+  await loadOffices();
   updateOfferNum(); renderManagers(); renderClients();
 }
 
@@ -521,12 +539,13 @@ function renderPlGroups(){
   const services=servicesCache||[];
   const q=(_modalQ||"").toLowerCase().trim();
   const reg={}; services.forEach(s=>reg[s.code]=s);
+      const _uc2=getUserCountries();
   const order=_svcOrder(services.filter(s=>s.active!="0")).map(s=>s.code).filter(function(code){
-    const _m={ATH:"GR","0107":"GR",NIC:"CY",LCA:"CY",QLI:"CY","0108":"CY","0109":"CY","0110":"CY"};
-    const _c=(currentUser&&currentUser.active_station_country)||_m[currentUser&&currentUser.active_station]||"GR";
-    if(_c==="GR") return GR_SERVICES.has(code);
-    if(_c==="CY") return SVC_IS_CY(code);
-    return true;
+    if(_uc2.includes("GR") && _uc2.includes("CY")) return true;
+    const svcDef=(servicesCache||[]).find(x=>x.code===code);
+    const svcCountry=svcDef ? svcDef.country : 'GR';
+    if(svcCountry==='BOTH') return true;
+    return _uc2.includes(svcCountry);
   });
   Object.keys(shelf).forEach(k=>{ if(order.indexOf(k)<0) order.push(k); });
   let html="";
@@ -813,8 +832,10 @@ function deleteClient(id){
 
 function renderClients(){
   const el=document.getElementById('clients-list');
-  document.getElementById('client-count').textContent=clients.length;
   let list=[...clients];
+  const _uc=getUserCountries();
+  if(_uc.length<2) list=list.filter(c=>_uc.includes(clientCountry(c)));
+  document.getElementById('client-count').textContent=list.length;
   if(filterStatus!=='all')list=list.filter(c=>c.status===filterStatus);
   if(filterSearch){ const q=filterSearch.toLowerCase(); list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.afm||'').includes(q)||(c.contact||'').toLowerCase().includes(q)); }
   if(!list.length){ el.innerHTML='<div class="empty">Δεν βρέθηκαν πελάτες</div>'; return; }

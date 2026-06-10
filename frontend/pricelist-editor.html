@@ -1,4 +1,4 @@
-﻿<!-- pricelist-editor.html | v2.16 | 16-05-2026 -->
+<!-- pricelist-editor.html | v2.16 | 16-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -59,14 +59,12 @@
   .markup-pct { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #888; }
   .markup-status { font-size: 20px; flex-shrink: 0; width: 28px; text-align: center; }
   .min-markup { font-size: 11px; color: #aaa; margin-bottom: 6px; }
-  /* --- Z9 block --- */
   .z9-block { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #f0c040; }
   .z9-label { font-size: 10px; color: #b8860b; font-weight: 600; margin-bottom: 4px; }
   .z9-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
   .z9-msg { font-size: 11px; padding: 3px 8px; border-radius: 3px; min-height: 20px; }
   .z9-msg.ok    { background: #e8f5e9; color: #2e7d32; }
   .z9-msg.error { background: #ffebee; color: #c62828; }
-  /* --- end Z9 --- */
   .validation-msg { font-size: 11px; padding: 4px 8px; border-radius: 3px; margin-bottom: 6px; min-height: 22px; }
   .validation-msg.error { background: #ffebee; color: #c62828; }
   .validation-msg.ok    { background: #e8f5e9; color: #2e7d32; }
@@ -104,6 +102,7 @@
   .btn-secondary { background: #f0f0f0; color: #555; }
   .fc-info { font-size: 11px; color: #888; background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px 12px; margin-bottom: 14px; }
   .loading { text-align: center; padding: 30px; color: #aaa; }
+  .cy-divider { background: #fffde7; border: 1px solid #f0c040; border-radius: 6px; padding: 12px 16px; margin: 16px 0; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
@@ -167,8 +166,13 @@
       <div class="section-body">
         <div id="fc-info" class="fc-info">Φόρτωση επίναυλου...</div>
 
-        <!-- CY Surcharge Panel -->
-        <div id="cy-surcharge-panel" style="background:#fffde7;border:1px solid #f0c040;border-radius:6px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:24px;">
+        <!-- GR Services Grid -->
+        <div id="services-grid-gr" class="services-grid">
+          <div class="loading">Φόρτωση τιμών DHL...</div>
+        </div>
+
+        <!-- CY Surcharge Divider -->
+        <div class="cy-divider">
           <span style="font-size:12px;font-weight:700;color:#888;">🇨🇾 Surcharge Κύπρου</span>
           <div style="display:flex;align-items:center;gap:6px;">
             <span style="font-size:11px;color:#555;">GR→CY</span>
@@ -184,9 +188,9 @@
           <span id="surcharge-msg" style="font-size:11px;color:#2e7d32;"></span>
         </div>
 
-        <div id="services-grid" class="services-grid">
-          <div class="loading">Φόρτωση τιμών DHL...</div>
-        </div>
+        <!-- CY Services Grid -->
+        <div id="services-grid-cy" class="services-grid"></div>
+
       </div>
     </div>
 
@@ -227,21 +231,22 @@ const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 const API  = 'https://4aexpress.com/api';
 
 const SERVICES = [
+  // ── ΓΑΛΑΖΙΑ (GR) ──
   { id:'S1003',    name:'✈️↗️ Express Export',              mode:'AIR / Διεθνής',            file:'dhl_tariff_2026_S1003.json', greece: true },
   { id:'S1012',    name:'✈️🇬🇷↙️ Express Import',           mode:'AIR / Διεθνής',            file:'dhl_tariff_2026_S1012.json', greece: true },
   { id:'S1010',    name:'🚛↗️ Economy Export',              mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1010.json', greece: true },
   { id:'S1041',    name:'🚛🇬🇷↙️ Economy Import',           mode:'ROAD / Εσωτερικό',         file:'dhl_tariff_2026_S1041.json', greece: true },
   { id:'S1003_GR', name:'🇬🇷✈️↗️ Export Ελλάδα→Κύπρος',    mode:'AIR / Ελλάδα Z9',          file:'dhl_tariff_2026_S1003.json', zone:'z9', greece: true },
   { id:'S1012_GR', name:'🇬🇷✈️↙️ Import Κύπρος→Ελλάδα',    mode:'AIR / Ελλάδα Z9',          file:'dhl_tariff_2026_S1012.json', zone:'z9', greece: true },
-  { id:'S1003_CY', name:'🇨🇾✈️↗️ Express Export Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1003.json', zone:'z9', greece: true },
-  { id:'S1012_CY', name:'🇨🇾✈️↙️ Express Import Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1012.json', zone:'z9', greece: true },
-  { id:'S1050',    name:'🇨🇾 ✈️ 🇬🇷 🚛➡️ 🌍 Export CY→GR→World', mode:'COMBI AIR+ROAD / Κύπρος→Κόσμος', file:'dhl_tariff_2026_S1010.json', cy_surcharge: true, combi: true, surcharge_key: 'surcharge_cy_gr' },
-  { id:'S1051',    name:'🌍 🚛⬅️ 🇬🇷 ✈️ 🇨🇾 Import World→GR→CY', mode:'COMBI ROAD+AIR / Κόσμος→Κύπρος', file:'dhl_tariff_2026_S1041.json', cy_surcharge: true, combi: true, surcharge_key: 'surcharge_gr_cy' },
-  { id:'S1039', name:'🚢↗️ Shipping Courier GR-CY', mode:'SEA / Ελλάδα Z9', file:'4a_tariff_2026_S1039.json', zone:'z9', greece: true },
-  { id:'S1059', name:'🚢↗️ Export ShipCourier P2P',  mode:'SEA / Ελλάδα Z9', file:'4a_tariff_2026_S1059.json', zone:'z9', greece: true },
+  // ── ΚΙΤΡΙΝΑ (CY) ──
+  { id:'S1003_CY', name:'🇨🇾✈️↗️ Express Export Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1003.json', zone:'z9', cy: true },
+  { id:'S1012_CY', name:'🇨🇾✈️↙️ Express Import Κύπρος',   mode:'AIR / Κύπρος Z9',          file:'dhl_tariff_2026_S1012.json', zone:'z9', cy: true },
+  { id:'S1050',    name:'🇨🇾 ✈️ 🇬🇷 🚛➡️ 🌍 Export CY→GR→World', mode:'COMBI AIR+ROAD / Κύπρος→Κόσμος', file:'dhl_tariff_2026_S1010.json', cy_surcharge: true, combi: true, surcharge_key: 'surcharge_cy_gr', cy: true },
+  { id:'S1051',    name:'🌍 🚛⬅️ 🇬🇷 ✈️ 🇨🇾 Import World→GR→CY', mode:'COMBI ROAD+AIR / Κόσμος→Κύπρος', file:'dhl_tariff_2026_S1041.json', cy_surcharge: true, combi: true, surcharge_key: 'surcharge_gr_cy', cy: true },
+  { id:'S1039',    name:'🚢↗️ Shipping Courier GR-CY',      mode:'SEA / Ελλάδα Z9',          file:'4a_tariff_2026_S1039.json', zone:'z9', greece: true },
+  { id:'S1059',    name:'🚢↗️ Export ShipCourier P2P',      mode:'SEA / Ελλάδα Z9',          file:'4a_tariff_2026_S1059.json', zone:'z9', greece: true },
 ];
 
-// ─── Ποια AIR services εμφανίζουν Z9 block (Διεθνή μόνο, όχι CY/cy_surcharge) ───
 function hasZ9Block(svc) {
   return !svc.zone && !svc.cy_surcharge && svc.mode.includes('AIR');
 }
@@ -253,7 +258,6 @@ let markups_z9 = {};
 let cySettings = { surcharge_gr_cy: 1.50, surcharge_cy_gr: 1.50 };
 let activeShelfTab = SERVICES[0].id;
 
-// ─── LOGIN ───────────────────────────────────────────────────────────────────
 async function forgotPin() {
   const code = document.getElementById('login-user').value.trim();
   if (!code) { alert('Εισάγετε πρώτα τον User Code σας'); return; }
@@ -297,7 +301,6 @@ async function doLogin() {
     currentUser = d.user;
   } catch(e) { err.textContent = 'Σφάλμα σύνδεσης'; return; }
 
-  
   const _CMAP={ATH:'GR',LCA:'CY',NIC:'CY',QLI:'CY'};
   const _SLBL={ATH:'ATH — Αθήνα',LCA:'LCA — Λάρνακα',NIC:'NIC — Λευκωσία',QLI:'QLI — Λεμεσός'};
   const _allowed=(currentUser.stations||'ATH').split(',').map(s=>s.trim());
@@ -309,12 +312,11 @@ async function doLogin() {
     document.getElementById('station-modal').style.display='none';
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app-screen').style.display='';
-    document.getElementById('topbar-user').textContent=currentUser.name+' · '+currentUser.office;
+    document.getElementById('topbar-user').textContent=currentUser.name+' · '+(currentUser.active_station||currentUser.office);
     _updateBadge();
     init();
-    // set_active_station called after session established
   }
-  if(_countries.length>1){
+  if(_allowed.length>1){
     const _flag=s=>_CMAP[s]==='GR'?'GR':'CY';
     const _opts=_allowed.map(s=>'<div onclick="_completeLogin(\'' +s+ '\')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #ddd;border-radius:8px;cursor:pointer;margin-bottom:8px;"><span style="font-size:13px;font-weight:700;padding:3px 8px;border-radius:4px;background:#f0f0f0;">'+_flag(s)+'</span><div><div style="font-weight:500;">'+(_SLBL[s]||s)+'</div><div style="font-size:11px;color:#888;">'+(_CMAP[s]==='GR'?'Ελλάδα · ΦΠΑ 24%':'Κύπρος · ΦΠΑ 19%')+'</div></div></div>').join('');
     document.getElementById('station-modal-body').innerHTML=_opts;
@@ -322,10 +324,10 @@ async function doLogin() {
   } else {
     _completeLogin(currentUser.default_station||_allowed[0]);
   }
-localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
+  localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display   = '';
-  document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
+  document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.active_station||currentUser.office}`;
   init();
 }
 document.getElementById('login-user').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
@@ -339,7 +341,8 @@ if (new URLSearchParams(location.search).get('logout') === '1') {
     currentUser = JSON.parse(u);
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display   = '';
-    document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.office}`;
+    document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.active_station||currentUser.office}`;
+    _updateBadge();
     init();
   }
 })();
@@ -362,7 +365,6 @@ document.addEventListener('visibilitychange', function() {
   }
 });
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
 function formatDate(isoStr) {
   if (!isoStr) return '—';
   if (/^\d{2}-\d{2}-\d{4}$/.test(isoStr)) return isoStr;
@@ -372,7 +374,6 @@ function formatDate(isoStr) {
 }
 function todayFormatted() { return formatDate(new Date().toISOString()); }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
 async function init() {
   try {
     const rs = await fetch(`${API}/settings.php?v=${Date.now()}`);
@@ -422,7 +423,6 @@ async function loadFuel() {
 
 function getFcPct(svc) {
   if (!fuelData) return 0;
-  // COMBI: κυρίως ROAD επίναυλος
   if (svc.combi) return fuelData.current_road || 0;
   return svc.mode.includes('AIR') ? (fuelData.current_air||0) : (fuelData.current_road||0);
 }
@@ -433,8 +433,6 @@ function getSampleCost(serviceId) {
   if (!d?.entries) return 0;
   const z1 = d.entries.filter(e => e.zone_code === 'z1');
   const baseCost = z1[2]?.cost || z1[0]?.cost || 0;
-  // COMBI: ROAD κόστος + surcharge (€/kg × sample weight)
-  // Χρησιμοποιούμε sample weight = z1[2].weight_kg για το surcharge
   if (svc?.combi) {
     const sampleWeight = z1[2]?.weight_kg || z1[0]?.weight_kg || 1;
     const surchargePerKg = cySettings[svc.surcharge_key] || 1.50;
@@ -444,8 +442,6 @@ function getSampleCost(serviceId) {
   return baseCost + surcharge;
 }
 
-// ─── VALIDATION ───────────────────────────────────────────────────────────────
-// Ελέγχει μονοτονικότητα τιμών για όλες τις ζώνες του service
 function validate(serviceId, markup) {
   if (!markup || isNaN(markup) || markup <= 0) return { ok: false, msg: 'Εισάγετε ποσοστό > 0%' };
   const d = dhlData[serviceId];
@@ -466,12 +462,10 @@ function validate(serviceId, markup) {
   return { ok: true, msg: '✅ Έγκυρο' };
 }
 
-// Validation για Z9: χρησιμοποιεί τα entries ζώνης z9 (αν υπάρχουν) ή z1 fallback
 function validateZ9(serviceId, markup) {
   if (!markup || isNaN(markup) || markup <= 0) return { ok: false, msg: 'Εισάγετε ποσοστό Z9 > 0%' };
   const d = dhlData[serviceId];
   if (!d?.entries) return { ok: true, msg: '✅ Z9 Έγκυρο' };
-  // Φιλτράρουμε z9 entries — αν δεν υπάρχουν, χρησιμοποιούμε z1
   const z9entries = d.entries.filter(e => e.zone_code === 'z9');
   const entries   = z9entries.length ? z9entries : d.entries.filter(e => e.zone_code === 'z1');
   let prev = 0;
@@ -483,7 +477,6 @@ function validateZ9(serviceId, markup) {
   return { ok: true, msg: '✅ Z9 Έγκυρο' };
 }
 
-// ─── CY PANEL ─────────────────────────────────────────────────────────────────
 function renderCyPanel() {
   const isAdmin = currentUser?.role === 'administrator';
   document.getElementById('surcharge-gr-cy').value = cySettings.surcharge_gr_cy || 1.50;
@@ -513,78 +506,80 @@ async function saveCySettings() {
 }
 
 // ─── RENDER SERVICES ──────────────────────────────────────────────────────────
-function renderServices() {
-  const grid = document.getElementById('services-grid');
-  grid.innerHTML = SERVICES.map(svc => {
-    const fcPct = getFcPct(svc);
-    const cost  = getSampleCost(svc.id);
-    const mu    = markups[svc.id] || '';
-    const v     = mu ? validate(svc.id, parseFloat(mu)) : null;
-    const cls   = svc.greece ? 'is-greece' : (svc.zone || svc.cy_surcharge) ? 'is-cyprus' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error');
-    const icon  = !mu ? '○' : v?.ok ? '✅' : '🔴';
-    const calc  = mu && cost && v?.ok ? {
-      price:  (cost * (1 + parseFloat(mu)/100)).toFixed(2),
-      fc:     (cost * fcPct/100).toFixed(2),
-      profit: (cost * (1 + parseFloat(mu)/100) - cost - cost * fcPct/100).toFixed(2),
-      pct:    ((cost * (1 + parseFloat(mu)/100) - cost - cost * fcPct/100) / (cost + cost * fcPct/100) * 100).toFixed(1)
-    } : null;
+function makeCard(svc) {
+  const fcPct = getFcPct(svc);
+  const cost  = getSampleCost(svc.id);
+  const mu    = markups[svc.id] || '';
+  const v     = mu ? validate(svc.id, parseFloat(mu)) : null;
+  const cls   = svc.cy_surcharge || svc.cy ? 'is-cyprus' : svc.greece ? 'is-greece' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error');
+  const icon  = !mu ? '○' : v?.ok ? '✅' : '🔴';
+  const calc  = mu && cost && v?.ok ? {
+    price:  (cost * (1 + parseFloat(mu)/100)).toFixed(2),
+    fc:     (cost * fcPct/100).toFixed(2),
+    profit: (cost * (1 + parseFloat(mu)/100) - cost - cost * fcPct/100).toFixed(2),
+    pct:    ((cost * (1 + parseFloat(mu)/100) - cost - cost * fcPct/100) / (cost + cost * fcPct/100) * 100).toFixed(1)
+  } : null;
 
-    // Z9 block — μόνο για AIR Διεθνή (S1003, S1012)
-    const z9mu = markups_z9[svc.id] || '';
-    const z9v  = (hasZ9Block(svc) && z9mu) ? validateZ9(svc.id, parseFloat(z9mu)) : null;
-    const z9block = hasZ9Block(svc) ? `
-      <div class="z9-block">
-        <div class="z9-label">🇨🇾 Markup Z9 (Κύπρος)</div>
-        <div class="z9-row">
-          <div class="markup-input-wrap">
-            <input class="markup-input" type="number" min="0" max="999" step="0.5"
-              id="markup-z9-${svc.id}" value="${z9mu}" placeholder="0"
-              oninput="onMarkupZ9('${svc.id}', this.value)" />
-            <span class="markup-pct">%</span>
-          </div>
-          <span class="markup-status" id="icon-z9-${svc.id}">${!z9mu ? '○' : z9v?.ok ? '✅' : '🔴'}</span>
-        </div>
-        <div class="z9-msg ${z9v ? (z9v.ok?'ok':'error') : ''}" id="msg-z9-${svc.id}">${z9v?.msg||''}</div>
-      </div>` : '';
-
-    return `
-    <div class="svc-card ${cls}" id="card-${svc.id}">
-      <div class="svc-header">
-        <span class="svc-name">${svc.name}</span>
-        <span class="svc-code">${svc.id}</span>
-      </div>
-      <div class="svc-mode">${svc.mode} · FC ${fcPct}%</div>
-      <div class="markup-row">
+  const z9mu = markups_z9[svc.id] || '';
+  const z9v  = (hasZ9Block(svc) && z9mu) ? validateZ9(svc.id, parseFloat(z9mu)) : null;
+  const z9block = hasZ9Block(svc) ? `
+    <div class="z9-block">
+      <div class="z9-label">🇨🇾 Markup Z9 (Κύπρος)</div>
+      <div class="z9-row">
         <div class="markup-input-wrap">
           <input class="markup-input" type="number" min="0" max="999" step="0.5"
-            id="markup-${svc.id}" value="${mu}" placeholder="0"
-            oninput="onMarkup('${svc.id}', this.value)" />
+            id="markup-z9-${svc.id}" value="${z9mu}" placeholder="0"
+            oninput="onMarkupZ9('${svc.id}', this.value)" />
           <span class="markup-pct">%</span>
         </div>
-        <span class="markup-status" id="icon-${svc.id}">${icon}</span>
+        <span class="markup-status" id="icon-z9-${svc.id}">${!z9mu ? '○' : z9v?.ok ? '✅' : '🔴'}</span>
       </div>
-      <div class="min-markup">Ελάχιστο: 0% (ελεύθερο)</div>
-      <div class="validation-msg ${v ? (v.ok?'ok':'error') : ''}" id="msg-${svc.id}">${v?.msg||''}</div>
-      ${z9block}
-      ${calc ? `
-      <div class="preview-row" id="preview-${svc.id}">
-        <div class="preview-item"><span class="preview-label">Κόστος DHL</span><span class="preview-value cost">${cost.toFixed(2)}€</span></div>
-        <div class="preview-item"><span class="preview-label">FC ${fcPct}%</span><span class="preview-value" style="color:#888">${calc.fc}€</span></div>
-        <div class="preview-item"><span class="preview-label">Τιμή πελάτη</span><span class="preview-value price">${calc.price}€</span></div>
-        <div class="preview-item"><span class="preview-label">Κέρδος</span><span class="preview-value profit">${calc.profit}€ (${calc.pct}%)</span></div>
-      </div>` : ''}
-      <button class="save-svc-btn ${(v?.ok || (svc.zone === 'z9' && (markups_z9[svc.id] || markups[svc.id]))) ? 'visible' : ''}" id="savebtn-${svc.id}" onclick="openModal('${svc.id}')">
-        💾 Αποθήκευση στο Ράφι ${svc.id}
-      </button>
-      <button class="save-svc-btn ${(v?.ok || (svc.zone === 'z9' && (markups_z9[svc.id] || markups[svc.id]))) ? 'visible' : ''}" id="tablebtn-${svc.id}"
-        style="background:#cc0000; margin-top:4px;" onclick="openTable('${svc.id}')">
-        ▶ Ανάπτυξη Πίνακα ${svc.id}
-      </button>
-    </div>`;
-  }).join('');
+      <div class="z9-msg ${z9v ? (z9v.ok?'ok':'error') : ''}" id="msg-z9-${svc.id}">${z9v?.msg||''}</div>
+    </div>` : '';
+
+  return `
+  <div class="svc-card ${cls}" id="card-${svc.id}">
+    <div class="svc-header">
+      <span class="svc-name">${svc.name}</span>
+      <span class="svc-code">${svc.id}</span>
+    </div>
+    <div class="svc-mode">${svc.mode} · FC ${fcPct}%</div>
+    <div class="markup-row">
+      <div class="markup-input-wrap">
+        <input class="markup-input" type="number" min="0" max="999" step="0.5"
+          id="markup-${svc.id}" value="${mu}" placeholder="0"
+          oninput="onMarkup('${svc.id}', this.value)" />
+        <span class="markup-pct">%</span>
+      </div>
+      <span class="markup-status" id="icon-${svc.id}">${icon}</span>
+    </div>
+    <div class="min-markup">Ελάχιστο: 0% (ελεύθερο)</div>
+    <div class="validation-msg ${v ? (v.ok?'ok':'error') : ''}" id="msg-${svc.id}">${v?.msg||''}</div>
+    ${z9block}
+    ${calc ? `
+    <div class="preview-row" id="preview-${svc.id}">
+      <div class="preview-item"><span class="preview-label">Κόστος DHL</span><span class="preview-value cost">${cost.toFixed(2)}€</span></div>
+      <div class="preview-item"><span class="preview-label">FC ${fcPct}%</span><span class="preview-value" style="color:#888">${calc.fc}€</span></div>
+      <div class="preview-item"><span class="preview-label">Τιμή πελάτη</span><span class="preview-value price">${calc.price}€</span></div>
+      <div class="preview-item"><span class="preview-label">Κέρδος</span><span class="preview-value profit">${calc.profit}€ (${calc.pct}%)</span></div>
+    </div>` : ''}
+    <button class="save-svc-btn ${(v?.ok || (svc.zone === 'z9' && (markups_z9[svc.id] || markups[svc.id]))) ? 'visible' : ''}" id="savebtn-${svc.id}" onclick="openModal('${svc.id}')">
+      💾 Αποθήκευση στο Ράφι ${svc.id}
+    </button>
+    <button class="save-svc-btn ${(v?.ok || (svc.zone === 'z9' && (markups_z9[svc.id] || markups[svc.id]))) ? 'visible' : ''}" id="tablebtn-${svc.id}"
+      style="background:#cc0000; margin-top:4px;" onclick="openTable('${svc.id}')">
+      ▶ Ανάπτυξη Πίνακα ${svc.id}
+    </button>
+  </div>`;
 }
 
-// ─── onMarkup ─────────────────────────────────────────────────────────────────
+function renderServices() {
+  const grSvcs = SERVICES.filter(s => !s.cy && !s.cy_surcharge);
+  const cySvcs = SERVICES.filter(s => s.cy || s.cy_surcharge);
+  document.getElementById('services-grid-gr').innerHTML = grSvcs.map(makeCard).join('');
+  document.getElementById('services-grid-cy').innerHTML = cySvcs.map(makeCard).join('');
+}
+
 function onMarkup(serviceId, value) {
   markups[serviceId] = value ? parseFloat(value) : null;
   const svc   = SERVICES.find(s => s.id === serviceId);
@@ -593,7 +588,7 @@ function onMarkup(serviceId, value) {
   const mu    = value ? parseFloat(value) : null;
   const v     = mu ? validate(serviceId, mu) : null;
 
-  document.getElementById(`card-${serviceId}`).className = 'svc-card ' + (svc.greece ? 'is-greece' : (svc.zone || svc.cy_surcharge) ? 'is-cyprus' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error'));
+  document.getElementById(`card-${serviceId}`).className = 'svc-card ' + (svc.cy_surcharge || svc.cy ? 'is-cyprus' : svc.greece ? 'is-greece' : (!mu ? '' : v?.ok ? 'is-valid' : 'has-error'));
   document.getElementById(`icon-${serviceId}`).textContent = !mu ? '○' : v?.ok ? '✅' : '🔴';
 
   const msgEl = document.getElementById(`msg-${serviceId}`);
@@ -605,7 +600,6 @@ function onMarkup(serviceId, value) {
   saveBtn.className  = 'save-svc-btn ' + (v?.ok ? 'visible' : '');
   if (tableBtn) tableBtn.className = 'save-svc-btn ' + (v?.ok ? 'visible' : '');
 
-  // Preview row
   const card     = document.getElementById(`card-${serviceId}`);
   const existing = card.querySelector('.preview-row');
   if (mu && cost && v?.ok) {
@@ -626,7 +620,6 @@ function onMarkup(serviceId, value) {
   } else if (existing) { existing.remove(); }
 }
 
-// ─── onMarkupZ9 — με validation ───────────────────────────────────────────────
 function onMarkupZ9(serviceId, value) {
   markups_z9[serviceId] = value ? parseFloat(value) : null;
   const mu = value ? parseFloat(value) : null;
@@ -641,14 +634,14 @@ function onMarkupZ9(serviceId, value) {
   }
 }
 
-// ─── TABLE / MODAL ────────────────────────────────────────────────────────────
 function openTable(serviceId) {
   const svc    = SERVICES.find(s => s.id === serviceId);
   const isZ9only = svc?.zone === 'z9' && !svc?.combi;
   const mu     = isZ9only ? (markups[serviceId] || markups_z9[serviceId]) : markups[serviceId];
   const mu_z9  = markups_z9[serviceId] || 0;
   if (!mu) { alert('Εισάγετε πρώτα markup %'); return; }
-  const sur = isZ9only ? 0 : (cySettings[svc?.surcharge_key || 'surcharge_cy_gr'] || 1.50);
+  const surMap = {'S1003_CY':'surcharge_cy_gr','S1012_CY':'surcharge_gr_cy','S1050':'surcharge_cy_gr','S1051':'surcharge_gr_cy'};
+  const sur = surMap[serviceId] ? (cySettings[surMap[serviceId]] || 1.50) : 0;
   window.location.href = `pricelist-table.html?service=${serviceId}&markup=${mu}&markup_z9=${mu_z9}&surcharge=${sur}&combi=${svc?.combi ? 1 : 0}`;
 }
 
@@ -688,7 +681,7 @@ function confirmSave() {
     markup_z9:    mu_z9,
     account:      account || '—',
     user:         currentUser.name,
-    office:       currentUser.office,
+    office:       currentUser.active_station||currentUser.office,
     date:         todayFormatted(),
     created_at:   new Date().toISOString()
   });
@@ -713,13 +706,12 @@ function confirmSave() {
   alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${svcId}!`);
 }
 
-// ─── SHELF ────────────────────────────────────────────────────────────────────
 function renderShelf() {
   const tabsEl = document.getElementById('shelf-tabs');
   if (!tabsEl) return;
   tabsEl.innerHTML = SERVICES.map(svc => {
-    const isGR = svc.greece;
-    const isCY = svc.zone || svc.cy_surcharge;
+    const isGR = svc.greece && !svc.cy && !svc.cy_surcharge;
+    const isCY = svc.cy || svc.cy_surcharge;
     const bgColor   = svc.id === activeShelfTab ? (isGR ? '#1565c0' : isCY ? '#f0a000' : '#555') : (isGR ? '#e3f2fd' : isCY ? '#fffde7' : '#f0f0f0');
     const textColor = svc.id === activeShelfTab ? 'white' : (isGR ? '#1565c0' : isCY ? '#7c6d00' : '#555');
     const border    = isGR ? '1px solid #1565c0' : isCY ? '1px solid #f0c040' : '1px solid #ccc';
@@ -762,14 +754,13 @@ function renderShelfContent() {
   }).join('');
 }
 
-// ─── viewShelfItem — περνάει markup_z9 στο URL ────────────────────────────────
 function viewShelfItem(svcId, id) {
   const item = (shelf[svcId]||[]).find(p => p.id === id);
   if (!item) return;
   const markup    = item.markup || item.global_markup || 0;
   const markup_z9 = item.markup_z9 || 0;
-  const svc       = SERVICES.find(s => s.id === svcId);
-  const sur       = cySettings[svcId === 'S1053' ? 'surcharge_cy_gr' : 'surcharge_gr_cy'] || 1.50;
+  const surMap = {'S1003_CY':'surcharge_cy_gr','S1012_CY':'surcharge_gr_cy','S1050':'surcharge_cy_gr','S1051':'surcharge_gr_cy'};
+  const sur = surMap[svcId] ? (cySettings[surMap[svcId]] || 1.50) : 0;
   localStorage.setItem('shelf_view_' + id, JSON.stringify({ rows: item.rows || [], name: item.name || '' }));
   window.open(
     `pricelist-table.html?service=${svcId}&markup=${markup}&markup_z9=${markup_z9}&surcharge=${sur}&readonly=1&view_id=${id}`,
@@ -808,3 +799,5 @@ function _updateBadge(){
 </script>
 <div id="station-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;"><div style="background:#fff;border-radius:12px;padding:28px;max-width:380px;width:90%;"><h2 style="font-size:16px;font-weight:600;margin:0 0 6px;">Επιλογή σταθμού</h2><p style="font-size:13px;color:#666;margin:0 0 16px;">Επίλεξε πού εργάζεσαι τώρα.</p><div id="station-modal-body"></div></div></div></body>
 </html>
+
+
