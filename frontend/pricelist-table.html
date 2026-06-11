@@ -752,6 +752,14 @@ function buildSlabs(prices, tolerance) {
 
     prevPrice = price;
   }
+  // Merge rate=0 brackets με το προηγούμενο
+  for (let k = rows.length - 1; k >= 1; k--) {
+    if (rows[k].rate === 0) {
+      rows[k-1].uptoW = rows[k].uptoW;
+      rows[k-1].toW   = rows[k].toW;
+      rows.splice(k, 1);
+    }
+  }
   const slabs = [];
   let i = 0;
   while (i < rows.length) {
@@ -796,7 +804,7 @@ function viewSlabs() {
             <td style="padding:5px 10px;text-align:center;font-family:monospace;">${s.fromW}</td>
             <td style="padding:5px 10px;text-align:center;font-family:monospace;">${s.toW}</td>
             <td style="padding:5px 10px;text-align:right;font-weight:700;color:#cc0000;">${s.rate.toFixed(2)}</td>
-            <td style="padding:5px 10px;text-align:center;">${s.addWeight}</td>
+            <td style="padding:5px 10px;text-align:center;">1</td>
             <td style="padding:5px 10px;text-align:right;font-weight:600;color:#1565c0;">${s.addRate.toFixed(2)}</td>
             <td style="padding:5px 10px;text-align:center;font-family:monospace;">${s.uptoW}</td>
           </tr>`).join('')}
@@ -848,7 +856,7 @@ async function exportCMS() {
     for (const docsType of ['docs', 'non docs']) {
       for (const slab of slabs) {
         const orig = isImport ? zone : fixedOrigin;
-        const dest = isImport ? fixedDest : zone;
+        const dest = isImport ? fixedDest : zone; 
         allRows.push([
           accountNo, stationCountry, 'Slab Rate', minW, weFrom,
           'Normal', originType, destType, orig, dest,
