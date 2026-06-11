@@ -772,6 +772,7 @@ function buildSlabs(prices, tolerance) {
     slabs.push(cur);
     i = j;
   }
+  if (slabs.length > 0) slabs[slabs.length - 1].uptoW = 1000;
   return slabs;
 }
 
