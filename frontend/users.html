@@ -1,4 +1,4 @@
-﻿<!-- users.html | v1.5 | 09-05-2026 -->
+<!-- users.html | v1.5 | 09-05-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -294,6 +294,13 @@
 
 <script>
 const API = 'https://4aexpress.com/api';
+function apiFetch(url, opts={}) {
+  const u = localStorage.getItem('4a_current_user');
+  const token = u ? (JSON.parse(u)._token || '') : '';
+  opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
+  return fetch(url, opts);
+}
+
 const STATIONS = { ATH:'Αθήνα', LCA:'Λάρνακα', NIC:'Λευκωσία', QLI:'Λεμεσός' };
 const ROLE_DEFAULTS = {
   administrator: { view:1, add:1, edit:1, delete:1, export:1, all:1 },
@@ -318,7 +325,7 @@ function init() {
 
 async function loadUsers() {
   try {
-    const r = await fetch(`${API}/users.php?v=${Date.now()}`);
+    const r = await apiFetch(`${API}/users.php?v=${Date.now()}`);
     users = await r.json();
   } catch(e) { users = []; }
   document.getElementById('user-count').textContent = users.length;
@@ -427,7 +434,7 @@ async function saveUser() {
     can_all:    document.getElementById('p-all').checked    ? 1 : 0,
   };
   try {
-    const r = await fetch(`${API}/users.php`, {
+    const r = await apiFetch(`${API}/users.php`, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload)
@@ -481,7 +488,7 @@ function editUser(id) {
 async function deleteUser(id) {
   const u = users.find(x => x.id === id);
   if (!u || !confirm(`Διαγραφή χρήστη "${u.name}";`)) return;
-  await fetch(`${API}/users.php`, {
+  await apiFetch(`${API}/users.php`, {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action:'delete', id})
@@ -547,7 +554,7 @@ let editingOfficeId = null;
 
 async function loadOffices() {
   try {
-    const r = await fetch(`${API}/offices.php?v=${Date.now()}`);
+    const r = await apiFetch(`${API}/offices.php?v=${Date.now()}`);
     offices = await r.json();
   } catch(e) { offices = []; }
   document.getElementById('office-count').textContent = offices.length;
@@ -625,7 +632,7 @@ async function saveOffice() {
     active:  parseInt(document.getElementById('o-active').value),
   };
   try {
-    const r = await fetch(`${API}/offices.php`, {
+    const r = await apiFetch(`${API}/offices.php`, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload)
@@ -639,7 +646,7 @@ async function saveOffice() {
 async function toggleOfficeActive(id, active) {
   const o = offices.find(x => x.id == id);
   if (!o) return;
-  await fetch(`${API}/offices.php`, {
+  await apiFetch(`${API}/offices.php`, {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ action:'save', ...o, id, active: active ? 1 : 0 })

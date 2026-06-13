@@ -727,7 +727,14 @@ function confirmSave() {
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
 
   const API = 'https://4aexpress.com/api';
-  fetch(`${API}/shelf.php`, {
+function apiFetch(url, opts={}) {
+  const u = localStorage.getItem('4a_current_user');
+  const token = u ? (JSON.parse(u)._token || '') : '';
+  opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
+  return fetch(url, opts);
+}
+
+  apiFetch(`${API}/shelf.php`, {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({ action:'save', ...item })

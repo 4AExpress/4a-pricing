@@ -184,6 +184,13 @@
 
 <script>
 const API = 'https://4aexpress.com/api';
+function apiFetch(url, opts={}) {
+  const u = localStorage.getItem('4a_current_user');
+  const token = u ? (JSON.parse(u)._token || '') : '';
+  opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
+  return fetch(url, opts);
+}
+
 let currentUser = null;
 let sections = [];
 let activeId = null;
@@ -244,7 +251,7 @@ async function initApp() {
 // -- SECTIONS ------------------------------------------------------------------
 async function loadSections() {
   try {
-    const r = await fetch(`${API}/help.php`);
+    const r = await apiFetch(`${API}/help.php`);
     const d = await r.json();
     sections = d.sections && d.sections.length ? d.sections : DEFAULT_SECTIONS;
   } catch(e) { sections = DEFAULT_SECTIONS; }
@@ -312,7 +319,7 @@ function cancelEdit() {
 async function saveSection(id) {
   const text = document.getElementById('content-textarea').value;
   try {
-    const r = await fetch(`${API}/help.php`, {
+    const r = await apiFetch(`${API}/help.php`, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({action:'save_section', id, content: text})
@@ -330,7 +337,7 @@ async function saveSection(id) {
 async function deleteSection(id) {
   if (!confirm('Να διαγραφεί το section;')) return;
   try {
-    await fetch(`${API}/help.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'delete_section', id}) });
+    await apiFetch(`${API}/help.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'delete_section', id}) });
     sections = sections.filter(x => x.id !== id);
     activeId = sections.length ? sections[0].id : null;
     renderSidebar();
@@ -349,7 +356,7 @@ async function addSection() {
   if (!title) { alert('Εισάγετε τίτλο'); return; }
   const id = 'sec_' + Date.now();
   try {
-    const r = await fetch(`${API}/help.php`, {
+    const r = await apiFetch(`${API}/help.php`, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({action:'add_section', id, icon, title})

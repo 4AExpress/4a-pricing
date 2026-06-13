@@ -249,6 +249,13 @@
 
 <script>
 const API = 'https://4aexpress.com/api';
+function apiFetch(url, opts={}) {
+  const u = localStorage.getItem('4a_current_user');
+  const token = u ? (JSON.parse(u)._token || '') : '';
+  opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
+  return fetch(url, opts);
+}
+
 let currentUser = null;
 let editingCode = null;
 let selectedColor = 'blue';
@@ -269,7 +276,7 @@ async function init() {
 // LOAD
 async function loadServices() {
   try {
-    const r = await fetch(`${API}/services.php?v=${Date.now()}`);
+    const r = await apiFetch(`${API}/services.php?v=${Date.now()}`);
     const data = await r.json();
     renderTable(data);
     await Promise.all(data.map(s => loadCodConfig(s.code)));
@@ -405,7 +412,7 @@ async function saveService() {
   };
 
   try {
-    const r = await fetch(`${API}/services.php`, {
+    const r = await apiFetch(`${API}/services.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -426,7 +433,7 @@ async function saveService() {
 async function deleteService(code) {
   if (!confirm(`Διαγραφή service "${code}";`)) return;
   try {
-    const r = await fetch(`${API}/services.php`, {
+    const r = await apiFetch(`${API}/services.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'delete', code })
@@ -442,7 +449,7 @@ async function deleteService(code) {
 // COD CONFIG
 async function loadCodConfig(code) {
   try {
-    const r = await fetch(`${API}/cod_service_config.php?service_code=${encodeURIComponent(code)}`);
+    const r = await apiFetch(`${API}/cod_service_config.php?service_code=${encodeURIComponent(code)}`);
     const d = await r.json();
     const chk = document.getElementById(`cod-chk-${code}`);
     if (chk) chk.checked = !!parseInt(d.cod_enabled);
@@ -480,7 +487,7 @@ async function saveCodConfig(code) {
   const statusEl = document.getElementById(`cod-status-${code}`);
   statusEl.textContent = '⏳ Αποθήκευση...';
   try {
-    const r = await fetch(`${API}/cod_service_config.php`, {
+    const r = await apiFetch(`${API}/cod_service_config.php`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

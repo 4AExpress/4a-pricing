@@ -229,6 +229,13 @@
 <script>
 const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 const API  = 'https://4aexpress.com/api';
+function apiFetch(url, opts={}) {
+  const u = localStorage.getItem('4a_current_user');
+  const token = u ? (JSON.parse(u)._token || '') : '';
+  opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
+  return fetch(url, opts);
+}
+
 
 const SERVICES = [
   // ── ΓΑΛΑΖΙΑ (GR) ──
@@ -387,14 +394,14 @@ function todayFormatted() { return formatDate(new Date().toISOString()); }
 
 async function init() {
   try {
-    const rs = await fetch(`${API}/settings.php?v=${Date.now()}`);
+    const rs = await apiFetch(`${API}/settings.php?v=${Date.now()}`);
     cySettings = await rs.json();
   } catch(e) { console.warn('Settings load failed', e); }
 
   await Promise.all([loadDHL(), loadFuel()]);
 
   try {
-    const r = await fetch(`${API}/shelf.php?v=${Date.now()}`);
+    const r = await apiFetch(`${API}/shelf.php?v=${Date.now()}`);
     const remote = await r.json();
     if (Object.keys(remote).length > 0) {
       shelf = remote;
@@ -503,7 +510,7 @@ async function saveCySettings() {
   cySettings.surcharge_gr_cy = gr_cy;
   cySettings.surcharge_cy_gr = cy_gr;
   try {
-    const r = await fetch(`${API}/settings.php`, {
+    const r = await apiFetch(`${API}/settings.php`, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({settings: {surcharge_gr_cy: gr_cy, surcharge_cy_gr: cy_gr}, user: currentUser.name})
@@ -700,7 +707,7 @@ function confirmSave() {
   const savedItem = {...shelf[svcId][0]};
   closeModal();
 
-  fetch(`${API}/shelf.php`, {
+  apiFetch(`${API}/shelf.php`, {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action:'save', ...savedItem})
@@ -783,7 +790,7 @@ function deleteShelfItem(svcId, id) {
   if (!confirm('Διαγραφή;')) return;
   shelf[svcId] = (shelf[svcId]||[]).filter(p => p.id !== id);
   localStorage.setItem('4a_shelf', JSON.stringify(shelf));
-  fetch(`${API}/shelf.php`, {
+  apiFetch(`${API}/shelf.php`, {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action:'delete', id})

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="el">
 <head>
 <meta charset="UTF-8">
@@ -189,6 +189,13 @@
 
 <script>
 const API = 'https://4aexpress.com/api';
+function apiFetch(url, opts={}) {
+  const u = localStorage.getItem('4a_current_user');
+  const token = u ? (JSON.parse(u)._token || '') : '';
+  opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
+  return fetch(url, opts);
+}
+
 let currentUser = null;
 let docs = [];
 let helpText = '';
@@ -257,7 +264,7 @@ async function initApp() {
 // ── DOCS ──────────────────────────────────────────────────────────────────────
 async function loadDocs() {
   try {
-    const r = await fetch(`${API}/docs.php`);
+    const r = await apiFetch(`${API}/docs.php`);
     const d = await r.json();
     docs = d.docs && d.docs.length ? d.docs : DEFAULT_DOCS;
   } catch(e) {
@@ -312,7 +319,7 @@ function markChanged() {
 
 async function saveDocs() {
   try {
-    const r = await fetch(`${API}/docs.php`, {
+    const r = await apiFetch(`${API}/docs.php`, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({action:'save_docs', docs})
@@ -331,7 +338,7 @@ async function saveDocs() {
 // ── HELP ──────────────────────────────────────────────────────────────────────
 async function loadHelp() {
   try {
-    const r = await fetch(`${API}/docs.php?section=help`);
+    const r = await apiFetch(`${API}/docs.php?section=help`);
     const d = await r.json();
     helpText = d.help || '';
   } catch(e) { helpText = ''; }
@@ -365,7 +372,7 @@ function cancelHelp() {
 async function saveHelp() {
   const text = document.getElementById('help-textarea').value;
   try {
-    const r = await fetch(`${API}/docs.php`, {
+    const r = await apiFetch(`${API}/docs.php`, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({action:'save_help', help: text})
