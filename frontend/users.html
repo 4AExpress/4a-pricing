@@ -1,4 +1,5 @@
-<!-- users.html | v1.0 | 08-05-2026 -->
+
+<!-- users.html | v2.0 | 13-06-2026 — per-module RBAC permissions -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -8,7 +9,6 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #1a1a1a; min-height: 100vh; }
-
   .topbar { background: #cc0000; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 42px; }
   .topbar-left { display: flex; align-items: center; gap: 12px; }
   .topbar-logo { display: flex; align-items: center; gap: 6px; }
@@ -17,16 +17,13 @@
   .topbar-title { color: white; font-size: 13px; font-weight: 500; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 12px; }
   .topbar-user { color: white; font-size: 11px; opacity: 0.9; }
   .topbar-logout { background: rgba(255,255,255,0.2); color: white; border: none; padding: 4px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; }
-
   .nav { background: white; border-bottom: 1px solid #ddd; display: flex; }
   .nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer; color: #666; border-bottom: 2px solid transparent; text-decoration: none; display: flex; align-items: center; }
   .nav-btn.active { color: #cc0000; border-bottom-color: #cc0000; font-weight: 600; }
   .nav-btn:hover { background: #f8f8f8; }
-
   .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
   .section-header { background: #00BCD4; color: white; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
   .section-body { background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; padding: 16px; margin-bottom: 20px; }
-
   .form-grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
   .form-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px; }
   .form-group { display: flex; flex-direction: column; gap: 4px; }
@@ -34,19 +31,29 @@
   .form-group input, .form-group select { padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; color: #333; background: white; outline: none; }
   .form-group input:focus, .form-group select:focus { border-color: #00BCD4; }
 
-  /* PERMISSIONS BOX */
-  .perms-box { background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; margin-bottom: 12px; }
-  .perms-title { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
-  .perms-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
-  .perm-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .perm-item label { font-size: 11px; font-weight: 600; color: #555; text-align: center; }
-  .perm-item input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; accent-color: #cc0000; }
-  .perm-item.disabled { opacity: 0.4; pointer-events: none; }
-
   /* STATIONS */
-  .stations-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
-  .station-pill { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid #ddd; background: white; color: #666; transition: all 0.15s; }
-  .station-pill.selected { background: #cc0000; color: white; border-color: #cc0000; }
+  .station-checks { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .station-check { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1.5px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600; color: #666; transition: all 0.15s; user-select: none; }
+  .station-check input { display: none; }
+  .station-check.checked { background: #cc0000; color: white; border-color: #cc0000; }
+  .station-check.locked { opacity: 0.6; cursor: not-allowed; }
+  .admin-note { font-size: 11px; color: #888; font-style: italic; margin-top: 4px; }
+
+  /* PER-MODULE PERMISSIONS TABLE */
+  .perms-box { background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; margin-bottom: 12px; }
+  .perms-title { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .perms-note { font-size: 10px; color: #aaa; font-weight: 400; font-style: italic; }
+  .perms-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .perms-table th { padding: 6px 10px; text-align: center; font-size: 10px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 0.04em; background: #f0f0f0; border-bottom: 2px solid #ddd; }
+  .perms-table th:first-child { text-align: left; }
+  .perms-table td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; text-align: center; vertical-align: middle; }
+  .perms-table td:first-child { text-align: left; font-size: 12px; font-weight: 600; color: #444; }
+  .perms-table tr:last-child td { border-bottom: none; }
+  .perms-table tr:hover td { background: #fafafa; }
+  .perms-table input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: #cc0000; }
+  .perms-table input[type=checkbox]:disabled { cursor: not-allowed; opacity: 0.4; }
+  .module-icon { margin-right: 6px; }
+  .perm-all-row td { background: #fff8e1; font-weight: 700; }
 
   .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
   .btn { padding: 8px 18px; border: none; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; }
@@ -69,16 +76,35 @@
   .role-badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
   .role-administrator { background: #cc0000; color: white; }
   .role-manager       { background: #1565c0; color: white; }
+  .role-staff         { background: #388e3c; color: white; }
+  .role-readonly      { background: #757575; color: white; }
   .role-user          { background: #555; color: white; }
-  .station-badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
-
+  .station-badge { padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: 600; background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
   .user-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
   .action-btn { padding: 5px 10px; border-radius: 4px; font-size: 11px; border: 1px solid #ddd; background: white; cursor: pointer; color: #555; }
-  .action-btn.edit { background: #f8f8f8; }
   .action-btn.del  { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
-
   .empty { text-align: center; padding: 30px; color: #bbb; font-size: 13px; }
   .no-access { text-align: center; padding: 40px; color: #c62828; font-size: 14px; font-weight: 600; }
+
+  /* TABS */
+  .tab-bar { display:flex; gap:0; margin-bottom:20px; border-bottom:2px solid #ddd; }
+  .tab-btn { padding:9px 20px; border:none; background:none; font-size:13px; font-weight:600; color:#666; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.15s; }
+  .tab-btn.active { color:#cc0000; border-bottom-color:#cc0000; }
+  .tab-btn:hover:not(.active) { background:#f8f8f8; color:#333; }
+
+  /* OFFICES */
+  .offices-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .offices-table th { background:#f5f5f5; padding:8px 10px; text-align:left; font-size:11px; font-weight:700; color:#666; text-transform:uppercase; letter-spacing:0.04em; border-bottom:2px solid #ddd; }
+  .offices-table td { padding:8px 10px; border-bottom:1px solid #f0f0f0; vertical-align:middle; }
+  .offices-table tr:last-child td { border-bottom:none; }
+  .offices-table tr:hover td { background:#fafafa; }
+  .prefix-badge { padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; background:#fff3e0; color:#e65100; border:1px solid #ffcc80; font-family:monospace; }
+  .toggle { position:relative; display:inline-block; width:36px; height:20px; }
+  .toggle input { opacity:0; width:0; height:0; position:absolute; }
+  .toggle-slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#ccc; border-radius:20px; transition:.2s; }
+  .toggle-slider:before { position:absolute; content:""; height:14px; width:14px; left:3px; bottom:3px; background:white; border-radius:50%; transition:.2s; }
+  .toggle input:checked + .toggle-slider { background:#43a047; }
+  .toggle input:checked + .toggle-slider:before { transform:translateX(16px); }
 </style>
 </head>
 <body>
@@ -103,168 +129,319 @@
   <a class="nav-btn" href="pricelist-clients.html">👥 Πελάτες</a>
   <a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
   <a class="nav-btn active" href="users.html">⚙️ Χρήστες</a>
+  <a class="nav-btn" href="services.html">🔧 Services</a>
+  <a class="nav-btn" href="docs.html">📄 Docs Προσφοράς</a>
+  <a class="nav-btn" href="fuel-surcharge-dashboard.html">⛽ Επίναυλος</a>
+  <a class="nav-btn" href="help.html">❓ Help</a>
 </div>
 
 <div class="container">
 
-  <!-- ΦΟΡΜΑ ΧΡΗΣΤΗ -->
-  <div class="section-header">
-    <span id="form-title">Νέος Χρήστης</span>
-    <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="resetForm()">✕ Καθαρισμός</button>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('users',this)">⚙️ Χρήστες</button>
+    <button class="tab-btn" onclick="showTab('offices',this)">🏢 Γραφεία</button>
   </div>
-  <div class="section-body" id="form-body">
 
-    <div class="form-grid3">
-      <div class="form-group">
-        <label>Ονοματεπώνυμο *</label>
-        <input type="text" id="u-name" placeholder="Νίκος Παπαδόπουλος" oninput="checkForm()" />
+  <!-- TAB: USERS -->
+  <div id="tab-users">
+
+    <div class="section-header">
+      <span id="form-title">Νέος Χρήστης</span>
+      <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="resetForm()">✕ Καθαρισμός</button>
+    </div>
+    <div class="section-body" id="form-body">
+
+      <div class="form-grid3">
+        <div class="form-group">
+          <label>User Code *</label>
+          <input type="text" id="u-code" placeholder="E1003" maxlength="5" oninput="validateCode(this);checkForm()" />
+          <span id="code-msg" style="font-size:11px;color:#c62828;"></span>
+        </div>
+        <div class="form-group">
+          <label>Ονοματεπώνυμο *</label>
+          <input type="text" id="u-name" placeholder="Νίκος Παπαδόπουλος" oninput="checkForm()" />
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="u-email" placeholder="nikos@4aexpress.com" oninput="checkForm()" />
+        </div>
+        <div class="form-group">
+          <label>PIN * (4 ψηφία)</label>
+          <input type="password" id="u-pin" maxlength="4" placeholder="••••" oninput="checkForm()" />
+        </div>
       </div>
-      <div class="form-group">
-        <label>Email *</label>
-        <input type="email" id="u-email" placeholder="nikos@4aexpress.com" oninput="checkForm()" />
+
+      <div class="form-grid2">
+        <div class="form-group">
+          <label>Ρόλος</label>
+          <select id="u-role" onchange="onRoleChange()">
+            <option value="readonly">Ανάγνωση μόνο</option>
+            <option value="staff">Staff</option>
+            <option value="manager">Manager</option>
+            <option value="administrator">Administrator</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Pricelist Scope</label>
+          <select id="u-scope">
+            <option value="GR">GR — Ελλάδα</option>
+            <option value="CY">CY — Κύπρος</option>
+            <option value="BOTH">BOTH — Και τα δύο</option>
+          </select>
+        </div>
       </div>
-      <div class="form-group">
-        <label>PIN * (4 ψηφία)</label>
-        <input type="password" id="u-pin" maxlength="4" placeholder="••••" oninput="checkForm()" />
+
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Σταθμοί Πρόσβασης</label>
+        <div class="station-checks" id="station-checks">
+          <label class="station-check checked" id="sc-ATH">
+            <input type="checkbox" value="ATH" checked onchange="onStationChange()" /> ATH — Αθήνα
+          </label>
+          <label class="station-check" id="sc-LCA">
+            <input type="checkbox" value="LCA" onchange="onStationChange()" /> LCA — Λάρνακα
+          </label>
+          <label class="station-check" id="sc-NIC">
+            <input type="checkbox" value="NIC" onchange="onStationChange()" /> NIC — Λευκωσία
+          </label>
+          <label class="station-check" id="sc-QLI">
+            <input type="checkbox" value="QLI" onchange="onStationChange()" /> QLI — Λεμεσός
+          </label>
+        </div>
+        <div class="admin-note" id="stations-note"></div>
+        <div style="margin-top:10px;">
+          <label style="font-size:11px;font-weight:600;color:#666;text-transform:uppercase;letter-spacing:0.05em;">Default Station *</label>
+          <select id="u-default-station" onchange="checkForm()" style="margin-top:4px;width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
+            <option value="ATH">ATH — Αθήνα</option>
+            <option value="LCA">LCA — Λάρνακα</option>
+            <option value="NIC">NIC — Λευκωσία</option>
+            <option value="QLI">QLI — Λεμεσός</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- PER-MODULE PERMISSIONS -->
+      <div class="perms-box">
+        <div class="perms-title">
+          <span>🔐 Δικαιώματα ανά Module</span>
+          <span class="perms-note">Αλλάζοντας ρόλο → συμπληρώνεται αυτόματα · μπορείς να τροποποιήσεις χειροκίνητα</span>
+        </div>
+        <table class="perms-table" id="perms-table">
+          <thead>
+            <tr>
+              <th>Module</th>
+              <th>View</th>
+              <th>Add</th>
+              <th>Edit</th>
+              <th>Delete</th>
+              <th>Export</th>
+            </tr>
+          </thead>
+          <tbody id="perms-tbody">
+            <!-- filled by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="resetForm()">Ακύρωση</button>
+        <button class="btn btn-primary" id="save-btn" onclick="saveUser()" disabled>💾 Αποθήκευση</button>
       </div>
     </div>
 
-    <div class="form-grid2">
-      <div class="form-group">
-        <label>Ρόλος</label>
-        <select id="u-role" onchange="onRoleChange()">
-          <option value="user">User</option>
-          <option value="manager">Manager</option>
-          <option value="administrator">Administrator</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Σταθμός</label>
-        <div class="stations-grid" id="stations-grid">
-          <span class="station-pill selected" onclick="toggleStation('ATH',this)">ATH — Αθήνα</span>
-          <span class="station-pill" onclick="toggleStation('LCA',this)">LCA — Λάρνακα</span>
-          <span class="station-pill" onclick="toggleStation('NIC',this)">NIC — Λευκωσία</span>
-          <span class="station-pill" onclick="toggleStation('QLI',this)">QLI — Λεμεσός</span>
+    <div class="section-header">
+      <span>Λίστα Χρηστών (<span id="user-count">0</span>)</span>
+    </div>
+    <div class="section-body">
+      <div id="users-list"><div class="empty">Φόρτωση...</div></div>
+    </div>
+
+  </div><!-- /tab-users -->
+
+  <!-- TAB: OFFICES -->
+  <div id="tab-offices" style="display:none">
+
+    <div class="section-header">
+      <span id="office-form-title">Νέο Γραφείο</span>
+      <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="resetOfficeForm()">✕ Καθαρισμός</button>
+    </div>
+    <div class="section-body">
+      <div class="form-grid3">
+        <div class="form-group">
+          <label>Prefix *</label>
+          <input type="text" id="o-prefix" placeholder="ATH" maxlength="10" oninput="this.value=this.value.toUpperCase();checkOfficeForm()" />
         </div>
+        <div class="form-group">
+          <label>Πόλη *</label>
+          <input type="text" id="o-city" placeholder="Αθήνα" oninput="checkOfficeForm()" />
+        </div>
+        <div class="form-group">
+          <label>Τηλέφωνο</label>
+          <input type="text" id="o-tel" placeholder="+30 210 0000000" />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="o-email" placeholder="ath@4aexpress.com" />
+        </div>
+        <div class="form-group">
+          <label>Manager</label>
+          <input type="text" id="o-manager" placeholder="Ονοματεπώνυμο" />
+        </div>
+        <div class="form-group">
+          <label>Ενεργό</label>
+          <select id="o-active">
+            <option value="1">Ναι</option>
+            <option value="0">Όχι</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Διεύθυνση</label>
+          <input type="text" id="o-addr" placeholder="Βελεστίνου 7, 11523, Αθήνα" />
+        </div>
+        <div class="form-group">
+          <label>Εταιρεία (για PDF)</label>
+          <input type="text" id="o-company" placeholder="4A Express Worldwide" />
+        </div>
+        <div class="form-group">
+          <label>ΑΦΜ (για PDF)</label>
+          <input type="text" id="o-vat" placeholder="044978638" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="resetOfficeForm()">Ακύρωση</button>
+        <button class="btn btn-primary" id="office-save-btn" onclick="saveOffice()" disabled>💾 Αποθήκευση</button>
       </div>
     </div>
 
-    <!-- PERMISSIONS -->
-    <div class="perms-box">
-      <div class="perms-title">Δικαιώματα</div>
-      <div class="perms-grid">
-        <div class="perm-item">
-          <label>View</label>
-          <input type="checkbox" id="p-view" checked />
-        </div>
-        <div class="perm-item">
-          <label>Add</label>
-          <input type="checkbox" id="p-add" />
-        </div>
-        <div class="perm-item">
-          <label>Edit</label>
-          <input type="checkbox" id="p-edit" />
-        </div>
-        <div class="perm-item">
-          <label>Delete</label>
-          <input type="checkbox" id="p-delete" />
-        </div>
-        <div class="perm-item">
-          <label>Exp/Print</label>
-          <input type="checkbox" id="p-export" />
-        </div>
-        <div class="perm-item">
-          <label>All</label>
-          <input type="checkbox" id="p-all" onchange="onAllChange()" />
-        </div>
-      </div>
+    <div class="section-header">
+      <span>Γραφεία (<span id="office-count">0</span>)</span>
+    </div>
+    <div class="section-body" style="padding:0;overflow-x:auto;">
+      <table class="offices-table">
+        <thead>
+          <tr><th>Prefix</th><th>Πόλη</th><th>Τηλέφωνο</th><th>Email</th><th>Manager</th><th>Ενεργό</th><th></th></tr>
+        </thead>
+        <tbody id="offices-tbody">
+          <tr><td colspan="7" style="text-align:center;padding:24px;color:#bbb;">Φόρτωση...</td></tr>
+        </tbody>
+      </table>
     </div>
 
-    <div class="btn-row">
-      <button class="btn btn-secondary" onclick="resetForm()">Ακύρωση</button>
-      <button class="btn btn-primary" id="save-btn" onclick="saveUser()" disabled>💾 Αποθήκευση</button>
-    </div>
-  </div>
+  </div><!-- /tab-offices -->
 
-  <!-- ΛΙΣΤΑ ΧΡΗΣΤΩΝ -->
-  <div class="section-header">
-    <span>Λίστα Χρηστών (<span id="user-count">0</span>)</span>
-  </div>
-  <div class="section-body">
-    <div id="users-list"><div class="empty">Φόρτωση...</div></div>
-  </div>
-
-</div>
+</div><!-- /container -->
 
 <script>
 const API = 'https://4aexpress.com/api';
+function apiFetch(url, opts={}) {
+  const u = localStorage.getItem('4a_current_user');
+  const token = u ? (JSON.parse(u)._token || '') : '';
+  opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
+  return fetch(url, opts);
+}
 
+// ─── MODULES ──────────────────────────────────────────────────────────────────
+const MODULES = [
+  { id: 'pricelist-editor',  label: '📋 Pricelist Editor' },
+  { id: 'pricelist-clients', label: '👥 Client Pricelists' },
+  { id: 'services',          label: '🔧 Services' },
+  { id: 'docs',              label: '📄 Documents' },
+  { id: 'help',              label: '❓ Help / Wiki' },
+  { id: 'users',             label: '⚙️ Users' },
+];
+const ACTIONS = ['view','add','edit','delete','export'];
+
+// Default permissions per role (mirrors role_permissions table)
 const ROLE_DEFAULTS = {
-  administrator: { view:1, add:1, edit:1, delete:1, export:1, all:1 },
-  manager:       { view:1, add:1, edit:1, delete:0, export:1, all:0 },
-  user:          { view:1, add:0, edit:0, delete:0, export:0, all:0 },
+  administrator: { 'pricelist-editor':{view:1,add:1,edit:1,delete:1,export:1}, 'pricelist-clients':{view:1,add:1,edit:1,delete:1,export:1}, services:{view:1,add:1,edit:1,delete:1,export:1}, docs:{view:1,add:1,edit:1,delete:1,export:1}, help:{view:1,add:1,edit:1,delete:1,export:1}, users:{view:1,add:1,edit:1,delete:1,export:1} },
+  manager:       { 'pricelist-editor':{view:1,add:1,edit:1,delete:0,export:1}, 'pricelist-clients':{view:1,add:1,edit:1,delete:0,export:1}, services:{view:1,add:0,edit:1,delete:0,export:0}, docs:{view:1,add:0,edit:0,delete:0,export:1}, help:{view:1,add:0,edit:0,delete:0,export:0}, users:{view:1,add:0,edit:0,delete:0,export:0} },
+  staff:         { 'pricelist-editor':{view:1,add:0,edit:0,delete:0,export:0}, 'pricelist-clients':{view:1,add:0,edit:0,delete:0,export:1}, services:{view:1,add:0,edit:0,delete:0,export:0}, docs:{view:1,add:0,edit:0,delete:0,export:1}, help:{view:1,add:0,edit:0,delete:0,export:0}, users:{view:0,add:0,edit:0,delete:0,export:0} },
+  readonly:      { 'pricelist-editor':{view:1,add:0,edit:0,delete:0,export:0}, 'pricelist-clients':{view:1,add:0,edit:0,delete:0,export:0}, services:{view:1,add:0,edit:0,delete:0,export:0}, docs:{view:1,add:0,edit:0,delete:0,export:0}, help:{view:1,add:0,edit:0,delete:0,export:0}, users:{view:0,add:0,edit:0,delete:0,export:0} },
 };
 
-const STATION_NAMES = { ATH:'Αθήνα', LCA:'Λάρνακα', NIC:'Λευκωσία', QLI:'Λεμεσός' };
-const ROLE_LABELS   = { administrator:'Administrator', manager:'Manager', user:'User' };
+const ROLE_LABELS = { administrator:'Administrator', manager:'Manager', staff:'Staff', readonly:'Ανάγνωση μόνο', user:'User' };
+const ROLE_COLORS = { administrator:'#cc0000', manager:'#1565c0', staff:'#388e3c', readonly:'#757575', user:'#555' };
+const STATIONS = { ATH:'Αθήνα', LCA:'Λάρνακα', NIC:'Λευκωσία', QLI:'Λεμεσός' };
 
 let currentUser = null;
-let users       = [];
-let editingId   = null;
-let selectedStation = 'ATH';
+let users = [];
+let editingId = null;
 
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 function init() {
   currentUser = JSON.parse(localStorage.getItem('4a_current_user') || 'null');
   if (!currentUser) { window.location.href = 'pricelist-editor.html'; return; }
-  document.getElementById('topbar-user').textContent = `${currentUser.name} · ${currentUser.office}`;
-
-  // Αν δεν είναι admin, κρύψε τη φόρμα
+  document.getElementById('topbar-user').textContent = `${currentUser.name} · ${currentUser.active_station||currentUser.office}`;
   if (currentUser.role !== 'administrator') {
     document.getElementById('form-body').innerHTML = '<div class="no-access">⛔ Μόνο οι Administrator μπορούν να διαχειριστούν χρήστες.</div>';
+  } else {
+    buildPermsTable();
   }
-
   loadUsers();
 }
 
-async function loadUsers() {
-  try {
-    const r = await fetch(`${API}/users.php?v=${Date.now()}`);
-    users = await r.json();
-  } catch(e) {
-    users = [];
-  }
-  document.getElementById('user-count').textContent = users.length;
-  renderUsers();
+// ─── PERMISSIONS TABLE ────────────────────────────────────────────────────────
+function buildPermsTable(permsData) {
+  const role = document.getElementById('u-role')?.value || 'readonly';
+  const defaults = permsData || ROLE_DEFAULTS[role] || ROLE_DEFAULTS.readonly;
+  const tbody = document.getElementById('perms-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = MODULES.map(m => {
+    const p = defaults[m.id] || {view:0,add:0,edit:0,delete:0,export:0};
+    return `<tr>
+      <td>${m.label}</td>
+      ${ACTIONS.map(a => `<td><input type="checkbox" id="p-${m.id}-${a}" ${p[a] ? 'checked' : ''} /></td>`).join('')}
+    </tr>`;
+  }).join('');
 }
 
+function getPermsFromTable() {
+  const result = {};
+  MODULES.forEach(m => {
+    result[m.id] = {};
+    ACTIONS.forEach(a => {
+      result[m.id][a] = document.getElementById(`p-${m.id}-${a}`)?.checked ? 1 : 0;
+    });
+  });
+  return result;
+}
+
+// ─── FORM LOGIC ───────────────────────────────────────────────────────────────
 function onRoleChange() {
   const role = document.getElementById('u-role').value;
-  const d    = ROLE_DEFAULTS[role] || ROLE_DEFAULTS.user;
-  document.getElementById('p-view').checked   = !!d.view;
-  document.getElementById('p-add').checked    = !!d.add;
-  document.getElementById('p-edit').checked   = !!d.edit;
-  document.getElementById('p-delete').checked = !!d.delete;
-  document.getElementById('p-export').checked = !!d.export;
-  document.getElementById('p-all').checked    = !!d.all;
+  buildPermsTable(ROLE_DEFAULTS[role]);
+  const isAdmin = role === 'administrator';
+  document.querySelectorAll('.station-check').forEach(el => {
+    const cb = el.querySelector('input');
+    if (isAdmin) { cb.checked = true; el.classList.add('checked','locked'); }
+    else { el.classList.remove('locked'); el.classList.toggle('checked', cb.checked); }
+  });
+  document.getElementById('stations-note').textContent = isAdmin ? '* Administrator έχει πρόσβαση σε όλους τους σταθμούς' : '';
+  checkForm();
 }
 
-function onAllChange() {
-  const all = document.getElementById('p-all').checked;
-  if (all) {
-    ['p-view','p-add','p-edit','p-delete','p-export'].forEach(id => {
-      document.getElementById(id).checked = true;
-    });
-  }
+function onStationChange() {
+  document.querySelectorAll('.station-check').forEach(el => {
+    el.classList.toggle('checked', el.querySelector('input').checked);
+  });
 }
 
-function toggleStation(code, el) {
-  document.querySelectorAll('.station-pill').forEach(p => p.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedStation = code;
+function getSelectedStations() {
+  const role = document.getElementById('u-role').value;
+  if (role === 'administrator') return 'ATH,LCA,NIC,QLI';
+  return Array.from(document.querySelectorAll('.station-check input:checked'))
+    .map(cb => cb.value).join(',') || 'ATH';
+}
+
+function validateCode(el) {
+  const v = el.value.toUpperCase(); el.value = v;
+  const ok = /^E\d{4}$/.test(v);
+  document.getElementById('code-msg').textContent = v && !ok ? 'Μορφή: E + 4 ψηφία (π.χ. E1003)' : '';
+  return ok;
 }
 
 function checkForm() {
-  const ok = document.getElementById('u-name').value.trim() &&
+  const ok = (editingId || /^E\d{4}$/.test(document.getElementById('u-code')?.value||'')) &&
+             document.getElementById('u-name').value.trim() &&
              document.getElementById('u-email').value.trim() &&
              document.getElementById('u-pin').value.trim().length === 4;
   document.getElementById('save-btn').disabled = !ok;
@@ -272,40 +449,55 @@ function checkForm() {
 
 function resetForm() {
   editingId = null;
-  selectedStation = 'ATH';
-  ['u-name','u-email','u-pin'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('u-role').value = 'user';
-  document.querySelectorAll('.station-pill').forEach(p => p.classList.remove('selected'));
-  document.querySelector('.station-pill').classList.add('selected');
+  ['u-code','u-name','u-email','u-pin'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('u-role').value = 'readonly';
+  document.getElementById('u-scope').value = 'GR';
   document.getElementById('form-title').textContent = 'Νέος Χρήστης';
-  onRoleChange();
+  document.querySelectorAll('.station-check').forEach(el => {
+    const cb = el.querySelector('input');
+    cb.checked = cb.value === 'ATH';
+    el.classList.toggle('checked', cb.value === 'ATH');
+    el.classList.remove('locked');
+  });
+  document.getElementById('stations-note').textContent = '';
+  buildPermsTable(ROLE_DEFAULTS.readonly);
   checkForm();
 }
 
+// ─── SAVE USER ────────────────────────────────────────────────────────────────
 async function saveUser() {
   const name  = document.getElementById('u-name').value.trim();
   const email = document.getElementById('u-email').value.trim();
   const pin   = document.getElementById('u-pin').value.trim();
   const role  = document.getElementById('u-role').value;
+  const code  = document.getElementById('u-code').value.trim();
+  const stations = getSelectedStations();
+  const firstStation = stations.split(',')[0];
+  const office = STATIONS[firstStation] || 'Αθήνα';
+  const perms = getPermsFromTable();
 
   if (!name || !email || pin.length !== 4) { alert('Συμπλήρωσε όλα τα υποχρεωτικά πεδία'); return; }
 
+  // Flatten perms for backward compat (global can_* = OR across modules)
+  const can_view   = Object.values(perms).some(p=>p.view)   ? 1 : 0;
+  const can_add    = Object.values(perms).some(p=>p.add)    ? 1 : 0;
+  const can_edit   = Object.values(perms).some(p=>p.edit)   ? 1 : 0;
+  const can_delete = Object.values(perms).some(p=>p.delete) ? 1 : 0;
+  const can_export = Object.values(perms).some(p=>p.export) ? 1 : 0;
+  const can_all    = (can_view && can_add && can_edit && can_delete && can_export) ? 1 : 0;
+
   const payload = {
     action: editingId ? 'edit' : 'add',
-    id:       editingId,
-    name, email, pin, role,
-    office:   STATION_NAMES[selectedStation] || 'Αθήνα',
-    station:  selectedStation,
-    can_view:   document.getElementById('p-view').checked   ? 1 : 0,
-    can_add:    document.getElementById('p-add').checked    ? 1 : 0,
-    can_edit:   document.getElementById('p-edit').checked   ? 1 : 0,
-    can_delete: document.getElementById('p-delete').checked ? 1 : 0,
-    can_export: document.getElementById('p-export').checked ? 1 : 0,
-    can_all:    document.getElementById('p-all').checked    ? 1 : 0,
+    id: editingId,
+    user_code: code, name, email, pin, role, office, stations,
+    pricelist_scope: document.getElementById('u-scope').value,
+    default_station: document.getElementById('u-default-station').value,
+    can_view, can_add, can_edit, can_delete, can_export, can_all,
+    module_permissions: perms,
   };
 
   try {
-    const r = await fetch(`${API}/users.php`, {
+    const r = await apiFetch(`${API}/users.php`, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload)
@@ -313,97 +505,220 @@ async function saveUser() {
     const d = await r.json();
     if (d.ok) {
       alert(`✅ Χρήστης "${name}" αποθηκεύτηκε!`);
-      resetForm();
-      loadUsers();
-    } else {
-      alert('Σφάλμα: ' + (d.error || 'Άγνωστο'));
-    }
-  } catch(e) {
-    alert('Σφάλμα σύνδεσης με API');
-  }
+      resetForm(); loadUsers();
+    } else { alert('Σφάλμα: ' + (d.error || 'Άγνωστο')); }
+  } catch(e) { alert('Σφάλμα σύνδεσης με API'); }
 }
 
-function editUser(id) {
-  const u = users.find(x => x.id === id);
-  if (!u) return;
-  editingId = id;
-  document.getElementById('u-name').value  = u.name  || '';
-  document.getElementById('u-email').value = u.email || '';
-  document.getElementById('u-pin').value   = '';
-  document.getElementById('u-role').value  = u.role  || 'user';
-  selectedStation = u.station || 'ATH';
-  document.querySelectorAll('.station-pill').forEach(p => {
-    p.classList.toggle('selected', p.textContent.startsWith(selectedStation));
-  });
-  document.getElementById('p-view').checked   = !!parseInt(u.can_view);
-  document.getElementById('p-add').checked    = !!parseInt(u.can_add);
-  document.getElementById('p-edit').checked   = !!parseInt(u.can_edit);
-  document.getElementById('p-delete').checked = !!parseInt(u.can_delete);
-  document.getElementById('p-export').checked = !!parseInt(u.can_export);
-  document.getElementById('p-all').checked    = !!parseInt(u.can_all);
-  document.getElementById('form-title').textContent = `✏️ Επεξεργασία: ${u.name}`;
-  document.getElementById('save-btn').disabled = false;
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-
-async function deleteUser(id) {
-  const u = users.find(x => x.id === id);
-  if (!u) return;
-  if (!confirm(`Διαγραφή χρήστη "${u.name}";`)) return;
+// ─── LOAD & RENDER USERS ──────────────────────────────────────────────────────
+async function loadUsers() {
   try {
-    await fetch(`${API}/users.php`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({action:'delete', id})
-    });
-    loadUsers();
-  } catch(e) { alert('Σφάλμα σύνδεσης'); }
+    const r = await apiFetch(`${API}/users.php?v=${Date.now()}`);
+    users = await r.json();
+  } catch(e) { users = []; }
+  document.getElementById('user-count').textContent = users.length;
+  renderUsers();
 }
 
 function renderUsers() {
   const el = document.getElementById('users-list');
   if (!users.length) { el.innerHTML = '<div class="empty">Δεν υπάρχουν χρήστες</div>'; return; }
-
   const initials = n => (n||'?').split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase();
-  const ROLE_COLORS = { administrator:'#cc0000', manager:'#1565c0', user:'#555' };
-
-  el.innerHTML = users.map(u => {
-    const perms = [
-      {k:'View',   v:u.can_view},
-      {k:'Add',    v:u.can_add},
-      {k:'Edit',   v:u.can_edit},
-      {k:'Delete', v:u.can_delete},
-      {k:'Export', v:u.can_export},
-      {k:'All',    v:u.can_all},
-    ];
-    const isMe = u.name === currentUser.name;
+  const visibleUsers = users.filter(u =>
+    currentUser.role === 'administrator' || u.role !== 'administrator'
+  );
+  el.innerHTML = visibleUsers.map(u => {
+    const stationBadges = (u.stations||'ATH').split(',').map(s=>`<span class="station-badge">${s}</span>`).join(' ');
+    const isMe = u.id == currentUser.id;
+    const color = ROLE_COLORS[u.role] || '#555';
     return `
     <div class="user-item">
-      <div class="user-avatar" style="background:${ROLE_COLORS[u.role]||'#555'}20;color:${ROLE_COLORS[u.role]||'#555'};">
+      <div class="user-avatar" style="background:${color}20;color:${color};">
         ${initials(u.name)}
       </div>
       <div class="user-info">
         <div class="user-name">
-          ${u.name} ${isMe ? '<span style="font-size:10px;color:#888;">(εσύ)</span>' : ''}
+          <span style="font-family:monospace;font-size:11px;background:#f0f0f0;padding:2px 6px;border-radius:4px;color:#555;">${u.user_code||''}</span>
+          ${u.name} ${isMe?'<span style="font-size:10px;color:#888;">(εσύ)</span>':''}
           <span class="role-badge role-${u.role}">${ROLE_LABELS[u.role]||u.role}</span>
-          <span class="station-badge">${u.station||'ATH'} — ${STATION_NAMES[u.station]||u.station}</span>
+          ${stationBadges}
+          <span style="font-size:10px;color:#888;background:#f5f5f5;padding:2px 6px;border-radius:4px;">${u.pricelist_scope||'GR'}</span>
         </div>
-        <div class="user-meta">${u.email||'—'} · ${u.office||'—'}</div>
-        <div class="user-perms">
-          ${perms.map(p=>`<span class="perm-badge ${parseInt(p.v)?'perm-on':'perm-off'}">${p.k}</span>`).join('')}
-        </div>
+        <div class="user-meta">${u.email||'—'}</div>
       </div>
       <div class="user-actions">
         ${currentUser.role==='administrator' ? `
-          <button class="action-btn edit" onclick="editUser(${u.id})">✏️ Edit</button>
-          ${!isMe ? `<button class="action-btn del" onclick="deleteUser(${u.id})">🗑</button>` : ''}
+          <button class="action-btn" onclick="editUser(${u.id})">✏️ Edit</button>
+          ${!isMe ? `<button class="action-btn del" onclick="deleteUser(${u.id})">Del</button>` : ''}
         ` : ''}
       </div>
     </div>`;
   }).join('');
 }
 
-function doLogout() { window.location.href = 'pricelist-editor.html'; }
+function editUser(id) {
+  const u = users.find(x => x.id == id);
+  if (!u) return;
+  editingId = id;
+  document.getElementById('u-code').value  = u.user_code || '';
+  document.getElementById('u-name').value  = u.name  || '';
+  document.getElementById('u-email').value = u.email || '';
+  document.getElementById('u-pin').value   = '';
+  document.getElementById('u-role').value  = u.role  || 'readonly';
+  document.getElementById('u-scope').value = u.pricelist_scope || 'GR';
+  document.getElementById('u-default-station').value = u.default_station || 'ATH';
+
+  const userStations = (u.stations||'ATH').split(',');
+  document.querySelectorAll('.station-check').forEach(el => {
+    const cb = el.querySelector('input');
+    cb.checked = userStations.includes(cb.value);
+    el.classList.toggle('checked', cb.checked);
+    el.classList.remove('locked');
+  });
+  if (u.role === 'administrator') {
+    document.querySelectorAll('.station-check').forEach(el => el.classList.add('locked'));
+    document.getElementById('stations-note').textContent = '* Administrator έχει πρόσβαση σε όλους τους σταθμούς';
+  } else {
+    document.getElementById('stations-note').textContent = '';
+  }
+
+  // Load permissions from API
+  apiFetch(`${API}/permissions.php?user_id=${id}`)
+    .then(r => r.json())
+    .then(d => {
+      const perms = d.ok && d.data?.permissions ? d.data.permissions : ROLE_DEFAULTS[u.role];
+      buildPermsTable(perms);
+    })
+    .catch(() => buildPermsTable(ROLE_DEFAULTS[u.role] || ROLE_DEFAULTS.readonly));
+
+  document.getElementById('form-title').textContent = `✏️ Επεξεργασία: ${u.name}`;
+  document.getElementById('save-btn').disabled = false;
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function deleteUser(id) {
+  const u = users.find(x => x.id == id);
+  if (!u || !confirm(`Διαγραφή χρήστη "${u.name}";`)) return;
+  await apiFetch(`${API}/users.php`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({action:'delete', id})
+  });
+  loadUsers();
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-users').style.display   = name === 'users'   ? '' : 'none';
+  document.getElementById('tab-offices').style.display = name === 'offices' ? '' : 'none';
+  if (name === 'offices' && !offices.length) loadOffices();
+}
+
+// ─── OFFICES ──────────────────────────────────────────────────────────────────
+let offices = [];
+let editingOfficeId = null;
+
+async function loadOffices() {
+  try {
+    const r = await apiFetch(`${API}/offices.php?v=${Date.now()}`);
+    offices = await r.json();
+  } catch(e) { offices = []; }
+  document.getElementById('office-count').textContent = offices.length;
+  renderOffices();
+}
+
+function renderOffices() {
+  const tbody = document.getElementById('offices-tbody');
+  if (!offices.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:#bbb;">Δεν υπάρχουν γραφεία</td></tr>';
+    return;
+  }
+  tbody.innerHTML = offices.map(o => `
+    <tr>
+      <td><span class="prefix-badge">${o.prefix}</span></td>
+      <td>${o.city}</td>
+      <td>${o.tel || '—'}</td>
+      <td>${o.email || '—'}</td>
+      <td>${o.manager || '—'}</td>
+      <td>
+        <label class="toggle">
+          <input type="checkbox" ${parseInt(o.active) ? 'checked' : ''}
+            onchange="toggleOfficeActive(${o.id}, this.checked)" />
+          <span class="toggle-slider"></span>
+        </label>
+      </td>
+      <td><button class="action-btn" onclick="editOffice(${o.id})">✏️ Edit</button></td>
+    </tr>`).join('');
+}
+
+function checkOfficeForm() {
+  const ok = document.getElementById('o-prefix').value.trim() && document.getElementById('o-city').value.trim();
+  document.getElementById('office-save-btn').disabled = !ok;
+}
+
+function resetOfficeForm() {
+  editingOfficeId = null;
+  ['o-prefix','o-city','o-tel','o-email','o-manager','o-addr','o-company','o-vat'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('o-active').value = '1';
+  document.getElementById('office-form-title').textContent = 'Νέο Γραφείο';
+  document.getElementById('office-save-btn').disabled = true;
+}
+
+function editOffice(id) {
+  const o = offices.find(x => x.id == id);
+  if (!o) return;
+  editingOfficeId = id;
+  document.getElementById('o-prefix').value  = o.prefix  || '';
+  document.getElementById('o-city').value    = o.city    || '';
+  document.getElementById('o-tel').value     = o.tel     || '';
+  document.getElementById('o-email').value   = o.email   || '';
+  document.getElementById('o-manager').value = o.manager || '';
+  document.getElementById('o-addr').value    = o.addr    || '';
+  document.getElementById('o-company').value = o.company || '';
+  document.getElementById('o-vat').value     = o.vat     || '';
+  document.getElementById('o-active').value  = parseInt(o.active) ? '1' : '0';
+  document.getElementById('office-form-title').textContent = `✏️ Επεξεργασία: ${o.city}`;
+  document.getElementById('office-save-btn').disabled = false;
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function saveOffice() {
+  const payload = {
+    action:'save', id: editingOfficeId || null,
+    prefix:  document.getElementById('o-prefix').value.trim(),
+    city:    document.getElementById('o-city').value.trim(),
+    tel:     document.getElementById('o-tel').value.trim(),
+    email:   document.getElementById('o-email').value.trim(),
+    manager: document.getElementById('o-manager').value.trim(),
+    addr:    document.getElementById('o-addr').value.trim(),
+    company: document.getElementById('o-company').value.trim(),
+    vat:     document.getElementById('o-vat').value.trim(),
+    active:  parseInt(document.getElementById('o-active').value),
+  };
+  try {
+    const r = await apiFetch(`${API}/offices.php`, {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (d.ok) { resetOfficeForm(); loadOffices(); }
+    else { alert('Σφάλμα: ' + (d.error || 'Άγνωστο')); }
+  } catch(e) { alert('Σφάλμα σύνδεσης με API'); }
+}
+
+async function toggleOfficeActive(id, active) {
+  const o = offices.find(x => x.id == id);
+  if (!o) return;
+  await apiFetch(`${API}/offices.php`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({action:'save', ...o, id, active: active ? 1 : 0})
+  });
+  loadOffices();
+}
+
+function doLogout() {
+  localStorage.removeItem('4a_current_user');
+  window.location.href = 'pricelist-editor.html';
+}
 
 init();
 </script>
