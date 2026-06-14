@@ -2,6 +2,7 @@
 // services.php | v1.0 | 22-05-2026
 error_reporting(E_ALL); ini_set("log_errors",1); ini_set("error_log","/tmp/services_errors.log");
 require_once 'config.php';
+require_once 'auth.php';
 
 // CREATE TABLE IF NOT EXISTS — τρέχει κάθε φορά, ασφαλές
 db()->exec("CREATE TABLE IF NOT EXISTS `4a_services` (
@@ -38,6 +39,9 @@ if ($count == 0) {
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
+if ($method === 'OPTIONS') { http_response_code(204); exit; }
+if ($method === 'GET')  { require_permission('services', 'view'); }
+if ($method === 'POST') { require_permission('services', 'edit'); }
 
 // GET — φόρτωση όλων των services
 if ($method === 'GET') {

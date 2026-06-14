@@ -1,6 +1,7 @@
 <?php
 // offices.php | v1.2 | 06-06-2026
 require_once 'config.php';
+require_once 'auth.php';
 
 db()->exec("CREATE TABLE IF NOT EXISTS `4a_offices` (
     id       INT AUTO_INCREMENT PRIMARY KEY,
@@ -18,6 +19,9 @@ db()->exec("CREATE TABLE IF NOT EXISTS `4a_offices` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 $method = $_SERVER['REQUEST_METHOD'];
+if ($method === 'OPTIONS') { http_response_code(204); exit; }
+if ($method === 'GET')  { require_permission('services', 'view'); }
+if ($method === 'POST') { require_permission('services', 'edit'); }
 
 if ($method === 'GET') {
     $offices = db()->query('SELECT * FROM `4a_offices` ORDER BY prefix ASC')->fetchAll();

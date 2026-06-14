@@ -2,7 +2,11 @@
 // shelf.php | v1.2 | 22-05-2026
 error_reporting(E_ALL); ini_set("log_errors",1); ini_set("error_log","/tmp/shelf_errors.log");
 require_once 'config.php';
+require_once 'auth.php';
 $method = $_SERVER['REQUEST_METHOD'];
+if ($method === 'OPTIONS') { http_response_code(204); exit; }
+if ($method === 'GET')  { require_permission('pricelist-editor', 'view'); }
+if ($method === 'POST') { require_permission('pricelist-editor', 'edit'); }
 if ($method === 'GET') {
     $rows = db()->query('SELECT * FROM 4a_shelf ORDER BY created_at DESC')->fetchAll();
     $shelf = [];

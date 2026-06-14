@@ -11,6 +11,9 @@ const COD_MIN_FEE     = 1.30;
 const COD_DEFAULT_VAL = 5.00;
 
 $method = $_SERVER['REQUEST_METHOD'];
+if ($method === 'OPTIONS') { http_response_code(204); exit; }
+if ($method === 'GET')  { require_permission('pricelist-editor', 'view'); }
+if ($method === 'POST') { require_permission('pricelist-editor', 'edit'); }
 
 if ($method === 'GET') {
     $action = $_GET['action'] ?? '';

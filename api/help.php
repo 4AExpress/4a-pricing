@@ -2,6 +2,7 @@
 // help.php | v1.0 | 23-05-2026
 error_reporting(E_ALL); ini_set("log_errors",1); ini_set("error_log","/tmp/shelf_errors.log");
 require_once 'config.php';
+require_once 'auth.php';
 
 db()->exec("CREATE TABLE IF NOT EXISTS 4a_help (
     id VARCHAR(100) PRIMARY KEY,
@@ -13,6 +14,9 @@ db()->exec("CREATE TABLE IF NOT EXISTS 4a_help (
 )");
 
 $method = $_SERVER['REQUEST_METHOD'];
+if ($method === 'OPTIONS') { http_response_code(204); exit; }
+if ($method === 'GET')  { require_permission('help', 'view'); }
+if ($method === 'POST') { require_permission('help', 'edit'); }
 
 if ($method === 'GET') {
     $rows = db()->query("SELECT * FROM 4a_help ORDER BY sort_order ASC, updated_at DESC")->fetchAll();
