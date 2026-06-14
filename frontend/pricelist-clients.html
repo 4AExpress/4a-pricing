@@ -918,13 +918,8 @@ function renderClients(){
     const plStr=(c.pricelists||[]).map(p=>`${SVC_NAMES[p.service_id]||p.service_id}${p.markup?' '+p.markup+'%':''}`).join(' · ')||'—';
     const isRenewal=c.status==='active'||c.status==='rejected';
     return `<div class="client-item">
-      <div class="client-avatar" style="background:${STATUS_BG[c.status]||'#f0f0f0'};color:${STATUS_COLOR[c.status]||'#555'};">${initials(c.name)}</div>
+      <div class="client-avatar" style="background:${c.is_walkin?'#fff8e1':STATUS_BG[c.status]||'#f0f0f0'};color:${c.is_walkin?'#7c6d00':STATUS_COLOR[c.status]||'#555'};">${c.is_walkin?'🚶':initials(c.name)}</div>
       <div class="client-info">
-        <div class="client-name">${c.name}
-          <span class="status-pill st-${c.status}" style="font-size:10px;padding:2px 8px;cursor:default;">${STATUS_LABELS[c.status]||c.status}</span>
-          ${isRenewal?'<span class="renewal-badge">↻ Ανανέωση</span>':''}
-          <span class="offer-badge">${c.offer_number||'—'}</span>
-        </div>
         <div class="client-name">${c.name}
           ${c.is_walkin?'<span class="walkin-badge">🚶 Walk-in</span>':'<span class="status-pill st-'+c.status+'" style="font-size:10px;padding:2px 8px;cursor:default;">'+STATUS_LABELS[c.status]+'</span>'}
           ${isRenewal&&!c.is_walkin?'<span class="renewal-badge">↻ Ανανέωση</span>':''}
