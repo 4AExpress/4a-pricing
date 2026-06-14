@@ -181,10 +181,12 @@ def generate(offer_data, dhl_data, fuel_data):
     has_gr = any(svc['service_id'] in {'S1003','S1012','S1010','S1041'} for svc in services)
     pg = 2
     toc_items = [(pg,'How','Πώς Λειτουργεί ο Τιμοκατάλογος','ΠΛΗΡΟΦΟΡΙΕΣ')]
+    toc_items.append((pg,'track','Εύρεση & Tracking Αποστολής','ΠΛΗΡΟΦΟΡΙΕΣ'))
     pg += 1
     if has_gr:
         toc_items.append((pg,'Zones','Ζώνες 4A Express GR','ΠΛΗΡΟΦΟΡΙΕΣ'))
         pg += 1
+    toc_items.append((pg,'net','Δίκτυο Γραφείων 4A Express','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
     for svc in services:
         svc_id = svc['service_id']
         dhl_key = {'S1003_GR':'S1003','S1012_GR':'S1012'}.get(svc_id, svc_id)
@@ -192,10 +194,8 @@ def generate(offer_data, dhl_data, fuel_data):
         info = SVC_INFO.get(svc_id,{})
         toc_items.append((pg,svc_id,f"{info.get('name',svc_id)} — {info.get('desc','')}",info.get('type','')))
         pg += 1
-    toc_items.append((pg,'net','Δίκτυο Γραφείων 4A Express','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
-    toc_items.append((pg,'track','Εύρεση & Tracking Αποστολής','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
-    toc_items.append((pg,'terms','Όροι, Χρεώσεις & Επίναυλος','ΟΡΟΙ')); pg+=1
     toc_items.append((pg,'vol','Ογκομέτρηση Δεμάτων','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
+    toc_items.append((pg,'terms','Όροι, Χρεώσεις & Επίναυλος','ΟΡΟΙ')); pg+=1
     toc_items.append((pg,'accept','Αποδοχή Προσφοράς','ΑΠΟΔΟΧΗ'))
 
     toc_rows=[[P('ΣΕΛ.',sb('th',fontSize=7,textColor=WHITE,alignment=TA_CENTER)),
@@ -456,7 +456,6 @@ def generate(offer_data, dhl_data, fuel_data):
             story.append(PageBreak())
 
     # ── ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ ──
-    story.append(PageBreak())
     story.append(hdr(offer_num))
     story.append(Paragraph('<a name="vol"/>',s('anc',fontSize=0.1)))
     story.append(sec('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ'))
@@ -518,8 +517,6 @@ def generate(offer_data, dhl_data, fuel_data):
     story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
     story.append(ftr(offer_num,date,vstamp))
     story.append(PageBreak())
-    story.append(PageBreak())
-
 
     story.append(hdr(offer_num))
     story.append(Paragraph('<a name="terms"/>',s('anc',fontSize=0.1)))
