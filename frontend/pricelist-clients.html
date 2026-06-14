@@ -33,8 +33,14 @@
   .form-grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px; }
   .form-group { display: flex; flex-direction: column; gap: 4px; }
   .form-group label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
-  .form-group input, .form-group select { padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; color: #333; background: white; }
-  .form-group input:focus, .form-group select:focus { outline: none; border-color: #00BCD4; }
+  .form-group input, .form-group select, .form-group textarea { padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; color: #333; background: white; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #00BCD4; }
+  .form-group textarea { resize: vertical; font-family: inherit; }
+  .walkin-box { background: #fff8e1; border: 1.5px solid #ffcc02; border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+  .walkin-box input[type=checkbox] { width: 18px; height: 18px; accent-color: #cc0000; cursor: pointer; flex-shrink: 0; }
+  .walkin-box-label { font-size: 13px; font-weight: 600; color: #7c6d00; }
+  .walkin-box-sub { font-size: 11px; color: #9e7c00; margin-top: 2px; }
+  .walkin-badge { background: #fff8e1; color: #7c6d00; border: 1px solid #ffcc02; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
 
   .status-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
   .status-pill { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s; user-select: none; }
@@ -194,13 +200,22 @@
   </div>
   <div class="section-body">
 
+    <!-- Walk-in -->
+    <div class="walkin-box" onclick="document.getElementById('cl-walkin').click()">
+      <input type="checkbox" id="cl-walkin" onclick="event.stopPropagation()" onchange="onWalkinChange()" />
+      <div>
+        <div class="walkin-box-label">🚶 Έκτακτος Πελάτης (Walk-in)</div>
+        <div class="walkin-box-sub">Απόδειξη · Μετρητά / Κατάθεση · ΑΦΜ προαιρετικό</div>
+      </div>
+    </div>
+
     <div class="form-grid3">
       <div class="form-group">
         <label>Επωνυμία *</label>
         <input type="text" id="cl-name" placeholder="ALPHA LOGISTICS ΑΕ" oninput="checkForm()" />
       </div>
       <div class="form-group">
-        <label>ΑΦΜ *</label>
+        <label>ΑΦΜ <span id="afm-required">*</span></label>
         <input type="text" id="cl-afm" placeholder="998877665" oninput="checkForm()" />
       </div>
       <div class="form-group">
@@ -221,6 +236,18 @@
       <div class="form-group">
         <label>Website</label>
         <input type="text" id="cl-website" placeholder="www.company.gr" />
+      </div>
+    </div>
+
+    <!-- Διεύθυνση + Σχόλια -->
+    <div style="margin-bottom:12px;">
+      <div class="form-group" style="margin-bottom:8px;">
+        <label>Διεύθυνση Έδρας</label>
+        <input type="text" id="cl-address" placeholder="Λεωφ. Αθηνών 100, 12345, Αθήνα" />
+      </div>
+      <div class="form-group">
+        <label>Σχόλια / Σημειώσεις</label>
+        <textarea id="cl-notes" rows="2" placeholder="Εσωτερικές σημειώσεις για τον πελάτη..."></textarea>
       </div>
     </div>
 
@@ -262,6 +289,8 @@
         <div class="form-group">
           <label>Τρόπος Πληρωμής</label>
           <select id="cl-payment">
+            <option value="cash">Μετρητά</option>
+            <option value="deposit">Κατάθεση</option>
             <option value="10">10 ημέρες</option>
             <option value="30" selected>30 ημέρες</option>
             <option value="60">60 ημέρες</option>
@@ -270,6 +299,7 @@
         <div class="form-group">
           <label>Τιμολόγηση</label>
           <select id="cl-invoice">
+            <option value="receipt">Απόδειξη</option>
             <option value="weekly">Εβδομαδιαία</option>
             <option value="monthly" selected>Μηνιαία</option>
           </select>
@@ -347,6 +377,7 @@
       <button class="filter-btn" onclick="filterByStatus('accepted',this)">🟢 Αποδέχτηκαν</button>
       <button class="filter-btn" onclick="filterByStatus('active',this)">🟣 Ενεργοί</button>
       <button class="filter-btn" onclick="filterByStatus('rejected',this)">🔴 Αρνήθηκαν</button>
+      <button class="filter-btn" onclick="filterByStatus('walkin',this)">🚶 Walk-in</button>
     </div>
     <div id="clients-list"><div class="empty">Δεν υπάρχουν πελάτες ακόμα</div></div>
   </div>
@@ -429,6 +460,25 @@ function nextOfferNumber(){
   return `4A-${y}-${String((nums.length?Math.max(...nums):0)+1).padStart(4,'0')}`;
 }
 
+function onWalkinChange(){
+  const isWalkin = document.getElementById('cl-walkin').checked;
+  const box = document.getElementById('cl-walkin').closest('.walkin-box');
+  if(box){
+    box.style.borderColor = isWalkin ? '#cc0000' : '#ffcc02';
+    box.style.background  = isWalkin ? '#fff0f0' : '#fff8e1';
+  }
+  const afmReq = document.getElementById('afm-required');
+  if(afmReq) afmReq.textContent = isWalkin ? '' : '*';
+  if(isWalkin){
+    document.getElementById('cl-invoice').value = 'receipt';
+    document.getElementById('cl-payment').value = 'cash';
+  } else {
+    document.getElementById('cl-invoice').value = 'monthly';
+    document.getElementById('cl-payment').value = '30';
+  }
+  checkForm();
+}
+
 async function init(){
   currentUser=JSON.parse(localStorage.getItem('4a_current_user')||'null');
   if(!currentUser){ window.location.href='pricelist-editor.html'; return; }
@@ -471,8 +521,9 @@ function setStatus(s,el){
 }
 
 function checkForm(){
-  const ok=document.getElementById('cl-name').value.trim()&&
-           document.getElementById('cl-afm').value.trim()&&
+  const isWalkin = document.getElementById('cl-walkin')?.checked;
+  const afmOk = isWalkin || document.getElementById('cl-afm').value.trim();
+  const ok=document.getElementById('cl-name').value.trim() && afmOk &&
            document.getElementById('cl-email').value.trim();
   document.getElementById('save-btn').disabled=!ok;
   document.getElementById('preview-btn').disabled=!ok;
@@ -484,7 +535,10 @@ function resetForm(){
   editingId=null; selectedPls=[]; surcharges=[];
   managers=currentUser?.email?[currentUser.email]:[];
   currentStatus='prospect';
-  ['cl-name','cl-afm','cl-contact','cl-email','cl-phone','cl-website','cl-account'].forEach(id=>{ document.getElementById(id).value=''; });
+  ['cl-name','cl-afm','cl-contact','cl-email','cl-phone','cl-website','cl-account','cl-address','cl-notes'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  const wk=document.getElementById('cl-walkin'); if(wk){ wk.checked=false; onWalkinChange(); }
   document.getElementById('cl-payment').value='30';
   document.getElementById('cl-invoice').value='monthly';
   document.getElementById('cl-validity').value='30';
@@ -782,6 +836,9 @@ function saveClient(){
     contact:document.getElementById('cl-contact').value.trim(),
     email, phone:document.getElementById('cl-phone').value.trim(),
     website:document.getElementById('cl-website').value.trim(),
+    address:document.getElementById('cl-address').value.trim(),
+    notes:document.getElementById('cl-notes').value.trim(),
+    is_walkin:document.getElementById('cl-walkin').checked?1:0,
     account:document.getElementById('cl-account').value.trim()||'—',
     status:currentStatus,
     pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[]})),
@@ -811,6 +868,9 @@ function editClient(id){
   document.getElementById('cl-email').value=c.email||'';
   document.getElementById('cl-phone').value=c.phone||'';
   document.getElementById('cl-website').value=c.website||'';
+  document.getElementById('cl-address').value=c.address||'';
+  document.getElementById('cl-notes').value=c.notes||'';
+  const wkel=document.getElementById('cl-walkin'); if(wkel){ wkel.checked=!!(c.is_walkin); onWalkinChange(); }
   document.getElementById('cl-account').value=(c.account!=='—')?c.account:'';
   document.getElementById('cl-payment').value=c.payment||'30';
   document.getElementById('cl-invoice').value=c.invoice||'monthly';
@@ -850,7 +910,8 @@ function renderClients(){
   const _uc=getUserCountries();
   if(_uc.length<2) list=list.filter(c=>_uc.includes(clientCountry(c)));
   document.getElementById('client-count').textContent=list.length;
-  if(filterStatus!=='all')list=list.filter(c=>c.status===filterStatus);
+  if(filterStatus==='walkin') list=list.filter(c=>c.is_walkin);
+  else if(filterStatus!=='all')list=list.filter(c=>c.status===filterStatus);
   if(filterSearch){ const q=filterSearch.toLowerCase(); list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.afm||'').includes(q)||(c.contact||'').toLowerCase().includes(q)); }
   if(!list.length){ el.innerHTML='<div class="empty">Δεν βρέθηκαν πελάτες</div>'; return; }
   el.innerHTML=list.map(c=>{
@@ -864,7 +925,13 @@ function renderClients(){
           ${isRenewal?'<span class="renewal-badge">↻ Ανανέωση</span>':''}
           <span class="offer-badge">${c.offer_number||'—'}</span>
         </div>
-        <div class="client-meta">ΑΦΜ: ${c.afm||'—'} · ${c.contact||'—'} · ${c.email||'—'}${c.phone?' · '+c.phone:''}${c.website?' · '+c.website:''} · ${c.date||'—'} · ${c.user||'—'} · ${c.office||'—'}</div>
+        <div class="client-name">${c.name}
+          ${c.is_walkin?'<span class="walkin-badge">🚶 Walk-in</span>':'<span class="status-pill st-'+c.status+'" style="font-size:10px;padding:2px 8px;cursor:default;">'+STATUS_LABELS[c.status]+'</span>'}
+          ${isRenewal&&!c.is_walkin?'<span class="renewal-badge">↻ Ανανέωση</span>':''}
+          <span class="offer-badge">${c.offer_number||'—'}</span>
+        </div>
+        <div class="client-meta">ΑΦΜ: ${c.afm||'—'} · ${c.contact||'—'} · ${c.email||'—'}${c.phone?' · '+c.phone:''}${c.address?' · 📍'+c.address:''} · ${c.date||'—'} · ${c.user||'—'}</div>
+        ${c.notes?`<div style="font-size:11px;color:#888;margin-top:2px;">💬 ${c.notes}</div>`:''}
         <div class="client-pls">📋 ${plStr}</div>
         ${c.cod?.cod_enabled?`<div class="client-cod-badge">💳 COD: €${parseFloat(c.cod.cod_amount||0).toFixed(2)} · Χρέωση: €${parseFloat(c.cod.cod_fee||0).toFixed(2)}</div>`:''}
       </div>
