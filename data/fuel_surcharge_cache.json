@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-06-13T08:18:40.230541",
+  "fetched_at": "2026-06-14T08:38:56.104135",
   "source": "https://mydhl.express.dhl/gr/el/ship/surcharges.html#/fuel_surcharge",
   "air": [
     {
@@ -67,7 +67,7 @@
   ],
   "current_air": 47.0,
   "current_road": 32.0,
-  "changed": true,
-  "previous_air": 48.75,
-  "previous_road": 33.0
+  "changed": false,
+  "previous_air": 47.0,
+  "previous_road": 32.0
 }
