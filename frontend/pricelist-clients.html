@@ -1835,7 +1835,6 @@ function doLogout(){ window.location.href='pricelist-editor.html'; }
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
     shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
-    clients=JSON.parse(localStorage.getItem('4a_clients')||'[]');
     renderClients();
   }
 });
