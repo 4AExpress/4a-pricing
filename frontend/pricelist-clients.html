@@ -1057,12 +1057,21 @@ async function previewPDF(){
   const F=(pg)=>`<div class="pf"><span>Ε.Ε.Τ.Τ. 033-99 &nbsp;·&nbsp; ΑΦΜ: ${issuerOffice.vat||'044978638'} &nbsp;·&nbsp; www.4aexpress.com</span><span>σελ. ${pg}</span></div>`;
   const S=(t)=>`<div class="st">${t}</div>`;
 
+  // Διάβασε ποια docs είναι ενεργά (διακόπτες docs.html)
+  let activeDocs={};
+  try {
+    const _dl = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]);
+    _dl.forEach(d=>{ activeDocs[d.id]=(String(d.active)==='1'||d.active===1||d.active===true); });
+  } catch(e){ activeDocs={volumetric:true}; }
+  const volOn = activeDocs.volumetric !== false;  // default ON αν αποτύχει το fetch
+
   let pg=2;
   const toc=[];
   toc.push({pg:pg++,t:'Δίκτυο Γραφείων 4A Express'});
   toc.push({pg:pg++,t:'Πώς Λειτουργεί ο Τιμοκατάλογος & Tracking'});
   toc.push({pg:pg++,t:'Ζώνες Χωρών'});
   for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''}`});
+  if(volOn) toc.push({pg:pg++,t:'Ογκομέτρηση Δεμάτων'});
   toc.push({pg:pg++,t:'Όροι, Επίναυλος & Χρεώσεις'});
   toc.push({pg:pg,  t:'Σύμβαση & Αποδοχή Προσφοράς'});
 
@@ -1350,6 +1359,28 @@ async function previewPDF(){
       const rg=[rows.slice(0,cs3),rows.slice(cs3,cs3*2),rows.slice(cs3*2)];
       html+=`<div class="page">${plHdr}<div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>€</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkgV!=null?`<tr class="xr"><td class="wt">${xkgLbl}</td><td>€${xkgV.toFixed(2)}</td></tr>`:''}</tbody></table>`).join('')}</div>${plFtr}</div>`;
     }
+  }
+
+  // ── ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ (μόνο αν ON στο docs.html) ─────────────
+  if(volOn){
+  html+=`<div class="page">
+  ${H(offerNum)}
+  ${S('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ')}
+  <p style="font-size:9.5px;color:#555;margin:6px 0;line-height:1.55;">Κάθε δέμα χρεώνεται βάσει του <strong>μεγαλύτερου</strong> από τα δύο: πραγματικό βάρος ή ογκομετρικό βάρος. Μεγάλα αλλά ελαφριά δέματα καταλαμβάνουν χώρο στο όχημα / αποθήκη / αεροπλάνο / container ακριβώς όπως ένα βαρύ δέμα.</p>
+  <div style="background:#f2f2f2;border:1px solid #cc0000;padding:14px;margin:10px 0;text-align:center;font-size:13px;font-weight:700;color:#990000;">Ογκομετρικό Βάρος (kg) = ( Μ × Π × Υ ) ÷ 5.000</div>
+  <div style="font-size:9px;color:#1a3a6e;text-align:center;margin-bottom:10px;">Μ = Μήκος (cm) &nbsp;|&nbsp; Π = Πλάτος (cm) &nbsp;|&nbsp; Υ = Ύψος (cm) &nbsp;|&nbsp; ÷ 5.000 = Διεθνής Συντελεστής (IATA / Courier)</div>
+  ${S('ΠΑΡΑΔΕΙΓΜΑ ΥΠΟΛΟΓΙΣΜΟΥ')}
+  <table style="width:100%;border-collapse:collapse;font-size:10px;margin:8px 0;">
+    <thead><tr style="background:#1a3a6e;color:#fff;"><th style="padding:5px 10px;text-align:left;">Διαστάσεις</th><th style="padding:5px 10px;text-align:center;">Υπολογισμός</th><th style="padding:5px 10px;text-align:center;">Ογκομετρικό</th></tr></thead>
+    <tbody>
+      <tr style="background:#fff;"><td style="padding:5px 10px;">60 × 40 × 30 cm</td><td style="padding:5px 10px;text-align:center;">(60×40×30) ÷ 5.000</td><td style="padding:5px 10px;text-align:center;font-weight:700;color:#cc0000;">14,4 kg</td></tr>
+      <tr style="background:#f8f9fb;"><td style="padding:5px 10px;">50 × 50 × 50 cm</td><td style="padding:5px 10px;text-align:center;">(50×50×50) ÷ 5.000</td><td style="padding:5px 10px;text-align:center;font-weight:700;color:#cc0000;">25 kg</td></tr>
+      <tr style="background:#fff;"><td style="padding:5px 10px;">100 × 30 × 20 cm</td><td style="padding:5px 10px;text-align:center;">(100×30×20) ÷ 5.000</td><td style="padding:5px 10px;text-align:center;font-weight:700;color:#cc0000;">12 kg</td></tr>
+    </tbody>
+  </table>
+  <div style="background:#fff8e1;border:1px solid #f0c040;padding:9px 12px;font-size:9.5px;color:#7c6d00;margin-top:8px;line-height:1.5;"><strong>Σημείωση:</strong> Η χρέωση γίνεται πάντα βάσει του μεγαλύτερου βάρους (πραγματικό vs ογκομετρικό). Καλή συσκευασία χωρίς κενά αέρα μειώνει το ογκομετρικό βάρος και άρα το κόστος.</div>
+  ${F(String(plPg++))}
+  </div>`;
   }
 
   // ── TERMS PAGE ─────────────────────────────────────────────────
