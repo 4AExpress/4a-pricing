@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<title>4A Express β€” Ξ ΞµΞ»Ξ¬Ο„ΞµΟ‚</title>
+<title>4A Express — Πελάτες</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #1a1a1a; min-height: 100vh; }
@@ -132,7 +132,7 @@
   .cod-fee-box { background:#e8f5e9; border:1px solid #a5d6a7; padding:8px 12px; border-radius:4px; font-size:13px; font-weight:600; color:#2e7d32; margin-top:4px; }
   .cod-warn { background:#fff3cd; border:1px solid #ffc107; padding:6px 10px; border-radius:4px; font-size:11px; color:#7c6d00; margin-bottom:6px; }
   .client-cod-badge { font-size:11px; color:#2e7d32; margin-top:2px; }
-  /* ===== ΞΞ­ΞΏ Ξ΅Ξ¬Ο†ΞΉ (grouped picker) ===== */
+  /* ===== Νέο Ράφι (grouped picker) ===== */
   #pl-modal .modal-box { width: 600px; }
   .rg-search { display:flex; align-items:center; gap:8px; border:1px solid #ddd; border-radius:6px; padding:0 10px; margin-bottom:10px; }
   .rg-search input { border:none; outline:none; flex:1; height:34px; font-family:inherit; font-size:13px; background:transparent; }
@@ -172,31 +172,31 @@
       <div class="topbar-logo-box">4A</div>
       <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
     </div>
-    <span class="topbar-title">Ξ”ΞΉΞ±Ο‡ΞµΞ―ΟΞΉΟƒΞ· Ξ ΞµΞ»Ξ±Ο„ΟΞ½</span>
+    <span class="topbar-title">Διαχείριση Πελατών</span>
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
     <span class="topbar-user" id="topbar-user"></span>
-    <button class="topbar-logout" onclick="doLogout()">ΞΞΎΞΏΞ΄ΞΏΟ‚</button>
+    <button class="topbar-logout" onclick="doLogout()">Έξοδος</button>
   </div>
 </div>
 
 <div class="nav">
-  <a class="nav-btn" href="pricelist-editor.html">+ ΞΞ­ΞΏΟ‚ Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΟ‚</a>
-  <a class="nav-btn" href="pricelist-editor.html#shelf">π“¦ Ξ΅Ξ¬Ο†ΞΉ</a>
-  <a class="nav-btn active" href="pricelist-clients.html">π‘¥ Ξ ΞµΞ»Ξ¬Ο„ΞµΟ‚</a>
-  <a class="nav-btn" href="zones.html">π Ξ–ΟΞ½ΞµΟ‚</a>
-  <a class="nav-btn" href="users.html">β™οΈ Ξ§ΟΞ®ΟƒΟ„ΞµΟ‚</a>
-    <a class="nav-btn" href="services.html">π”§ Services</a>
-    <a class="nav-btn" href="docs.html">π“„ Docs Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚</a>
-    <a class="nav-btn" href="fuel-surcharge-dashboard.html">β›½ Ξ•Ο€Ξ―Ξ½Ξ±Ο…Ξ»ΞΏΟ‚</a>
-    <a class="nav-btn" href="help.html">β“ Help</a>
+  <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
+  <a class="nav-btn" href="pricelist-editor.html#shelf">📦 Ράφι</a>
+  <a class="nav-btn active" href="pricelist-clients.html">👥 Πελάτες</a>
+  <a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
+  <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
+    <a class="nav-btn" href="services.html">🔧 Services</a>
+    <a class="nav-btn" href="docs.html">📄 Docs Προσφοράς</a>
+    <a class="nav-btn" href="fuel-surcharge-dashboard.html">⛽ Επίναυλος</a>
+    <a class="nav-btn" href="help.html">❓ Help</a>
 </div>
 
 <div class="container">
 
   <div class="section-header">
-    <span id="form-title">ΞΞ­ΞΏΟ‚ Ξ ΞµΞ»Ξ¬Ο„Ξ·Ο‚</span>
-    <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="resetForm()">β• ΞΞ±ΞΈΞ±ΟΞΉΟƒΞΌΟΟ‚</button>
+    <span id="form-title">Νέος Πελάτης</span>
+    <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px;" onclick="resetForm()">✕ Καθαρισμός</button>
   </div>
   <div class="section-body">
 
@@ -204,23 +204,23 @@
     <div class="walkin-box" onclick="document.getElementById('cl-walkin').click()">
       <input type="checkbox" id="cl-walkin" onclick="event.stopPropagation()" onchange="onWalkinChange()" />
       <div>
-        <div class="walkin-box-label">π¶ ΞΞΊΟ„Ξ±ΞΊΟ„ΞΏΟ‚ Ξ ΞµΞ»Ξ¬Ο„Ξ·Ο‚ (Walk-in)</div>
-        <div class="walkin-box-sub">Ξ‘Ο€ΟΞ΄ΞµΞΉΞΎΞ· Β· ΞΞµΟ„ΟΞ·Ο„Ξ¬ / ΞΞ±Ο„Ξ¬ΞΈΞµΟƒΞ· Β· Ξ‘Ξ¦Ξ Ο€ΟΞΏΞ±ΞΉΟΞµΟ„ΞΉΞΊΟ</div>
+        <div class="walkin-box-label">🚶 Έκτακτος Πελάτης (Walk-in)</div>
+        <div class="walkin-box-sub">Απόδειξη · Μετρητά / Κατάθεση · ΑΦΜ προαιρετικό</div>
       </div>
     </div>
 
     <div class="form-grid3">
       <div class="form-group">
-        <label>Ξ•Ο€Ο‰Ξ½Ο…ΞΌΞ―Ξ± *</label>
-        <input type="text" id="cl-name" placeholder="ALPHA LOGISTICS Ξ‘Ξ•" oninput="checkForm()" />
+        <label>Επωνυμία *</label>
+        <input type="text" id="cl-name" placeholder="ALPHA LOGISTICS ΑΕ" oninput="checkForm()" />
       </div>
       <div class="form-group">
-        <label>Ξ‘Ξ¦Ξ <span id="afm-required">*</span></label>
+        <label>ΑΦΜ <span id="afm-required">*</span></label>
         <input type="text" id="cl-afm" placeholder="998877665" oninput="checkForm()" />
       </div>
       <div class="form-group">
-        <label>Ξ¥Ο€ΞµΟΞΈΟ…Ξ½ΞΏΟ‚ *</label>
-        <input type="text" id="cl-contact" placeholder="ΞΞ―ΞΊΞΏΟ‚ Ξ Ξ±Ο€Ξ±Ξ΄ΟΟ€ΞΏΟ…Ξ»ΞΏΟ‚" oninput="checkForm()" />
+        <label>Υπεύθυνος *</label>
+        <input type="text" id="cl-contact" placeholder="Νίκος Παπαδόπουλος" oninput="checkForm()" />
       </div>
     </div>
 
@@ -230,7 +230,7 @@
         <input type="email" id="cl-email" placeholder="nikos@company.gr" oninput="checkForm()" />
       </div>
       <div class="form-group">
-        <label>Ξ¤Ξ·Ξ»Ξ­Ο†Ο‰Ξ½ΞΏ</label>
+        <label>Τηλέφωνο</label>
         <input type="text" id="cl-phone" placeholder="+30 210 1234567" />
       </div>
       <div class="form-group">
@@ -239,146 +239,146 @@
       </div>
     </div>
 
-    <!-- Ξ”ΞΉΞµΟΞΈΟ…Ξ½ΟƒΞ· + Ξ£Ο‡ΟΞ»ΞΉΞ± -->
+    <!-- Διεύθυνση + Σχόλια -->
     <div style="margin-bottom:12px;">
       <div class="form-group" style="margin-bottom:8px;">
-        <label>Ξ”ΞΉΞµΟΞΈΟ…Ξ½ΟƒΞ· ΞΞ΄ΟΞ±Ο‚</label>
-        <input type="text" id="cl-address" placeholder="Ξ›ΞµΟ‰Ο†. Ξ‘ΞΈΞ·Ξ½ΟΞ½ 100, 12345, Ξ‘ΞΈΞ®Ξ½Ξ±" />
+        <label>Διεύθυνση Έδρας</label>
+        <input type="text" id="cl-address" placeholder="Λεωφ. Αθηνών 100, 12345, Αθήνα" />
       </div>
       <div class="form-group">
-        <label>Ξ£Ο‡ΟΞ»ΞΉΞ± / Ξ£Ξ·ΞΌΞµΞΉΟΟƒΞµΞΉΟ‚</label>
-        <textarea id="cl-notes" rows="2" placeholder="Ξ•ΟƒΟ‰Ο„ΞµΟΞΉΞΊΞ­Ο‚ ΟƒΞ·ΞΌΞµΞΉΟΟƒΞµΞΉΟ‚ Ξ³ΞΉΞ± Ο„ΞΏΞ½ Ο€ΞµΞ»Ξ¬Ο„Ξ·..."></textarea>
+        <label>Σχόλια / Σημειώσεις</label>
+        <textarea id="cl-notes" rows="2" placeholder="Εσωτερικές σημειώσεις για τον πελάτη..."></textarea>
       </div>
     </div>
 
     <div class="form-grid2">
       <div class="form-group">
         <label>AccountNo CMS</label>
-        <input type="text" id="cl-account" placeholder="β€” (Ξ±Ο…Ο„ΟΞΌΞ±Ο„Ξ± ΞΌΞµΟ„Ξ¬ Ξ±Ο€ΞΏΞ΄ΞΏΟ‡Ξ®)" />
+        <input type="text" id="cl-account" placeholder="— (αυτόματα μετά αποδοχή)" />
       </div>
       <div class="form-group">
-        <label>ΞΞ±Ο„Ξ¬ΟƒΟ„Ξ±ΟƒΞ·</label>
+        <label>Κατάσταση</label>
         <div class="status-pills">
-          <span class="status-pill st-prospect active" onclick="setStatus('prospect',this)">Ξ¥Ο€ΞΏΟΞ®Ο†ΞΉΞΏΟ‚</span>
-          <span class="status-pill st-negotiate"       onclick="setStatus('negotiate',this)">Ξ£Ξµ Ξ΄ΞΉΞ±Ο€ΟΞ±Ξ³ΞΌΞ¬Ο„ΞµΟ…ΟƒΞ·</span>
-          <span class="status-pill st-accepted"        onclick="setStatus('accepted',this)">Ξ‘Ο€ΞΏΞ΄Ξ­Ο‡Ο„Ξ·ΞΊΞµ</span>
-          <span class="status-pill st-rejected"        onclick="setStatus('rejected',this)">Ξ‘ΟΞ½Ξ®ΞΈΞ·ΞΊΞµ</span>
-          <span class="status-pill st-active"          onclick="setStatus('active',this)">Ξ•Ξ½ΞµΟΞ³ΟΟ‚</span>
+          <span class="status-pill st-prospect active" onclick="setStatus('prospect',this)">Υποψήφιος</span>
+          <span class="status-pill st-negotiate"       onclick="setStatus('negotiate',this)">Σε διαπραγμάτευση</span>
+          <span class="status-pill st-accepted"        onclick="setStatus('accepted',this)">Αποδέχτηκε</span>
+          <span class="status-pill st-rejected"        onclick="setStatus('rejected',this)">Αρνήθηκε</span>
+          <span class="status-pill st-active"          onclick="setStatus('active',this)">Ενεργός</span>
         </div>
       </div>
     </div>
 
     <div class="form-group" style="margin-bottom:12px;">
-      <label>Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΞΉ Ξ±Ο€Ο Ξ΅Ξ¬Ο†ΞΉ</label>
+      <label>Τιμοκατάλογοι από Ράφι</label>
       <div style="display:flex;align-items:flex-start;gap:10px;">
         <div class="pricelist-tags" id="pl-tags" style="flex:1;">
-          <button class="add-pl-btn" onclick="showPlModal()">+ Ξ ΟΞΏΟƒΞΈΞ®ΞΊΞ· Ξ±Ο€Ο ΟΞ¬Ο†ΞΉ</button>
+          <button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>
         </div>
         <div id="zone-pdf-badge-wrap" style="display:none;align-self:flex-start;padding-top:4px;">
-          <a class="zone-pdf-badge" href="https://4aexpress.github.io/4a-pricing/docs/4A_Express_Zones_2026.pdf" target="_blank" rel="noopener">π“„ Ξ–ΟΞ½ΞµΟ‚ 4A GR</a>
+          <a class="zone-pdf-badge" href="https://4aexpress.github.io/4a-pricing/docs/4A_Express_Zones_2026.pdf" target="_blank" rel="noopener">📄 Ζώνες 4A GR</a>
         </div>
       </div>
     </div>
 
     <div class="offer-terms">
       <div class="offer-terms-title">
-        ΞΟΞΏΞΉ Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚
+        Όροι Προσφοράς
         <span id="offer-num-display" style="font-family:monospace;font-size:11px;color:#6a1b9a;font-weight:700;margin-left:10px;"></span>
       </div>
       <div class="terms-grid">
         <div class="form-group">
-          <label>Ξ¤ΟΟΟ€ΞΏΟ‚ Ξ Ξ»Ξ·ΟΟ‰ΞΌΞ®Ο‚</label>
+          <label>Τρόπος Πληρωμής</label>
           <select id="cl-payment">
-            <option value="cash">ΞΞµΟ„ΟΞ·Ο„Ξ¬</option>
-            <option value="deposit">ΞΞ±Ο„Ξ¬ΞΈΞµΟƒΞ·</option>
-            <option value="10">10 Ξ·ΞΌΞ­ΟΞµΟ‚</option>
-            <option value="30" selected>30 Ξ·ΞΌΞ­ΟΞµΟ‚</option>
-            <option value="60">60 Ξ·ΞΌΞ­ΟΞµΟ‚</option>
+            <option value="cash">Μετρητά</option>
+            <option value="deposit">Κατάθεση</option>
+            <option value="10">10 ημέρες</option>
+            <option value="30" selected>30 ημέρες</option>
+            <option value="60">60 ημέρες</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Ξ¤ΞΉΞΌΞΏΞ»ΟΞ³Ξ·ΟƒΞ·</label>
+          <label>Τιμολόγηση</label>
           <select id="cl-invoice">
-            <option value="receipt">Ξ‘Ο€ΟΞ΄ΞµΞΉΞΎΞ·</option>
-            <option value="weekly">Ξ•Ξ²Ξ΄ΞΏΞΌΞ±Ξ΄ΞΉΞ±Ξ―Ξ±</option>
-            <option value="monthly" selected>ΞΞ·Ξ½ΞΉΞ±Ξ―Ξ±</option>
+            <option value="receipt">Απόδειξη</option>
+            <option value="weekly">Εβδομαδιαία</option>
+            <option value="monthly" selected>Μηνιαία</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Ξ™ΟƒΟ‡ΟΟ‚ Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚</label>
+          <label>Ισχύς Προσφοράς</label>
           <select id="cl-validity">
-            <option value="15">15 Ξ·ΞΌΞ­ΟΞµΟ‚</option>
-            <option value="30" selected>30 Ξ·ΞΌΞ­ΟΞµΟ‚</option>
-            <option value="60">60 Ξ·ΞΌΞ­ΟΞµΟ‚</option>
+            <option value="15">15 ημέρες</option>
+            <option value="30" selected>30 ημέρες</option>
+            <option value="60">60 ημέρες</option>
           </select>
         </div>
       </div>
 
       <div style="margin-top:14px;">
-        <div class="offer-terms-title">Ξ•Ο€ΞΉΟ€Ξ»Ξ­ΞΏΞ½ Ξ§ΟΞµΟΟƒΞµΞΉΟ‚</div>
+        <div class="offer-terms-title">Επιπλέον Χρεώσεις</div>
         <div class="surcharges-list" id="surcharges-list"></div>
-        <button class="add-surcharge-btn" onclick="addSurcharge()">+ Ξ ΟΞΏΟƒΞΈΞ®ΞΊΞ· Ο‡ΟΞ­Ο‰ΟƒΞ·Ο‚</button>
+        <button class="add-surcharge-btn" onclick="addSurcharge()">+ Προσθήκη χρέωσης</button>
       </div>
 
       <div id="cod-section" style="margin-top:14px;display:none;">
         <div class="offer-terms-title" style="display:flex;align-items:center;gap:10px;">
-          Ξ‘Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ® (COD)
+          Αντικαταβολή (COD)
           <label class="cod-toggle-wrap">
             <input type="checkbox" id="cod-toggle" onchange="toggleCod()">
-            <span style="font-size:12px;color:#333;">Ξ•Ξ½ΞµΟΞ³ΞΏΟ€ΞΏΞ―Ξ·ΟƒΞ·</span>
+            <span style="font-size:12px;color:#333;">Ενεργοποίηση</span>
           </label>
         </div>
         <div id="cod-formula-badge" style="font-size:11px;color:#4a7c59;margin-top:4px;display:none;"></div>
         <div id="cod-fields" style="display:none;margin-top:10px;">
           <div class="form-group" style="margin-bottom:8px;">
-            <label>Ξ ΞΏΟƒΟ Ξ‘Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ®Ο‚ (β‚¬)</label>
+            <label>Ποσό Αντικαταβολής (€)</label>
             <input type="number" id="cod-amount" min="0" step="0.01" placeholder="0.00" oninput="onCodAmountChange()">
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
             <div class="form-group">
-              <label>ΞΟΞΉΞΏ Ο€Ξ±Ξ³Ξ―Ξ±Ο‚ (β‚¬)</label>
+              <label>Όριο παγίας (€)</label>
               <input type="number" id="cod-flat_limit" min="0" step="0.01" placeholder="500.00" oninput="scheduleCodCalc()">
             </div>
             <div class="form-group">
-              <label>Ξ ΞΏΟƒΞΏΟƒΟ„Ο Ξ¬Ξ½Ο‰ ΞΏΟΞ―ΞΏΟ… (%)</label>
+              <label>Ποσοστό άνω ορίου (%)</label>
               <input type="number" id="cod-percentage" min="0" step="0.01" max="100" placeholder="1.00" oninput="scheduleCodCalc()">
             </div>
           </div>
           <div id="cod-floor-warn" class="cod-warn" style="display:none;"></div>
-          <div id="cod-fee-display" class="cod-fee-box">Ξ§ΟΞ­Ο‰ΟƒΞ· Ξ±Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ®Ο‚: β€”</div>
+          <div id="cod-fee-display" class="cod-fee-box">Χρέωση αντικαταβολής: —</div>
         </div>
       </div>
 
       <div style="margin-top:14px;">
-        <div class="offer-terms-title">Ξ•ΞΉΞ΄ΞΏΟ€ΞΏΞ―Ξ·ΟƒΞ· Managers</div>
+        <div class="offer-terms-title">Ειδοποίηση Managers</div>
         <div class="managers-list" id="managers-list"></div>
-        <button class="add-surcharge-btn" style="margin-top:6px;" onclick="addManager()">+ Ξ ΟΞΏΟƒΞΈΞ®ΞΊΞ· email</button>
+        <button class="add-surcharge-btn" style="margin-top:6px;" onclick="addManager()">+ Προσθήκη email</button>
       </div>
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-secondary" onclick="resetForm()">Ξ‘ΞΊΟΟΟ‰ΟƒΞ·</button>
-      <button class="btn btn-orange"  id="preview-btn" onclick="previewPDF()" disabled>π“„ Ξ ΟΞΏΞµΟ€ΞΉΟƒΞΊΟΟ€Ξ·ΟƒΞ· PDF</button>
-      <button class="btn btn-green"   id="send-btn"    onclick="sendOffer()"  disabled>β‰οΈ Ξ‘Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ® Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚</button>
-      <button class="btn btn-primary" id="save-btn"    onclick="saveClient()" disabled>π’Ύ Ξ‘Ο€ΞΏΞΈΞ®ΞΊΞµΟ…ΟƒΞ·</button>
+      <button class="btn btn-secondary" onclick="resetForm()">Ακύρωση</button>
+      <button class="btn btn-orange"  id="preview-btn" onclick="previewPDF()" disabled>📄 Προεπισκόπηση PDF</button>
+      <button class="btn btn-green"   id="send-btn"    onclick="sendOffer()"  disabled>✉️ Αποστολή Προσφοράς</button>
+      <button class="btn btn-primary" id="save-btn"    onclick="saveClient()" disabled>💾 Αποθήκευση</button>
     </div>
   </div>
 
   <div class="section-header">
-    <span>Ξ›Ξ―ΟƒΟ„Ξ± Ξ ΞµΞ»Ξ±Ο„ΟΞ½ (<span id="client-count">0</span>)</span>
+    <span>Λίστα Πελατών (<span id="client-count">0</span>)</span>
   </div>
   <div class="section-body">
     <div class="filter-bar">
-      <input class="search-input" type="text" placeholder="π” Ξ‘Ξ½Ξ±Ξ¶Ξ®Ο„Ξ·ΟƒΞ· ΞµΟ€Ο‰Ξ½Ο…ΞΌΞ―Ξ± / Ξ‘Ξ¦Ξ / Ο…Ο€ΞµΟΞΈΟ…Ξ½ΞΏΟ‚..." oninput="filterClients(this.value)" />
-      <button class="filter-btn active" onclick="filterByStatus('all',this)">ΞΞ»ΞΏΞΉ</button>
-      <button class="filter-btn" onclick="filterByStatus('prospect',this)">π”µ Ξ¥Ο€ΞΏΟΞ®Ο†ΞΉΞΏΞΉ</button>
-      <button class="filter-btn" onclick="filterByStatus('negotiate',this)">π΅ Ξ”ΞΉΞ±Ο€ΟΞ±Ξ³ΞΌΞ¬Ο„ΞµΟ…ΟƒΞ·</button>
-      <button class="filter-btn" onclick="filterByStatus('accepted',this)">πΆ Ξ‘Ο€ΞΏΞ΄Ξ­Ο‡Ο„Ξ·ΞΊΞ±Ξ½</button>
-      <button class="filter-btn" onclick="filterByStatus('active',this)">π£ Ξ•Ξ½ΞµΟΞ³ΞΏΞ―</button>
-      <button class="filter-btn" onclick="filterByStatus('rejected',this)">π”΄ Ξ‘ΟΞ½Ξ®ΞΈΞ·ΞΊΞ±Ξ½</button>
-      <button class="filter-btn" onclick="filterByStatus('walkin',this)">π¶ Walk-in</button>
+      <input class="search-input" type="text" placeholder="🔍 Αναζήτηση επωνυμία / ΑΦΜ / υπεύθυνος..." oninput="filterClients(this.value)" />
+      <button class="filter-btn active" onclick="filterByStatus('all',this)">Όλοι</button>
+      <button class="filter-btn" onclick="filterByStatus('prospect',this)">🔵 Υποψήφιοι</button>
+      <button class="filter-btn" onclick="filterByStatus('negotiate',this)">🟡 Διαπραγμάτευση</button>
+      <button class="filter-btn" onclick="filterByStatus('accepted',this)">🟢 Αποδέχτηκαν</button>
+      <button class="filter-btn" onclick="filterByStatus('active',this)">🟣 Ενεργοί</button>
+      <button class="filter-btn" onclick="filterByStatus('rejected',this)">🔴 Αρνήθηκαν</button>
+      <button class="filter-btn" onclick="filterByStatus('walkin',this)">🚶 Walk-in</button>
     </div>
-    <div id="clients-list"><div class="empty">Ξ”ΞµΞ½ Ο…Ο€Ξ¬ΟΟ‡ΞΏΟ…Ξ½ Ο€ΞµΞ»Ξ¬Ο„ΞµΟ‚ Ξ±ΞΊΟΞΌΞ±</div></div>
+    <div id="clients-list"><div class="empty">Δεν υπάρχουν πελάτες ακόμα</div></div>
   </div>
 
 </div>
@@ -386,10 +386,10 @@
 <!-- MODAL -->
 <div id="pl-modal" class="modal-overlay">
   <div class="modal-box">
-    <div class="modal-title">Ξ•Ο€ΞΉΞ»ΞΏΞ³Ξ® Ξ¤ΞΉΞΌΞΏΞΊΞ±Ο„Ξ±Ξ»ΟΞ³ΞΏΟ… Ξ±Ο€Ο Ξ΅Ξ¬Ο†ΞΉ</div>
+    <div class="modal-title">Επιλογή Τιμοκαταλόγου από Ράφι</div>
     <div id="pl-modal-content"></div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closePlModal()">ΞΞ»ΞµΞ―ΟƒΞΉΞΌΞΏ</button>
+      <button class="btn btn-secondary" onclick="closePlModal()">Κλείσιμο</button>
     </div>
   </div>
 </div>
@@ -406,16 +406,16 @@ function apiFetch(url, opts={}) {
 
 
 const SVC_NAMES = {
-  S1003:    'π‡¬π‡· βοΈ β†—οΈ π',
-  S1012:    'π β†™οΈ βοΈ π‡¬π‡·',
-  S1010:    'π‡¬π‡· π› β†—οΈ π‡π‡Ί',
-  S1041:    'π‡π‡Ί β†™οΈ π› π‡¬π‡·',
-  S1003_GR: 'π‡¬π‡· βοΈ β†—οΈ π‡¨π‡Ύ',
-  S1012_GR: 'π‡¨π‡Ύ β†™οΈ βοΈ π‡¬π‡·',
-  S1003_CY: 'π‡¨π‡Ύ βοΈ β†—οΈ π',
-  S1012_CY: 'π β†™οΈ βοΈ π‡¨π‡Ύ',
-  S1050:    'π‡¨π‡Ύ βοΈ π‡¬π‡· π› β†—οΈ π',
-  S1051:    'π π› π‡¬π‡· β†™οΈ βοΈ π‡¨π‡Ύ'
+  S1003:    '🇬🇷 ✈️ ↗️ 🌍',
+  S1012:    '🌍 ↙️ ✈️ 🇬🇷',
+  S1010:    '🇬🇷 🚛 ↗️ 🇪🇺',
+  S1041:    '🇪🇺 ↙️ 🚛 🇬🇷',
+  S1003_GR: '🇬🇷 ✈️ ↗️ 🇨🇾',
+  S1012_GR: '🇨🇾 ↙️ ✈️ 🇬🇷',
+  S1003_CY: '🇨🇾 ✈️ ↗️ 🌍',
+  S1012_CY: '🌍 ↙️ ✈️ 🇨🇾',
+  S1050:    '🇨🇾 ✈️ 🇬🇷 🚛 ↗️ 🌍',
+  S1051:    '🌍 🚛 🇬🇷 ↙️ ✈️ 🇨🇾'
 };
 const SVC_IS_CY   = id => id.includes('_CY') || id === 'S1050' || id === 'S1051';
 let OFFICES = [];
@@ -438,8 +438,8 @@ const GR_SERVICES  = new Set(['S1003','S1012','S1010','S1041','S1003_GR','S1012_
 const ZONES_PDF_URL = 'https://4aexpress.github.io/4a-pricing/docs/4A_Express_Zones_2026.pdf';
 
 const STATUS_LABELS = {
-  prospect:'Ξ¥Ο€ΞΏΟΞ®Ο†ΞΉΞΏΟ‚', negotiate:'Ξ£Ξµ Ξ΄ΞΉΞ±Ο€ΟΞ±Ξ³ΞΌΞ¬Ο„ΞµΟ…ΟƒΞ·',
-  accepted:'Ξ‘Ο€ΞΏΞ΄Ξ­Ο‡Ο„Ξ·ΞΊΞµ', rejected:'Ξ‘ΟΞ½Ξ®ΞΈΞ·ΞΊΞµ', active:'Ξ•Ξ½ΞµΟΞ³ΟΟ‚'
+  prospect:'Υποψήφιος', negotiate:'Σε διαπραγμάτευση',
+  accepted:'Αποδέχτηκε', rejected:'Αρνήθηκε', active:'Ενεργός'
 };
 const STATUS_BG    = { prospect:'#e3f2fd', negotiate:'#fff8e1', accepted:'#e8f5e9', rejected:'#ffebee', active:'#f3e5f5' };
 const STATUS_COLOR = { prospect:'#1565c0', negotiate:'#f57f17', accepted:'#2e7d32', rejected:'#c62828', active:'#6a1b9a' };
@@ -489,7 +489,7 @@ async function init(){
     localStorage.setItem('4a_current_user',JSON.stringify(currentUser));
   }
   const _activeLabel=currentUser.active_station||currentUser.office||'';
-  document.getElementById('topbar-user').textContent=`${currentUser.name} Β· ${_activeLabel}`;
+  document.getElementById('topbar-user').textContent=`${currentUser.name} · ${_activeLabel}`;
   shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
   try {
     const rc = await apiFetch(`${API}/clients.php?v=${Date.now()}`);
@@ -541,7 +541,7 @@ function resetForm(){
   document.getElementById('cl-payment').value='30';
   document.getElementById('cl-invoice').value='monthly';
   document.getElementById('cl-validity').value='30';
-  document.getElementById('form-title').textContent='ΞΞ­ΞΏΟ‚ Ξ ΞµΞ»Ξ¬Ο„Ξ·Ο‚';
+  document.getElementById('form-title').textContent='Νέος Πελάτης';
   document.querySelectorAll('.status-pill').forEach(p=>p.classList.remove('active'));
   document.querySelector('.st-prospect').classList.add('active');
   resetCod();
@@ -591,11 +591,11 @@ async function showPlModal(){
   shelf=JSON.parse(localStorage.getItem("4a_shelf")||"{}");
   document.getElementById("pl-modal").classList.add("open");
   const cont=document.getElementById("pl-modal-content");
-  cont.innerHTML='<div style="padding:24px;text-align:center;color:#999;">Ξ¦ΟΟΟ„Ο‰ΟƒΞ· ΟΞ±Ο†ΞΉΞΏΟβ€¦</div>';
+  cont.innerHTML='<div style="padding:24px;text-align:center;color:#999;">Φόρτωση ραφιού…</div>';
   const res=await Promise.all([loadServices(),ensureDhlAll()]); _modalDhl=res[1];
   cont.innerHTML=
-    '<div class="rg-search"><span>π”</span><input type="text" id="rg-q" placeholder="Ξ‘Ξ½Ξ±Ξ¶Ξ®Ο„Ξ·ΟƒΞ· service, Ο€ΞµΟΞΉΞ³ΟΞ±Ο†Ξ® Ξ® Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ±Ξ»ΟΞ³ΞΏΟ…β€¦" oninput="_modalQ=this.value;renderPlGroups();"></div>'+
-    '<div class="rg-toolbar"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" '+(_modalHideEmpty?"checked":"")+' onchange="_modalHideEmpty=this.checked;renderPlGroups();"> Ξ‘Ο€ΟΞΊΟΟ…ΟΞ· ΞΊΞµΞ½ΟΞ½ services</label><span>π”’ Ξ­Ξ½Ξ±Ο‚ Ξ±Ξ½Ξ¬ service</span></div>'+
+    '<div class="rg-search"><span>🔍</span><input type="text" id="rg-q" placeholder="Αναζήτηση service, περιγραφή ή τιμοκαταλόγου…" oninput="_modalQ=this.value;renderPlGroups();"></div>'+
+    '<div class="rg-toolbar"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" '+(_modalHideEmpty?"checked":"")+' onchange="_modalHideEmpty=this.checked;renderPlGroups();"> Απόκρυψη κενών services</label><span>🔒 ένας ανά service</span></div>'+
     '<div id="rg-list"></div>';
   const qi=document.getElementById("rg-q"); if(qi) qi.value=_modalQ;
   renderPlGroups();
@@ -627,29 +627,29 @@ function renderPlGroups(){
     const open=items.length>0;
     html+='<div class="rg-group'+(items.length?"":" empty")+'" style="border-left:3px solid '+accent+';">';
     html+='<div class="rg-head" onclick="toggleGroup(&quot;'+code+'&quot;)">'+
-      '<span class="rg-emoji">'+(s.emoji||"π“¦")+'</span>'+
+      '<span class="rg-emoji">'+(s.emoji||"📦")+'</span>'+
       '<div class="rg-h-main"><div class="rg-h-name">'+(s.name||code)+'</div>'+
-      '<div class="rg-h-meta">'+code+(s.type?(" Β· "+s.type):"")+'</div>'+
+      '<div class="rg-h-meta">'+code+(s.type?(" · "+s.type):"")+'</div>'+
       (s.description?('<div class="rg-h-desc">'+s.description+'</div>'):"")+'</div>'+
-      (sel?'<span class="rg-count sel">β“ 1</span>':'<span class="rg-count">'+items.length+'</span>')+
+      (sel?'<span class="rg-count sel">✓ 1</span>':'<span class="rg-count">'+items.length+'</span>')+
       '</div>';
     html+='<div class="rg-body" id="rg-body-'+code+'" style="display:'+(open?"block":"none")+';">';
-    if(!items.length){ html+='<div style="font-size:12px;color:#aaa;padding:6px 4px;">Ξ”ΞµΞ½ Ο…Ο€Ξ¬ΟΟ‡ΞΏΟ…Ξ½ Ξ±Ο€ΞΏΞΈΞ·ΞΊΞµΟ…ΞΌΞ­Ξ½ΞΏΞΉ Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΞΉ.</div>'; }
+    if(!items.length){ html+='<div style="font-size:12px;color:#aaa;padding:6px 4px;">Δεν υπάρχουν αποθηκευμένοι τιμοκατάλογοι.</div>'; }
     items.forEach(p=>{
       const isSel=sel&&sel.id===p.id; const mk=(p.global_markup!=null?p.global_markup:p.markup);
       html+='<div class="rg-pl'+(isSel?" sel":"")+'">';
-      html+='<div class="rg-pl-top"><div style="min-width:0;"><div class="rg-pl-name">'+(p.name||"")+(isSel?' <span style=&quot;color:#2e7d32;font-size:11px;&quot;>β“ ΞµΟ€ΞΉΞ»ΞµΞ³ΞΌΞ­Ξ½ΞΏ</span>':"")+'</div>'+
-        '<div class="rg-pl-meta">'+(p.date||"")+(mk!=null?(" Β· markup "+mk+"%"):"")+'</div></div>'+
+      html+='<div class="rg-pl-top"><div style="min-width:0;"><div class="rg-pl-name">'+(p.name||"")+(isSel?' <span style=&quot;color:#2e7d32;font-size:11px;&quot;>✓ επιλεγμένο</span>':"")+'</div>'+
+        '<div class="rg-pl-meta">'+(p.date||"")+(mk!=null?(" · markup "+mk+"%"):"")+'</div></div>'+
         '<div style="display:flex;gap:6px;flex-shrink:0;">'+
-        '<button class="rg-btn rg-btn-eye" onclick="togglePrev(&quot;'+code+'&quot;,'+p.id+')">π‘ Ο„ΞΉΞΌΞ­Ο‚</button>'+
-        (isSel?'<button class="rg-btn rg-btn-rem" onclick="removePl('+p.id+')">β• Ξ‘Ο†Ξ±Ξ―ΟΞµΟƒΞ·</button>':'<button class="rg-btn rg-btn-add" onclick="addPl(&quot;'+code+'&quot;,'+p.id+')">+ Ξ ΟΞΏΟƒΞΈΞ®ΞΊΞ·</button>')+
+        '<button class="rg-btn rg-btn-eye" onclick="togglePrev(&quot;'+code+'&quot;,'+p.id+')">👁 τιμές</button>'+
+        (isSel?'<button class="rg-btn rg-btn-rem" onclick="removePl('+p.id+')">✕ Αφαίρεση</button>':'<button class="rg-btn rg-btn-add" onclick="addPl(&quot;'+code+'&quot;,'+p.id+')">+ Προσθήκη</button>')+
         '</div></div>';
       html+='<div id="rg-prev-'+code+"-"+p.id+'"></div>';
       html+='</div>';
     });
     html+='</div></div>';
   });
-  if(!html) html='<div style="color:#aaa;text-align:center;padding:24px;">Ξ”ΞµΞ½ Ξ²ΟΞ­ΞΈΞ·ΞΊΞ±Ξ½ Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ¬Ξ»ΞΏΞ³ΞΏΞΉ.</div>';
+  if(!html) html='<div style="color:#aaa;text-align:center;padding:24px;">Δεν βρέθηκαν τιμοκατάλογοι.</div>';
   list.innerHTML=html;
   Object.keys(_modalPrev).forEach(pid=>{ const st=_modalPrev[pid]; if(st&&st.open){ const el=document.getElementById("rg-prev-"+st.code+"-"+pid); if(el) renderPrev(st.code,pid); } });
 }
@@ -658,7 +658,7 @@ function _findPl(code,plId){ return (shelf[code]||[]).find(p=>p.id==plId); }
 function togglePrev(code,plId){ const st=_modalPrev[plId]||(_modalPrev[plId]={code:code,zone:1,weight:5,open:false}); st.open=!st.open; st.code=code; renderPrev(code,plId); }
 function setPrevZone(code,plId,z){ const st=_modalPrev[plId]; if(!st)return; st.zone=z; renderPrev(code,plId); }
 function setPrevWeight(code,plId,v){ const st=_modalPrev[plId]; if(!st)return; st.weight=parseFloat(v)||0; const r=modalPrice(code,_findPl(code,plId),st.weight,st.zone); _writePrevOut(plId,r); }
-function _writePrevOut(plId,r){ const po=document.getElementById("rg-out-price-"+plId), co=document.getElementById("rg-out-cost-"+plId); if(po) po.textContent=(r&&r.price!=null)?r.price.toFixed(2):"β€”"; if(co) co.textContent=(r&&r.cost!=null)?r.cost.toFixed(2):"β€”"; }
+function _writePrevOut(plId,r){ const po=document.getElementById("rg-out-price-"+plId), co=document.getElementById("rg-out-cost-"+plId); if(po) po.textContent=(r&&r.price!=null)?r.price.toFixed(2):"—"; if(co) co.textContent=(r&&r.cost!=null)?r.cost.toFixed(2):"—"; }
 function renderPrev(code,plId){
   const wrap=document.getElementById("rg-prev-"+code+"-"+plId); if(!wrap) return;
   const st=_modalPrev[plId]; const pl=_findPl(code,plId);
@@ -669,13 +669,13 @@ function renderPrev(code,plId){
   if(zc>1){ let z=""; for(let i=1;i<=zc;i++){ z+='<span class="rg-z'+(st.zone===i?" on":"")+'" onclick="setPrevZone(&quot;'+code+'&quot;,'+plId+','+i+')">Z'+i+'</span>'; } zones='<div class="rg-zones">'+z+'</div>'; } else { st.zone=1; }
   const r=modalPrice(code,pl,st.weight,st.zone);
   wrap.innerHTML='<div class="rg-prev">'+
-    '<div style="font-size:12px;font-weight:600;color:'+accent+';margin-bottom:6px;">π§® Ξ ΟΞΏΞµΟ€ΞΉΟƒΞΊΟΟ€Ξ·ΟƒΞ· Ο„ΞΉΞΌΞ®Ο‚'+(zc>1?" Β· Ξ¶ΟΞ½Ξ· Γ— Ξ²Ξ¬ΟΞΏΟ‚":" Β· Ξ²Ξ¬ΟΞΏΟ‚ β†’ Ο„ΞΉΞΌΞ®")+'</div>'+
+    '<div style="font-size:12px;font-weight:600;color:'+accent+';margin-bottom:6px;">🧮 Προεπισκόπηση τιμής'+(zc>1?" · ζώνη × βάρος":" · βάρος → τιμή")+'</div>'+
     zones+
-    '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:#777;">Ξ’Ξ¬ΟΞΏΟ‚</span>'+
+    '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:#777;">Βάρος</span>'+
     '<input type="number" min="0.5" step="0.5" value="'+st.weight+'" oninput="setPrevWeight(&quot;'+code+'&quot;,'+plId+',this.value)" style="width:72px;height:30px;border:1px solid #ddd;border-radius:4px;padding:0 8px;font-family:inherit;"> <span style="font-size:12px;color:#777;">kg</span></div>'+
-    '<div class="rg-prev-out"><div><div style="font-size:10px;color:#999;">ΞΟΟƒΟ„ΞΏΟ‚ DHL</div><div style="font-size:13px;">β‚¬<span id="rg-out-cost-'+plId+'">'+(r&&r.cost!=null?r.cost.toFixed(2):"β€”")+'</span></div></div>'+
-    '<div style="text-align:right;"><div style="font-size:10px;color:'+accent+';">Ξ¤ΞΉΞΌΞ® Ο€ΞµΞ»Ξ¬Ο„Ξ·</div><div style="font-size:20px;font-weight:700;color:'+accent+';">β‚¬<span id="rg-out-price-'+plId+'">'+(r&&r.price!=null?r.price.toFixed(2):"β€”")+'</span></div></div></div>'+
-    '<div style="font-size:10px;color:#aaa;margin-top:5px;">+ FC / COD ΞΊΞ±Ο„Ξ¬ Ο€ΞµΟΞ―Ο€Ο„Ο‰ΟƒΞ· Β· Ξ²Ξ¬ΟƒΞµΞΉ Ξ±Ο€ΞΏΞΈΞ·ΞΊΞµΟ…ΞΌΞ­Ξ½ΞΏΟ… Z1 &amp; ΞΊΟΟƒΟ„ΞΏΟ…Ο‚ DHL</div>'+
+    '<div class="rg-prev-out"><div><div style="font-size:10px;color:#999;">Κόστος DHL</div><div style="font-size:13px;">€<span id="rg-out-cost-'+plId+'">'+(r&&r.cost!=null?r.cost.toFixed(2):"—")+'</span></div></div>'+
+    '<div style="text-align:right;"><div style="font-size:10px;color:'+accent+';">Τιμή πελάτη</div><div style="font-size:20px;font-weight:700;color:'+accent+';">€<span id="rg-out-price-'+plId+'">'+(r&&r.price!=null?r.price.toFixed(2):"—")+'</span></div></div></div>'+
+    '<div style="font-size:10px;color:#aaa;margin-top:5px;">+ FC / COD κατά περίπτωση · βάσει αποθηκευμένου Z1 &amp; κόστους DHL</div>'+
     '</div>';
 }
 function closePlModal(){ document.getElementById('pl-modal').classList.remove('open'); checkForm(); }
@@ -691,34 +691,34 @@ function renderPlTags(){
   document.getElementById('pl-tags').innerHTML=
     selectedPls.map(p=>{
       const isCY=SVC_IS_CY(p.service_id);
-      return `<span class="pl-tag ${isCY?'cy':''}">${SVC_NAMES[p.service_id]||p.service_id} β€” ${p.name}<button onclick="removePl(${p.id})">β•</button></span>`;
+      return `<span class="pl-tag ${isCY?'cy':''}">${SVC_NAMES[p.service_id]||p.service_id} — ${p.name}<button onclick="removePl(${p.id})">✕</button></span>`;
     }).join('')+
-    `<button class="add-pl-btn" onclick="showPlModal()">+ Ξ ΟΞΏΟƒΞΈΞ®ΞΊΞ· Ξ±Ο€Ο ΟΞ¬Ο†ΞΉ</button>`;
+    `<button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>`;
   const hasGR = selectedPls.some(p => GR_SERVICES.has(p.service_id));
   document.getElementById('zone-pdf-badge-wrap').style.display = hasGR ? 'block' : 'none';
   checkCodVisibility();
 }
 
-function addSurcharge(){ surcharges.push({name:'',value:'',unit:'β‚¬/Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®'}); renderSurcharges(); }
+function addSurcharge(){ surcharges.push({name:'',value:'',unit:'€/αποστολή'}); renderSurcharges(); }
 function renderSurcharges(){
   document.getElementById('surcharges-list').innerHTML=surcharges.map((s,i)=>`
     <div class="surcharge-row">
-      <input type="text" value="${s.name}" placeholder="Ο€.Ο‡. Ξ£Ο…ΟƒΞΊΞµΟ…Ξ±ΟƒΞ―Ξ±" oninput="surcharges[${i}].name=this.value"/>
+      <input type="text" value="${s.name}" placeholder="π.χ. Συσκευασία" oninput="surcharges[${i}].name=this.value"/>
       <input type="text" value="${s.value}" placeholder="2.50" oninput="surcharges[${i}].value=this.value"/>
       <select oninput="surcharges[${i}].unit=this.value">
-        <option ${s.unit==='β‚¬/Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®'?'selected':''}>β‚¬/Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®</option>
-        <option ${s.unit==='% ΞµΟ€Ξ― Ξ±ΞΎΞ―Ξ±Ο‚'?'selected':''}>% ΞµΟ€Ξ― Ξ±ΞΎΞ―Ξ±Ο‚</option>
-        <option ${s.unit==='β‚¬/Ο€Ξ±Ξ»Ξ­Ο„Ξ±'?'selected':''}>β‚¬/Ο€Ξ±Ξ»Ξ­Ο„Ξ±</option>
-        <option ${s.unit==='β‚¬/kg'?'selected':''}>β‚¬/kg</option>
+        <option ${s.unit==='€/αποστολή'?'selected':''}>€/αποστολή</option>
+        <option ${s.unit==='% επί αξίας'?'selected':''}>% επί αξίας</option>
+        <option ${s.unit==='€/παλέτα'?'selected':''}>€/παλέτα</option>
+        <option ${s.unit==='€/kg'?'selected':''}>€/kg</option>
       </select>
-      <button class="del-btn" onclick="surcharges.splice(${i},1);renderSurcharges()">β•</button>
+      <button class="del-btn" onclick="surcharges.splice(${i},1);renderSurcharges()">✕</button>
     </div>`).join('');
 }
 
 function addManager(){ const e=prompt('Email manager:'); if(e&&e.includes('@')){ managers.push(e.trim()); renderManagers(); } }
 function renderManagers(){
   document.getElementById('managers-list').innerHTML=managers.map((m,i)=>`
-    <span class="manager-tag">${m}<button onclick="managers.splice(${i},1);renderManagers()">β•</button></span>`).join('');
+    <span class="manager-tag">${m}<button onclick="managers.splice(${i},1);renderManagers()">✕</button></span>`).join('');
 }
 
 async function fetchCodConfig(serviceCode){
@@ -752,7 +752,7 @@ function updateCodFormula(){
   if(!badge||!codConfig)return;
   const fmt=v=>{ const n=parseFloat(v); return n%1===0?String(Math.round(n)):n.toFixed(2); };
   const {flat_limit:fl,flat_fee:ff,min_fee:mf,percentage:pct}=codConfig;
-  badge.textContent=`π“ β‰¤β‚¬${fmt(fl)}:β‚¬${fmt(ff)} flat π”Ίmin β‚¬${fmt(mf)} | >β‚¬${fmt(fl)} π“+${fmt(pct)}%`;
+  badge.textContent=`📊 ≤€${fmt(fl)}:€${fmt(ff)} flat 🔺min €${fmt(mf)} | >€${fmt(fl)} 📈+${fmt(pct)}%`;
   badge.style.display='';
 }
 
@@ -761,7 +761,7 @@ function resetCod(){
   const chk=document.getElementById('cod-toggle');
   if(chk)chk.checked=false;
   document.getElementById('cod-fields').style.display='none';
-  document.getElementById('cod-fee-display').textContent='Ξ§ΟΞ­Ο‰ΟƒΞ· Ξ±Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ®Ο‚: β€”';
+  document.getElementById('cod-fee-display').textContent='Χρέωση αντικαταβολής: —';
   document.getElementById('cod-floor-warn').style.display='none';
   const badge=document.getElementById('cod-formula-badge');
   if(badge)badge.style.display='none';
@@ -777,7 +777,7 @@ function toggleCod(){
     codEnabled=false; codFee=0;
     document.getElementById('cod-fields').style.display='none';
     document.getElementById('cod-floor-warn').style.display='none';
-    document.getElementById('cod-fee-display').textContent='Ξ§ΟΞ­Ο‰ΟƒΞ· Ξ±Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ®Ο‚: β€”';
+    document.getElementById('cod-fee-display').textContent='Χρέωση αντικαταβολής: —';
   }
 }
 
@@ -798,25 +798,25 @@ function calculateCodFee(){
   const warn=document.getElementById('cod-floor-warn');
   const feeEl=document.getElementById('cod-fee-display');
   if(amount>0&&amount<min_fee){
-    warn.textContent=`β οΈ Ξ¤ΞΏ Ο€ΞΏΟƒΟ Ο€ΟΞ­Ο€ΞµΞΉ Ξ½Ξ± ΞµΞ―Ξ½Ξ±ΞΉ Ο„ΞΏΟ…Ξ»Ξ¬Ο‡ΞΉΟƒΟ„ΞΏΞ½ β‚¬${min_fee.toFixed(2)}`;
+    warn.textContent=`⚠️ Το ποσό πρέπει να είναι τουλάχιστον €${min_fee.toFixed(2)}`;
     warn.style.display='block';
-    codFee=0; feeEl.textContent='Ξ§ΟΞ­Ο‰ΟƒΞ· Ξ±Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ®Ο‚: β€”'; return;
+    codFee=0; feeEl.textContent='Χρέωση αντικαταβολής: —'; return;
   }
   warn.style.display='none';
   codFee=amount<=flat_limit ? flat_fee : Math.max(min_fee,amount*percentage/100);
   codFee=Math.round(codFee*100)/100;
-  feeEl.textContent=`Ξ§ΟΞ­Ο‰ΟƒΞ· Ξ±Ξ½Ο„ΞΉΞΊΞ±Ο„Ξ±Ξ²ΞΏΞ»Ξ®Ο‚: β‚¬${codFee.toFixed(2)}`;
+  feeEl.textContent=`Χρέωση αντικαταβολής: €${codFee.toFixed(2)}`;
 }
 
 function saveClient(){
   const name=document.getElementById('cl-name').value.trim();
   const afm=document.getElementById('cl-afm').value.trim();
   const email=document.getElementById('cl-email').value.trim();
-  if(!name||!afm||!email){ alert('Ξ£Ο…ΞΌΟ€Ξ»Ξ®ΟΟ‰ΟƒΞµ Ξ•Ο€Ο‰Ξ½Ο…ΞΌΞ―Ξ±, Ξ‘Ξ¦Ξ ΞΊΞ±ΞΉ Email'); return; }
+  if(!name||!afm||!email){ alert('Συμπλήρωσε Επωνυμία, ΑΦΜ και Email'); return; }
   if(codEnabled){
     const _codAmt=parseFloat(document.getElementById('cod-amount').value)||0;
     const _minFee=codConfig?parseFloat(codConfig.min_fee):0;
-    if(_codAmt<_minFee){ alert(`β οΈ Ξ¤ΞΏ Ο€ΞΏΟƒΟ COD Ο€ΟΞ­Ο€ΞµΞΉ Ξ½Ξ± ΞµΞ―Ξ½Ξ±ΞΉ Ο„ΞΏΟ…Ξ»Ξ¬Ο‡ΞΉΟƒΟ„ΞΏΞ½ β‚¬${_minFee.toFixed(2)}`); return; }
+    if(_codAmt<_minFee){ alert(`⚠️ Το ποσό COD πρέπει να είναι τουλάχιστον €${_minFee.toFixed(2)}`); return; }
     if(codConfig){
       const newFl=parseFloat(document.getElementById('cod-flat_limit').value)||parseFloat(codConfig.flat_limit);
       const newPct=parseFloat(document.getElementById('cod-percentage').value)||parseFloat(codConfig.percentage);
@@ -838,7 +838,7 @@ function saveClient(){
     address:document.getElementById('cl-address').value.trim(),
     notes:document.getElementById('cl-notes').value.trim(),
     is_walkin:document.getElementById('cl-walkin').checked?1:0,
-    account:document.getElementById('cl-account').value.trim()||'β€”',
+    account:document.getElementById('cl-account').value.trim()||'—',
     status:currentStatus,
     pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[]})),
     surcharges:[...surcharges], managers:[...managers],
@@ -854,7 +854,7 @@ function saveClient(){
   localStorage.setItem('4a_clients',JSON.stringify(clients));
   apiFetch(`${API}/clients.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',...client})})
     .then(r=>r.json()).then(d=>console.log('API client save:',d)).catch(e=>console.error(e));
-  alert(`β… "${name}" Ξ±Ο€ΞΏΞΈΞ·ΞΊΞµΟΟ„Ξ·ΞΊΞµ\nΞ‘Ο. Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚: ${offerNum}`);
+  alert(`✅ "${name}" αποθηκεύτηκε\nΑρ. Προσφοράς: ${offerNum}`);
   resetForm(); renderClients();
 }
 
@@ -870,7 +870,7 @@ function editClient(id){
   document.getElementById('cl-address').value=c.address||'';
   document.getElementById('cl-notes').value=c.notes||'';
   const wkel=document.getElementById('cl-walkin'); if(wkel){ wkel.checked=!!(c.is_walkin); onWalkinChange(); }
-  document.getElementById('cl-account').value=(c.account!=='β€”')?c.account:'';
+  document.getElementById('cl-account').value=(c.account!=='—')?c.account:'';
   document.getElementById('cl-payment').value=c.payment||'30';
   document.getElementById('cl-invoice').value=c.invoice||'monthly';
   document.getElementById('cl-validity').value=c.validity||'30';
@@ -880,7 +880,7 @@ function editClient(id){
   managers=c.managers?[...c.managers]:[];
   document.querySelectorAll('.status-pill').forEach(p=>p.classList.remove('active'));
   document.querySelector(`.st-${currentStatus}`)?.classList.add('active');
-  document.getElementById('form-title').textContent=`βοΈ Ξ•Ο€ΞµΞΎΞµΟΞ³Ξ±ΟƒΞ―Ξ±: ${c.name}`;
+  document.getElementById('form-title').textContent=`✏️ Επεξεργασία: ${c.name}`;
   renderPlTags(); renderSurcharges(); renderManagers(); updateOfferNum(); checkForm();
   resetCod();
   if(c.cod&&c.cod.cod_enabled){
@@ -895,7 +895,7 @@ function editClient(id){
 
 function deleteClient(id){
   const c=clients.find(cl=>cl.id===id); if(!c)return;
-  if(!confirm(`Ξ”ΞΉΞ±Ξ³ΟΞ±Ο†Ξ® "${c.name}";`))return;
+  if(!confirm(`Διαγραφή "${c.name}";`))return;
   clients=clients.filter(cl=>cl.id!==id);
   localStorage.setItem('4a_clients',JSON.stringify(clients));
   apiFetch(`${API}/clients.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id})});
@@ -912,28 +912,28 @@ function renderClients(){
   if(filterStatus==='walkin') list=list.filter(c=>c.is_walkin);
   else if(filterStatus!=='all')list=list.filter(c=>c.status===filterStatus);
   if(filterSearch){ const q=filterSearch.toLowerCase(); list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.afm||'').includes(q)||(c.contact||'').toLowerCase().includes(q)); }
-  if(!list.length){ el.innerHTML='<div class="empty">Ξ”ΞµΞ½ Ξ²ΟΞ­ΞΈΞ·ΞΊΞ±Ξ½ Ο€ΞµΞ»Ξ¬Ο„ΞµΟ‚</div>'; return; }
+  if(!list.length){ el.innerHTML='<div class="empty">Δεν βρέθηκαν πελάτες</div>'; return; }
   el.innerHTML=list.map(c=>{
-    const plStr=(c.pricelists||[]).map(p=>`${SVC_NAMES[p.service_id]||p.service_id}${p.markup?' '+p.markup+'%':''}`).join(' Β· ')||'β€”';
+    const plStr=(c.pricelists||[]).map(p=>`${SVC_NAMES[p.service_id]||p.service_id}${p.markup?' '+p.markup+'%':''}`).join(' · ')||'—';
     const isRenewal=c.status==='active'||c.status==='rejected';
     return `<div class="client-item">
-      <div class="client-avatar" style="background:${c.is_walkin?'#fff8e1':STATUS_BG[c.status]||'#f0f0f0'};color:${c.is_walkin?'#7c6d00':STATUS_COLOR[c.status]||'#555'};">${c.is_walkin?'π¶':initials(c.name)}</div>
+      <div class="client-avatar" style="background:${c.is_walkin?'#fff8e1':STATUS_BG[c.status]||'#f0f0f0'};color:${c.is_walkin?'#7c6d00':STATUS_COLOR[c.status]||'#555'};">${c.is_walkin?'🚶':initials(c.name)}</div>
       <div class="client-info">
         <div class="client-name">${c.name}
-          ${c.is_walkin?'<span class="walkin-badge">π¶ Walk-in</span>':'<span class="status-pill st-'+c.status+'" style="font-size:10px;padding:2px 8px;cursor:default;">'+STATUS_LABELS[c.status]+'</span>'}
-          ${isRenewal&&!c.is_walkin?'<span class="renewal-badge">β†» Ξ‘Ξ½Ξ±Ξ½Ξ­Ο‰ΟƒΞ·</span>':''}
-          <span class="offer-badge">${c.offer_number||'β€”'}</span>
+          ${c.is_walkin?'<span class="walkin-badge">🚶 Walk-in</span>':'<span class="status-pill st-'+c.status+'" style="font-size:10px;padding:2px 8px;cursor:default;">'+STATUS_LABELS[c.status]+'</span>'}
+          ${isRenewal&&!c.is_walkin?'<span class="renewal-badge">↻ Ανανέωση</span>':''}
+          <span class="offer-badge">${c.offer_number||'—'}</span>
         </div>
-        <div class="client-meta">Ξ‘Ξ¦Ξ: ${c.afm||'β€”'} Β· ${c.contact||'β€”'} Β· ${c.email||'β€”'}${c.phone?' Β· '+c.phone:''}${c.address?' Β· π“'+c.address:''} Β· ${c.date||'β€”'} Β· ${c.user||'β€”'}</div>
-        ${c.notes?`<div style="font-size:11px;color:#888;margin-top:2px;">π’¬ ${c.notes}</div>`:''}
-        <div class="client-pls">π“‹ ${plStr}</div>
-        ${c.cod?.cod_enabled?`<div class="client-cod-badge">π’³ COD: β‚¬${parseFloat(c.cod.cod_amount||0).toFixed(2)} Β· Ξ§ΟΞ­Ο‰ΟƒΞ·: β‚¬${parseFloat(c.cod.cod_fee||0).toFixed(2)}</div>`:''}
+        <div class="client-meta">ΑΦΜ: ${c.afm||'—'} · ${c.contact||'—'} · ${c.email||'—'}${c.phone?' · '+c.phone:''}${c.address?' · 📍'+c.address:''} · ${c.date||'—'} · ${c.user||'—'}</div>
+        ${c.notes?`<div style="font-size:11px;color:#888;margin-top:2px;">💬 ${c.notes}</div>`:''}
+        <div class="client-pls">📋 ${plStr}</div>
+        ${c.cod?.cod_enabled?`<div class="client-cod-badge">💳 COD: €${parseFloat(c.cod.cod_amount||0).toFixed(2)} · Χρέωση: €${parseFloat(c.cod.cod_fee||0).toFixed(2)}</div>`:''}
       </div>
       <div class="client-actions">
-        ${c.status==='active'?`<button class="action-btn cms" onclick="exportCMS(${c.id})">β†“ CMS Export</button>`:''}
-        <button class="action-btn send" onclick="editClient(${c.id})">β‰οΈ Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬</button>
-        <button class="action-btn edit" onclick="editClient(${c.id})">βοΈ Edit</button>
-        <button class="action-btn del"  onclick="deleteClient(${c.id})">π—‘</button>
+        ${c.status==='active'?`<button class="action-btn cms" onclick="exportCMS(${c.id})">↓ CMS Export</button>`:''}
+        <button class="action-btn send" onclick="editClient(${c.id})">✉️ Προσφορά</button>
+        <button class="action-btn edit" onclick="editClient(${c.id})">✏️ Edit</button>
+        <button class="action-btn del"  onclick="deleteClient(${c.id})">🗑</button>
       </div>
     </div>`;
   }).join('');
@@ -941,8 +941,8 @@ function renderClients(){
 
 function filterByStatus(s,btn){ filterStatus=s; document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderClients(); }
 function filterClients(q){ filterSearch=q; renderClients(); }
-function exportCMS(id){ alert('CMS Export β€” ΞµΟ€ΟΞΌΞµΞ½ΞΏ Ξ²Ξ®ΞΌΞ± (TSV download)'); }
-// β”€β”€ ΞΞ™Ξ‘ ΞΞ—Ξ§Ξ‘ΞΞ— PDF β”€β”€ buildOfferPDF β†’ Python β†’ bytes β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€β”€
+function exportCMS(id){ alert('CMS Export — επόμενο βήμα (TSV download)'); }
+// ── ΜΙΑ ΜΗΧΑΝΗ PDF ── buildOfferPDF → Python → bytes ──────────────────────
 async function buildOfferPDF(offerNum) {
   // DHL tariffs
   if (!localStorage.getItem('dhl_all')) {
@@ -957,7 +957,7 @@ async function buildOfferPDF(offerNum) {
     fuel = await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json());
     localStorage.setItem('4a_fuel_cache', JSON.stringify(fuel));
   }
-  // Zones data (Ξ³ΞΉΞ± zones section ΟƒΟ„Ξ·Ξ½ Python)
+  // Zones data (για zones section στην Python)
   let zonesData = null;
   try {
     let zd = JSON.parse(localStorage.getItem('4a_zones_cache')||'null');
@@ -968,7 +968,7 @@ async function buildOfferPDF(offerNum) {
     zonesData = zd;
   } catch(e) {}
 
-  // Active docs (master filter: active=1 ΟƒΟ„ΞΏ 4a_docs)
+  // Active docs (master filter: active=1 στο 4a_docs)
   let activeDocs = ['volumetric'];
   try {
     const dl = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]);
@@ -1003,16 +1003,16 @@ async function buildOfferPDF(offerNum) {
     })
   });
   const d = await r.json();
-  if (!d.ok) throw new Error(d.error||'Ξ†Ξ³Ξ½Ο‰ΟƒΟ„ΞΏ ΟƒΟ†Ξ¬Ξ»ΞΌΞ±');
+  if (!d.ok) throw new Error(d.error||'Άγνωστο σφάλμα');
   return Uint8Array.from(atob(d.pdf), c => c.charCodeAt(0));
 }
 
 async function previewPDF(){
   const name = document.getElementById('cl-name').value.trim();
-  if (!name) { alert('Ξ£Ο…ΞΌΟ€Ξ»Ξ®ΟΟ‰ΟƒΞµ Ο€ΟΟΟ„Ξ± Ο„Ξ± ΟƒΟ„ΞΏΞΉΟ‡ΞµΞ―Ξ± Ο€ΞµΞ»Ξ¬Ο„Ξ·'); return; }
-  if (!selectedPls.length) { alert('Ξ”ΞµΞ½ Ξ­Ο‡ΞµΞΉΟ‚ ΞµΟ€ΞΉΞ»Ξ­ΞΎΞµΞΉ Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ±Ξ»ΟΞ³ΞΏΟ…Ο‚'); return; }
+  if (!name) { alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
+  if (!selectedPls.length) { alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
   const btn = document.getElementById('preview-btn');
-  btn.textContent = 'β³ Ξ¦ΟΟΟ„Ο‰ΟƒΞ·...'; btn.disabled = true;
+  btn.textContent = '⏳ Φόρτωση...'; btn.disabled = true;
   try {
     const offerNum = editingId ? (clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()) : nextOfferNumber();
     const bytes = await buildOfferPDF(offerNum);
@@ -1020,19 +1020,19 @@ async function previewPDF(){
     const url   = URL.createObjectURL(blob);
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 60000);
-  } catch(e) { alert('Ξ£Ο†Ξ¬Ξ»ΞΌΞ± Ο€ΟΞΏΞµΟ€ΞΉΟƒΞΊΟΟ€Ξ·ΟƒΞ·Ο‚: ' + e.message); }
-  finally { btn.textContent = 'π“„ Ξ ΟΞΏΞµΟ€ΞΉΟƒΞΊΟΟ€Ξ·ΟƒΞ· PDF'; btn.disabled = false; }
+  } catch(e) { alert('Σφάλμα προεπισκόπησης: ' + e.message); }
+  finally { btn.textContent = '📄 Προεπισκόπηση PDF'; btn.disabled = false; }
 }
 
 
 async function sendOffer() {
   const name  = document.getElementById('cl-name').value.trim();
   const email = document.getElementById('cl-email').value.trim();
-  if (!name)  { alert('Ξ£Ο…ΞΌΟ€Ξ»Ξ®ΟΟ‰ΟƒΞµ Ο€ΟΟΟ„Ξ± Ο„Ξ± ΟƒΟ„ΞΏΞΉΟ‡ΞµΞ―Ξ± Ο€ΞµΞ»Ξ¬Ο„Ξ·'); return; }
-  if (!email) { alert('Ξ‘Ο€Ξ±ΞΉΟ„ΞµΞ―Ο„Ξ±ΞΉ email Ο€Ξ±ΟΞ±Ξ»Ξ®Ο€Ο„Ξ·'); return; }
-  if (!selectedPls.length) { alert('Ξ”ΞµΞ½ Ξ­Ο‡ΞµΞΉΟ‚ ΞµΟ€ΞΉΞ»Ξ­ΞΎΞµΞΉ Ο„ΞΉΞΌΞΏΞΊΞ±Ο„Ξ±Ξ»ΟΞ³ΞΏΟ…Ο‚'); return; }
+  if (!name)  { alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
+  if (!email) { alert('Απαιτείται email παραλήπτη'); return; }
+  if (!selectedPls.length) { alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
   const btn = document.getElementById('send-btn');
-  btn.textContent = 'β³ Ξ‘Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®...'; btn.disabled = true;
+  btn.textContent = '⏳ Αποστολή...'; btn.disabled = true;
   try {
     const offerNum = editingId ? (clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()) : nextOfferNumber();
     const bytes = await buildOfferPDF(offerNum);
@@ -1043,17 +1043,17 @@ async function sendOffer() {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         to: email,
-        subject: `Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬ 4A Express β€” ${offerNum}`,
-        body: `Ξ‘Ξ³Ξ±Ο€Ξ·Ο„Ξ­/Ξ® ${name},\n\nΞ£Ξ±Ο‚ Ξ±Ο€ΞΏΟƒΟ„Ξ­Ξ»Ξ»ΞΏΟ…ΞΌΞµ Ο„Ξ·Ξ½ Ο€ΟΞΏΟƒΟ†ΞΏΟΞ¬ ΞΌΞ±Ο‚.\n\nΞΞµ ΞµΞΊΟ„Ξ―ΞΌΞ·ΟƒΞ·,\nΞ— ΞΏΞΌΞ¬Ξ΄Ξ± 4A Express`,
+        subject: `Προσφορά 4A Express — ${offerNum}`,
+        body: `Αγαπητέ/ή ${name},\n\nΣας αποστέλλουμε την προσφορά μας.\n\nΜε εκτίμηση,\nΗ ομάδα 4A Express`,
         pdf_base64,
-        filename: `Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬_4A_Express_${offerNum}.pdf`
+        filename: `Προσφορά_4A_Express_${offerNum}.pdf`
       })
     });
     const d = await r.json();
-    if (d.ok) { alert('Ξ— Ο€ΟΞΏΟƒΟ†ΞΏΟΞ¬ ΟƒΟ„Ξ¬Ξ»ΞΈΞ·ΞΊΞµ ΞµΟ€ΞΉΟ„Ο…Ο‡ΟΟ‚!'); }
-    else { alert('Ξ£Ο†Ξ¬Ξ»ΞΌΞ± Ξ±Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ®Ο‚: ' + (d.error||'Ξ†Ξ³Ξ½Ο‰ΟƒΟ„ΞΏ')); }
-  } catch(e) { alert('Ξ£Ο†Ξ¬Ξ»ΞΌΞ±: ' + e.message); }
-  finally { btn.textContent = 'β‰οΈ Ξ‘Ο€ΞΏΟƒΟ„ΞΏΞ»Ξ® Ξ ΟΞΏΟƒΟ†ΞΏΟΞ¬Ο‚'; btn.disabled = false; }
+    if (d.ok) { alert('Η προσφορά στάλθηκε επιτυχώς!'); }
+    else { alert('Σφάλμα αποστολής: ' + (d.error||'Άγνωστο')); }
+  } catch(e) { alert('Σφάλμα: ' + e.message); }
+  finally { btn.textContent = '✉️ Αποστολή Προσφοράς'; btn.disabled = false; }
 }
 
 function doLogout(){ window.location.href='pricelist-editor.html'; }
