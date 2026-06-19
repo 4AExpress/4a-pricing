@@ -975,29 +975,70 @@ async function buildFinalPDF(offerNum){
   const d=await r.json();
   if(!d.ok) throw new Error(d.error||'Άγνωστο σφάλμα');
   const offerBytes = Uint8Array.from(atob(d.pdf), c => c.charCodeAt(0));
-  if(!selectedPls.some(p => GR_SERVICES.has(p.service_id))) return offerBytes;
   try{
     const { PDFDocument } = PDFLib;
-    const zonesResp = await fetch(ZONES_PDF_URL);
-    const zonesBytes = new Uint8Array(await zonesResp.arrayBuffer());
-    const offerDoc = await PDFDocument.load(offerBytes);
-    const zonesDoc = await PDFDocument.load(zonesBytes);
-    // Server PDF: page 0 = cover, page 1 = TOC, pages 2+ = rest (how/track/net/pricelists/terms)
-    // Zones insert immediately after TOC (index 1), before everything else
-    const INSERT_AFTER = 1;
+    const hasGR = selectedPls.some(p => GR_SERVICES.has(p.service_id));
+    const docsList = await apiFetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]).catch(()=>[]);
     const merged = await PDFDocument.create();
+    const offerDoc = await PDFDocument.load(offerBytes);
     const offerPages = await merged.copyPages(offerDoc, offerDoc.getPageIndices());
+    // A: cover + TOC
+    const INSERT_AFTER = 1;
     offerPages.slice(0, INSERT_AFTER + 1).forEach(p => merged.addPage(p));
-    (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
+    // B: zones PDF (after TOC, if GR service)
+    if(hasGR){
+      try{
+        const zonesBytes = new Uint8Array(await fetch(ZONES_PDF_URL).then(r=>r.arrayBuffer()));
+        const zonesDoc = await PDFDocument.load(zonesBytes);
+        (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
+      } catch(e){ console.warn('[PDF] Zones merge failed, skipping:', e); }
+    }
+    // C: rest of offer (net/pricelists/volumetric/terms)
     offerPages.slice(INSERT_AFTER + 1).forEach(p => merged.addPage(p));
+    // D: active docs with pdf_url (excluding contract), by sort_order
+    const activeDocs = docsList.filter(d => d.active && d.pdf_url && d.id !== 'contract');
+    for(const doc of activeDocs){
+      try{
+        const docBytes = new Uint8Array(await fetch(doc.pdf_url).then(r=>r.arrayBuffer()));
+        const docPdf = await PDFDocument.load(docBytes);
+        (await merged.copyPages(docPdf, docPdf.getPageIndices())).forEach(p => merged.addPage(p));
+      } catch(e){ console.warn(`[PDF] Doc merge failed (${doc.id}), skipping:`, e); }
+    }
+    // E: contract last
+    const contract = docsList.find(d => d.id === 'contract' && d.active && d.pdf_url);
+    if(contract){
+      try{
+        const contractBytes = new Uint8Array(await fetch(contract.pdf_url).then(r=>r.arrayBuffer()));
+        const contractPdf = await PDFDocument.load(contractBytes);
+        (await merged.copyPages(contractPdf, contractPdf.getPageIndices())).forEach(p => merged.addPage(p));
+      } catch(e){ console.warn('[PDF] Contract merge failed, skipping:', e); }
+    }
     return await merged.save();
   } catch(mergeErr){
-    console.warn('[PDF] Zones merge failed, offer-only fallback:', mergeErr);
+    console.warn('[PDF] Merge pipeline failed, offer-only fallback:', mergeErr);
     return offerBytes;
   }
 }
 
 async function previewPDF(){
+  const name=document.getElementById('cl-name').value.trim();
+  if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
+  if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
+  const btn=document.getElementById('preview-btn');
+  if(btn){ btn.textContent='⏳ Φόρτωση...'; btn.disabled=true; }
+  try{
+    const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+    const bytes=await buildFinalPDF(offerNum);
+    const blob=new Blob([bytes],{type:'application/pdf'});
+    const url=URL.createObjectURL(blob);
+    window.open(url,'_blank');
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+  } catch(e){ alert('Σφάλμα προεπισκόπησης: '+e.message); }
+  finally{ if(btn){ btn.textContent='📄 Προεπισκόπηση PDF'; btn.disabled=false; } }
+}
+
+// Legacy HTML-based preview — kept as fallback reference, not called by UI
+async function previewPDF_legacy(){
   const name=document.getElementById('cl-name').value.trim();
   if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
   if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
