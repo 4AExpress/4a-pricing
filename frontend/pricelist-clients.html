@@ -1024,6 +1024,807 @@ async function previewPDF(){
   finally { btn.textContent = '📄 Προεπισκόπηση PDF'; btn.disabled = false; }
 }
 
+// PLACEHOLDER — αφαιρείται παρακάτω (παλιό HTML previewPDF body)
+function _old_previewPDF_body_start(){
+  const afm        = document.getElementById('cl-afm').value.trim();
+  const contact    = document.getElementById('cl-contact').value.trim();
+  const phone      = document.getElementById('cl-phone').value.trim();
+  const email      = document.getElementById('cl-email').value.trim();
+  const website    = document.getElementById('cl-website').value.trim();
+  const payDays    = document.getElementById('cl-payment').value;
+  const invoiceMode= document.getElementById('cl-invoice').value;
+  const validDays  = parseInt(document.getElementById('cl-validity').value)||30;
+  const offerNum   = editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+  const today      = todayFmt();
+  const dd=new Date(); dd.setDate(dd.getDate()+validDays);
+  const validUntil = formatDate(dd.toISOString());
+  const invoiceLbl = invoiceMode==='weekly'?'Εβδομαδιαία':'Μηνιαία';
+  const codAmt=codEnabled?(parseFloat(document.getElementById('cod-amount').value)||0):0;
+
+  let fuelAir='—', fuelRoad='—', fuelWeek='';
+  try {
+    let fd=JSON.parse(localStorage.getItem('4a_fuel_cache')||'null');
+    if(!fd){ fd=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json()); localStorage.setItem('4a_fuel_cache',JSON.stringify(fd)); }
+    const ca=(fd.air||[]).find(x=>x.is_current), cr=(fd.road||[]).find(x=>x.is_current);
+    if(ca){ fuelAir=ca.pct+'%'; fuelWeek=ca.week||''; }
+    if(cr)  fuelRoad=cr.pct+'%';
+  } catch(e){}
+
+  let zonesData=null;
+  try {
+    let zd=JSON.parse(localStorage.getItem('4a_zones_cache')||'null');
+    if(!zd){ zd=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/dhl_zones_2026.json').then(r=>r.json()); localStorage.setItem('4a_zones_cache',JSON.stringify(zd)); }
+    zonesData=zd;
+  } catch(e){}
+
+  let officesFromAPI=[];
+  try { officesFromAPI=await apiFetch(`${API}/offices.php?v=${Date.now()}`).then(r=>r.json()); } catch(e){}
+  const OFFICES=officesFromAPI.filter(o=>parseInt(o.active));
+  const ZONES=[
+    {z:'Z1',name:'ΕΕ Δυτ.',   desc:'Γερμανία, Γαλλία, Βέλγιο, Ολλανδία, Λουξεμβούργο, Δανία',            svcs:'Όλες'},
+    {z:'Z2',name:'Ευρώπη',    desc:'Αυστρία, Ελβετία, Τσεχία, Ουγγαρία, Ρουμανία, Βουλγαρία, Σλοβακία',  svcs:'Όλες'},
+    {z:'Z3',name:'ΕΕ Περιφ.', desc:'Πορτογαλία, Ισπανία, Σουηδία, Φινλανδία, Νορβηγία, Ιρλανδία, Πολωνία',svcs:'Όλες'},
+    {z:'Z4',name:'Αμερική',   desc:'ΗΠΑ, Καναδάς, Μεξικό, Βραζιλία, Αργεντινή, Λατινική Αμερική',         svcs:'AIR μόνο'},
+    {z:'Z5',name:'ΜΑ / Αφρ.', desc:'ΗΑΕ, Σαουδική Αραβία, Ισραήλ, Τουρκία, Αίγυπτος, Νότια Αφρική',      svcs:'AIR μόνο'},
+    {z:'Z6',name:'Ασία / Ωκ.',desc:'Κίνα, Ιαπωνία, Νότια Κορέα, Ινδία, Αυστραλία, Νέα Ζηλανδία',          svcs:'AIR μόνο'},
+    {z:'Z7',name:'Υπόλοιπος', desc:'Υπόλοιπες χώρες που δεν ανήκουν σε Z1–Z6',                             svcs:'AIR μόνο'},
+    {z:'Z9',name:'Κύπρος',    desc:'Κύπρος — μόνο αεροπορικά μέσω S1003 / S1012',                          svcs:'S1003, S1012'},
+  ];
+  const OFFICE_MAP=Object.fromEntries(officesFromAPI.map(o=>[o.prefix,o]));
+  const STATION_PREFIX={'0107':'ATH','0108':'NIC','0109':'QLI','0110':'LCA'};
+  const rawCode=((currentUser?.stations||currentUser?.office||'').split(',')[0]).trim().toUpperCase();
+  const officeCode=OFFICE_MAP[rawCode] ? rawCode : (STATION_PREFIX[rawCode]||'ATH');
+  const issuerOffice=OFFICE_MAP[officeCode]||Object.values(OFFICE_MAP)[0]||{};
+  const issuerName=currentUser?.name||'—';
+
+  const H=(num)=>`<div class="ph"><div class="ph-l"><span class="lb">4A</span><span class="lt">WORLDWIDE<br>EXPRESS</span></div><div class="ph-r">${num}</div></div>`;
+  const F=(pg)=>`<div class="pf"><span>Ε.Ε.Τ.Τ. 033-99 &nbsp;·&nbsp; ΑΦΜ: ${issuerOffice.vat||'044978638'} &nbsp;·&nbsp; www.4aexpress.com</span><span>σελ. ${pg}</span></div>`;
+  const S=(t)=>`<div class="st">${t}</div>`;
+
+  // Διάβασε ποια docs είναι ενεργά (διακόπτες docs.html)
+  let activeDocs={};
+  try {
+    const _dl = await fetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]);
+    _dl.forEach(d=>{ activeDocs[d.id]=(String(d.active)==='1'||d.active===1||d.active===true); });
+  } catch(e){ activeDocs={volumetric:true}; }
+  const volOn = activeDocs.volumetric !== false;  // default ON αν αποτύχει το fetch
+
+  let pg=2;
+  const toc=[];
+  toc.push({pg:pg++,t:'Δίκτυο Γραφείων 4A Express'});
+  toc.push({pg:pg++,t:'Πώς Λειτουργεί ο Τιμοκατάλογος & Tracking'});
+  toc.push({pg:pg++,t:'Ζώνες Χωρών'});
+  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''}`});
+  if(volOn) toc.push({pg:pg++,t:'Ογκομέτρηση Δεμάτων'});
+  toc.push({pg:pg++,t:'Όροι, Επίναυλος & Χρεώσεις'});
+  toc.push({pg:pg,  t:'Σύμβαση & Αποδοχή Προσφοράς'});
+
+  const CSS=`
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:10.5px;color:#1a1a1a;background:#fff;}
+  .page{width:210mm;min-height:297mm;margin:0 auto;padding:10mm 14mm 13mm;position:relative;page-break-after:always;}
+  .page.last{page-break-after:auto;}
+  .ph{background:#cc0000;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:7px 14px;margin-bottom:10px;}
+  .ph-l{display:flex;align-items:center;gap:8px;}
+  .lb{background:#fff;color:#cc0000;font-size:14px;font-weight:900;padding:2px 7px;border-radius:2px;letter-spacing:-1px;}
+  .lt{font-size:9px;font-weight:700;line-height:1.3;letter-spacing:.5px;}
+  .ph-r{font-size:10px;font-weight:600;opacity:.9;}
+  .pf{display:flex;justify-content:space-between;font-size:8px;color:#aaa;border-top:1px solid #e0e0e0;padding-top:5px;margin-top:12px;}
+  .st{background:#cc0000;color:#fff;font-size:10.5px;font-weight:700;padding:5px 12px;margin:10px 0 7px;letter-spacing:.3px;}
+  /* cover */
+  .hero{background:#990000;color:#fff;display:flex;align-items:stretch;margin-bottom:10px;overflow:hidden;}
+  .hero-logo{display:flex;align-items:center;justify-content:center;padding:10px 18px 10px 14px;background:#770000;border-right:3px solid #bb0000;min-width:96px;}
+  .hero-4a{font-size:78px;font-weight:900;color:#fff;line-height:1;letter-spacing:-5px;opacity:.93;font-family:Arial Black,Arial,sans-serif;}
+  .hero-main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:14px 20px;}
+  .hero-main h1{font-size:26px;font-weight:900;letter-spacing:3px;margin-bottom:4px;}
+  .hero-main h2{font-size:11px;font-weight:400;opacity:.75;letter-spacing:1px;}
+  .meta-bar{display:flex;border:1px solid #ddd;margin-bottom:10px;}
+  .meta-item{flex:1;padding:7px 12px;border-right:1px solid #ddd;}
+  .meta-item:last-child{border-right:none;}
+  .issuer-bar{display:flex;border:1px solid #ddd;border-top:3px solid #cc0000;margin-bottom:10px;}
+  .issuer-item{flex:1;padding:6px 12px;border-right:1px solid #ddd;}
+  .issuer-item:last-child{border-right:none;}
+  .cgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#e0e0e0;border:1px solid #e0e0e0;margin-bottom:12px;}
+  .cc{background:#fff;padding:7px 12px;}
+  .lbl{font-size:8px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+  .val{font-size:11px;font-weight:600;color:#222;}
+  .toc-t{width:100%;border-collapse:collapse;}
+  .toc-t th{background:#1a3a6e;color:#fff;font-size:9px;padding:5px 10px;text-align:left;}
+  .toc-t td{padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:10px;}
+  .toc-t tr:nth-child(even) td{background:#f8f9fb;}
+  .tpg{text-align:center;font-weight:700;color:#cc0000;width:42px;}
+  /* offices */
+  .ogrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+  .ocard{border:1px solid #e0e0e0;border-top:3px solid #cc0000;padding:10px 12px;}
+  .ocity{font-size:13px;font-weight:700;color:#cc0000;margin-bottom:5px;}
+  .oline{font-size:10px;color:#444;margin-bottom:3px;}
+  /* how */
+  .steps{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+  .step{display:flex;gap:10px;padding:8px;border:1px solid #eee;}
+  .sn{background:#cc0000;color:#fff;font-size:12px;font-weight:900;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .sb h4{font-size:10.5px;font-weight:700;margin-bottom:2px;}
+  .sb p{font-size:9.5px;color:#555;line-height:1.4;}
+  .igrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .icard{background:#f8f8f8;border:1px solid #e8e8e8;padding:8px 10px;}
+  .icard h4{font-size:10px;font-weight:700;color:#1a3a6e;margin-bottom:4px;}
+  .icard p{font-size:9px;color:#555;line-height:1.5;}
+  /* zones */
+  .zt{width:100%;border-collapse:collapse;}
+  .zt th{background:#1a3a6e;color:#fff;font-size:9px;padding:5px 10px;text-align:left;}
+  .zt td{padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:10px;}
+  .zt tr:nth-child(even) td{background:#f8f9fb;}
+  .zbadge{display:inline-block;background:#cc0000;color:#fff;font-size:9px;font-weight:700;padding:1px 7px;border-radius:10px;}
+  .znote{background:#fff8e1;border:1px solid #f0c040;padding:8px 12px;margin-top:9px;font-size:9.5px;color:#7c6d00;}
+  /* pricelist */
+  .plhdr{background:#cc0000;color:#fff;padding:8px 14px;margin-bottom:0;}
+  .plt{font-size:13px;font-weight:700;}
+  .pls{font-size:9px;opacity:.85;margin-top:2px;}
+  .pt{width:100%;border-collapse:collapse;}
+  .pt th{background:#1a3a6e;color:#fff;font-size:9px;padding:5px 10px;text-align:center;}
+  .pt th.wt{text-align:left;}
+  .pt td{font-size:10.5px;padding:4px 10px;border-bottom:1px solid #eeeff2;text-align:center;}
+  .pt td.wt{text-align:left;font-weight:600;color:#333;}
+  .pt tr:nth-child(odd) td{background:#fff;}
+  .pt tr:nth-child(even) td{background:#eef3fb;}
+  .pt tr.xr td{background:#fff3cd!important;font-weight:600;color:#7c6d00;}
+  .fcnote{font-size:9px;color:#888;margin-top:6px;padding-top:4px;border-top:1px solid #f0f0f0;}
+  /* terms */
+  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .tbox{border:1px solid #e0e0e0;padding:9px 12px;}
+  .tbox h4{font-size:10px;font-weight:700;color:#1a3a6e;margin-bottom:5px;border-bottom:1px solid #eee;padding-bottom:3px;}
+  .tbox li,.tbox p{font-size:9.5px;color:#444;line-height:1.55;}
+  .tbox ul{padding-left:14px;}
+  .fct{width:100%;border-collapse:collapse;margin-bottom:10px;}
+  .fct th{background:#1a3a6e;color:#fff;font-size:9px;padding:4px 10px;text-align:left;}
+  .fct td{padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:10px;}
+  .surt{width:100%;border-collapse:collapse;margin-top:7px;}
+  .surt th{background:#555;color:#fff;font-size:9px;padding:4px 10px;text-align:left;}
+  .surt td{padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:10px;}
+  /* contract */
+  .cbody{font-size:10px;line-height:1.75;color:#333;}
+  .cbody p{margin-bottom:8px;}
+  .cbody ul{padding-left:18px;margin-bottom:10px;}
+  .sigrid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:28px;}
+  .sigbox{border-top:1px solid #333;padding-top:6px;}
+  .siglbl{font-size:9px;color:#888;margin-bottom:26px;}
+  .sigval{font-size:9.5px;color:#555;}
+  /* zones 3-col */
+  .zcols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;}
+  .zcol{border:1px solid #f0f0f0;}
+  .zentry{display:flex;align-items:center;justify-content:space-between;padding:3px 7px;border-bottom:1px solid #f5f5f5;font-size:9px;gap:4px;}
+  .zentry:last-child{border-bottom:none;}
+  .zpill{display:inline-block;font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:8px;color:#fff;white-space:nowrap;}
+  .zpills{display:flex;gap:2px;flex-shrink:0;}
+  /* pricelist 3-col */
+  .pl-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px;}
+  .pl-3col .pt th{font-size:8.5px;padding:4px 7px;}
+  .pl-3col .pt td{font-size:10px;padding:3px 7px;}
+  .pl-footnote{font-size:8.5px;color:#888;margin-top:5px;padding-top:4px;border-top:1px solid #f0f0f0;font-style:italic;}
+  /* landscape + zone tables */
+  .page.land{width:297mm;min-height:210mm;}
+  .pt-zone th{font-size:8px;padding:3px 4px;}
+  .pt-zone td{font-size:8px;padding:2px 3px;}
+  @page land{size:A4 landscape;margin:0;}
+  @media print{body{margin:0;} .page{margin:0;padding:8mm 12mm 11mm;} .page.land{page:land;} @page{margin:0;size:A4;}}`;
+
+  // ── PAGE 1: COVER ──────────────────────────────────────────────
+  let html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Προσφορά ${offerNum}</title><style>${CSS}</style></head><body>`;
+
+  html+=`<div class="page">
+  ${H(offerNum)}
+  <div class="hero">
+    <div class="hero-logo"><div class="hero-4a">4A</div></div>
+    <div class="hero-main">
+      <h1>ΠΡΟΣΦΟΡΑ</h1>
+      <h2>OFFER &nbsp;·&nbsp; ${offerNum}</h2>
+    </div>
+  </div>
+  <div class="meta-bar">
+    <div class="meta-item"><div class="lbl">Ημερομηνία</div><div class="val">${today}</div></div>
+    <div class="meta-item"><div class="lbl">Ισχύς έως</div><div class="val">${validUntil}</div></div>
+    <div class="meta-item"><div class="lbl">Πληρωμή</div><div class="val">${payDays} ημέρες</div></div>
+    <div class="meta-item"><div class="lbl">Τιμολόγηση</div><div class="val">${invoiceLbl}</div></div>
+  </div>
+  ${codEnabled?`<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-top:none;padding:7px 12px;font-size:11px;font-weight:600;color:#2e7d32;margin-bottom:10px;">COD: ΝΑΙ &nbsp;|&nbsp; Ποσό: €${codAmt.toFixed(2)} &nbsp;|&nbsp; Χρέωση: €${codFee.toFixed(2)}</div>`:''}
+  ${S('ΕΚΔΟΤΗΣ ΠΡΟΣΦΟΡΑΣ')}
+  <div class="issuer-bar">
+    <div class="issuer-item"><div class="lbl">Εταιρεία</div><div class="val">${issuerOffice.company||'4A Express Worldwide'}</div></div>
+    <div class="issuer-item"><div class="lbl">ΑΦΜ</div><div class="val">${issuerOffice.vat||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Στέλεχος</div><div class="val">${issuerName}</div></div>
+    <div class="issuer-item"><div class="lbl">Γραφείο</div><div class="val">${issuerOffice.city||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Διεύθυνση</div><div class="val">${issuerOffice.addr||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Τηλέφωνο</div><div class="val">${issuerOffice.tel||'—'}</div></div>
+  </div>
+  ${S('ΣΤΟΙΧΕΙΑ ΠΕΛΑΤΗ')}
+  <div class="cgrid">
+    <div class="cc"><div class="lbl">Επωνυμία</div><div class="val">${name}</div></div>
+    <div class="cc"><div class="lbl">ΑΦΜ</div><div class="val">${afm||'—'}</div></div>
+    <div class="cc"><div class="lbl">Υπεύθυνος</div><div class="val">${contact||'—'}</div></div>
+    <div class="cc"><div class="lbl">Τηλέφωνο</div><div class="val">${phone||'—'}</div></div>
+    <div class="cc"><div class="lbl">Email</div><div class="val">${email||'—'}</div></div>
+    <div class="cc"><div class="lbl">Website</div><div class="val">${website||'—'}</div></div>
+  </div>
+  ${S('ΠΕΡΙΕΧΟΜΕΝΑ ΠΡΟΣΦΟΡΑΣ')}
+  <table class="toc-t">
+    <thead><tr><th class="tpg">Σελ.</th><th>Ενότητα</th></tr></thead>
+    <tbody>${toc.map(r=>`<tr><td class="tpg">${r.pg}</td><td>${r.t}</td></tr>`).join('')}</tbody>
+  </table>
+  ${F('1')}
+  </div>`;
+
+  // ── PAGE 2: OFFICES ────────────────────────────────────────────
+  html+=`<div class="page">
+  ${H(offerNum)}
+  ${S('ΔΙΚΤΥΟ ΓΡΑΦΕΙΩΝ 4A EXPRESS')}
+  <div class="ogrid">
+    ${OFFICES.map(o=>`<div class="ocard">
+      <div class="ocity">${o.city}</div>
+      <div class="oline"><strong>Διεύθυνση:</strong> ${o.addr}</div>
+      <div class="oline"><strong>Τηλέφωνο:</strong> ${o.tel}</div>
+      <div class="oline"><strong>Email:</strong> ${o.email}</div>
+    </div>`).join('')}
+  </div>
+  <div style="margin-top:14px;font-size:9.5px;color:#555;line-height:1.65;">
+    <p>Η <strong>${issuerOffice.company||'4A Express Worldwide'}</strong> παρέχει ολοκληρωμένες υπηρεσίες courier &amp; logistics σε Ελλάδα και Κύπρο από το 1999.</p>
+    <p style="margin-top:5px;">Για θέματα αποστολών και tracking, επικοινωνήστε με το γραφείο της περιοχής σας ή επισκεφθείτε <strong>www.4aexpress.com</strong>.</p>
+  </div>
+  ${F('2')}
+  </div>`;
+
+  // ── PAGE 3: HOW IT WORKS + TRACKING ───────────────────────────
+  html+=`<div class="page">
+  ${H(offerNum)}
+  ${S('ΠΩΣ ΛΕΙΤΟΥΡΓΕΙ Ο ΤΙΜΟΚΑΤΑΛΟΓΟΣ')}
+  <div class="steps">
+    <div class="step"><div class="sn">1</div><div class="sb"><h4>Βρείτε τον Προορισμό</h4><p>Ανατρέξτε στον Κατάλογο Ζωνών. Κάθε χώρα αντιστοιχεί σε ζώνη Z1–Z7 (AIR) ή Z1–Z3 (ROAD).</p></div></div>
+    <div class="step"><div class="sn">2</div><div class="sb"><h4>Μετρήστε το Βάρος</h4><p>Χρησιμοποιείτε το μεγαλύτερο από: πραγματικό βάρος ή ογκομετρικό (Μ×Π×Υ cm ÷ 5.000).</p></div></div>
+    <div class="step"><div class="sn">3</div><div class="sb"><h4>Βρείτε την Τιμή</h4><p>Εντοπίστε τη γραμμή βάρους στον πίνακα και διαβάστε την τιμή στη στήλη της ζώνης σας.</p></div></div>
+    <div class="step"><div class="sn">4</div><div class="sb"><h4>Προσθέστε Επίναυλο Καυσίμου</h4><p>Ο επίναυλος αναθεωρείται εβδομαδιαία βάσει διεθνών δεικτών. Αναγράφεται σε κάθε τιμοκατάλογο.</p></div></div>
+    <div class="step"><div class="sn">5</div><div class="sb"><h4>Τελική Χρέωση</h4><p>Τιμή ζώνης × (1 + επίναυλος%). Λοιπές χρεώσεις (ασφάλεια, συσκευασία κ.α.) υπολογίζονται ξεχωριστά.</p></div></div>
+  </div>
+  ${S('ΠΛΗΡΟΦΟΡΙΕΣ ΑΠΟΣΤΟΛΗΣ & TRACKING')}
+  <div class="igrid">
+    <div class="icard"><h4>Παρακολούθηση</h4><p>Αριθμός αποστολής αμέσως μετά παραλαβή. Real-time tracking στο <strong>www.4aexpress.com</strong> ή μέσω email ειδοποίησης.</p></div>
+    <div class="icard"><h4>Χρόνοι Παράδοσης</h4><p><strong>Αεροπορικά (AIR):</strong> 1–2 εργάσιμες.<br><strong>Οδικά (ROAD):</strong> 3–5 εργάσιμες.<br>Ανάλογα προορισμό.</p></div>
+    <div class="icard"><h4>Ασφάλιση Φορτίου</h4><p>Αυτόματη κάλυψη έως <strong>€100</strong> ανά αποστολή. Πρόσθετη ασφάλιση κατόπιν αιτήματος (0,5% επί αξίας).</p></div>
+  </div>
+  ${F('3')}
+  </div>`;
+
+  // ── PAGE 4: ZONES ──────────────────────────────────────────────
+  {
+    const ZC=['','#2e7d32','#1565c0','#f57f17','#c62828','#6a1b9a','#00838f','#555'];
+    if(zonesData){
+      const am={},rm={};
+      (zonesData.air?.zones||[]).forEach(z=>{am[z.code]={code:z.code,name:z.name,az:parseInt(z.zone)};});
+      (zonesData.road?.zones||[]).forEach(z=>{rm[z.code]=parseInt(z.zone);});
+      const EU=new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE']);
+      const ctrs=Object.values(am).sort((a,b)=>a.name.localeCompare(b.name,'el'));
+      const q=Math.ceil(ctrs.length/4);
+      const zp=z=>z?`<span style="display:inline-block;background:${ZC[z]||'#555'};color:#fff;font-size:6.5px;font-weight:700;padding:1px 4px;border-radius:7px;white-space:nowrap;">Z${z}</span>`:'<span style="color:#ddd;font-size:6.5px;">—</span>';
+      const eub='<span style="display:inline-block;background:#003399;color:#ffcc00;font-size:5.5px;font-weight:700;padding:0 2px;border-radius:2px;margin-left:3px;vertical-align:middle;">EU</span>';
+      const makeT=arr=>`<table class="pt pt-zone" style="width:100%"><thead><tr><th class="wt" style="font-size:7px;">Χώρα</th><th style="background:#154360;text-align:center;width:22px;font-size:6.5px;">S1003<br>✈↗</th><th style="background:#154360;text-align:center;width:22px;font-size:6.5px;">S1012<br>✈↙</th><th style="background:#1d4e36;text-align:center;width:22px;font-size:6.5px;">S1010<br>🚛↗</th><th style="background:#1d4e36;text-align:center;width:22px;font-size:6.5px;">S1041<br>🚛↙</th></tr></thead><tbody>${arr.map(c=>{const rz=rm[c.code];return `<tr><td class="wt" style="font-size:7px;">${c.name}${EU.has(c.code)?eub:''}</td><td style="text-align:center;padding:1px;">${zp(c.az)}</td><td style="text-align:center;padding:1px;">${zp(c.az)}</td><td style="text-align:center;padding:1px;">${rz!=null?zp(rz):'<span style="color:#ddd;font-size:6.5px;">—</span>'}</td><td style="text-align:center;padding:1px;">${rz!=null?zp(rz):'<span style="color:#ddd;font-size:6.5px;">—</span>'}</td></tr>`;}).join('')}</tbody></table>`;
+      html+=`<div class="page land">${H(offerNum)}${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;">${makeT(ctrs.slice(0,q))}${makeT(ctrs.slice(q,q*2))}${makeT(ctrs.slice(q*2,q*3))}${makeT(ctrs.slice(q*3))}</div><div class="znote" style="margin-top:5px;font-size:8px;">S1003/S1012: AIR Z1–Z7 &nbsp;·&nbsp; S1010/S1041: ROAD Z1–Z3 &nbsp;·&nbsp; Κύπρος (Z9): μόνο S1003/S1012 &nbsp;·&nbsp; <span style="display:inline-block;background:#003399;color:#ffcc00;font-size:6px;font-weight:700;padding:0 3px;border-radius:2px;vertical-align:middle;">EU</span> Μέλος ΕΕ</div>${F('4')}</div>`;
+    } else {
+      html+=`<div class="page">${H(offerNum)}${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}<table class="zt"><thead><tr><th style="width:52px">Ζώνη</th><th style="width:88px">Κατηγορία</th><th>Χώρες / Περιοχές</th><th style="width:90px">Υπηρεσίες</th></tr></thead><tbody>${ZONES.map(z=>`<tr><td><span class="zbadge">${z.z}</span></td><td><strong>${z.name}</strong></td><td>${z.desc}</td><td style="font-size:9px;color:#666;">${z.svcs}</td></tr>`).join('')}</tbody></table><div class="znote"><strong>Σημείωση:</strong> AIR Z1–Z7, ROAD Z1–Z3. Κύπρος (Z9): μόνο S1003/S1012.</div>${F('4')}</div>`;
+    }
+  }
+
+  // ── PAGES 5+: PER-PRICELIST ────────────────────────────────────
+  let dhlAll=null;
+  try{dhlAll=JSON.parse(localStorage.getItem('dhl_all')||'null');}catch(e){}
+  if(!dhlAll){
+    try{
+      const arr=await Promise.all(['S1003','S1012','S1010','S1041'].map(s=>
+        fetch(`https://raw.githubusercontent.com/4AExpress/4a-pricing/main/dhl_tariff_2026_${s}.json`)
+        .then(r=>r.json()).then(d=>({[s]:d.entries}))));
+      dhlAll=Object.assign({},...arr);
+      localStorage.setItem('dhl_all',JSON.stringify(dhlAll));
+    }catch(e){}
+  }
+  const _DHL_ALIAS={S1003_GR:'S1003',S1012_GR:'S1012',S1003_CY:'S1003',S1012_CY:'S1012',S1050:'S1003',S1051:'S1012'};
+  const _ZN={S1003:7,S1012:7,S1003_CY:7,S1012_CY:7,S1050:7,S1051:7,S1010:3,S1041:3,S1003_GR:1,S1012_GR:1};
+  const _ZHC=['','#2e7d32','#1565c0','#f57f17','#c62828','#6a1b9a','#00838f','#555'];
+  let plPg=5;
+  for(const p of selectedPls){
+    const rows=p.rows||[];
+    if(!rows.length) continue;
+    const isAir=p.service_id.includes('S1003')||p.service_id.includes('S1012');
+    const fcVal=p.fc?(p.fc+'%'):(isAir?fuelAir:fuelRoad);
+    const zcount=_ZN[p.service_id]||1;
+    const dhlKey=_DHL_ALIAS[p.service_id]||p.service_id;
+    const dhlEnt=(dhlAll&&dhlAll[dhlKey])||[];
+    // Build per-weight zone price table from DHL costs + derived markup
+    const ztable=[];
+    if(zcount>1&&dhlEnt.length>0){
+      const dm={};
+      dhlEnt.forEach(e=>{const w=parseFloat(e.weight_kg),z=parseInt(e.zone_code.replace('z',''));if(!dm[w])dm[w]={};dm[w][z]=parseFloat(e.cost);});
+      rows.forEach(r=>{
+        const w=parseFloat(r.weight),sp=parseFloat(r.price),z1c=dm[w]?.[1];
+        if(!z1c)return;
+        const mk=(sp/z1c-1)*100;
+        const zp=[];
+        for(let z=1;z<=zcount;z++){const c=dm[w]?.[z];zp.push(c!=null?parseFloat((c*(1+mk/100)).toFixed(2)):null);}
+        ztable.push({w,zp});
+      });
+    }
+    // Extra weight row (+N kg)
+    let xkgLbl='+1 kg',xkgZP=null;
+    if(zcount>1&&ztable.length>=2){
+      const dw=ztable[ztable.length-1].w-ztable[ztable.length-2].w;
+      if(dw>0){
+        xkgLbl=`+${dw} kg`;
+        const lz=ztable[ztable.length-1].zp,pz=ztable[ztable.length-2].zp;
+        xkgZP=lz.map((v,i)=>v!=null&&pz[i]!=null?parseFloat(((v-pz[i])/dw).toFixed(2)):null);
+      }
+    } else if(zcount===1&&rows.length>=2){
+      const dw=parseFloat(rows[rows.length-1].weight)-parseFloat(rows[rows.length-2].weight);
+      const dp=parseFloat(rows[rows.length-1].price)-parseFloat(rows[rows.length-2].price);
+      if(dw>0){xkgLbl=`+${dw} kg`;xkgZP=[parseFloat((dp/dw).toFixed(2))];}
+    }
+    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div><div class="pls">Επίναυλος Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div></div>`;
+    const plFtr=`<div class="pl-footnote">* Τιμές εκτός ΦΠΑ 24% και επίναυλο καυσίμων</div>${F(String(plPg++))}`;
+    if(zcount===7&&ztable.length>0){
+      // LANDSCAPE: ΒΑΡΟΣ + Z1–Z7
+      const thz=Array.from({length:7},(_,i)=>`<th style="background:${_ZHC[i+1]}">Z${i+1}</th>`).join('');
+      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`).join('');
+      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`:'';
+      html+=`<div class="page land">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">ΒΑΡΟΣ kg</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
+    } else if(zcount===3&&ztable.length>0){
+      // PORTRAIT: ΒΑΡΟΣ + Z1–Z3
+      const thz=Array.from({length:3},(_,i)=>`<th style="background:${_ZHC[i+1]}">Z${i+1}</th>`).join('');
+      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`).join('');
+      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`:'';
+      html+=`<div class="page">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">ΒΑΡΟΣ (kg)</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
+    } else {
+      // 1-ZONE: 3-column grid (S1003_GR etc.)
+      const xkgV=xkgZP?xkgZP[0]:null;
+      const cs3=Math.ceil(rows.length/3);
+      const rg=[rows.slice(0,cs3),rows.slice(cs3,cs3*2),rows.slice(cs3*2)];
+      html+=`<div class="page">${plHdr}<div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>€</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkgV!=null?`<tr class="xr"><td class="wt">${xkgLbl}</td><td>€${xkgV.toFixed(2)}</td></tr>`:''}</tbody></table>`).join('')}</div>${plFtr}</div>`;
+    }
+  }
+
+  // ── ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ (μόνο αν ON στο docs.html) ─────────────
+  if(volOn){
+  html+=`<div class="page">
+  ${H(offerNum)}
+  ${S('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ')}
+  <p style="font-size:9.5px;color:#555;margin:6px 0;line-height:1.55;">Κάθε δέμα χρεώνεται βάσει του <strong>μεγαλύτερου</strong> από τα δύο: πραγματικό βάρος ή ογκομετρικό βάρος. Μεγάλα αλλά ελαφριά δέματα καταλαμβάνουν χώρο στο όχημα / αποθήκη / αεροπλάνο / container ακριβώς όπως ένα βαρύ δέμα.</p>
+  <div style="background:#f2f2f2;border:1px solid #cc0000;padding:14px;margin:10px 0;text-align:center;font-size:13px;font-weight:700;color:#990000;">Ογκομετρικό Βάρος (kg) = ( Μ × Π × Υ ) ÷ 5.000</div>
+  <div style="font-size:9px;color:#1a3a6e;text-align:center;margin-bottom:10px;">Μ = Μήκος (cm) &nbsp;|&nbsp; Π = Πλάτος (cm) &nbsp;|&nbsp; Υ = Ύψος (cm) &nbsp;|&nbsp; ÷ 5.000 = Διεθνής Συντελεστής (IATA / Courier)</div>
+  ${S('ΠΑΡΑΔΕΙΓΜΑ ΥΠΟΛΟΓΙΣΜΟΥ')}
+  <table style="width:100%;border-collapse:collapse;font-size:10px;margin:8px 0;">
+    <thead><tr style="background:#1a3a6e;color:#fff;"><th style="padding:5px 10px;text-align:left;">Διαστάσεις</th><th style="padding:5px 10px;text-align:center;">Υπολογισμός</th><th style="padding:5px 10px;text-align:center;">Ογκομετρικό</th></tr></thead>
+    <tbody>
+      <tr style="background:#fff;"><td style="padding:5px 10px;">60 × 40 × 30 cm</td><td style="padding:5px 10px;text-align:center;">(60×40×30) ÷ 5.000</td><td style="padding:5px 10px;text-align:center;font-weight:700;color:#cc0000;">14,4 kg</td></tr>
+      <tr style="background:#f8f9fb;"><td style="padding:5px 10px;">50 × 50 × 50 cm</td><td style="padding:5px 10px;text-align:center;">(50×50×50) ÷ 5.000</td><td style="padding:5px 10px;text-align:center;font-weight:700;color:#cc0000;">25 kg</td></tr>
+      <tr style="background:#fff;"><td style="padding:5px 10px;">100 × 30 × 20 cm</td><td style="padding:5px 10px;text-align:center;">(100×30×20) ÷ 5.000</td><td style="padding:5px 10px;text-align:center;font-weight:700;color:#cc0000;">12 kg</td></tr>
+    </tbody>
+  </table>
+  <div style="background:#fff8e1;border:1px solid #f0c040;padding:9px 12px;font-size:9.5px;color:#7c6d00;margin-top:8px;line-height:1.5;"><strong>Σημείωση:</strong> Η χρέωση γίνεται πάντα βάσει του μεγαλύτερου βάρους (πραγματικό vs ογκομετρικό). Καλή συσκευασία χωρίς κενά αέρα μειώνει το ογκομετρικό βάρος και άρα το κόστος.</div>
+  ${F(String(plPg++))}
+  </div>`;
+  }
+
+  // ── TERMS PAGE ─────────────────────────────────────────────────
+  const surchRows=surcharges.filter(s=>s.name&&s.value);
+  html+=`<div class="page">
+  ${H(offerNum)}
+  ${S('ΟΡΟΙ, ΕΠΙΝΑΥΛΟΣ & ΧΡΕΩΣΕΙΣ')}
+  <table class="fct">
+    <thead><tr><th>Υπηρεσία</th><th>Τύπος</th><th>Επίναυλος Καυσίμου</th></tr></thead>
+    <tbody>
+      <tr><td>Αεροπορικές (S1003, S1012, S1003_GR, S1012_GR)</td><td>AIR</td><td><strong>${fuelAir}</strong>${fuelWeek?' ('+fuelWeek+')':''}</td></tr>
+      <tr><td>Οδικές (S1010, S1041)</td><td>ROAD</td><td><strong>${fuelRoad}</strong></td></tr>
+    </tbody>
+  </table>
+  ${surchRows.length?`${S('ΕΠΙΠΛΕΟΝ ΧΡΕΩΣΕΙΣ')}<table class="surt">
+    <thead><tr><th>Περιγραφή</th><th>Αξία</th><th>Μονάδα</th></tr></thead>
+    <tbody>${surchRows.map(s=>`<tr><td>${s.name}</td><td>${s.value}</td><td>${s.unit}</td></tr>`).join('')}</tbody>
+  </table>`:''}
+  <div class="tgrid" style="margin-top:10px;">
+    <div class="tbox"><h4>Πληρωμή & Τιμολόγηση</h4><ul>
+      <li>Εξόφληση εντός <strong>${payDays} ημερών</strong> από τιμολόγηση</li>
+      <li>Τιμολόγηση: <strong>${invoiceLbl}</strong></li>
+      <li>Με εμβασμάτιο ή κατάθεση σε τραπεζικό λογαριασμό</li>
+    </ul></div>
+    <div class="tbox"><h4>Ισχύς Τιμοκαταλόγου</h4><ul>
+      <li>Ισχύς προσφοράς: <strong>${validDays} ημέρες</strong> (έως ${validUntil})</li>
+      <li>Επίναυλος καυσίμου αναθεωρείται εβδομαδιαία</li>
+      <li>Βασικοί ναύλοι επικαιροποιούνται ετησίως</li>
+    </ul></div>
+    <div class="tbox"><h4>Εξαιρέσεις & Όρια</h4><ul>
+      <li>Τιμές για αποστολές έως 70 kg</li>
+      <li>Δεν συμπεριλαμβάνονται τελωνειακά &amp; ΦΠΑ εισαγωγής</li>
+      <li>Επικίνδυνα εμπορεύματα κατόπιν ειδικής συμφωνίας</li>
+    </ul></div>
+    <div class="tbox"><h4>Ευθύνη & Ασφάλεια</h4><p>Η 4A EXPRESS αποζημιώνει για απώλεια/καταστροφή εγγράφων έως €50 και δεμάτων ανεξαρτήτως εμπορικής αξίας έως €100. Για πρόσθετη ασφάλεια συνεργαζόμαστε με ασφαλιστικές εταιρείες — απαιτούνται πρωτότυπα τιμολόγια εμπορευμάτων και δήλωση ασφάλισης. Επασφάλιστρο 1-2% επί αξίας αναλόγως είδους εμπορεύματος.</p></div>
+  </div>
+  ${F(String(plPg++))}
+  </div>`;
+
+  // ── CONTRACT PAGE ──────────────────────────────────────────────
+  html+=`<div class="page last">
+  ${H(offerNum)}
+  ${S('ΣΥΜΒΑΣΗ & ΑΠΟΔΟΧΗ ΠΡΟΣΦΟΡΑΣ')}
+  <div class="cbody">
+    <p>Με την υπογραφή του παρόντος, η εταιρεία <strong>${name}</strong> (ΑΦΜ: ${afm||'—'}) αποδέχεται πλήρως τους όρους και τις τιμές της προσφοράς αριθμ. <strong>${offerNum}</strong> της <strong>${issuerOffice.company||'4A Express Worldwide'}</strong>.</p>
+    <p>Η αποδοχή συνεπάγεται δέσμευση ως προς τον τρόπο πληρωμής (${payDays} ημέρες), τη συχνότητα τιμολόγησης (${invoiceLbl}) και τους γενικούς όρους συνεργασίας της 4A Express.</p>
+    <p>Οι τιμές ισχύουν για <strong>${validDays} ημέρες</strong> από ${today} και λήγουν στις <strong>${validUntil}</strong>. Ο επίναυλος καυσίμου αναθεωρείται εβδομαδιαία βάσει διεθνών δεικτών και δεν αποτελεί μέρος της σταθερής τιμής.</p>
+    <p>Υπηρεσίες που καλύπτει η παρούσα προσφορά:</p>
+    <ul>${selectedPls.map(p=>`<li>${p.service_id} — ${p.service_name||p.name||''}</li>`).join('')}</ul>
+  </div>
+  <div class="sigrid">
+    <div class="sigbox">
+      <div class="siglbl">Για λογαριασμό της <strong>${issuerOffice.company||'4A Express Worldwide'}</strong></div>
+      <div class="sigval">${currentUser?.name||'—'} &nbsp;·&nbsp; ${currentUser?.office||'—'}<br><span style="color:#bbb;">${today}</span></div>
+    </div>
+    <div class="sigbox">
+      <div class="siglbl">Για λογαριασμό της <strong>${name}</strong></div>
+      <div class="sigval" style="color:#bbb;">Ονοματεπώνυμο &nbsp;·&nbsp; Σφραγίδα &nbsp;·&nbsp; Ημερομηνία</div>
+    </div>
+  </div>
+  ${F(String(plPg))}
+  </div>`;
+
+  html+=`</body></html>`;
+
+  const w=window.open('','_blank','width=920,height=760');
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),500);
+}
+
+async function buildJsPDF(offerNum){
+  const name=document.getElementById('cl-name').value.trim();
+  const afm        = document.getElementById('cl-afm').value.trim();
+  const contact    = document.getElementById('cl-contact').value.trim();
+  const phone      = document.getElementById('cl-phone').value.trim();
+  const email      = document.getElementById('cl-email').value.trim();
+  const website    = document.getElementById('cl-website').value.trim();
+  const payDays    = document.getElementById('cl-payment').value;
+  const invoiceMode= document.getElementById('cl-invoice').value;
+  const validDays  = parseInt(document.getElementById('cl-validity').value)||30;
+  const today      = todayFmt();
+  const dd=new Date(); dd.setDate(dd.getDate()+validDays);
+  const validUntil = formatDate(dd.toISOString());
+  const invoiceLbl = invoiceMode==='weekly'?'Εβδομαδιαία':'Μηνιαία';
+  const codAmt=codEnabled?(parseFloat(document.getElementById('cod-amount').value)||0):0;
+
+  let fuelAir='—', fuelRoad='—', fuelWeek='';
+  try {
+    let fd=JSON.parse(localStorage.getItem('4a_fuel_cache')||'null');
+    if(!fd){ fd=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json()); localStorage.setItem('4a_fuel_cache',JSON.stringify(fd)); }
+    const ca=(fd.air||[]).find(x=>x.is_current), cr=(fd.road||[]).find(x=>x.is_current);
+    if(ca){ fuelAir=ca.pct+'%'; fuelWeek=ca.week||''; }
+    if(cr)  fuelRoad=cr.pct+'%';
+  } catch(e){}
+
+  let zonesData=null;
+  try {
+    let zd=JSON.parse(localStorage.getItem('4a_zones_cache')||'null');
+    if(!zd){ zd=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/dhl_zones_2026.json').then(r=>r.json()); localStorage.setItem('4a_zones_cache',JSON.stringify(zd)); }
+    zonesData=zd;
+  } catch(e){}
+
+  let officesFromAPI=[];
+  try { officesFromAPI=await apiFetch(`${API}/offices.php?v=${Date.now()}`).then(r=>r.json()); } catch(e){}
+  const OFFICES=officesFromAPI.filter(o=>parseInt(o.active));
+  const ZONES=[
+    {z:'Z1',name:'ΕΕ Δυτ.',   desc:'Γερμανία, Γαλλία, Βέλγιο, Ολλανδία, Λουξεμβούργο, Δανία',            svcs:'Όλες'},
+    {z:'Z2',name:'Ευρώπη',    desc:'Αυστρία, Ελβετία, Τσεχία, Ουγγαρία, Ρουμανία, Βουλγαρία, Σλοβακία',  svcs:'Όλες'},
+    {z:'Z3',name:'ΕΕ Περιφ.', desc:'Πορτογαλία, Ισπανία, Σουηδία, Φινλανδία, Νορβηγία, Ιρλανδία, Πολωνία',svcs:'Όλες'},
+    {z:'Z4',name:'Αμερική',   desc:'ΗΠΑ, Καναδάς, Μεξικό, Βραζιλία, Αργεντινή, Λατινική Αμερική',         svcs:'AIR μόνο'},
+    {z:'Z5',name:'ΜΑ / Αφρ.', desc:'ΗΑΕ, Σαουδική Αραβία, Ισραήλ, Τουρκία, Αίγυπτος, Νότια Αφρική',      svcs:'AIR μόνο'},
+    {z:'Z6',name:'Ασία / Ωκ.',desc:'Κίνα, Ιαπωνία, Νότια Κορέα, Ινδία, Αυστραλία, Νέα Ζηλανδία',          svcs:'AIR μόνο'},
+    {z:'Z7',name:'Υπόλοιπος', desc:'Υπόλοιπες χώρες που δεν ανήκουν σε Z1–Z6',                             svcs:'AIR μόνο'},
+    {z:'Z9',name:'Κύπρος',    desc:'Κύπρος — μόνο αεροπορικά μέσω S1003 / S1012',                          svcs:'S1003, S1012'},
+  ];
+  const OFFICE_MAP=Object.fromEntries(officesFromAPI.map(o=>[o.prefix,o]));
+  const STATION_PREFIX={'0107':'ATH','0108':'NIC','0109':'QLI','0110':'LCA'};
+  const rawCode=((currentUser?.stations||currentUser?.office||'').split(',')[0]).trim().toUpperCase();
+  const officeCode=OFFICE_MAP[rawCode] ? rawCode : (STATION_PREFIX[rawCode]||'ATH');
+  const issuerOffice=OFFICE_MAP[officeCode]||Object.values(OFFICE_MAP)[0]||{};
+  const issuerName=currentUser?.name||'—';
+
+  const H=(num)=>`<div class="ph"><div class="ph-l"><span class="lb">4A</span><span class="lt">WORLDWIDE<br>EXPRESS</span></div><div class="ph-r">${num}</div></div>`;
+  const F=(pg)=>`<div class="pf"><span>Ε.Ε.Τ.Τ. 033-99 &nbsp;·&nbsp; ΑΦΜ: ${issuerOffice.vat||'044978638'} &nbsp;·&nbsp; www.4aexpress.com</span><span>σελ. ${pg}</span></div>`;
+  const S=(t)=>`<div class="st">${t}</div>`;
+
+  let pg=2;
+  const toc=[];
+  toc.push({pg:pg++,t:'Δίκτυο Γραφείων 4A Express'});
+  toc.push({pg:pg++,t:'Πώς Λειτουργεί ο Τιμοκατάλογος & Tracking'});
+  toc.push({pg:pg++,t:'Ζώνες Χωρών'});
+  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''}`});
+
+  const CSS=`
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:Arial,Helvetica,sans-serif;font-size:10.5px;color:#1a1a1a;background:#fff;}
+  .page{width:210mm;min-height:297mm;margin:0 auto;padding:10mm 14mm 13mm;position:relative;page-break-after:always;}
+  .page.last{page-break-after:auto;}
+  .ph{background:#cc0000;color:#fff;display:flex;justify-content:space-between;align-items:center;padding:7px 14px;margin-bottom:10px;}
+  .ph-l{display:flex;align-items:center;gap:8px;}
+  .lb{background:#fff;color:#cc0000;font-size:14px;font-weight:900;padding:2px 7px;border-radius:2px;letter-spacing:-1px;}
+  .lt{font-size:9px;font-weight:700;line-height:1.3;letter-spacing:.5px;}
+  .ph-r{font-size:10px;font-weight:600;opacity:.9;}
+  .pf{display:flex;justify-content:space-between;font-size:8px;color:#aaa;border-top:1px solid #e0e0e0;padding-top:5px;margin-top:12px;}
+  .st{background:#cc0000;color:#fff;font-size:10.5px;font-weight:700;padding:5px 12px;margin:10px 0 7px;letter-spacing:.3px;}
+  .hero{background:#990000;color:#fff;display:flex;align-items:stretch;margin-bottom:10px;overflow:hidden;}
+  .hero-logo{display:flex;align-items:center;justify-content:center;padding:10px 18px 10px 14px;background:#770000;border-right:3px solid #bb0000;min-width:96px;}
+  .hero-4a{font-size:78px;font-weight:900;color:#fff;line-height:1;letter-spacing:-5px;opacity:.93;font-family:Arial Black,Arial,sans-serif;}
+  .hero-main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:14px 20px;}
+  .hero-main h1{font-size:26px;font-weight:900;letter-spacing:3px;margin-bottom:4px;}
+  .hero-main h2{font-size:11px;font-weight:400;opacity:.75;letter-spacing:1px;}
+  .meta-bar{display:flex;border:1px solid #ddd;margin-bottom:10px;}
+  .meta-item{flex:1;padding:7px 12px;border-right:1px solid #ddd;}
+  .meta-item:last-child{border-right:none;}
+  .issuer-bar{display:flex;border:1px solid #ddd;border-top:3px solid #cc0000;margin-bottom:10px;}
+  .issuer-item{flex:1;padding:6px 12px;border-right:1px solid #ddd;}
+  .issuer-item:last-child{border-right:none;}
+  .cgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#e0e0e0;border:1px solid #e0e0e0;margin-bottom:12px;}
+  .cc{background:#fff;padding:7px 12px;}
+  .lbl{font-size:8px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+  .val{font-size:11px;font-weight:600;color:#222;}
+  .toc-t{width:100%;border-collapse:collapse;}
+  .toc-t th{background:#1a3a6e;color:#fff;font-size:9px;padding:5px 10px;text-align:left;}
+  .toc-t td{padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:10px;}
+  .toc-t tr:nth-child(even) td{background:#f8f9fb;}
+  .tpg{text-align:center;font-weight:700;color:#cc0000;width:42px;}
+  .ogrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+  .ocard{border:1px solid #e0e0e0;border-top:3px solid #cc0000;padding:10px 12px;}
+  .ocity{font-size:13px;font-weight:700;color:#cc0000;margin-bottom:5px;}
+  .oline{font-size:10px;color:#444;margin-bottom:3px;}
+  .steps{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+  .step{display:flex;gap:10px;padding:8px;border:1px solid #eee;}
+  .sn{background:#cc0000;color:#fff;font-size:12px;font-weight:900;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .sb h4{font-size:10.5px;font-weight:700;margin-bottom:2px;}
+  .sb p{font-size:9.5px;color:#555;line-height:1.4;}
+  .igrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .icard{background:#f8f8f8;border:1px solid #e8e8e8;padding:8px 10px;}
+  .icard h4{font-size:10px;font-weight:700;color:#1a3a6e;margin-bottom:4px;}
+  .icard p{font-size:9px;color:#555;line-height:1.5;}
+  .zt{width:100%;border-collapse:collapse;}
+  .zt th{background:#1a3a6e;color:#fff;font-size:9px;padding:5px 10px;text-align:left;}
+  .zt td{padding:6px 10px;border-bottom:1px solid #f0f0f0;font-size:10px;}
+  .zt tr:nth-child(even) td{background:#f8f9fb;}
+  .zbadge{display:inline-block;background:#cc0000;color:#fff;font-size:9px;font-weight:700;padding:1px 7px;border-radius:10px;}
+  .znote{background:#fff8e1;border:1px solid #f0c040;padding:8px 12px;margin-top:9px;font-size:9.5px;color:#7c6d00;}
+  .plhdr{background:#cc0000;color:#fff;padding:8px 14px;margin-bottom:0;}
+  .plt{font-size:13px;font-weight:700;}
+  .pls{font-size:9px;opacity:.85;margin-top:2px;}
+  .pt{width:100%;border-collapse:collapse;}
+  .pt th{background:#1a3a6e;color:#fff;font-size:9px;padding:5px 10px;text-align:center;}
+  .pt th.wt{text-align:left;}
+  .pt td{font-size:10.5px;padding:4px 10px;border-bottom:1px solid #eeeff2;text-align:center;}
+  .pt td.wt{text-align:left;font-weight:600;color:#333;}
+  .pt tr:nth-child(odd) td{background:#fff;}
+  .pt tr:nth-child(even) td{background:#eef3fb;}
+  .pt tr.xr td{background:#fff3cd!important;font-weight:600;color:#7c6d00;}
+  .fcnote{font-size:9px;color:#888;margin-top:6px;padding-top:4px;border-top:1px solid #f0f0f0;}
+  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+  .tbox{border:1px solid #e0e0e0;padding:9px 12px;}
+  .tbox h4{font-size:10px;font-weight:700;color:#1a3a6e;margin-bottom:5px;border-bottom:1px solid #eee;padding-bottom:3px;}
+  .tbox li,.tbox p{font-size:9.5px;color:#444;line-height:1.55;}
+  .tbox ul{padding-left:14px;}
+  .fct{width:100%;border-collapse:collapse;margin-bottom:10px;}
+  .fct th{background:#1a3a6e;color:#fff;font-size:9px;padding:4px 10px;text-align:left;}
+  .fct td{padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:10px;}
+  .surt{width:100%;border-collapse:collapse;margin-top:7px;}
+  .surt th{background:#555;color:#fff;font-size:9px;padding:4px 10px;text-align:left;}
+  .surt td{padding:5px 10px;border-bottom:1px solid #f0f0f0;font-size:10px;}
+  .cbody{font-size:10px;line-height:1.75;color:#333;}
+  .cbody p{margin-bottom:8px;}
+  .cbody ul{padding-left:18px;margin-bottom:10px;}
+  .sigrid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:28px;}
+  .sigbox{border-top:1px solid #333;padding-top:6px;}
+  .siglbl{font-size:9px;color:#888;margin-bottom:26px;}
+  .sigval{font-size:9.5px;color:#555;}
+  .zcols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;}
+  .zcol{border:1px solid #f0f0f0;}
+  .zentry{display:flex;align-items:center;justify-content:space-between;padding:3px 7px;border-bottom:1px solid #f5f5f5;font-size:9px;gap:4px;}
+  .zentry:last-child{border-bottom:none;}
+  .zpill{display:inline-block;font-size:7.5px;font-weight:700;padding:1px 5px;border-radius:8px;color:#fff;white-space:nowrap;}
+  .zpills{display:flex;gap:2px;flex-shrink:0;}
+  .pl-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px;}
+  .pl-3col .pt th{font-size:8.5px;padding:4px 7px;}
+  .pl-3col .pt td{font-size:10px;padding:3px 7px;}
+  .pl-footnote{font-size:8.5px;color:#888;margin-top:5px;padding-top:4px;border-top:1px solid #f0f0f0;font-style:italic;}
+  .page.land{width:297mm;min-height:210mm;}
+  .pt-zone th{font-size:8px;padding:3px 4px;}
+  .pt-zone td{font-size:8px;padding:2px 3px;}
+  @page land{size:A4 landscape;margin:0;}
+  @media print{body{margin:0;} .page{margin:0;padding:8mm 12mm 11mm;} .page.land{page:land;} @page{margin:0;size:A4;}}`;
+
+  let html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Προσφορά ${offerNum}</title><style>${CSS}</style></head><body>`;
+
+  html+=`<div class="page">
+  ${H(offerNum)}
+  <div class="hero">
+    <div class="hero-logo"><div class="hero-4a">4A</div></div>
+    <div class="hero-main">
+      <h1>ΠΡΟΣΦΟΡΑ</h1>
+      <h2>OFFER &nbsp;·&nbsp; ${offerNum}</h2>
+    </div>
+  </div>
+  <div class="meta-bar">
+    <div class="meta-item"><div class="lbl">Ημερομηνία</div><div class="val">${today}</div></div>
+    <div class="meta-item"><div class="lbl">Ισχύς έως</div><div class="val">${validUntil}</div></div>
+    <div class="meta-item"><div class="lbl">Πληρωμή</div><div class="val">${payDays} ημέρες</div></div>
+    <div class="meta-item"><div class="lbl">Τιμολόγηση</div><div class="val">${invoiceLbl}</div></div>
+  </div>
+  ${codEnabled?`<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-top:none;padding:7px 12px;font-size:11px;font-weight:600;color:#2e7d32;margin-bottom:10px;">COD: ΝΑΙ &nbsp;|&nbsp; Ποσό: €${codAmt.toFixed(2)} &nbsp;|&nbsp; Χρέωση: €${codFee.toFixed(2)}</div>`:''}
+  ${S('ΕΚΔΟΤΗΣ ΠΡΟΣΦΟΡΑΣ')}
+  <div class="issuer-bar">
+    <div class="issuer-item"><div class="lbl">Εταιρεία</div><div class="val">${issuerOffice.company||'4A Express Worldwide'}</div></div>
+    <div class="issuer-item"><div class="lbl">ΑΦΜ</div><div class="val">${issuerOffice.vat||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Στέλεχος</div><div class="val">${issuerName}</div></div>
+    <div class="issuer-item"><div class="lbl">Γραφείο</div><div class="val">${issuerOffice.city||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Διεύθυνση</div><div class="val">${issuerOffice.addr||'—'}</div></div>
+    <div class="issuer-item"><div class="lbl">Τηλέφωνο</div><div class="val">${issuerOffice.tel||'—'}</div></div>
+  </div>
+  ${S('ΣΤΟΙΧΕΙΑ ΠΕΛΑΤΗ')}
+  <div class="cgrid">
+    <div class="cc"><div class="lbl">Επωνυμία</div><div class="val">${name}</div></div>
+    <div class="cc"><div class="lbl">ΑΦΜ</div><div class="val">${afm||'—'}</div></div>
+    <div class="cc"><div class="lbl">Υπεύθυνος</div><div class="val">${contact||'—'}</div></div>
+    <div class="cc"><div class="lbl">Τηλέφωνο</div><div class="val">${phone||'—'}</div></div>
+    <div class="cc"><div class="lbl">Email</div><div class="val">${email||'—'}</div></div>
+    <div class="cc"><div class="lbl">Website</div><div class="val">${website||'—'}</div></div>
+  </div>
+  ${S('ΠΕΡΙΕΧΟΜΕΝΑ ΠΡΟΣΦΟΡΑΣ')}
+  <table class="toc-t">
+    <thead><tr><th class="tpg">Σελ.</th><th>Ενότητα</th></tr></thead>
+    <tbody>${toc.map(r=>`<tr><td class="tpg">${r.pg}</td><td>${r.t}</td></tr>`).join('')}</tbody>
+  </table>
+  ${F('1')}
+  </div>`;
+
+  html+=`<div class="page">
+  ${H(offerNum)}
+  ${S('ΔΙΚΤΥΟ ΓΡΑΦΕΙΩΝ 4A EXPRESS')}
+  <div class="ogrid">
+    ${OFFICES.map(o=>`<div class="ocard">
+      <div class="ocity">${o.city}</div>
+      <div class="oline"><strong>Διεύθυνση:</strong> ${o.addr}</div>
+      <div class="oline"><strong>Τηλέφωνο:</strong> ${o.tel}</div>
+      <div class="oline"><strong>Email:</strong> ${o.email}</div>
+    </div>`).join('')}
+  </div>
+  <div style="margin-top:14px;font-size:9.5px;color:#555;line-height:1.65;">
+    <p>Η <strong>${issuerOffice.company||'4A Express Worldwide'}</strong> παρέχει ολοκληρωμένες υπηρεσίες courier &amp; logistics σε Ελλάδα και Κύπρο από το 1999.</p>
+    <p style="margin-top:5px;">Για θέματα αποστολών και tracking, επικοινωνήστε με το γραφείο της περιοχής σας ή επισκεφθείτε <strong>www.4aexpress.com</strong>.</p>
+  </div>
+  ${F('2')}
+  </div>`;
+
+  html+=`<div class="page">
+  ${H(offerNum)}
+  ${S('ΠΩΣ ΛΕΙΤΟΥΡΓΕΙ Ο ΤΙΜΟΚΑΤΑΛΟΓΟΣ')}
+  <div class="steps">
+    <div class="step"><div class="sn">1</div><div class="sb"><h4>Βρείτε τον Προορισμό</h4><p>Ανατρέξτε στον Κατάλογο Ζωνών. Κάθε χώρα αντιστοιχεί σε ζώνη Z1–Z7 (AIR) ή Z1–Z3 (ROAD).</p></div></div>
+    <div class="step"><div class="sn">2</div><div class="sb"><h4>Μετρήστε το Βάρος</h4><p>Χρησιμοποιείτε το μεγαλύτερο από: πραγματικό βάρος ή ογκομετρικό (Μ×Π×Υ cm ÷ 5.000).</p></div></div>
+    <div class="step"><div class="sn">3</div><div class="sb"><h4>Βρείτε την Τιμή</h4><p>Εντοπίστε τη γραμμή βάρους στον πίνακα και διαβάστε την τιμή στη στήλη της ζώνης σας.</p></div></div>
+    <div class="step"><div class="sn">4</div><div class="sb"><h4>Προσθέστε Επίναυλο Καυσίμου</h4><p>Ο επίναυλος αναθεωρείται εβδομαδιαία βάσει διεθνών δεικτών. Αναγράφεται σε κάθε τιμοκατάλογο.</p></div></div>
+    <div class="step"><div class="sn">5</div><div class="sb"><h4>Τελική Χρέωση</h4><p>Τιμή ζώνης × (1 + επίναυλος%). Λοιπές χρεώσεις (ασφάλεια, συσκευασία κ.α.) υπολογίζονται ξεχωριστά.</p></div></div>
+  </div>
+  ${S('ΠΛΗΡΟΦΟΡΙΕΣ ΑΠΟΣΤΟΛΗΣ & TRACKING')}
+  <div class="igrid">
+    <div class="icard"><h4>Παρακολούθηση</h4><p>Αριθμός αποστολής αμέσως μετά παραλαβή. Real-time tracking στο <strong>www.4aexpress.com</strong> ή μέσω email ειδοποίησης.</p></div>
+    <div class="icard"><h4>Χρόνοι Παράδοσης</h4><p><strong>Αεροπορικά (AIR):</strong> 1–2 εργάσιμες.<br><strong>Οδικά (ROAD):</strong> 3–5 εργάσιμες.<br>Ανάλογα προορισμό.</p></div>
+    <div class="icard"><h4>Ασφάλιση Φορτίου</h4><p>Αυτόματη κάλυψη έως <strong>€100</strong> ανά αποστολή. Πρόσθετη ασφάλιση κατόπιν αιτήματος (0,5% επί αξίας).</p></div>
+  </div>
+  ${F('3')}
+  </div>`;
+
+  {
+    const ZC=['','#2e7d32','#1565c0','#f57f17','#c62828','#6a1b9a','#00838f','#555'];
+    if(zonesData){
+      const am={},rm={};
+      (zonesData.air?.zones||[]).forEach(z=>{am[z.code]={code:z.code,name:z.name,az:parseInt(z.zone)};});
+      (zonesData.road?.zones||[]).forEach(z=>{rm[z.code]=parseInt(z.zone);});
+      const EU=new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE']);
+      const ctrs=Object.values(am).sort((a,b)=>a.name.localeCompare(b.name,'el'));
+      const q=Math.ceil(ctrs.length/4);
+      const zp=z=>z?`<span style="display:inline-block;background:${ZC[z]||'#555'};color:#fff;font-size:6.5px;font-weight:700;padding:1px 4px;border-radius:7px;white-space:nowrap;">Z${z}</span>`:'<span style="color:#ddd;font-size:6.5px;">—</span>';
+      const eub='<span style="display:inline-block;background:#003399;color:#ffcc00;font-size:5.5px;font-weight:700;padding:0 2px;border-radius:2px;margin-left:3px;vertical-align:middle;">EU</span>';
+      const makeT=arr=>`<table class="pt pt-zone" style="width:100%"><thead><tr><th class="wt" style="font-size:7px;">Χώρα</th><th style="background:#154360;text-align:center;width:22px;font-size:6.5px;">S1003<br>✈↗</th><th style="background:#154360;text-align:center;width:22px;font-size:6.5px;">S1012<br>✈↙</th><th style="background:#1d4e36;text-align:center;width:22px;font-size:6.5px;">S1010<br>🚛↗</th><th style="background:#1d4e36;text-align:center;width:22px;font-size:6.5px;">S1041<br>🚛↙</th></tr></thead><tbody>${arr.map(c=>{const rz=rm[c.code];return `<tr><td class="wt" style="font-size:7px;">${c.name}${EU.has(c.code)?eub:''}</td><td style="text-align:center;padding:1px;">${zp(c.az)}</td><td style="text-align:center;padding:1px;">${zp(c.az)}</td><td style="text-align:center;padding:1px;">${rz!=null?zp(rz):'<span style="color:#ddd;font-size:6.5px;">—</span>'}</td><td style="text-align:center;padding:1px;">${rz!=null?zp(rz):'<span style="color:#ddd;font-size:6.5px;">—</span>'}</td></tr>`;}).join('')}</tbody></table>`;
+      html+=`<div class="page land">${H(offerNum)}${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;">${makeT(ctrs.slice(0,q))}${makeT(ctrs.slice(q,q*2))}${makeT(ctrs.slice(q*2,q*3))}${makeT(ctrs.slice(q*3))}</div><div class="znote" style="margin-top:5px;font-size:8px;">S1003/S1012: AIR Z1–Z7 &nbsp;·&nbsp; S1010/S1041: ROAD Z1–Z3 &nbsp;·&nbsp; Κύπρος (Z9): μόνο S1003/S1012 &nbsp;·&nbsp; <span style="display:inline-block;background:#003399;color:#ffcc00;font-size:6px;font-weight:700;padding:0 3px;border-radius:2px;vertical-align:middle;">EU</span> Μέλος ΕΕ</div>${F('4')}</div>`;
+    } else {
+      html+=`<div class="page">${H(offerNum)}${S('ΖΩΝΕΣ ΧΩΡΩΝ 4A EXPRESS')}<table class="zt"><thead><tr><th style="width:52px">Ζώνη</th><th style="width:88px">Κατηγορία</th><th>Χώρες / Περιοχές</th><th style="width:90px">Υπηρεσίες</th></tr></thead><tbody>${ZONES.map(z=>`<tr><td><span class="zbadge">${z.z}</span></td><td><strong>${z.name}</strong></td><td>${z.desc}</td><td style="font-size:9px;color:#666;">${z.svcs}</td></tr>`).join('')}</tbody></table><div class="znote"><strong>Σημείωση:</strong> AIR Z1–Z7, ROAD Z1–Z3. Κύπρος (Z9): μόνο S1003/S1012.</div>${F('4')}</div>`;
+    }
+  }
+
+  let dhlAll=null;
+  try{dhlAll=JSON.parse(localStorage.getItem('dhl_all')||'null');}catch(e){}
+  if(!dhlAll){
+    try{
+      const arr=await Promise.all(['S1003','S1012','S1010','S1041'].map(s=>
+        fetch(`https://raw.githubusercontent.com/4AExpress/4a-pricing/main/dhl_tariff_2026_${s}.json`)
+        .then(r=>r.json()).then(d=>({[s]:d.entries}))));
+      dhlAll=Object.assign({},...arr);
+      localStorage.setItem('dhl_all',JSON.stringify(dhlAll));
+    }catch(e){}
+  }
+  const _DHL_ALIAS={S1003_GR:'S1003',S1012_GR:'S1012',S1003_CY:'S1003',S1012_CY:'S1012',S1050:'S1003',S1051:'S1012'};
+  const _ZN={S1003:7,S1012:7,S1003_CY:7,S1012_CY:7,S1050:7,S1051:7,S1010:3,S1041:3,S1003_GR:1,S1012_GR:1};
+  const _ZHC=['','#2e7d32','#1565c0','#f57f17','#c62828','#6a1b9a','#00838f','#555'];
+  let plPg=5;
+  for(const p of selectedPls){
+    const rows=p.rows||[];
+    if(!rows.length) continue;
+    const isAir=p.service_id.includes('S1003')||p.service_id.includes('S1012');
+    const fcVal=p.fc?(p.fc+'%'):(isAir?fuelAir:fuelRoad);
+    const zcount=_ZN[p.service_id]||1;
+    const dhlKey=_DHL_ALIAS[p.service_id]||p.service_id;
+    const dhlEnt=(dhlAll&&dhlAll[dhlKey])||[];
+    const ztable=[];
+    if(zcount>1&&dhlEnt.length>0){
+      const dm={};
+      dhlEnt.forEach(e=>{const w=parseFloat(e.weight_kg),z=parseInt(e.zone_code.replace('z',''));if(!dm[w])dm[w]={};dm[w][z]=parseFloat(e.cost);});
+      rows.forEach(r=>{
+        const w=parseFloat(r.weight),sp=parseFloat(r.price),z1c=dm[w]?.[1];
+        if(!z1c)return;
+        const mk=(sp/z1c-1)*100;
+        const zp=[];
+        for(let z=1;z<=zcount;z++){const c=dm[w]?.[z];zp.push(c!=null?parseFloat((c*(1+mk/100)).toFixed(2)):null);}
+        ztable.push({w,zp});
+      });
+    }
+    let xkgLbl='+1 kg',xkgZP=null;
+    if(zcount>1&&ztable.length>=2){
+      const dw=ztable[ztable.length-1].w-ztable[ztable.length-2].w;
+      if(dw>0){
+        xkgLbl=`+${dw} kg`;
+        const lz=ztable[ztable.length-1].zp,pz=ztable[ztable.length-2].zp;
+        xkgZP=lz.map((v,i)=>v!=null&&pz[i]!=null?parseFloat(((v-pz[i])/dw).toFixed(2)):null);
+      }
+    } else if(zcount===1&&rows.length>=2){
+      const dw=parseFloat(rows[rows.length-1].weight)-parseFloat(rows[rows.length-2].weight);
+      const dp=parseFloat(rows[rows.length-1].price)-parseFloat(rows[rows.length-2].price);
+      if(dw>0){xkgLbl=`+${dw} kg`;xkgZP=[parseFloat((dp/dw).toFixed(2))];}
+    }
+    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div><div class="pls">Επίναυλος Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div></div>`;
+    const plFtr=`<div class="pl-footnote">* Τιμές εκτός ΦΠΑ 24% και επίναυλο καυσίμων</div>${F(String(plPg++))}`;
+    if(zcount===7&&ztable.length>0){
+      const thz=Array.from({length:7},(_,i)=>`<th style="background:${_ZHC[i+1]}">Z${i+1}</th>`).join('');
+      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`).join('');
+      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`:'';
+      html+=`<div class="page land">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">ΒΑΡΟΣ kg</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
+    } else if(zcount===3&&ztable.length>0){
+      const thz=Array.from({length:3},(_,i)=>`<th style="background:${_ZHC[i+1]}">Z${i+1}</th>`).join('');
+      const tbd=ztable.map(r=>`<tr><td class="wt">${r.w%1===0?Math.round(r.w):r.w}</td>${r.zp.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`).join('');
+      const xrow=xkgZP?`<tr class="xr"><td class="wt">${xkgLbl}</td>${xkgZP.map(v=>v!=null?`<td>€${v.toFixed(2)}</td>`:'<td>—</td>').join('')}</tr>`:'';
+      html+=`<div class="page">${plHdr}<table class="pt pt-zone"><thead><tr><th class="wt">ΒΑΡΟΣ (kg)</th>${thz}</tr></thead><tbody>${tbd}${xrow}</tbody></table>${plFtr}</div>`;
+    } else {
+      const xkgV=xkgZP?xkgZP[0]:null;
+      const cs3=Math.ceil(rows.length/3);
+      const rg=[rows.slice(0,cs3),rows.slice(cs3,cs3*2),rows.slice(cs3*2)];
+      html+=`<div class="page">${plHdr}<div class="pl-3col">${rg.map((grp,gi)=>`<table class="pt"><thead><tr><th class="wt">kg</th><th>€</th></tr></thead><tbody>${grp.map(r=>`<tr><td class="wt">${parseFloat(r.weight)%1===0?parseInt(r.weight):r.weight}</td><td>€${parseFloat(r.price).toFixed(2)}</td></tr>`).join('')}${gi===2&&xkgV!=null?`<tr class="xr"><td class="wt">${xkgLbl}</td><td>€${xkgV.toFixed(2)}</td></tr>`:''}</tbody></table>`).join('')}</div>${plFtr}</div>`;
+    }
+  }
+// ── DYNAMIC DOCS ──
+  const docsCache = await apiFetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]).catch(()=>[]);
+  if(!docsCache.length || docsCache.find(d=>d.id==='volumetric'&&d.active)){
+    html+=`<div class="page">
+    ${H(offerNum)}
+    ${S('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ')}
+    <p style="font-size:9px;color:#555;margin:6px 0;">Κάθε δέμα χρεώνεται βάσει του <strong>μεγαλύτερου</strong>: πραγματικό ή ογκομετρικό βάρος.</p>
+    <div style="background:#f2f2f2;border:0.5px solid #cc0000;padding:12px;margin:8px 0;text-align:center;font-size:12px;font-weight:700;color:#990000;">Ογκομετρικό Βάρος (kg) = ( Μ x Π x Υ ) / 5.000</div>
+    <div style="font-size:8px;color:#1D3B6F;text-align:center;margin-bottom:8px;">Μ=Μήκος | Π=Πλάτος | Υ=Ύψος (σε cm)</div>
+    <p style="font-size:8px;color:#555;margin-top:6px;">Ισχύει για: όχημα, αποθήκη, αεροπλάνο, container. Χρησιμοποιείτε το ΜΕΓΑΛΥΤΕΡΟ βάρος.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:8.5px;margin:10px 0;"><thead><tr style="background:#cc0000;color:#fff;"><th style="padding:5px 8px;text-align:left;">Διαστάσεις</th><th style="padding:5px 8px;text-align:center;">Τύπος</th><th style="padding:5px 8px;text-align:center;">Αποτέλεσμα</th></tr></thead><tbody><tr style="background:#fff;"><td style="padding:5px 8px;">50x50x50 cm</td><td style="padding:5px 8px;text-align:center;">50x50x50/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">25 kg</td></tr><tr style="background:#f2f2f2;"><td style="padding:5px 8px;">60x40x30 cm</td><td style="padding:5px 8px;text-align:center;">60x40x30/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">14.4 kg</td></tr><tr style="background:#fff;"><td style="padding:5px 8px;">100x30x20 cm</td><td style="padding:5px 8px;text-align:center;">100x30x20/5000</td><td style="padding:5px 8px;text-align:center;font-weight:700;color:#cc0000;">12 kg</td></tr></tbody></table>
+    <div style="background:#fff3cd;border:0.5px solid #ffc107;padding:8px 12px;font-size:8.5px;font-weight:700;margin-top:6px;">Χρησιμοποιειτε παντα το ΜΕΓΑΛΥΤΕΡΟ: πραγματικο η ογκομετρικο βαρος.</div>
+    ${F(String(plPg++))}
+    </div>`;
+  }
+  html+=`</body></html>`;
+
+  const blob = new Blob([html], {type: 'text/html'});
+  return blob;
+}
 
 async function sendOffer() {
   const name  = document.getElementById('cl-name').value.trim();
