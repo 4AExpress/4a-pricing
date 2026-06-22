@@ -990,6 +990,27 @@ async function buildFinalPDF(offerNum){
     offerPages.slice(0, INSERT_AFTER + 1).forEach(p => merged.addPage(p));
     (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
     offerPages.slice(INSERT_AFTER + 1).forEach(p => merged.addPage(p));
+    // === DOCS MERGE: ενεργα docs με σειρα sort_order, συμβαση τελευταια ===
+    try {
+      const docsList = await apiFetch(`/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]).catch(()=>[]);
+      const sorted = docsList.slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+      for (const doc of sorted) {
+        if (!doc.active || !doc.pdf_url || doc.id==='contract') continue;
+        try {
+          const db = new Uint8Array(await fetch(doc.pdf_url).then(r=>r.arrayBuffer()));
+          const dp = await PDFDocument.load(db);
+          (await merged.copyPages(dp, dp.getPageIndices())).forEach(p => merged.addPage(p));
+        } catch(e){ console.warn('[PDF] doc skip '+doc.id, e); }
+      }
+      const contract = docsList.find(d=>d.id==='contract' && d.active && d.pdf_url);
+      if (contract) {
+        try {
+          const cb = new Uint8Array(await fetch(contract.pdf_url).then(r=>r.arrayBuffer()));
+          const cp = await PDFDocument.load(cb);
+          (await merged.copyPages(cp, cp.getPageIndices())).forEach(p => merged.addPage(p));
+        } catch(e){ console.warn('[PDF] contract skip', e); }
+      }
+    } catch(e){ console.warn('[PDF] docs merge failed', e); }
     return await merged.save();
   } catch(mergeErr){
     console.warn('[PDF] Zones merge failed, offer-only fallback:', mergeErr);
