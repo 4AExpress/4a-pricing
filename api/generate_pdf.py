@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# generate_pdf.py | v2.0 | 17-06-2026
+# generate_pdf.py | v1.2 | 19-05-2026
 import sys, json, os, base64, tempfile
 from datetime import datetime, timedelta
 from reportlab.lib.pagesizes import A4
@@ -10,8 +10,6 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.graphics.shapes import Drawing, Polygon, Line, String as GStr, Rect
-from reportlab.graphics import renderPDF as grPDF
 
 # Fonts path
 FONT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -98,7 +96,7 @@ def apply_markup(entries, markup_pct, zones, markup_z9=None):
             table[w][z]=round(e['cost']*(1+markup_pct/100),2)
     return table
 
-def generate(offer_data, dhl_data, fuel_data, active_docs=None, zones_data=None):
+def generate(offer_data, dhl_data, fuel_data):
     office_code = offer_data.get('office_code','ATH')
     office = OFFICES.get(office_code, OFFICES['ATH'])
 
@@ -114,11 +112,6 @@ def generate(offer_data, dhl_data, fuel_data, active_docs=None, zones_data=None)
     services = offer_data.get('pricelists',[])
     date = offer_data.get('date','—')
     vstamp = datetime.now().strftime('v%d-%m-%Y %H:%M')
-
-    # active_docs: set of doc IDs to include; default includes volumetric when not specified
-    _adocs = set(active_docs) if active_docs is not None else {'volumetric'}
-    include_vol   = 'volumetric' in _adocs
-    include_zones = 'zones' in _adocs and zones_data is not None
 
     try:
         d = datetime.strptime(date,'%d-%m-%Y')
@@ -185,14 +178,15 @@ def generate(offer_data, dhl_data, fuel_data, active_docs=None, zones_data=None)
     # TOC
     story.append(sec('ΠΕΡΙΕΧΟΜΕΝΟ ΠΡΟΣΦΟΡΑΣ'))
     story.append(Spacer(1,2*mm))
+    has_gr = any(svc['service_id'] in {'S1003','S1012','S1010','S1041'} for svc in services)
     pg = 2
     toc_items = [(pg,'How','Πώς Λειτουργεί ο Τιμοκατάλογος','ΠΛΗΡΟΦΟΡΙΕΣ')]
     toc_items.append((pg,'track','Εύρεση & Tracking Αποστολής','ΠΛΗΡΟΦΟΡΙΕΣ'))
     pg += 1
-    toc_items.append((pg,'net','Δίκτυο Γραφείων 4A Express','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
-    if include_zones:
-        toc_items.append((pg,'zones','Ζώνες Χωρών 4A Express','ΠΑΡΑΡΤΗΜΑ'))
+    if has_gr:
+        toc_items.append((pg,'Zones','Ζώνες 4A Express GR','ΠΛΗΡΟΦΟΡΙΕΣ'))
         pg += 1
+    toc_items.append((pg,'net','Δίκτυο Γραφείων 4A Express','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
     for svc in services:
         svc_id = svc['service_id']
         dhl_key = {'S1003_GR':'S1003','S1012_GR':'S1012'}.get(svc_id, svc_id)
@@ -200,8 +194,7 @@ def generate(offer_data, dhl_data, fuel_data, active_docs=None, zones_data=None)
         info = SVC_INFO.get(svc_id,{})
         toc_items.append((pg,svc_id,f"{info.get('name',svc_id)} — {info.get('desc','')}",info.get('type','')))
         pg += 1
-    if include_vol:
-        toc_items.append((pg,'vol','Ογκομέτρηση Δεμάτων / Billing Explanation','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
+    toc_items.append((pg,'vol','Ογκομέτρηση Δεμάτων','ΠΛΗΡΟΦΟΡΙΕΣ')); pg+=1
     toc_items.append((pg,'terms','Όροι, Χρεώσεις & Επίναυλος','ΟΡΟΙ')); pg+=1
     toc_items.append((pg,'accept','Αποδοχή Προσφοράς','ΑΠΟΔΟΧΗ'))
 
@@ -314,68 +307,21 @@ def generate(offer_data, dhl_data, fuel_data, active_docs=None, zones_data=None)
             ofts.add('LINEBEFORE',(0,i),(0,i),3,RED)
     oft.setStyle(ofts)
     story.append(oft)
+    story.append(Spacer(1,5*mm))
+    story.append(Table([[
+        P("ΚΑΤΑΛΟΓΟΣ ΖΩΝΩΝ",sb('ztl',fontSize=8,textColor=MGRAY)),
+        P("Ο κατάλογος ζωνών χωρών επισυνάπτεται στην παρούσα προσφορά.",
+          s('ztb',fontSize=8,textColor=MGRAY,leading=12))
+    ]],colWidths=[42*mm,cw-42*mm],style=[
+        ('BACKGROUND',(0,0),(0,-1),LGRAY),('TOPPADDING',(0,0),(-1,-1),8),
+        ('BOTTOMPADDING',(0,0),(-1,-1),8),('LEFTPADDING',(0,0),(-1,-1),10),
+        ('BOX',(0,0),(-1,-1),0.5,BORDER),('LINEAFTER',(0,0),(0,-1),0.5,BORDER),
+        ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+    ]))
     story.append(Spacer(1,3*mm))
     story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
     story.append(ftr(offer_num,date,vstamp))
     story.append(PageBreak())
-
-    # ── ΖΩΝΕΣ ΧΩΡΩΝ (από zones_data αν active) ──
-    if include_zones:
-        story.append(hdr(offer_num))
-        story.append(Paragraph('<a name="zones"/>',s('anc',fontSize=0.1)))
-        story.append(sec('ΖΩΝΕΣ ΧΩΡΩΝ — 4A EXPRESS'))
-        story.append(Spacer(1,3*mm))
-        air_z  = {z['code']: int(z['zone']) for z in zones_data.get('air',{}).get('zones',[])}
-        road_z = {z['code']: int(z['zone']) for z in zones_data.get('road',{}).get('zones',[])}
-        names  = {z['code']: z['name'] for z in zones_data.get('air',{}).get('zones',[])}
-        all_codes = sorted(set(list(air_z.keys())+list(road_z.keys())), key=lambda c: names.get(c,c))
-        ZCOL = {1:'#2e7d32',2:'#1565c0',3:'#f57f17',4:'#c62828',5:'#6a1b9a',6:'#00838f',7:'#555555'}
-        NCOLS = 4
-        per_col = (len(all_codes) + NCOLS - 1) // NCOLS
-        sub_w = (cw - (NCOLS-1)*1.5*mm) / NCOLS
-        col_widths_z = [sub_w*0.6, sub_w*0.2, sub_w*0.2]
-        sub_tables = []
-        for ci in range(NCOLS):
-            chunk = all_codes[ci*per_col:(ci+1)*per_col]
-            rows = [[P('ΧΩΡΑ',sb('zh3',fontSize=6,textColor=WHITE)),
-                     P('AIR', sb('zh3',fontSize=6,textColor=WHITE,alignment=TA_CENTER)),
-                     P('ROAD',sb('zh3',fontSize=6,textColor=WHITE,alignment=TA_CENTER))]]
-            for code in chunk:
-                az = air_z.get(code)
-                rz = road_z.get(code)
-                rows.append([
-                    P(names.get(code,code),s('cn4',fontSize=6,textColor=DGRAY)),
-                    P(f'Z{az}' if az else '—', sb('cz3',fontSize=6,
-                       textColor=colors.HexColor(ZCOL.get(az,'#999')) if az else BGRAY,
-                       alignment=TA_CENTER)),
-                    P(f'Z{rz}' if rz else '—', sb('cz4',fontSize=6,
-                       textColor=colors.HexColor(ZCOL.get(rz,'#999')) if rz else BGRAY,
-                       alignment=TA_CENTER)),
-                ])
-            t = Table(rows, colWidths=col_widths_z, repeatRows=1)
-            t.setStyle(TableStyle([
-                ('BACKGROUND',(0,0),(-1,0),MGRAY),
-                ('GRID',(0,0),(-1,-1),0.1,BORDER),
-                ('TOPPADDING',(0,0),(-1,-1),1),('BOTTOMPADDING',(0,0),(-1,-1),1),
-                ('LEFTPADDING',(0,0),(-1,-1),2),('RIGHTPADDING',(0,0),(-1,-1),1),
-                ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE,XLGRAY]),
-                ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
-            ]))
-            sub_tables.append(t)
-        outer = Table([sub_tables], colWidths=[sub_w]*NCOLS)
-        outer.setStyle(TableStyle([
-            ('LEFTPADDING',(0,0),(-1,-1),0),('RIGHTPADDING',(0,0),(-1,-1),0),
-            ('TOPPADDING',(0,0),(-1,-1),0),('BOTTOMPADDING',(0,0),(-1,-1),0),
-            ('LINEAFTER',(0,0),(NCOLS-2,-1),0.5,BORDER),
-        ]))
-        story.append(outer)
-        story.append(Spacer(1,3*mm))
-        story.append(P(
-            'AIR: Z1–Z7 (S1003/S1012) · ROAD: Z1–Z3 (S1010/S1041) · Κύπρος Z9 (μόνο AIR)',
-            s('note',fontSize=6.5,textColor=BGRAY)))
-        story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER,spaceBefore=3))
-        story.append(ftr(offer_num,date,vstamp))
-        story.append(PageBreak())
 
     # ── SERVICES ──
     zone_descs={1:'ΕΕ Δυτ.',2:'Ευρώπη',3:'ΕΕ Περιφ.',4:'Αμερική',5:'ΜΑ/Αφρ.',6:'Ασία/Ωκ.',7:'Υπόλοιπος',8:'',9:'Κύπρος'}
@@ -386,13 +332,13 @@ def generate(offer_data, dhl_data, fuel_data, active_docs=None, zones_data=None)
         zones=7 if is_air else 3
         markup=float(svc.get('markup',0))
         markup_z9=float(svc.get('markup_z9',0)) or None
-        print(f"DEBUG [{svc_id}] raw svc={svc}  →  markup={markup}  markup_z9_raw={svc.get('markup_z9',0)}", file=sys.stderr, flush=True)
+
         if svc_id in ('S1003_GR','S1012_GR'):
             markup_z9=None
         _DHL_SRC={'S1003_GR':'S1003','S1012_GR':'S1012'}
         entries=dhl_data.get(_DHL_SRC.get(svc_id,svc_id),[])
-        print(f"DEBUG [{svc_id}] final markup={markup}  markup_z9={markup_z9}  entries={len(entries)}", file=sys.stderr, flush=True)
-        saved_rows={float(r['weight']):float(r['price']) for r in svc.get('rows',[]) if 'weight' in r and 'price' in r}
+
+        saved_rows={float(r['weight']):float(r['price']) for r in svc.get('rows',[]) if 'weight' in r and 'price' in r and not r.get('extraKg') and str(r['weight']).replace('.','',1).isdigit()}
         if saved_rows:
             dhl_costs={}
             for e in entries:
@@ -509,119 +455,68 @@ def generate(offer_data, dhl_data, fuel_data, active_docs=None, zones_data=None)
             story.append(ftr(offer_num,date,vstamp))
             story.append(PageBreak())
 
-    # ── ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ / BILLING EXPLANATION ──
-    if include_vol:
-        story.append(hdr(offer_num))
-        story.append(Paragraph('<a name="vol"/>',s('anc',fontSize=0.1)))
-        # Bilingual header
-        story.append(Table([[
-            P('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ',sb('vh1',fontSize=10,textColor=WHITE)),
-            P('BILLING EXPLANATION',s('vh2',fontSize=9,
-               textColor=colors.HexColor('#ffcccc'),alignment=TA_RIGHT)),
-        ]],colWidths=[cw*0.55,cw*0.45],style=[
-            ('BACKGROUND',(0,0),(-1,-1),RED),
-            ('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7),
-            ('LEFTPADDING',(0,0),(-1,-1),12),('RIGHTPADDING',(0,0),(-1,-1),12),
-            ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
-            ('LINEAFTER',(0,0),(0,-1),0.5,colors.HexColor('#dd3333')),
-        ]))
-        story.append(Spacer(1,6*mm))
-
-        # 3D cube drawing
-        Wf,Hf,dxf,dyf = 28*mm, 22*mm, 12*mm, 6*mm
-        draw_w = Wf + dxf + 4*mm
-        draw_h = Hf + dyf + 8*mm
-        cube = Drawing(draw_w, draw_h)
-        oy_c = 5*mm
-        GRAY_FRONT = colors.HexColor('#d0d0d0')
-        GRAY_TOP   = colors.HexColor('#e8e8e8')
-        GRAY_RIGHT = colors.HexColor('#aaaaaa')
-        # Front face
-        cube.add(Polygon([0,oy_c, Wf,oy_c, Wf,oy_c+Hf, 0,oy_c+Hf],
-            fillColor=GRAY_FRONT,strokeColor=MGRAY,strokeWidth=0.5))
-        # Top face
-        cube.add(Polygon([0,oy_c+Hf, Wf,oy_c+Hf, Wf+dxf,oy_c+Hf+dyf, dxf,oy_c+Hf+dyf],
-            fillColor=GRAY_TOP,strokeColor=MGRAY,strokeWidth=0.5))
-        # Right face
-        cube.add(Polygon([Wf,oy_c, Wf+dxf,oy_c+dyf, Wf+dxf,oy_c+Hf+dyf, Wf,oy_c+Hf],
-            fillColor=GRAY_RIGHT,strokeColor=MGRAY,strokeWidth=0.5))
-        # Red dimension lines
-        cube.add(Line(0,oy_c-1*mm, Wf,oy_c-1*mm, strokeColor=RED,strokeWidth=0.8))
-        cube.add(Line(Wf,oy_c, Wf+dxf,oy_c+dyf, strokeColor=RED,strokeWidth=0.8))
-        cube.add(Line(-1*mm,oy_c, -1*mm,oy_c+Hf, strokeColor=RED,strokeWidth=0.8))
-        # Labels M, P, Y
-        cube.add(GStr(Wf/2, oy_c-4.5*mm, 'M (cm)',
-            fontSize=7,fillColor=RED,textAnchor='middle',fontName='DV-B'))
-        cube.add(GStr(Wf+dxf+1.5*mm, oy_c+dyf/2, 'P (cm)',
-            fontSize=7,fillColor=RED,textAnchor='start',fontName='DV-B'))
-        cube.add(GStr(-3*mm, oy_c+Hf/2, 'Y (cm)',
-            fontSize=7,fillColor=RED,textAnchor='end',fontName='DV-B'))
-
-        # Formula panel
-        formula_col = cw - draw_w - 8*mm
-        formula_tbl = Table([[
-            P('Ογκομετρικό Βάρος (kg)',sb('fml1',fontSize=9,textColor=DGRAY)),
-        ],[
-            P('= ( M × P × Y ) ÷ 5.000',
-              sb('fml2',fontSize=13,textColor=RED)),
-        ],[
-            P('M = Μήκος  ·  P = Πλάτος  ·  Y = Ύψος  (σε cm)',
-              s('fml3',fontSize=8,textColor=MGRAY,leading=12)),
-        ],[
-            P('Χρεώνεται το ΜΕΓΑΛΎΤΕΡΟ από: πραγματικό ή ογκομετρικό βάρος.',
-              sb('fml4',fontSize=8,textColor=colors.HexColor('#c62828'),leading=12)),
-        ]],colWidths=[formula_col],style=[
-            ('BACKGROUND',(0,0),(-1,-1),XLGRAY),
-            ('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),4),
-            ('LEFTPADDING',(0,0),(-1,-1),12),('RIGHTPADDING',(0,0),(-1,-1),12),
-            ('BOX',(0,0),(-1,-1),1,RED),
-            ('LINEBELOW',(0,0),(0,1),0.5,BORDER),
-            ('BACKGROUND',(0,3),(-1,3),colors.HexColor('#fff3cd')),
-        ])
-
-        story.append(Table([[cube, formula_tbl]],
-            colWidths=[draw_w+8*mm, formula_col],
-            style=[
-                ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
-                ('LEFTPADDING',(0,0),(-1,-1),0),('RIGHTPADDING',(0,0),(-1,-1),0),
-                ('TOPPADDING',(0,0),(-1,-1),0),('BOTTOMPADDING',(0,0),(-1,-1),0),
-            ]))
-        story.append(Spacer(1,8*mm))
-
-        # Table: ΜΕΤΡΗΣΗ / ΤΙΜΗ / ΠΕΡΙΓΡΑΦΗ
-        meas_w = 52*mm; val_w = 32*mm; desc_w = cw-meas_w-val_w
-        story.append(Table([
-            [P('ΜΕΤΡΗΣΗ',sb('mh',fontSize=7.5,textColor=WHITE,alignment=TA_CENTER)),
-             P('ΤΙΜΗ',   sb('mh',fontSize=7.5,textColor=WHITE,alignment=TA_CENTER)),
-             P('ΠΕΡΙΓΡΑΦΗ',sb('mh',fontSize=7.5,textColor=WHITE))],
-            [P('60 × 40 × 30 cm',s('mv',fontSize=9,textColor=DGRAY,alignment=TA_CENTER)),
-             P('14,4 kg',sb('mr',fontSize=11,textColor=RED,alignment=TA_CENTER)),
-             P('60×40×30 ÷ 5.000 = 14,4 kg — χρεώνεται το ογκομετρικό (πραγμ. 10 kg)',
-               s('md',fontSize=8,textColor=MGRAY,leading=12))],
-            [P('50 × 50 × 50 cm',s('mv',fontSize=9,textColor=DGRAY,alignment=TA_CENTER)),
-             P('25,0 kg',sb('mr',fontSize=11,textColor=RED,alignment=TA_CENTER)),
-             P('50×50×50 ÷ 5.000 = 25,0 kg — χρεώνεται το ογκομετρικό (πραγμ. 15 kg)',
-               s('md',fontSize=8,textColor=MGRAY,leading=12))],
-            [P('100 × 60 × 40 cm',s('mv',fontSize=9,textColor=DGRAY,alignment=TA_CENTER)),
-             P('48,0 kg',sb('mr',fontSize=11,textColor=RED,alignment=TA_CENTER)),
-             P('100×60×40 ÷ 5.000 = 48,0 kg — χρεώνεται το ογκομετρικό (πραγμ. 30 kg)',
-               s('md',fontSize=8,textColor=MGRAY,leading=12))],
-            [P('30 × 20 × 15 cm',s('mv',fontSize=9,textColor=DGRAY,alignment=TA_CENTER)),
-             P('1,8 kg',sb('mr',fontSize=11,textColor=DGRAY,alignment=TA_CENTER)),
-             P('30×20×15 ÷ 5.000 = 1,8 kg — χρεώνεται το πραγματικό (αν πραγμ. > 1,8 kg)',
-               s('md',fontSize=8,textColor=MGRAY,leading=12))],
-        ], colWidths=[meas_w,val_w,desc_w], style=[
-            ('BACKGROUND',(0,0),(-1,0),DRED),
-            ('GRID',(0,0),(-1,-1),0.25,BORDER),
-            ('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7),
-            ('LEFTPADDING',(0,0),(-1,-1),8),
-            ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE,XLGRAY]),
-            ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
-        ]))
-        story.append(Spacer(1,5*mm))
-        story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
-        story.append(ftr(offer_num,date,vstamp))
-        story.append(PageBreak())
+    # ── ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ ──
+    story.append(hdr(offer_num))
+    story.append(Paragraph('<a name="vol"/>',s('anc',fontSize=0.1)))
+    story.append(sec('ΟΓΚΟΜΕΤΡΗΣΗ ΔΕΜΑΤΩΝ'))
+    story.append(Spacer(1,5*mm))
+    story.append(P(
+        'Η χρέωση κάθε αποστολής εξαρτάται από το συνδυασμό βάρους και μεγέθους '
+        '(Σύστημα ογκομέτρησης Διεθνούς Μεταφοράς).',
+        s('tt',fontSize=9,textColor=MGRAY,leading=14,spaceAfter=4)))
+    story.append(P(
+        'Αν το ογκομετρικό βάρος της αποστολής είναι μεγαλύτερο του πραγματικού '
+        '(περιπτώσεις ελαφρών δεμάτων με μεγάλο όγκο), τότε η χρέωση γίνεται με βάση το ογκομετρικό βάρος.',
+        s('tt',fontSize=9,textColor=MGRAY,leading=14,spaceAfter=8)))
+    story.append(P(
+        'Τα Διεθνή Ογκομετρικά Βάρη υπολογίζονται με τη χρήση του ακόλουθου τύπου:',
+        s('tt',fontSize=9,textColor=MGRAY,leading=14,spaceAfter=6)))
+    story.append(Table([[
+        P('Ογκομετρικό Βάρος σε kgr = Μήκος × Πλάτος × Ύψος / 5000',
+          sb('volform',fontSize=11,textColor=DGRAY)),
+    ]], colWidths=[cw], style=[
+        ('BACKGROUND',(0,0),(-1,-1),XLGRAY),
+        ('TOPPADDING',(0,0),(-1,-1),10),('BOTTOMPADDING',(0,0),(-1,-1),10),
+        ('LEFTPADDING',(0,0),(-1,-1),15),
+        ('BOX',(0,0),(-1,-1),0.5,BORDER),
+    ]))
+    story.append(Spacer(1,6*mm))
+    story.append(P('Παράδειγμα:',sb('tt2',fontSize=9,textColor=DGRAY,spaceAfter=4)))
+    story.append(Table([
+        [P('ΔΙΑΣΤΑΣΕΙΣ',sb('vh',fontSize=7,textColor=WHITE)),
+         P('ΤΥΠΟΣ',sb('vh',fontSize=7,textColor=WHITE)),
+         P('ΟΓΚΟΜΕΤΡΙΚΟ ΒΑΡΟΣ',sb('vh',fontSize=7,textColor=WHITE))],
+        [P('50 × 50 × 50 cm',s('vv',fontSize=9,textColor=DGRAY)),
+         P('50 × 50 × 50 / 5000',s('vv',fontSize=9,textColor=MGRAY)),
+         P('25 kg',sb('vr',fontSize=11,textColor=RED))],
+        [P('60 × 40 × 30 cm',s('vv2',fontSize=9,textColor=DGRAY)),
+         P('60 × 40 × 30 / 5000',s('vv2',fontSize=9,textColor=MGRAY)),
+         P('14.4 kg',sb('vr2',fontSize=11,textColor=RED))],
+        [P('100 × 30 × 20 cm',s('vv3',fontSize=9,textColor=DGRAY)),
+         P('100 × 30 × 20 / 5000',s('vv3',fontSize=9,textColor=MGRAY)),
+         P('12 kg',sb('vr3',fontSize=11,textColor=RED))],
+    ], colWidths=[60*mm,80*mm,cw-140*mm], style=[
+        ('BACKGROUND',(0,0),(-1,0),MGRAY),
+        ('GRID',(0,0),(-1,-1),0.25,BORDER),
+        ('TOPPADDING',(0,0),(-1,-1),6),('BOTTOMPADDING',(0,0),(-1,-1),6),
+        ('LEFTPADDING',(0,0),(-1,-1),8),
+        ('ROWBACKGROUNDS',(0,1),(-1,-1),[WHITE,XLGRAY]),
+        ('ALIGN',(2,0),(-1,-1),'CENTER'),
+    ]))
+    story.append(Spacer(1,6*mm))
+    story.append(Table([[
+        P('⚠️  Χρησιμοποιείτε πάντα το ΜΕΓΑΛΥΤΕΡΟ από: πραγματικό βάρος ή ογκομετρικό βάρος.',
+          sb('volnote',fontSize=8,textColor=DGRAY)),
+    ]], colWidths=[cw], style=[
+        ('BACKGROUND',(0,0),(-1,-1),colors.HexColor('#fff3cd')),
+        ('TOPPADDING',(0,0),(-1,-1),8),('BOTTOMPADDING',(0,0),(-1,-1),8),
+        ('LEFTPADDING',(0,0),(-1,-1),12),
+        ('BOX',(0,0),(-1,-1),0.5,colors.HexColor('#ffc107')),
+    ]))
+    story.append(Spacer(1,5*mm))
+    story.append(HRFlowable(width=cw,thickness=0.5,color=BORDER))
+    story.append(ftr(offer_num,date,vstamp))
+    story.append(PageBreak())
 
     story.append(hdr(offer_num))
     story.append(Paragraph('<a name="terms"/>',s('anc',fontSize=0.1)))
@@ -829,6 +724,5 @@ def generate(offer_data, dhl_data, fuel_data, active_docs=None, zones_data=None)
 
 if __name__=='__main__':
     data=json.loads(sys.stdin.read())
-    result=generate(data['offer'],data['dhl'],data['fuel'],
-                    data.get('active_docs'),data.get('zones_data'))
+    result=generate(data['offer'],data['dhl'],data['fuel'])
     print(json.dumps({'ok':True,'pdf':result}))
