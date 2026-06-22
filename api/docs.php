@@ -39,7 +39,7 @@ if ($method === 'GET') {
     }
 
     // Load docs
-    $rows = db()->query("SELECT id, name, icon, description, active, locked, sort_order, pdf_url FROM 4a_docs ORDER BY sort_order ASC")->fetchAll();
+    $rows = db()->query("SELECT id, name, icon, description, active, locked, sort_order, pdf_url, show_walkin FROM 4a_docs ORDER BY sort_order ASC")->fetchAll();
     if (empty($rows)) {
         respond(['docs' => []]);
     }
@@ -52,6 +52,7 @@ if ($method === 'GET') {
             'active'  => (bool)$r['active'],
             'locked'  => (bool)$r['locked'],
             'pdf_url' => $r['pdf_url'],
+            'show_walkin' => (int)$r['show_walkin'],
         ];
     }, $rows);
     respond(['docs' => $docs]);

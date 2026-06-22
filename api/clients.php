@@ -43,8 +43,8 @@ if ($method === 'POST') {
         $stmt = db()->prepare('INSERT INTO 4a_clients
             (id, name, afm, contact, email, phone, website, account, status,
              pricelists, surcharges, managers, payment, invoice, validity,
-             offer_number, user, office, country, date, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             offer_number, user, office, country, date, is_walkin, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ON DUPLICATE KEY UPDATE
             name=VALUES(name), afm=VALUES(afm), contact=VALUES(contact),
             email=VALUES(email), phone=VALUES(phone), website=VALUES(website),
@@ -53,7 +53,8 @@ if ($method === 'POST') {
             managers=VALUES(managers), payment=VALUES(payment),
             invoice=VALUES(invoice), validity=VALUES(validity),
             offer_number=VALUES(offer_number), user=VALUES(user),
-            office=VALUES(office), country=VALUES(country), date=VALUES(date)');
+            office=VALUES(office), country=VALUES(country), date=VALUES(date),
+            is_walkin=VALUES(is_walkin)');
 
         $stmt->execute([
             $b['id'], $b['name'], $b['afm'] ?? '', $b['contact'] ?? '',
@@ -65,7 +66,8 @@ if ($method === 'POST') {
             $b['payment'] ?? '30', $b['invoice'] ?? 'monthly',
             $b['validity'] ?? '30', $b['offer_number'] ?? '',
             $b['user'] ?? '', $office, $country,
-            $b['date'] ?? '', $b['created_at'] ?? date('Y-m-d H:i:s')
+            $b['date'] ?? '', (int)($b['is_walkin'] ?? 0),
+            $b['created_at'] ?? date('Y-m-d H:i:s')
         ]);
         respond(['ok' => true]);
     }
@@ -83,8 +85,8 @@ if ($method === 'POST') {
         $stmt = $pdo->prepare('INSERT INTO 4a_clients
             (id, name, afm, contact, email, phone, website, account, status,
              pricelists, surcharges, managers, payment, invoice, validity,
-             offer_number, user, office, country, date, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+             offer_number, user, office, country, date, is_walkin, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
         foreach ($b['items'] as $c) {
             $off = $c['office'] ?? '';
             $cty = $c['country'] ?? (in_array($off, ['LCA','NIC','QLI']) ? 'CY' : 'GR');
@@ -98,7 +100,8 @@ if ($method === 'POST') {
                 $c['payment'] ?? '30', $c['invoice'] ?? 'monthly',
                 $c['validity'] ?? '30', $c['offer_number'] ?? '',
                 $c['user'] ?? '', $off, $cty,
-                $c['date'] ?? '', $c['created_at'] ?? date('Y-m-d H:i:s')
+                $c['date'] ?? '', (int)($c['is_walkin'] ?? 0),
+                $c['created_at'] ?? date('Y-m-d H:i:s')
             ]);
         }
         respond(['ok' => true, 'synced' => count($b['items'])]);

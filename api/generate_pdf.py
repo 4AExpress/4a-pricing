@@ -116,7 +116,7 @@ def generate(offer_data, dhl_data, fuel_data, active_docs=None, zones_data=None)
     vstamp = datetime.now().strftime('v%d-%m-%Y %H:%M')
 
     # active_docs: set of doc IDs to include; default includes volumetric when not specified
-    _adocs = set(active_docs) if active_docs is not None else {'volumetric'}
+    _adocs = set(active_docs) if active_docs else {'volumetric'}
     include_vol   = 'volumetric' in _adocs
     include_zones = 'zones' in _adocs and zones_data is not None
 
@@ -386,13 +386,11 @@ def generate(offer_data, dhl_data, fuel_data, active_docs=None, zones_data=None)
         zones=7 if is_air else 3
         markup=float(svc.get('markup',0))
         markup_z9=float(svc.get('markup_z9',0)) or None
-        print(f"DEBUG [{svc_id}] raw svc={svc}  →  markup={markup}  markup_z9_raw={svc.get('markup_z9',0)}", file=sys.stderr, flush=True)
         if svc_id in ('S1003_GR','S1012_GR'):
             markup_z9=None
         _DHL_SRC={'S1003_GR':'S1003','S1012_GR':'S1012'}
         entries=dhl_data.get(_DHL_SRC.get(svc_id,svc_id),[])
-        print(f"DEBUG [{svc_id}] final markup={markup}  markup_z9={markup_z9}  entries={len(entries)}", file=sys.stderr, flush=True)
-        saved_rows={float(r['weight']):float(r['price']) for r in svc.get('rows',[]) if 'weight' in r and 'price' in r}
+        saved_rows={float(r['weight']):float(r['price']) for r in svc.get('rows',[]) if 'weight' in r and 'price' in r and not r.get('extraKg') and str(r['weight']).replace('.','',1).isdigit()}
         if saved_rows:
             dhl_costs={}
             for e in entries:
