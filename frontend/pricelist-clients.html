@@ -992,7 +992,7 @@ async function buildFinalPDF(offerNum){
     offerPages.slice(INSERT_AFTER + 1).forEach(p => merged.addPage(p));
     // === DOCS MERGE: ενεργα docs με σειρα sort_order, συμβαση τελευταια ===
     try {
-      const docsList = await apiFetch(`/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]).catch(()=>[]);
+      const docsList = await apiFetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]).catch(()=>[]);
       const sorted = docsList.slice().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
       for (const doc of sorted) {
         if (!doc.active || !doc.pdf_url || doc.id==='contract') continue;
