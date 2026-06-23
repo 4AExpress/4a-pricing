@@ -346,6 +346,8 @@ def generate(offer_data, dhl_data, fuel_data):
                 dhl_costs.setdefault(w,{})[z]=e['cost']
             prices=apply_markup(entries,markup,zones,markup_z9)
             for w,saved_price in saved_rows.items():
+                if svc_id in ('S1003_GR','S1012_GR'):
+                    prices.setdefault(w,{9:saved_price})[9]=saved_price; continue
                 if w not in prices or w not in dhl_costs: continue
                 if len(dhl_costs.get(w,{})) == 1:
                     prices[w][next(iter(prices[w]))]=saved_price
