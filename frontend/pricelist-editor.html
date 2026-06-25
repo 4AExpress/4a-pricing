@@ -123,6 +123,7 @@
     </div>
     <div class="login-error" id="login-error"></div>
     <button class="login-btn" id="login-btn" onclick="doLogin()">Αποστολή OTP</button>
+    <button class="login-cancel-btn" id="login-cancel-btn" onclick="cancelLogin()" style="display:none;width:100%;padding:10px;background:none;color:#888;border:1px solid #ddd;border-radius:4px;font-size:13px;cursor:pointer;margin-top:6px;">Ακύρωση</button>
   </div>
 </div>
 
@@ -365,6 +366,11 @@ if (new URLSearchParams(location.search).get('logout') === '1') {
   } catch(e) { localStorage.removeItem('4a_current_user'); }
 })();
 
+function cancelLogin() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display   = '';
+  document.getElementById('login-cancel-btn').style.display = 'none';
+}
 function doLogout() {
   localStorage.removeItem('4a_current_user');
   currentUser = null; markups = {}; markups_z9 = {};
@@ -375,6 +381,7 @@ function doLogout() {
   document.getElementById('login-btn').textContent = 'Αποστολή OTP';
   document.getElementById('login-error').textContent = '';
 }
+  document.getElementById('login-cancel-btn').style.display = '';
 
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible') {
