@@ -975,21 +975,14 @@ async function buildFinalPDF(offerNum){
   const d=await r.json();
   if(!d.ok) throw new Error(d.error||'Άγνωστο σφάλμα');
   const offerBytes = Uint8Array.from(atob(d.pdf), c => c.charCodeAt(0));
-  if(!selectedPls.some(p => GR_SERVICES.has(p.service_id))) return offerBytes;
+  const bodyBytes = d.body_pdf ? Uint8Array.from(atob(d.body_pdf), c => c.charCodeAt(0)) : null;
   try{
     const { PDFDocument } = PDFLib;
-    const zonesResp = await fetch(ZONES_PDF_URL);
-    const zonesBytes = new Uint8Array(await zonesResp.arrayBuffer());
-    const offerDoc = await PDFDocument.load(offerBytes);
-    const zonesDoc = await PDFDocument.load(zonesBytes);
-    // Server PDF: page 0 = cover, page 1 = TOC, pages 2+ = rest (how/track/net/pricelists/terms)
-    // Zones insert immediately after TOC (index 1), before everything else
-    const INSERT_AFTER = 1;
     const merged = await PDFDocument.create();
-    const offerPages = await merged.copyPages(offerDoc, offerDoc.getPageIndices());
-    offerPages.slice(0, INSERT_AFTER + 1).forEach(p => merged.addPage(p));
-    (await merged.copyPages(zonesDoc, zonesDoc.getPageIndices())).forEach(p => merged.addPage(p));
-    offerPages.slice(INSERT_AFTER + 1).forEach(p => merged.addPage(p));
+    if(bodyBytes){ const bodyDoc=await PDFDocument.load(bodyBytes); (await merged.copyPages(bodyDoc,bodyDoc.getPageIndices())).forEach(p=>merged.addPage(p)); }
+    const offerDoc = await PDFDocument.load(offerBytes);
+    (await merged.copyPages(offerDoc,offerDoc.getPageIndices())).forEach(p=>merged.addPage(p));
+    if(selectedPls.some(p=>GR_SERVICES.has(p.service_id))){ const zb=new Uint8Array(await fetch(ZONES_PDF_URL).then(r=>r.arrayBuffer())); const zd=await PDFDocument.load(zb); (await merged.copyPages(zd,zd.getPageIndices())).forEach(p=>merged.addPage(p)); }
     // === DOCS MERGE: ενεργα docs με σειρα sort_order, συμβαση τελευταια ===
     try {
       const docsList = await apiFetch(`${API}/docs.php?_=${Date.now()}`).then(r=>r.json()).then(d=>d.docs||[]).catch(()=>[]);
