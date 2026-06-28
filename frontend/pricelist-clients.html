@@ -399,7 +399,7 @@
 <script>
 const API = 'https://4aexpress.com/api';
 function apiFetch(url, opts={}) {
-  const u = localStorage.getItem('4a_current_user');
+  const u = sessionStorage.getItem('4a_current_user');
   const token = u ? (JSON.parse(u)._token || '') : '';
   opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
   return fetch(url, opts);
@@ -480,14 +480,14 @@ function onWalkinChange(){
 }
 
 async function init(){
-  currentUser=JSON.parse(localStorage.getItem('4a_current_user')||'null');
+  currentUser=JSON.parse(sessionStorage.getItem('4a_current_user')||'null');
   if(!currentUser){ window.location.href='pricelist-editor.html'; return; }
   if(!currentUser.active_station){
     const _firstSt=(currentUser.stations||currentUser.office||'').split(',')[0].trim().toUpperCase();
     const _CMAP2={ATH:'GR',LCA:'CY',NIC:'CY',QLI:'CY'};
     currentUser.active_station=_firstSt||currentUser.office||'ATH';
     currentUser.active_station_country=_CMAP2[_firstSt]||'GR';
-    localStorage.setItem('4a_current_user',JSON.stringify(currentUser));
+    sessionStorage.setItem('4a_current_user',JSON.stringify(currentUser));
   }
   const _activeLabel=currentUser.active_station||currentUser.office||'';
   document.getElementById('topbar-user').textContent=`${currentUser.name} · ${_activeLabel}`;

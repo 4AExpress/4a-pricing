@@ -231,7 +231,7 @@
 const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 const API  = 'https://4aexpress.com/api';
 function apiFetch(url, opts={}) {
-  const u = localStorage.getItem('4a_current_user');
+  const u = sessionStorage.getItem('4a_current_user');
   const token = u ? (JSON.parse(u)._token || '') : '';
   opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
   return fetch(url, opts);
@@ -317,7 +317,7 @@ async function doLogin() {
   window._completeLogin=function(st){
     currentUser.active_station=st;
     currentUser.active_station_country=_CMAP[st]||'GR';
-    localStorage.setItem('4a_current_user',JSON.stringify(currentUser));
+    sessionStorage.setItem('4a_current_user',JSON.stringify(currentUser));
     document.getElementById('station-modal').style.display='none';
     document.getElementById('login-screen').style.display='none';
     document.getElementById('app-screen').style.display='';
@@ -333,7 +333,7 @@ async function doLogin() {
   } else {
     _completeLogin(currentUser.default_station||_allowed[0]);
   }
-  localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
+  sessionStorage.setItem('4a_current_user', JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display   = '';
   document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.active_station||currentUser.office}`;
@@ -342,28 +342,28 @@ async function doLogin() {
 document.getElementById('login-user').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
 
 if (new URLSearchParams(location.search).get('logout') === '1') {
-  localStorage.removeItem('4a_current_user');
+  sessionStorage.removeItem('4a_current_user');
 }
 (async function() {
-  const u = localStorage.getItem('4a_current_user');
+  const u = sessionStorage.getItem('4a_current_user');
   if (!u) return;
   const stored = JSON.parse(u);
-  if (!stored._token) { localStorage.removeItem('4a_current_user'); return; }
+  if (!stored._token) { sessionStorage.removeItem('4a_current_user'); return; }
   try {
     const r = await fetch(`${API}/me.php`, { headers: { 'Authorization': 'Bearer ' + stored._token } });
-    if (!r.ok) { localStorage.removeItem('4a_current_user'); return; }
+    if (!r.ok) { sessionStorage.removeItem('4a_current_user'); return; }
     const d = await r.json();
-    if (!d.ok) { localStorage.removeItem('4a_current_user'); return; }
+    if (!d.ok) { sessionStorage.removeItem('4a_current_user'); return; }
     currentUser = {...d.user, _token: stored._token,
       active_station: stored.active_station,
       active_station_country: stored.active_station_country};
-    localStorage.setItem('4a_current_user', JSON.stringify(currentUser));
+    sessionStorage.setItem('4a_current_user', JSON.stringify(currentUser));
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-screen').style.display   = '';
     document.getElementById('topbar-user').textContent    = `${currentUser.name} · ${currentUser.active_station||currentUser.office}`;
     _updateBadge();
     init();
-  } catch(e) { localStorage.removeItem('4a_current_user'); }
+  } catch(e) { sessionStorage.removeItem('4a_current_user'); }
 })();
 
 function cancelLogin() {
@@ -372,7 +372,7 @@ function cancelLogin() {
   document.getElementById('login-cancel-btn').style.display = 'none';
 }
 function doLogout() {
-  localStorage.removeItem('4a_current_user');
+  sessionStorage.removeItem('4a_current_user');
   currentUser = null; markups = {}; markups_z9 = {};
   document.getElementById('login-screen').style.display = '';
   document.getElementById('app-screen').style.display   = 'none';
@@ -814,7 +814,7 @@ function showTab(name, btn) {
 
 function _updateBadge(){
   try{
-    const u=JSON.parse(localStorage.getItem('4a_current_user')||'null');
+    const u=JSON.parse(sessionStorage.getItem('4a_current_user')||'null');
     if(!u||!u.active_station) return;
     let b=document.getElementById('_st_badge');
     if(!b){b=document.createElement('span');b.id='_st_badge';b.style.cssText='display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:3px 10px;border-radius:20px;background:#1D9E75;color:#E1F5EE;margin-left:8px;';const tb=document.getElementById('topbar-user');if(tb)tb.after(b);}
