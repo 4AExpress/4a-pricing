@@ -367,10 +367,10 @@ if (new URLSearchParams(location.search).get('logout') === '1') {
 })();
 
 function cancelLogin() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app-screen').style.display   = '';
-  document.getElementById('login-cancel-btn').style.display = 'none';
+  window.close();
 }
+
+
 function doLogout() {
   sessionStorage.removeItem('4a_current_user');
   currentUser = null; markups = {}; markups_z9 = {};
