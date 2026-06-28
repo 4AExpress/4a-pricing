@@ -367,7 +367,7 @@ if (new URLSearchParams(location.search).get('logout') === '1') {
 })();
 
 function cancelLogin() {
-  window.close();
+  document.getElementById('login-cancel-btn').style.display = 'none';
 }
 
 
