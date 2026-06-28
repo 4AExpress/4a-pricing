@@ -366,9 +366,9 @@ if (new URLSearchParams(location.search).get('logout') === '1') {
   } catch(e) { sessionStorage.removeItem('4a_current_user'); }
 })();
 
-function cancelLogin() {
-  document.getElementById('login-cancel-btn').style.display = 'none';
-}
+function cancelLogin() { history.back(); }
+
+
 
 
 function doLogout() {
