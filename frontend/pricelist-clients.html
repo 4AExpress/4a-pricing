@@ -1460,11 +1460,27 @@ async function previewPDF(){
 
   html+=`</body></html>`;
 
+  // LYSI B: HTML -> WeasyPrint -> PDF (preview = email)
   const w=window.open('','_blank','width=920,height=760');
-  w.document.write(html);
+  w.document.write('<html><body style="font-family:sans-serif;padding:40px;text-align:center"><h2>Δημιουργία PDF...</h2></body></html>');
   w.document.close();
-  w.focus();
-  setTimeout(()=>w.print(),500);
+  try {
+    const resp = await apiFetch(API + "/generate_html_pdf.php", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ html: html, merge_docs: true })
+    });
+    const data = await resp.json();
+    if (data.ok && data.pdf) {
+      const bytes = Uint8Array.from(atob(data.pdf), c=>c.charCodeAt(0));
+      const blob = new Blob([bytes], {type:"application/pdf"});
+      w.location.href = URL.createObjectURL(blob);
+    } else {
+      w.document.body.innerHTML = "<h2 style=\"color:red\">Σφάλμα</h2><pre>"+JSON.stringify(data,null,2)+"</pre>";
+    }
+  } catch(e) {
+    w.document.body.innerHTML = "<h2 style=\"color:red\">Σφάλμα δικτύου</h2><pre>"+e.message+"</pre>";
+  }
 }
 
 async function buildJsPDF(offerNum){
