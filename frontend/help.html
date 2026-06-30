@@ -185,7 +185,7 @@
 <script>
 const API = 'https://4aexpress.com/api';
 function apiFetch(url, opts={}) {
-  const u = localStorage.getItem('4a_current_user');
+  const u = sessionStorage.getItem('4a_current_user');
   const token = u ? (JSON.parse(u)._token || '') : '';
   opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
   return fetch(url, opts);
@@ -230,13 +230,13 @@ async function doLogin() {
     try {
       const r = await fetch(`${API}/login.php`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'verify_otp', user_code:userCode, otp}) });
       const d = await r.json();
-      if (d.ok) { currentUser = d.user; localStorage.setItem('4a_current_user', JSON.stringify(d.user)); initApp(); }
+      if (d.ok) { currentUser = d.user; sessionStorage.setItem('4a_current_user', JSON.stringify(d.user)); initApp(); }
       else { err.textContent = d.error||'Λάθος OTP'; btn.textContent='Σύνδεση'; btn.disabled=false; }
     } catch(e) { err.textContent='Σφάλμα'; btn.textContent='Σύνδεση'; btn.disabled=false; }
   }
 }
 
-function doLogout() { localStorage.removeItem('4a_current_user'); window.location.href='pricelist-editor.html'; }
+function doLogout() { sessionStorage.removeItem('4a_current_user'); window.location.href='pricelist-editor.html'; }
 
 // -- INIT ----------------------------------------------------------------------
 async function initApp() {
@@ -401,7 +401,7 @@ window.addEventListener('keydown', e => {
 });
 
 // -- BOOT ----------------------------------------------------------------------
-const saved = localStorage.getItem('4a_current_user');
+const saved = sessionStorage.getItem('4a_current_user');
 if (saved) { try { currentUser = JSON.parse(saved); initApp(); } catch(e) {} }
 </script>
 </body>

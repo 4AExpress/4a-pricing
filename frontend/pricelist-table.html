@@ -701,7 +701,7 @@ function confirmSave() {
   if (!name) { alert('Εισάγετε όνομα'); return; }
 
   const isCustom  = markupData.some(r => r.markup !== globalMarkup);
-  const savedUser = JSON.parse(localStorage.getItem('4a_current_user') || 'null');
+  const savedUser = JSON.parse(sessionStorage.getItem('4a_current_user') || 'null');
   const shelf     = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
   if (!shelf[SERVICE_ID]) shelf[SERVICE_ID] = [];
 
@@ -728,7 +728,7 @@ function confirmSave() {
 
   const API = 'https://4aexpress.com/api';
 function apiFetch(url, opts={}) {
-  const u = localStorage.getItem('4a_current_user');
+  const u = sessionStorage.getItem('4a_current_user');
   const token = u ? (JSON.parse(u)._token || '') : '';
   opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
   return fetch(url, opts);
