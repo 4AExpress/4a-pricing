@@ -333,7 +333,7 @@
 <script>
 const API = 'https://4aexpress.com/api';
 function apiFetch(url, opts={}) {
-  const u = localStorage.getItem('4a_current_user');
+  const u = sessionStorage.getItem('4a_current_user');
   const token = u ? (JSON.parse(u)._token || '') : '';
   opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
   return fetch(url, opts);
@@ -368,7 +368,7 @@ let editingId = null;
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 function init() {
-  currentUser = JSON.parse(localStorage.getItem('4a_current_user') || 'null');
+  currentUser = JSON.parse(sessionStorage.getItem('4a_current_user') || 'null');
   if (!currentUser) { window.location.href = 'pricelist-editor.html'; return; }
   document.getElementById('topbar-user').textContent = `${currentUser.name} · ${currentUser.active_station||currentUser.office}`;
   if (currentUser.role !== 'administrator') {
@@ -716,7 +716,7 @@ async function toggleOfficeActive(id, active) {
 }
 
 function doLogout() {
-  localStorage.removeItem('4a_current_user');
+  sessionStorage.removeItem('4a_current_user');
   window.location.href = 'pricelist-editor.html';
 }
 
