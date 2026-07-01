@@ -137,7 +137,7 @@
       <span class="topbar-title">Γνωστοποίηση Τιμών</span>
     </div>
     <div style="display:flex; align-items:center; gap:10px;">
-      <span class="topbar-user" id="topbar-user"></span>
+      <span id="session-timer" style="color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.15);"></span><span class="topbar-user" id="topbar-user"></span>
       <button class="topbar-logout" onclick="doLogout()">Έξοδος</button>
     </div>
   </div>
@@ -272,6 +272,43 @@ async function forgotPin() {
   doLogin();
 }
 
+﻿let _sessionExpiry = null;
+let _sessionTimerInterval = null;
+function startSessionTimer(expiresAtStr){
+  if(!expiresAtStr){ return; }
+  const iso = expiresAtStr.replace(" ","T") + "Z";
+  _sessionExpiry = new Date(iso);
+  if(isNaN(_sessionExpiry.getTime())){ _sessionExpiry=null; return; }
+  if(_sessionTimerInterval) clearInterval(_sessionTimerInterval);
+  updateSessionTimer();
+  _sessionTimerInterval = setInterval(updateSessionTimer, 30000);
+}
+function updateSessionTimer(){
+  const el = document.getElementById("session-timer");
+  if(!el || !_sessionExpiry) return;
+  const now = new Date();
+  const diffMs = _sessionExpiry - now;
+  if(diffMs <= 0){
+    el.textContent = "\u23f0 \u039b\u03ae\u03be\u03b7";
+    el.style.background = "#c62828";
+    el.style.color = "#fff";
+    if(_sessionTimerInterval) clearInterval(_sessionTimerInterval);
+    return;
+  }
+  const totalMin = Math.floor(diffMs/60000);
+  const h = Math.floor(totalMin/60);
+  const m = totalMin % 60;
+  const label = h>0 ? (h + "\u03c9 " + m + "\u03bb") : (m + "\u03bb");
+  el.textContent = "\u23f3 " + label;
+  if(totalMin <= 30){
+    el.style.background = "#c62828";
+    el.style.color = "#fff";
+  } else {
+    el.style.background = "rgba(255,255,255,0.15)";
+    el.style.color = "#fff";
+  }
+}
+
 async function doLogin() {
   const code = document.getElementById('login-user').value.trim();
   const otp  = document.getElementById('login-otp')?.value.trim();
@@ -308,6 +345,7 @@ async function doLogin() {
     if (!d.ok) { err.style.color='#c62828'; err.textContent = '❌ Λάθος ή ληγμένο OTP'; return; }
     currentUser = d.user;
     if (d.token) currentUser._token = d.token;
+    try { const _me = await fetch(`${API}/me.php`, {headers:{'Authorization':'Bearer '+currentUser._token}}).then(r=>r.json()); if(_me.expires_at) startSessionTimer(_me.expires_at); } catch(e){}
   } catch(e) { err.textContent = 'Σφάλμα σύνδεσης'; return; }
 
   const _CMAP={ATH:'GR',LCA:'CY',NIC:'CY',QLI:'CY'};
@@ -354,6 +392,7 @@ if (new URLSearchParams(location.search).get('logout') === '1') {
     if (!r.ok) { sessionStorage.removeItem('4a_current_user'); return; }
     const d = await r.json();
     if (!d.ok) { sessionStorage.removeItem('4a_current_user'); return; }
+    startSessionTimer(d.expires_at);
     currentUser = {...d.user, _token: stored._token,
       active_station: stored.active_station,
       active_station_country: stored.active_station_country};
