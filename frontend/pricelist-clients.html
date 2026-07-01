@@ -305,7 +305,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Ισχύς Προσφοράς</label>
+          <label>Ισχύς Αποδοχής Προσφοράς</label>
           <select id="cl-validity">
             <option value="15">15 ημέρες</option>
             <option value="30" selected>30 ημέρες</option>
@@ -1187,6 +1187,8 @@ async function previewPDF(returnBytes=false){
   const today      = todayFmt();
   const dd=new Date(); dd.setDate(dd.getDate()+validDays);
   const validUntil = formatDate(dd.toISOString());
+  const _pricesEnd = new Date(new Date().getFullYear(), 11, 31);
+  const validPricesUntil = formatDate(_pricesEnd.toISOString());
   const invoiceLbl = invoiceMode==='weekly'?'Εβδομαδιαία':'Μηνιαία';
   const codAmt=codEnabled?(parseFloat(document.getElementById('cod-amount').value)||0):0;
 
@@ -1370,7 +1372,8 @@ async function previewPDF(returnBytes=false){
   </div>
   <div class="meta-bar">
     <div class="meta-item"><div class="lbl">Ημερομηνία</div><div class="val">${today}</div></div>
-    <div class="meta-item"><div class="lbl">Ισχύς έως</div><div class="val">${validUntil}</div></div>
+    <div class="meta-item"><div class="lbl">Ισχύς Αποδοχής</div><div class="val" style="color:#c62828;font-weight:700;">${validUntil}</div></div>
+    <div class="meta-item"><div class="lbl">Ισχύς Τιμών</div><div class="val">${validPricesUntil}</div></div>
     <div class="meta-item"><div class="lbl">Πληρωμή</div><div class="val">${payDays} ημέρες</div></div>
     <div class="meta-item"><div class="lbl">Τιμολόγηση</div><div class="val">${invoiceLbl}</div></div>
   </div>
@@ -1664,6 +1667,8 @@ async function buildJsPDF(offerNum){
   const today      = todayFmt();
   const dd=new Date(); dd.setDate(dd.getDate()+validDays);
   const validUntil = formatDate(dd.toISOString());
+  const _pricesEnd = new Date(new Date().getFullYear(), 11, 31);
+  const validPricesUntil = formatDate(_pricesEnd.toISOString());
   const invoiceLbl = invoiceMode==='weekly'?'Εβδομαδιαία':'Μηνιαία';
   const codAmt=codEnabled?(parseFloat(document.getElementById('cod-amount').value)||0):0;
 
@@ -1825,7 +1830,8 @@ async function buildJsPDF(offerNum){
   </div>
   <div class="meta-bar">
     <div class="meta-item"><div class="lbl">Ημερομηνία</div><div class="val">${today}</div></div>
-    <div class="meta-item"><div class="lbl">Ισχύς έως</div><div class="val">${validUntil}</div></div>
+    <div class="meta-item"><div class="lbl">Ισχύς Αποδοχής</div><div class="val" style="color:#c62828;font-weight:700;">${validUntil}</div></div>
+    <div class="meta-item"><div class="lbl">Ισχύς Τιμών</div><div class="val">${validPricesUntil}</div></div>
     <div class="meta-item"><div class="lbl">Πληρωμή</div><div class="val">${payDays} ημέρες</div></div>
     <div class="meta-item"><div class="lbl">Τιμολόγηση</div><div class="val">${invoiceLbl}</div></div>
   </div>
