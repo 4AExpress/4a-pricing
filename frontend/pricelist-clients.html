@@ -1048,10 +1048,12 @@ async function exportAllCMS(clientId){
     const dm={};
     dhlEnt.forEach(e=>{const w=parseFloat(e.weight_kg),z=parseInt(String(e.zone_code).replace("z",""));if(!dm[w])dm[w]={};dm[w][z]=parseFloat(e.cost);});
     const ztable=[];
+    let extraKgPrice=null;
+    const normalRows=rows.filter(r=>{ if(r.extraKg){ extraKgPrice=parseFloat(r.price); return false; } return true; });
     if(zcount===1){
-      rows.forEach(r=>{ ztable.push({w:parseFloat(r.weight),zp:[parseFloat(r.price)]}); });
+      normalRows.forEach(r=>{ ztable.push({w:parseFloat(r.weight),zp:[parseFloat(r.price)]}); });
     } else {
-      rows.forEach(r=>{
+      normalRows.forEach(r=>{
         const w=parseFloat(r.weight),sp=parseFloat(r.price),z1c=dm[w]?.[1];
         if(!z1c)return;
         const mk=(sp/z1c-1)*100;
@@ -1080,6 +1082,11 @@ async function exportAllCMS(clientId){
           const orig=isImport?zone:fixedOrigin;
           const dest=isImport?fixedDest:zone;
           allRows.push([accountNo,stationCountry,"Slab Rate",minW,weFrom,"Normal",originType,destType,orig,dest,cmsService,docsType,slab.fromW,slab.toW,slab.rate,1,slab.addRate,slab.uptoW]);
+        }
+        if(extraKgPrice!=null){
+          const orig=isImport?zone:fixedOrigin;
+          const dest=isImport?fixedDest:zone;
+          allRows.push([accountNo,stationCountry,"Slab Rate",minW,weFrom,"Normal",originType,destType,orig,dest,cmsService,docsType,70.001,71,extraKgPrice,1,extraKgPrice,1000]);
         }
       }
     }
