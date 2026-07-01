@@ -440,7 +440,7 @@ function apiFetch(url, opts={}) {
   const u = sessionStorage.getItem('4a_current_user');
   const token = u ? (JSON.parse(u)._token || '') : '';
   opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
-  return fetch(url, opts);
+  return fetch(url, opts).then(function(r){ if(r.status===401){ sessionStorage.removeItem('4a_current_user'); alert('Η συνεδρία έληξε. Παρακαλώ συνδεθείτε ξανά.'); location.reload(); } return r; });
 }
 
 
