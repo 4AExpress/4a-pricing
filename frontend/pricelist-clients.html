@@ -545,6 +545,7 @@ async function init(){
   }
   managers=currentUser.email?[currentUser.email]:[];
   await loadOffices();
+  loadServices();
   updateOfferNum(); renderManagers(); renderClients();
 }
 
@@ -918,7 +919,7 @@ function editClient(id){
   document.getElementById('cl-invoice').value=c.invoice||'monthly';
   document.getElementById('cl-validity').value=c.validity||'30';
   currentStatus=c.status||'prospect';
-  selectedPls=c.pricelists?[...c.pricelists]:[];
+  selectedPls=(c.pricelists||[]).map(pl=>{ if(pl.fuel_enabled===undefined||pl.fuel_enabled===null){ const _sv=(servicesCache||[]).find(x=>x.code===pl.service_id); pl.fuel_enabled=parseInt(_sv?_sv.has_fuel:0)===1?1:0; } return {...pl}; });
   surcharges=c.surcharges?[...c.surcharges]:[];
   managers=c.managers?[...c.managers]:[];
   document.querySelectorAll('.status-pill').forEach(p=>p.classList.remove('active'));
