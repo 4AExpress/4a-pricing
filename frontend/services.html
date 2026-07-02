@@ -215,6 +215,12 @@
         <input type="hidden" id="f-color" value="blue">
       </div>
     </div>
+    <div class="form-group" style="margin-top:10px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="f-fuel" style="width:16px;height:16px;accent-color:#c62828;cursor:pointer;">
+        <span>Επίναυλος Καυσίμου (Fuel Surcharge)</span>
+      </label>
+    </div>
     <div class="btn-row">
       <button class="btn btn-red" onclick="saveService()">💾 Αποθήκευση</button>
       <button class="btn btn-gray" onclick="resetForm()">✖ Ακύρωση</button>
@@ -410,6 +416,7 @@ function editService(s) {
   document.getElementById('f-active').value = s.active ?? '1';
   document.getElementById('f-emoji').value = s.emoji || '';
   document.getElementById('f-country').value = s.country || 'GR';
+  document.getElementById('f-fuel').checked = (parseInt(s.has_fuel)===1);
   pickColor(s.color || 'blue');
   if (s.emoji) pickEmoji(s.emoji);
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -421,6 +428,7 @@ function resetForm() {
   document.getElementById('form-title').textContent = 'Νέο Service';
   document.getElementById('f-code').value = '';
   document.getElementById('f-code').disabled = false;
+  var _ff=document.getElementById('f-fuel'); if(_ff) _ff.checked=false;
   document.getElementById('f-name').value = '';
   document.getElementById('f-desc').value = '';
   document.getElementById('f-type').value = 'AIR';
@@ -447,6 +455,7 @@ async function saveService() {
     emoji:       document.getElementById('f-emoji').value.trim(),
     color:       document.getElementById('f-color').value,
     country:     document.getElementById('f-country').value,
+    has_fuel:    document.getElementById('f-fuel').checked ? 1 : 0,
     sort_order:  0
   };
 
