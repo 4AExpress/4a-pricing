@@ -341,7 +341,7 @@ function renderTable(data) {
   document.getElementById('svc-tbody').innerHTML = data.map(s => `
     <tr>
       <td style="font-size:20px;white-space:nowrap;">${s.emoji || '—'}</td>
-      <td style="white-space:nowrap;"><span class="code-badge">${esc(s.code)}</span></td>
+      <td style="white-space:nowrap;"><span class="code-badge">${esc(s.code)}</span>${parseInt(s.has_fuel)===1?' <span title="\u0395\u03c0\u03af\u03bd\u03b1\u03c5\u03bb\u03bf\u03c2 \u039a\u03b1\u03c5\u03c3\u03af\u03bc\u03bf\u03c5" style="font-size:14px;">\u26fd</span>':''}</td>
       <td style="font-weight:600;white-space:normal;max-width:140px;">${esc(s.name)}</td>
       <td><span class="desc-preview" title="${esc(s.description)}">${esc(s.description) || '—'}</span></td>
       <td><span class="type-badge type-${esc(s.type)}">${esc(s.type)}</span></td>
