@@ -545,7 +545,7 @@ async function init(){
   }
   managers=currentUser.email?[currentUser.email]:[];
   await loadOffices();
-  loadServices();
+  loadServices().then(()=>{ if(selectedPls.length) renderPlTags(); });
   updateOfferNum(); renderManagers(); renderClients();
 }
 
@@ -735,6 +735,7 @@ function renderPlTags(){
   document.getElementById('pl-tags').innerHTML=
     selectedPls.map(p=>{
       const isCY=SVC_IS_CY(p.service_id);
+      if(p.fuel_enabled===undefined||p.fuel_enabled===null){ const _sv=(servicesCache||[]).find(x=>x.code===p.service_id); if(_sv) p.fuel_enabled=parseInt(_sv.has_fuel)===1?1:0; }
       const _fon=p.fuel_enabled?1:0; return `<span class="pl-tag ${isCY?'cy':''}">${SVC_NAMES[p.service_id]||p.service_id} — ${p.name}<span onclick="toggleFuel(${p.id})" title="Επίναυλος Καυσίμου" style="cursor:pointer;margin:0 4px;opacity:${_fon?1:0.3};filter:${_fon?'none':'grayscale(1)'};">⛽</span><button onclick="removePl(${p.id})">✕</button></span>`;
     }).join('')+
     `<button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>`;
