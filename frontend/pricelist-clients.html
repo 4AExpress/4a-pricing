@@ -723,15 +723,18 @@ function addPl(svcId,plId){
   const item=(shelf[svcId]||[]).find(p=>p.id===plId);
   if(!item)return;
   selectedPls=selectedPls.filter(s=>s.service_id!==svcId);
-  selectedPls.push({...item,service_id:svcId});
+  const _svc=(servicesCache||[]).find(x=>x.code===svcId);
+  const _fuel=parseInt(_svc?_svc.has_fuel:0)===1;
+  selectedPls.push({...item,service_id:svcId,fuel_enabled:_fuel});
   renderPlTags(); renderPlGroups();
 }
 function removePl(plId){ selectedPls=selectedPls.filter(p=>p.id!=plId); renderPlTags(); renderPlGroups(); }
+function toggleFuel(plId){ const p=selectedPls.find(x=>x.id==plId); if(p){ p.fuel_enabled=!p.fuel_enabled; renderPlTags(); } }
 function renderPlTags(){
   document.getElementById('pl-tags').innerHTML=
     selectedPls.map(p=>{
       const isCY=SVC_IS_CY(p.service_id);
-      return `<span class="pl-tag ${isCY?'cy':''}">${SVC_NAMES[p.service_id]||p.service_id} — ${p.name}<button onclick="removePl(${p.id})">✕</button></span>`;
+      const _fon=p.fuel_enabled?1:0; return `<span class="pl-tag ${isCY?'cy':''}">${SVC_NAMES[p.service_id]||p.service_id} — ${p.name}<span onclick="toggleFuel(${p.id})" title="Επίναυλος Καυσίμου" style="cursor:pointer;margin:0 4px;opacity:${_fon?1:0.3};filter:${_fon?'none':'grayscale(1)'};">⛽</span><button onclick="removePl(${p.id})">✕</button></span>`;
     }).join('')+
     `<button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>`;
   const hasGR = selectedPls.some(p => GR_SERVICES.has(p.service_id));
@@ -880,7 +883,7 @@ function saveClient(){
     is_walkin:document.getElementById('cl-walkin').checked?1:0,
     account:document.getElementById('cl-account').value.trim()||'—',
     status:currentStatus,
-    pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[]})),
+    pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[],fuel_enabled:p.fuel_enabled?1:0})),
     surcharges:[...surcharges], managers:[...managers],
     cod:codEnabled?{cod_enabled:true,cod_amount:parseFloat(document.getElementById('cod-amount').value)||0,cod_fee:codFee}:null,
     payment:document.getElementById('cl-payment').value,
@@ -1112,7 +1115,7 @@ async function buildFinalPDF(offerNum){
   const fuel=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json());
   const office=(currentUser?.stations||'ATH').split(',')[0];
   const name=document.getElementById('cl-name').value.trim();
-  console.log('PDF PAYLOAD:', JSON.stringify({offer:{name, afm:document.getElementById('cl-afm').value.trim(), email:document.getElementById('cl-email').value.trim(), contact:document.getElementById('cl-contact').value.trim(), phone:document.getElementById('cl-phone').value.trim(), user:currentUser.name, office_code:office, date:todayFmt(), validity:document.getElementById('cl-validity').value, offer_number:offerNum, pricelists:selectedPls.map(p=>({service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[]}))}, dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel}));
+  console.log('PDF PAYLOAD:', JSON.stringify({offer:{name, afm:document.getElementById('cl-afm').value.trim(), email:document.getElementById('cl-email').value.trim(), contact:document.getElementById('cl-contact').value.trim(), phone:document.getElementById('cl-phone').value.trim(), user:currentUser.name, office_code:office, date:todayFmt(), validity:document.getElementById('cl-validity').value, offer_number:offerNum, pricelists:selectedPls.map(p=>({service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[],fuel_enabled:p.fuel_enabled?1:0}))}, dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel}));
   const r=await apiFetch(`${API}/generate_pdf.php`,{
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
