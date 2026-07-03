@@ -1250,7 +1250,7 @@ async function previewPDF(returnBytes=false){
   toc.push({pg:pg++,t:'Δίκτυο Γραφείων 4A Express'});
   toc.push({pg:pg++,t:'Πώς Λειτουργεί ο Τιμοκατάλογος & Tracking'});
   toc.push({pg:pg++,t:'Ζώνες Χωρών'});
-  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''}`});
+  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''} <span style="color:${p.fuel_enabled?'#c62828':'#bbb'};" title="${p.fuel_enabled?'Με επίναυλο καυσίμου':'Χωρίς επίναυλο'}">⛽</span>`});
   if(volOn) toc.push({pg:pg++,t:'Ογκομέτρηση Δεμάτων'});
   toc.push({pg:pg++,t:'Όροι, Επίναυλος & Χρεώσεις'});
   toc.push({pg:pg,  t:'Σύμβαση & Αποδοχή Προσφοράς'});
@@ -1724,7 +1724,7 @@ async function buildJsPDF(offerNum){
   toc.push({pg:pg++,t:'Δίκτυο Γραφείων 4A Express'});
   toc.push({pg:pg++,t:'Πώς Λειτουργεί ο Τιμοκατάλογος & Tracking'});
   toc.push({pg:pg++,t:'Ζώνες Χωρών'});
-  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''}`});
+  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''} <span style="color:${p.fuel_enabled?'#c62828':'#bbb'};" title="${p.fuel_enabled?'Με επίναυλο καυσίμου':'Χωρίς επίναυλο'}">⛽</span>`});
 
   const CSS=`
   *{margin:0;padding:0;box-sizing:border-box;}
