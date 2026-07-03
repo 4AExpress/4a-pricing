@@ -1520,7 +1520,7 @@ async function previewPDF(returnBytes=false){
       const dp=parseFloat(rows[rows.length-1].price)-parseFloat(rows[rows.length-2].price);
       if(dw>0){xkgLbl=`+${dw} kg`;xkgZP=[parseFloat((dp/dw).toFixed(2))];}
     }
-    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div><div class="pls">Επίναυλος Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div></div>`;
+    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div>${p.fuel_enabled?`<div class="pls">✓ Οι τιμές επιβαρύνονται με Επίναυλο Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div>`:`<div class="pls" style="color:#888;">✗ ΔΕΝ χρεώνεται Επίναυλος Καυσίμου</div>`}</div>`;
     const plFtr=`<div class="pl-footnote">* Τιμές εκτός ΦΠΑ 24% και επίναυλο καυσίμων</div>${F(String(plPg++))}`;
     if(zcount===7&&ztable.length>0){
       // LANDSCAPE: ΒΑΡΟΣ + Z1–Z7
@@ -1973,7 +1973,7 @@ async function buildJsPDF(offerNum){
       const dp=parseFloat(rows[rows.length-1].price)-parseFloat(rows[rows.length-2].price);
       if(dw>0){xkgLbl=`+${dw} kg`;xkgZP=[parseFloat((dp/dw).toFixed(2))];}
     }
-    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div><div class="pls">Επίναυλος Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div></div>`;
+    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div>${p.fuel_enabled?`<div class="pls">✓ Οι τιμές επιβαρύνονται με Επίναυλο Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div>`:`<div class="pls" style="color:#888;">✗ ΔΕΝ χρεώνεται Επίναυλος Καυσίμου</div>`}</div>`;
     const plFtr=`<div class="pl-footnote">* Τιμές εκτός ΦΠΑ 24% και επίναυλο καυσίμων</div>${F(String(plPg++))}`;
     if(zcount===7&&ztable.length>0){
       const thz=Array.from({length:7},(_,i)=>`<th style="background:${_ZHC[i+1]}">Z${i+1}</th>`).join('');
