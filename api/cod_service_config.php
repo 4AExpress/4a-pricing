@@ -2,6 +2,7 @@
 // cod_service_config.php | v1.0 | 31-05-2026
 error_reporting(E_ALL); ini_set("log_errors", 1); ini_set("error_log", "/tmp/cod_svc_cfg_errors.log");
 require_once 'config.php';
+require_once 'auth.php';
 
 db()->exec("CREATE TABLE IF NOT EXISTS cod_service_config (
     id            INT PRIMARY KEY AUTO_INCREMENT,
@@ -15,6 +16,8 @@ db()->exec("CREATE TABLE IF NOT EXISTS cod_service_config (
 ) ENGINE=InnoDB CHARSET=utf8mb4");
 
 $method   = $_SERVER['REQUEST_METHOD'];
+if ($method === 'OPTIONS') { http_response_code(204); exit; }
+require_user();
 $DEFAULTS = ['cod_enabled' => 0, 'flat_limit' => 500.00, 'flat_fee' => 3.00, 'min_fee' => 1.30, 'percentage' => 1.00];
 
 if ($method === 'GET') {
