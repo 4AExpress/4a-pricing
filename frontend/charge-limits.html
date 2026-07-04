@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4A Express — ΟΡΙΑ ΧΡΕΩΣΕΩΝ</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f4f4; color: #333; }
+
+  /* TOPBAR */
+  .topbar { background: #cc0000; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 42px; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { display: flex; align-items: center; gap: 6px; }
+  .topbar-logo-box { background: white; color: #cc0000; font-size: 13px; font-weight: 800; padding: 2px 6px; border-radius: 3px; }
+  .topbar-logo-text { color: white; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; line-height: 1.2; }
+  .topbar-title { color: white; font-size: 13px; font-weight: 500; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 12px; margin-left: 4px; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .topbar-user { color: white; font-size: 11px; opacity: 0.9; }
+  .topbar-logout { background: rgba(255,255,255,0.2); color: white; border: none; padding: 4px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; }
+
+  /* NAV */
+  .nav { background: white; border-bottom: 1px solid #ddd; display: flex; gap: 0; flex-wrap: wrap; }
+  .nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer; color: #666; border-bottom: 2px solid transparent; text-decoration: none; display: flex; align-items: center; }
+  .nav-btn.active { color: #cc0000; border-bottom-color: #cc0000; font-weight: 600; }
+  .nav-btn:hover { background: #f8f8f8; }
+
+  /* MAIN + CARD */
+  .main { max-width: 1000px; margin: 24px auto; padding: 0 20px; }
+  .card { background: white; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); padding: 20px; margin-bottom: 20px; }
+  .card-title { font-size: 15px; font-weight: 700; color: #333; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .card-sub { font-size: 12px; color: #888; margin-bottom: 16px; }
+
+  /* SELECT ROW */
+  .sel-row { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+  .fg { display: flex; flex-direction: column; gap: 4px; }
+  .fg label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.04em; }
+  .fg input, .fg select, .fg textarea {
+    border: 1px solid #ddd; border-radius: 5px; padding: 8px 10px; font-size: 13px;
+    font-family: inherit; outline: none; transition: border-color 0.15s;
+  }
+  .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: #cc0000; }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #888; padding: 8px 10px; border-bottom: 2px solid #eee; }
+  td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; }
+  tr:hover td { background: #fafafa; }
+  .val { font-weight: 700; color: #222; }
+  .pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .pill-fixed { background: #eef; color: #4054b2; }
+  .pill-floor { background: #efe; color: #2e7d32; }
+  .date { color: #666; font-variant-numeric: tabular-nums; }
+  .muted { color: #aaa; }
+
+  /* accents per section */
+  .card.current { border-left: 4px solid #2e7d32; }
+  .card.scheduled { border-left: 4px solid #f9a825; }
+  .card.newrow { border-left: 4px solid #cc0000; }
+  .card.history { border-left: 4px solid #bbb; }
+
+  .btn { background: #cc0000; color: white; border: none; padding: 9px 18px; border-radius: 5px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn:hover { background: #a30000; }
+  .btn:disabled { background: #ccc; cursor: not-allowed; }
+  .empty { color: #aaa; font-size: 13px; padding: 10px 0; }
+  .msg { padding: 10px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 12px; display: none; }
+  .msg.ok { background: #e8f5e9; color: #2e7d32; display: block; }
+  .msg.err { background: #ffebee; color: #c62828; display: block; }
+  #gate { text-align: center; padding: 60px 20px; color: #888; }
+  #gate h2 { color: #cc0000; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        <span class="topbar-logo-box">4A</span>
+        <span class="topbar-logo-text">EXPRESS<br>COURIER</span>
+      </div>
+      <span class="topbar-title">ΟΡΙΑ ΧΡΕΩΣΕΩΝ</span>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-user" id="whoami"></span>
+      <button class="topbar-logout" onclick="doLogout()">Έξοδος</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
+    <a class="nav-btn" href="pricelist-clients.html">👥 Πελάτες</a>
+    <a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
+    <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
+    <a class="nav-btn" href="services.html">🔧 Services</a>
+    <a class="nav-btn active" href="charge-limits.html">💶 Όρια Χρεώσεων</a>
+    <a class="nav-btn" href="fuel-surcharge-dashboard.html">⛽ Επίναυλος</a>
+    <a class="nav-btn" href="help.html">❓ Help</a>
+  </div>
+
+  <div class="main">
+    <!-- gate για μη-admin -->
+    <div id="gate">
+      <h2>Πρόσβαση μόνο για Διαχειριστές</h2>
+      <p>Η διαχείριση ορίων χρεώσεων είναι διαθέσιμη μόνο σε χρήστες με ρόλο administrator.</p>
+    </div>
+
+    <div id="app" style="display:none">
+      <!-- επιλογη χρεωσης -->
+      <div class="card">
+        <div class="sel-row">
+          <div class="fg">
+            <label>Χρέωση</label>
+            <select id="charge" onchange="loadAll()">
+              <option value="COD">Αντικαταβολή (COD)</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Scope</label>
+            <select id="scope" onchange="loadAll()">
+              <option value="*">Όλα τα services (default)</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Ημερομηνία αναφοράς</label>
+            <input type="date" id="asof" onchange="loadAll()">
+          </div>
+        </div>
+      </div>
+
+      <div id="msg" class="msg"></div>
+
+      <!-- ισχυον σημερα -->
+      <div class="card current">
+        <div class="card-title">✅ Ισχύον <span id="asofLabel" class="muted" style="font-weight:400;font-size:12px"></span></div>
+        <div class="card-sub">Τα όρια που χρησιμοποιούνται αυτή τη στιγμή για τον υπολογισμό.</div>
+        <table><thead><tr><th>Παράμετρος</th><th>Τιμή</th><th>Μον.</th><th>Τύπος</th><th>Ισχύει από</th></tr></thead>
+          <tbody id="tblCurrent"></tbody></table>
+      </div>
+
+      <!-- προγραμματισμενα -->
+      <div class="card scheduled">
+        <div class="card-title">📅 Προγραμματισμένες αλλαγές</div>
+        <div class="card-sub">Όρια με ημερομηνία ισχύος στο μέλλον — ενεργοποιούνται αυτόματα.</div>
+        <table><thead><tr><th>Παράμετρος</th><th>Νέα τιμή</th><th>Μον.</th><th>Ισχύει από</th><th>Ποιος</th><th>Σημείωση</th></tr></thead>
+          <tbody id="tblScheduled"></tbody></table>
+      </div>
+
+      <!-- νεο οριο -->
+      <div class="card newrow">
+        <div class="card-title">➕ Νέο όριο</div>
+        <div class="card-sub">Προσθέτει νέα γραμμή (append-only). Δεν αλλάζει ποτέ παλιές — κρατά ιστορικότητα.</div>
+        <div class="sel-row">
+          <div class="fg">
+            <label>Παράμετρος</label>
+            <select id="nParam" onchange="prefillParam()"></select>
+          </div>
+          <div class="fg">
+            <label>Τιμή</label>
+            <input type="number" id="nValue" step="0.0001" style="width:110px">
+          </div>
+          <div class="fg">
+            <label>Μονάδα</label>
+            <input type="text" id="nUnit" style="width:70px" value="EUR">
+          </div>
+          <div class="fg">
+            <label>Τύπος</label>
+            <select id="nMode"><option value="floor">floor</option><option value="fixed">fixed</option></select>
+          </div>
+          <div class="fg">
+            <label>Ισχύει από</label>
+            <input type="date" id="nEff">
+          </div>
+        </div>
+        <div class="sel-row" style="margin-top:12px">
+          <div class="fg" style="flex:1;min-width:240px">
+            <label>Ετικέτα (τι βλέπει ο admin)</label>
+            <input type="text" id="nLabel">
+          </div>
+          <div class="fg" style="flex:1;min-width:240px">
+            <label>Σημείωση (γιατί άλλαξε)</label>
+            <input type="text" id="nNote" placeholder="π.χ. Αύξηση τραπεζικών εξόδων">
+          </div>
+          <button class="btn" id="saveBtn" onclick="saveNew()">Αποθήκευση</button>
+        </div>
+      </div>
+
+      <!-- ιστορικο -->
+      <div class="card history">
+        <div class="card-title">🕓 Ιστορικό</div>
+        <div class="card-sub">Όλες οι εγγραφές — ποιος, πότε, γιατί. Read-only.</div>
+        <table><thead><tr><th>Παράμετρος</th><th>Τιμή</th><th>Μον.</th><th>Ισχύει από</th><th>Ποιος</th><th>Καταχωρήθηκε</th><th>Σημείωση</th></tr></thead>
+          <tbody id="tblHistory"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+<script>
+const API = 'https://4aexpress.com/api';
+
+/* --- auth (ιδιο pattern με services.html) --- */
+function apiFetch(url, opts={}) {
+  const u = sessionStorage.getItem('4a_current_user');
+  const token = u ? (JSON.parse(u)._token || '') : '';
+  opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
+  return fetch(url, opts).then(function(r){
+    if(r.status===401){ sessionStorage.removeItem('4a_current_user'); alert('Η συνεδρία έληξε. Παρακαλώ συνδεθείτε ξανά.'); location.reload(); }
+    return r;
+  });
+}
+function doLogout(){ sessionStorage.removeItem('4a_current_user'); window.location.href='pricelist-editor.html'; }
+
+/* --- helpers --- */
+const PARAM_LABELS = {
+  min_fee:'Απόλυτη ελάχιστη χρέωση', tier_limit:'Όριο κλιμάκωσης ποσού',
+  tier_pct:'Ποσοστό άνω του ορίου', flat_fee:'Χρέωση έως το όριο'
+};
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function unitSym(u){ return u==='%' ? '%' : (u==='EUR' ? '€' : u); }
+function showMsg(t, ok){ const m=document.getElementById('msg'); m.textContent=t; m.className='msg '+(ok?'ok':'err'); setTimeout(()=>{m.className='msg';},4000); }
+
+let CURRENT = {};   // ισχυοντα ανα param (για prefill)
+
+async function loadAll(){
+  const charge = document.getElementById('charge').value;
+  const scope  = document.getElementById('scope').value;
+  const asof   = document.getElementById('asof').value || todayISO();
+
+  /* πρωτα: ελεγχος admin μεσω του ιστορικου (admin-only endpoint) */
+  const rh = await apiFetch(`${API}/charge_limits.php?charge=${charge}&history=1`);
+  if(rh.status===403){ document.getElementById('gate').style.display='block'; document.getElementById('app').style.display='none'; return; }
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('asofLabel').textContent = '('+asof+')';
+  const dh = await rh.json();
+
+  /* ισχυοντα (snapshot) */
+  const rc = await apiFetch(`${API}/charge_limits.php?charge=${charge}&service=${encodeURIComponent(scope)}&asof=${asof}`);
+  const dc = await rc.json();
+  CURRENT = dc.limits || {};
+  renderCurrent(CURRENT);
+  fillParamDropdown(CURRENT);
+  renderHistory(dh.history||[], asof);
+}
+
+function renderCurrent(limits){
+  const t = document.getElementById('tblCurrent');
+  const keys = Object.keys(limits);
+  if(!keys.length){ t.innerHTML='<tr><td colspan="5" class="empty">Δεν υπάρχουν ισχύοντα όρια.</td></tr>'; return; }
+  t.innerHTML = keys.map(k=>{
+    const r=limits[k];
+    return `<tr><td>${r.label||k}</td><td class="val">${(+r.value).toLocaleString('el')}</td>
+      <td>${unitSym(r.unit)}</td><td><span class="pill pill-${r.mode}">${r.mode}</span></td>
+      <td class="date">${r.effective_date}</td></tr>`;
+  }).join('');
+}
+
+function renderHistory(rows, asof){
+  const sched = rows.filter(r=> r.effective_date > asof);
+  const ts = document.getElementById('tblScheduled');
+  ts.innerHTML = sched.length ? sched.map(r=>
+    `<tr><td>${r.label||r.param_key}</td><td class="val">${(+r.value).toLocaleString('el')}</td>
+     <td>${unitSym(r.unit)}</td><td class="date">${r.effective_date}</td>
+     <td>${r.by_admin||'—'}</td><td class="muted">${r.note||''}</td></tr>`).join('')
+    : '<tr><td colspan="6" class="empty">Καμία προγραμματισμένη αλλαγή.</td></tr>';
+
+  const th = document.getElementById('tblHistory');
+  th.innerHTML = rows.length ? rows.map(r=>
+    `<tr><td>${r.label||r.param_key}</td><td class="val">${(+r.value).toLocaleString('el')}</td>
+     <td>${unitSym(r.unit)}</td><td class="date">${r.effective_date}</td>
+     <td>${r.by_admin||'—'}</td><td class="date muted">${(r.created_at||'').slice(0,10)}</td>
+     <td class="muted">${r.note||''}</td></tr>`).join('')
+    : '<tr><td colspan="7" class="empty">Κενό ιστορικό.</td></tr>';
+}
+
+function fillParamDropdown(limits){
+  const sel=document.getElementById('nParam');
+  const keys = Object.keys(limits).length ? Object.keys(limits) : Object.keys(PARAM_LABELS);
+  sel.innerHTML = keys.map(k=>`<option value="${k}">${PARAM_LABELS[k]||k}</option>`).join('');
+  prefillParam();
+}
+function prefillParam(){
+  const k=document.getElementById('nParam').value;
+  const r=CURRENT[k]||{};
+  document.getElementById('nLabel').value = r.label || PARAM_LABELS[k] || k;
+  document.getElementById('nUnit').value  = r.unit || 'EUR';
+  document.getElementById('nMode').value  = r.mode || 'floor';
+}
+
+async function saveNew(){
+  const btn=document.getElementById('saveBtn'); btn.disabled=true;
+  const body = {
+    charge_code: document.getElementById('charge').value,
+    scope: document.getElementById('scope').value,
+    param_key: document.getElementById('nParam').value,
+    label: document.getElementById('nLabel').value.trim(),
+    value: document.getElementById('nValue').value,
+    unit: document.getElementById('nUnit').value.trim() || 'EUR',
+    mode: document.getElementById('nMode').value,
+    effective_date: document.getElementById('nEff').value,
+    note: document.getElementById('nNote').value.trim()
+  };
+  if(!body.label || body.value==='' || !body.effective_date){ showMsg('Συμπλήρωσε Τιμή, Ετικέτα και Ημερομηνία ισχύος.', false); btn.disabled=false; return; }
+  try{
+    const r = await apiFetch(`${API}/charge_limits.php`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const d = await r.json();
+    if(d.ok){ showMsg('Αποθηκεύτηκε το νέο όριο (ισχύει από '+body.effective_date+').', true); document.getElementById('nValue').value=''; document.getElementById('nNote').value=''; loadAll(); }
+    else showMsg('Σφάλμα: '+(d.error||'άγνωστο'), false);
+  }catch(e){ showMsg('Σφάλμα δικτύου.', false); }
+  btn.disabled=false;
+}
+
+/* --- boot --- */
+(function(){
+  const u = sessionStorage.getItem('4a_current_user');
+  if(!u){ window.location.href='pricelist-editor.html'; return; }
+  try{ document.getElementById('whoami').textContent = (JSON.parse(u).name||JSON.parse(u).username||''); }catch(e){}
+  document.getElementById('asof').value = todayISO();
+  document.getElementById('nEff').value = todayISO();
+  loadAll();
+})();
+</script>
+</body>
+</html>
