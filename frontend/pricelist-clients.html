@@ -488,7 +488,7 @@ let clients=[], shelf={}, currentUser=null;
 let editingId=null, currentStatus='prospect';
 let selectedPls=[], surcharges=[], managers=[];
 let filterStatus='all', filterSearch='';
-let codEnabled=false, codConfig=null, codFee=0, codFeeTimer=null;
+let codEnabled=false, codConfig=null, codFee=0, codFeeTimer=null, pendingCodSnapshot=null;
 
 function formatDate(iso){ const d=new Date(iso); if(isNaN(d))return iso; return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
 function todayFmt(){ return formatDate(new Date().toISOString()); }
@@ -801,8 +801,10 @@ async function checkCodVisibility(){
   updateCodFormula();
   const ffEl=document.getElementById('cod-flat_fee');
   const pctEl=document.getElementById('cod-percentage');
-  if(ffEl)ffEl.value=parseFloat(config.flat_fee).toFixed(2);
-  if(pctEl)pctEl.value=parseFloat(config.percentage).toFixed(2);
+  const _snap=pendingCodSnapshot;
+  if(ffEl)ffEl.value=parseFloat(_snap&&_snap.flat_fee!=null?_snap.flat_fee:config.flat_fee).toFixed(2);
+  if(pctEl)pctEl.value=parseFloat(_snap&&_snap.tier_pct!=null?_snap.tier_pct:config.percentage).toFixed(2);
+  if(_snap)pendingCodSnapshot=null;
   const info=document.getElementById('cod-limit-info');
   if(info)info.textContent=`Όριο κλιμάκωσης: €${parseFloat(config.flat_limit).toFixed(0)} (σταθερό) · Ελάχιστα: €${parseFloat(config.min_fee).toFixed(2)} / ${parseFloat(config.percentage).toFixed(2)}%`;
   if(codEnabled)calculateCodFee();
@@ -948,10 +950,19 @@ function editClient(id){
   resetCod();
   if(c.cod&&c.cod.cod_enabled){
     codEnabled=true;
+    pendingCodSnapshot=c.cod.snapshot||null;
     document.getElementById('cod-toggle').checked=true;
     document.getElementById('cod-fields').style.display='block';
     document.getElementById('cod-amount').value=parseFloat(c.cod.cod_amount||0).toFixed(2);
-    if(codConfig)calculateCodFee();
+    if(codConfig){
+      if(pendingCodSnapshot){
+        const _ff=document.getElementById('cod-flat_fee'), _pct=document.getElementById('cod-percentage');
+        if(_ff&&pendingCodSnapshot.flat_fee!=null)_ff.value=parseFloat(pendingCodSnapshot.flat_fee).toFixed(2);
+        if(_pct&&pendingCodSnapshot.tier_pct!=null)_pct.value=parseFloat(pendingCodSnapshot.tier_pct).toFixed(2);
+        pendingCodSnapshot=null;
+      }
+      calculateCodFee();
+    }
   }
   window.scrollTo({top:0,behavior:'smooth'});
 }
