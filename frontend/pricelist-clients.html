@@ -737,7 +737,10 @@ function renderPlTags(){
     selectedPls.map(p=>{
       const isCY=SVC_IS_CY(p.service_id);
       if(p.fuel_enabled===undefined||p.fuel_enabled===null){ const _sv=(servicesCache||[]).find(x=>x.code===p.service_id); if(_sv) p.fuel_enabled=parseInt(_sv.has_fuel)===1?1:0; }
-      const _fon=p.fuel_enabled?1:0; return `<span class="pl-tag ${isCY?'cy':''}">${SVC_NAMES[p.service_id]||p.service_id} — ${p.name}<span onclick="toggleFuel(${p.id})" title="Επίναυλος Καυσίμου" style="cursor:pointer;margin:0 4px;opacity:${_fon?1:0.3};filter:${_fon?'none':'grayscale(1)'};">⛽</span><button onclick="removePl(${p.id})">✕</button></span>`;
+      const _fon=p.fuel_enabled?1:0;
+      const _svc=(servicesCache||[]).find(x=>x.code===p.service_id);
+      const _hasCod=_svc&&parseInt(_svc.has_cod)===1;
+      return `<span class="pl-tag ${isCY?'cy':''}">${SVC_NAMES[p.service_id]||p.service_id} — ${p.name}<span onclick="toggleFuel(${p.id})" title="Επίναυλος Καυσίμου" style="cursor:pointer;margin:0 4px;opacity:${_fon?1:0.3};filter:${_fon?'none':'grayscale(1)'};">⛽</span>${_hasCod&&codEnabled?'<span title="Αντικαταβολή (COD) — ενεργή" style="margin:0 3px;">💰</span>':''}<button onclick="removePl(${p.id})">✕</button></span>`;
     }).join('')+
     `<button class="add-pl-btn" onclick="showPlModal()">+ Προσθήκη από ράφι</button>`;
   const hasGR = selectedPls.some(p => GR_SERVICES.has(p.service_id));
@@ -841,6 +844,7 @@ function toggleCod(){
     document.getElementById('cod-floor-warn').style.display='none';
     document.getElementById('cod-fee-display').textContent='Χρέωση αντικαταβολής: —';
   }
+  renderPlTags();
 }
 
 function onCodAmountChange(){ scheduleCodCalc(); }
@@ -957,6 +961,7 @@ function editClient(id){
       calculateCodFee();
     }
   }
+  renderPlTags();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
