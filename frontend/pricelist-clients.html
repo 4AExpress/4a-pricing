@@ -330,7 +330,7 @@
         </div>
         <div id="cod-formula-badge" style="font-size:11px;color:#4a7c59;margin-top:4px;display:none;"></div>
         <div id="cod-fields" style="display:none;margin-top:10px;">
-          <div class="form-group" style="margin-bottom:8px;">
+          <div class="form-group" style="margin-bottom:8px;display:none;">
             <label>Ποσό Αντικαταβολής (€)</label>
             <input type="number" id="cod-amount" min="0" step="0.01" placeholder="0.00" oninput="onCodAmountChange()">
           </div>
@@ -815,8 +815,7 @@ function updateCodFormula(){
   if(!badge||!codConfig)return;
   const fmt=v=>{ const n=parseFloat(v); return n%1===0?String(Math.round(n)):n.toFixed(2); };
   const {flat_limit:fl,flat_fee:ff,min_fee:mf,percentage:pct}=codConfig;
-  badge.textContent=`📊 ≤€${fmt(fl)}:€${fmt(ff)} flat 🔺min €${fmt(mf)} | >€${fmt(fl)} 📈+${fmt(pct)}%`;
-  badge.style.display='';
+  badge.style.display='none';
 }
 
 function resetCod(){
@@ -869,15 +868,9 @@ function calculateCodFee(){
     warn.textContent=`⚠️ Το ποσοστό δεν επιτρέπεται κάτω από ${pct_floor.toFixed(2)}%`;
     warn.style.display='block'; codFee=0; feeEl.textContent='Χρέωση αντικαταβολής: —'; return;
   }
-  if(amount>0&&amount<min_fee){
-    warn.textContent=`⚠️ Το ποσό πρέπει να είναι τουλάχιστον €${min_fee.toFixed(2)}`;
-    warn.style.display='block';
-    codFee=0; feeEl.textContent='Χρέωση αντικαταβολής: —'; return;
-  }
   warn.style.display='none';
-  codFee=amount<=flat_limit ? flat_fee : Math.max(min_fee,amount*percentage/100);
-  codFee=Math.round(codFee*100)/100;
-  feeEl.textContent=`Χρέωση αντικαταβολής: €${codFee.toFixed(2)}`;
+  codFee=flat_fee;
+  feeEl.innerHTML=`✅ <b>Κανόνας χρέωσης:</b> €${flat_fee.toFixed(2)} έως €${flat_limit.toFixed(0)} · ${percentage.toFixed(2)}% άνω των €${flat_limit.toFixed(0)}`;
 }
 
 function saveClient(){
@@ -1001,7 +994,7 @@ function renderClients(){
         <div class="client-meta">ΑΦΜ: ${c.afm||'—'} · ${c.contact||'—'} · ${c.email||'—'}${c.phone?' · '+c.phone:''}${c.address?' · 📍'+c.address:''} · ${c.date||'—'} · ${c.user||'—'}</div>
         ${c.notes?`<div style="font-size:11px;color:#888;margin-top:2px;">💬 ${c.notes}</div>`:''}
         <div class="client-pls">📋 ${plStr}</div>
-        ${c.cod?.cod_enabled?`<div class="client-cod-badge">💳 COD: €${parseFloat(c.cod.cod_amount||0).toFixed(2)} · Χρέωση: €${parseFloat(c.cod.cod_fee||0).toFixed(2)}</div>`:''}
+        ${c.cod?.cod_enabled?`<div class="client-cod-badge">💳 COD: €${parseFloat(c.cod.snapshot?.flat_fee||c.cod.cod_fee||0).toFixed(2)} έως €${parseFloat(c.cod.snapshot?.tier_limit||500).toFixed(0)} · ${parseFloat(c.cod.snapshot?.tier_pct||0).toFixed(2)}% άνω</div>`:''}
       </div>
       <div class="client-actions">
         ${c.status==='accepted'?`<button class="action-btn cms" onclick="exportCMS(${c.id})">↓ CMS Export</button>`:''}
