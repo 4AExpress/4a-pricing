@@ -221,6 +221,12 @@
         <span>Επίναυλος Καυσίμου (Fuel Surcharge)</span>
       </label>
     </div>
+    <div class="form-group" style="margin-top:10px;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="f-cod" style="width:16px;height:16px;accent-color:#2e7d32;cursor:pointer;">
+        <span>Επιτρέπει Αντικαταβολή (COD)</span>
+      </label>
+    </div>
     <div class="btn-row">
       <button class="btn btn-red" onclick="saveService()">💾 Αποθήκευση</button>
       <button class="btn btn-gray" onclick="resetForm()">✖ Ακύρωση</button>
@@ -341,7 +347,7 @@ function renderTable(data) {
   document.getElementById('svc-tbody').innerHTML = data.map(s => `
     <tr>
       <td style="font-size:20px;white-space:nowrap;">${s.emoji || '—'}</td>
-      <td style="white-space:nowrap;"><span class="code-badge">${esc(s.code)}</span>${parseInt(s.has_fuel)===1?' <span title="\u0395\u03c0\u03af\u03bd\u03b1\u03c5\u03bb\u03bf\u03c2 \u039a\u03b1\u03c5\u03c3\u03af\u03bc\u03bf\u03c5" style="font-size:14px;">\u26fd</span>':''}</td>
+      <td style="white-space:nowrap;"><span class="code-badge">${esc(s.code)}</span>${parseInt(s.has_fuel)===1?' <span title="\u0395\u03c0\u03af\u03bd\u03b1\u03c5\u03bb\u03bf\u03c2 \u039a\u03b1\u03c5\u03c3\u03af\u03bc\u03bf\u03c5" style="font-size:14px;">\u26fd</span>':''}${parseInt(s.has_cod)===1?' <span title="COD" style="font-size:13px;">\ud83d\udcb0</span>':''}</td>
       <td style="font-weight:600;white-space:normal;max-width:140px;">${esc(s.name)}</td>
       <td><span class="desc-preview" title="${esc(s.description)}">${esc(s.description) || '—'}</span></td>
       <td><span class="type-badge type-${esc(s.type)}">${esc(s.type)}</span></td>
@@ -417,6 +423,7 @@ function editService(s) {
   document.getElementById('f-emoji').value = s.emoji || '';
   document.getElementById('f-country').value = s.country || 'GR';
   document.getElementById('f-fuel').checked = (parseInt(s.has_fuel)===1);
+  document.getElementById('f-cod').checked = (parseInt(s.has_cod)===1);
   pickColor(s.color || 'blue');
   if (s.emoji) pickEmoji(s.emoji);
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -456,6 +463,7 @@ async function saveService() {
     color:       document.getElementById('f-color').value,
     country:     document.getElementById('f-country').value,
     has_fuel:    document.getElementById('f-fuel').checked ? 1 : 0,
+    has_cod:     document.getElementById('f-cod').checked ? 1 : 0,
     sort_order:  0
   };
 
