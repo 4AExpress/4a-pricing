@@ -59,13 +59,13 @@ if ($method === 'POST') {
         $code = strtoupper(trim($b['code'] ?? ''));
         if (!$code) respond(['error' => 'Ο κωδικός είναι υποχρεωτικός'], 400);
 
-        $stmt = db()->prepare("INSERT INTO `4a_services` (`code`,`name`,`description`,`type`,`color`,`emoji`,`active`,`sort_order`,`country`,`has_fuel`)
-            VALUES (?,?,?,?,?,?,?,?,?,?)
+        $stmt = db()->prepare("INSERT INTO `4a_services` (`code`,`name`,`description`,`type`,`color`,`emoji`,`active`,`sort_order`,`country`,`has_fuel`,`has_cod`)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
             ON DUPLICATE KEY UPDATE
             `name`=VALUES(`name`), `description`=VALUES(`description`),
             `type`=VALUES(`type`), `color`=VALUES(`color`),
             `emoji`=VALUES(`emoji`), `active`=VALUES(`active`),
-            `sort_order`=VALUES(`sort_order`), `country`=VALUES(`country`), `has_fuel`=VALUES(`has_fuel`), `updated_at`=NOW()");
+            `sort_order`=VALUES(`sort_order`), `country`=VALUES(`country`), `has_fuel`=VALUES(`has_fuel`), `has_cod`=VALUES(`has_cod`), `updated_at`=NOW()");
         $stmt->execute([
             $code,
             trim($b['name'] ?? ''),
@@ -76,7 +76,8 @@ if ($method === 'POST') {
             isset($b['active']) ? (int)$b['active'] : 1,
             (int)($b['sort_order'] ?? 0),
             strtoupper(trim($b['country'] ?? 'GR')),
-            (int)($b['has_fuel'] ?? 0)
+            (int)($b['has_fuel'] ?? 0),
+            (int)($b['has_cod'] ?? 0)
         ]);
         respond(['ok' => true]);
     }
