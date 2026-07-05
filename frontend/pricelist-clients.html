@@ -768,9 +768,22 @@ function renderManagers(){
 
 async function fetchCodConfig(serviceCode){
   try{
-    const r=await apiFetch(`${API}/cod_service_config.php?service_code=${encodeURIComponent(serviceCode)}`);
+    // enablement: has_cod απο servicesCache (μια πηγη αληθειας, οχι cod_service_config)
+    const svc=(servicesCache||[]).find(x=>x.code===serviceCode);
+    if(!svc||parseInt(svc.has_cod)!==1) return null;
+    // ορια: charge_limits.php - ισχυοντα σημερα (future-dating αυτοματα)
+    const asof=new Date().toISOString().slice(0,10);
+    const r=await apiFetch(`${API}/charge_limits.php?charge=COD&service=${encodeURIComponent(serviceCode)}&asof=${asof}`);
     const d=await r.json();
-    return parseInt(d.cod_enabled)===1?d:null;
+    const L=d.limits||{};
+    if(!L.flat_fee||!L.tier_limit||!L.min_fee||!L.tier_pct) return null;
+    // adapter: νεα ονοματα -> παλια (calculateCodFee/updateCodFormula αμεταβλητα)
+    return {
+      service_code:serviceCode, cod_enabled:1,
+      flat_limit:L.tier_limit.value, flat_fee:L.flat_fee.value,
+      min_fee:L.min_fee.value, percentage:L.tier_pct.value,
+      _snapshot:{flat_fee:L.flat_fee.value, tier_limit:L.tier_limit.value, min_fee:L.min_fee.value, tier_pct:L.tier_pct.value, asof:asof}
+    };
   }catch(e){ return null; }
 }
 
@@ -862,17 +875,7 @@ function saveClient(){
     const _codAmt=parseFloat(document.getElementById('cod-amount').value)||0;
     const _minFee=codConfig?parseFloat(codConfig.min_fee):0;
     if(_codAmt<_minFee){ alert(`⚠️ Το ποσό COD πρέπει να είναι τουλάχιστον €${_minFee.toFixed(2)}`); return; }
-    if(codConfig){
-      const newFl=parseFloat(document.getElementById('cod-flat_limit').value)||parseFloat(codConfig.flat_limit);
-      const newPct=parseFloat(document.getElementById('cod-percentage').value)||parseFloat(codConfig.percentage);
-      if(newFl!==parseFloat(codConfig.flat_limit)||newPct!==parseFloat(codConfig.percentage)){
-        apiFetch(`${API}/cod_service_config.php`,{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({service_code:codConfig.service_code,cod_enabled:1,
-            flat_limit:newFl,flat_fee:parseFloat(codConfig.flat_fee),min_fee:parseFloat(codConfig.min_fee),percentage:newPct})})
-          .catch(e=>console.error('COD config update:',e));
-        codConfig={...codConfig,flat_limit:newFl,percentage:newPct};
-      }
-    }
+    // COD ορια: κλειδωνουν στο save μεσω snapshot (κατω). Η προσφορα ΔΕΝ γραφει πια global config.
   }
   const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
   const client={
@@ -887,7 +890,7 @@ function saveClient(){
     status:currentStatus,
     pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[],fuel_enabled:p.fuel_enabled?1:0})),
     surcharges:[...surcharges], managers:[...managers],
-    cod:codEnabled?{cod_enabled:true,cod_amount:parseFloat(document.getElementById('cod-amount').value)||0,cod_fee:codFee}:null,
+    cod:codEnabled?{cod_enabled:true,cod_amount:parseFloat(document.getElementById('cod-amount').value)||0,cod_fee:codFee,snapshot:(codConfig&&codConfig._snapshot)||null}:null,
     payment:document.getElementById('cl-payment').value,
     invoice:document.getElementById('cl-invoice').value,
     validity:document.getElementById('cl-validity').value,
