@@ -1186,6 +1186,27 @@ async function buildFinalPDF(offerNum){
           (await merged.copyPages(dp, dp.getPageIndices())).forEach(p => merged.addPage(p));
         } catch(e){ console.warn('[PDF] doc skip '+doc.id, e); }
       }
+      // === COD DOC MERGE ===
+      try {
+        const _ff  = parseFloat(document.getElementById('cod-flat_fee')?.value) || parseFloat(codConfig?.flat_fee) || 0;
+        const _pct = parseFloat(document.getElementById('cod-percentage')?.value) || parseFloat(codConfig?.percentage) || 0;
+        if (codEnabled && (_ff > 0 || _pct > 0)) {
+          const _lim = parseFloat(codConfig?.flat_limit) || 500;
+          const _svcs = selectedPls
+            .filter(p => { const s=(servicesCache||[]).find(x=>x.code===p.service_id); return s && parseInt(s.has_cod)===1; })
+            .map(p => SVC_NAMES[p.service_id] || p.service_id);
+          const _codResp = await apiFetch(API + "/generate_cod_doc.php", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({ flat_fee:_ff, tier_pct:_pct, limit:_lim, services:_svcs, date:todayFmt() })
+          }).then(r=>r.json());
+          if (_codResp && _codResp.pdf) {
+            const codBytes = Uint8Array.from(atob(_codResp.pdf), c => c.charCodeAt(0));
+            const codDoc = await PDFDocument.load(codBytes);
+            (await merged.copyPages(codDoc, codDoc.getPageIndices())).forEach(p => merged.addPage(p));
+          } else { console.warn("[PDF] COD doc: no pdf", _codResp); }
+        }
+      } catch(e){ console.warn("[PDF] COD doc skip", e); }
+
       const contract = docsList.find(d=>d.id==='contract' && d.active && d.pdf_url);
       if (contract) {
         try {
