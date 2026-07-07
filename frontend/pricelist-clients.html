@@ -1113,7 +1113,7 @@ async function exportAllCMS(clientId){
         for(const slab of slabs){
           const orig=isImport?zone:fixedOrigin;
           const dest=isImport?fixedDest:zone;
-          allRows.push([accountNo,stationCountry,"Slab Rate",minW,weFrom,"Normal",originType,destType,orig,dest,cmsService,docsType,slab.fromW,slab.toW,slab.rate,1,slab.addRate,slab.uptoW]);
+          allRows.push([accountNo,stationCountry,"Slab Rate",minW,weFrom,"Normal",originType,destType,orig,dest,cmsService,docsType,slab.fromW,slab.toW,slab.rate,slab.addWeight,slab.addRate,slab.uptoW]);
         }
         if(extraKgPrice!=null){
           const orig=isImport?zone:fixedOrigin;
