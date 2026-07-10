@@ -895,7 +895,7 @@ function calculateCodFee(){
   feeEl.innerHTML=`✅ <b>Κανόνας χρέωσης:</b> €${flat_fee.toFixed(2)} έως €${flat_limit.toFixed(0)} · ${percentage.toFixed(2)}% άνω των €${flat_limit.toFixed(0)}`;
 }
 
-function saveClient(){
+async function saveClient(){
   const name=document.getElementById('cl-name').value.trim();
   const afm=document.getElementById('cl-afm').value.trim();
   const email=document.getElementById('cl-email').value.trim();
@@ -932,8 +932,38 @@ function saveClient(){
   };
   clients=editingId?clients.map(c=>c.id===editingId?client:c):[client,...clients];
   localStorage.setItem('4a_clients',JSON.stringify(clients));
-  apiFetch(`${API}/clients.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',...client})})
-    .then(r=>r.json()).then(d=>console.log('API client save:',d)).catch(e=>console.error(e));
+
+  // Το save περιμενει τον server πριν πει «αποθηκευτηκε». Τρια πραγματα μπορουν
+  // να πανε στραβα και πρεπει ΟΛΑ να φανουν στον χρηστη: HTTP error status,
+  // σωμα που δεν ειναι JSON (π.χ. PHP fatal σε HTML), και {ok:false}/{error:...}.
+  const btn=document.getElementById('save-btn');
+  if(btn){ btn.disabled=true; btn.textContent='💾 Αποθήκευση…'; }
+  let errMsg=null;
+  try{
+    const r=await apiFetch(`${API}/clients.php`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',...client})});
+    const txt=await r.text();
+    let d=null; try{ d=JSON.parse(txt); }catch(_){}
+    if(!r.ok)               errMsg=`HTTP ${r.status} — ${((d&&d.error)||txt||'').slice(0,300)}`;
+    else if(!d)             errMsg=`Ο server δεν επέστρεψε JSON — ${txt.slice(0,300)}`;
+    else if(d.ok!==true)    errMsg=d.error||JSON.stringify(d).slice(0,300);
+    else console.log('API client save:',d);
+  }catch(e){
+    errMsg=`Δεν έγινε σύνδεση με τον server — ${e&&e.message?e.message:e}`;
+  }
+  if(btn){ btn.disabled=false; btn.textContent='💾 Αποθήκευση'; }
+
+  if(errMsg){
+    console.error('API client save FAILED:',errMsg);
+    // Η φορμα μενει ανοιχτη για retry. Καρφωνουμε το editingId στην τοπικη
+    // εγγραφη που μολις φτιαξαμε, αλλιως ενα δευτερο πατημα σε ΝΕΟ πελατη θα
+    // δημιουργουσε δευτερη εγγραφη με νεο αριθμο προσφορας αντι να ξαναστειλει.
+    editingId=client.id;
+    alert(`❌ Η αποθήκευση του "${name}" ΑΠΕΤΥΧΕ στον server.\n\n${errMsg}\n\n`+
+          `Οι αλλαγές υπάρχουν μόνο τοπικά σε αυτόν τον browser και ΘΑ ΧΑΘΟΥΝ.\n`+
+          `Η φόρμα παραμένει ανοιχτή — δοκίμασε ξανά.`);
+    renderClients();
+    return;
+  }
   alert(`✅ "${name}" αποθηκεύτηκε\nΑρ. Προσφοράς: ${offerNum}`);
   resetForm(); renderClients();
 }
