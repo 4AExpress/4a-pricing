@@ -1679,11 +1679,22 @@ async function previewPDF(returnBytes=false){
 
   html+=`</body></html>`;
 
+  // 4A-EXPLAIN-003: το COD doc το χτίζει server-side το generate_cod_doc.py.
+  // Οι τιμές έρχονται από τα inputs, όχι από τη βάση, ώστε η προεπισκόπηση να
+  // δείχνει και μη-αποθηκευμένες αλλαγές. null => πελάτης χωρίς COD, καμία σελίδα.
+  const codPayload = (codEnabled && codConfig) ? {
+    flat_fee: parseFloat(document.getElementById('cod-flat_fee')?.value) || parseFloat(codConfig.flat_fee) || 0,
+    tier_pct: parseFloat(document.getElementById('cod-percentage')?.value) || parseFloat(codConfig.percentage) || 0,
+    limit:    parseFloat(codConfig.flat_limit) || 500,
+    services: selectedPls.map(p=>p.service_id),
+    date:     today
+  } : null;
+
   // LYSI B: HTML -> WeasyPrint -> PDF (preview = email)
   if(returnBytes){
     const resp = await apiFetch(API + "/generate_html_pdf.php", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ html: html, merge_docs: true })
+      body: JSON.stringify({ html: html, merge_docs: true, cod: codPayload })
     });
     const data = await resp.json();
     if(data.ok && data.pdf){ return Uint8Array.from(atob(data.pdf), c=>c.charCodeAt(0)); }
@@ -1696,7 +1707,7 @@ async function previewPDF(returnBytes=false){
     const resp = await apiFetch(API + "/generate_html_pdf.php", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ html: html, merge_docs: true })
+      body: JSON.stringify({ html: html, merge_docs: true, cod: codPayload })
     });
     const data = await resp.json();
     if (data.ok && data.pdf) {
