@@ -8,6 +8,9 @@
 # Snapshots tou live server (pulled gia diagnostiko, oxi pigi alitheias)
 *_LIVE.php
 
+# Topikes rythmiseis ana michanima (permissions, hooks)
+.claude/settings.local.json
+
 # Local patch/check scripts (per-machine)
 apply_*.py
 patch_*.py
