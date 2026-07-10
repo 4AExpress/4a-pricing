@@ -488,7 +488,7 @@ let clients=[], shelf={}, currentUser=null;
 let editingId=null, currentStatus='prospect';
 let selectedPls=[], surcharges=[], managers=[];
 let filterStatus='all', filterSearch='';
-let codEnabled=false, codConfig=null, codFee=0, codFeeTimer=null, pendingCodSnapshot=null;
+let codEnabled=false, codConfig=null, codFee=0, codFeeTimer=null, pendingCodSnapshot=null, codReqSeq=0;
 
 function formatDate(iso){ const d=new Date(iso); if(isNaN(d))return iso; return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
 function todayFmt(){ return formatDate(new Date().toISOString()); }
@@ -792,9 +792,13 @@ async function fetchCodConfig(serviceCode){
 }
 
 async function checkCodVisibility(){
+  // Καθε κληση παιρνει αυξοντα αριθμο. Αν ξεκινησει νεοτερη οσο περιμενουμε το
+  // charge_limits, η παλια εγκαταλειπει: stale response δεν γραφει ποτε στα inputs.
+  const _req=++codReqSeq;
   let config=null;
   for(const p of selectedPls){
     const cfg=await fetchCodConfig(p.service_id);
+    if(_req!==codReqSeq) return;
     if(cfg){ config=cfg; break; }
   }
   const section=document.getElementById('cod-section');
@@ -807,7 +811,8 @@ async function checkCodVisibility(){
   const _snap=pendingCodSnapshot;
   if(ffEl)ffEl.value=parseFloat(_snap&&_snap.flat_fee!=null?_snap.flat_fee:config.flat_fee).toFixed(2);
   if(pctEl)pctEl.value=parseFloat(_snap&&_snap.tier_pct!=null?_snap.tier_pct:config.percentage).toFixed(2);
-  if(_snap)pendingCodSnapshot=null;
+  // ΟΧΙ one-shot μηδενισμος: το snapshot ειναι η ζωντανη πηγη των τιμων του πελατη
+  // και πρεπει να επιβιωνει καθε re-render. Καθαριζει μονο στο resetCod().
   const info=document.getElementById('cod-limit-info');
   if(info)info.textContent=`Όριο κλιμάκωσης: €${parseFloat(config.flat_limit).toFixed(0)} (σταθερό) · Ελάχιστα: €${parseFloat(config.min_fee).toFixed(2)} / ${parseFloat(config.percentage).toFixed(2)}%`;
   if(codEnabled)calculateCodFee();
@@ -822,7 +827,7 @@ function updateCodFormula(){
 }
 
 function resetCod(){
-  codEnabled=false; codFee=0; codConfig=null;
+  codEnabled=false; codFee=0; codConfig=null; pendingCodSnapshot=null;
   const chk=document.getElementById('cod-toggle');
   if(chk)chk.checked=false;
   document.getElementById('cod-fields').style.display='none';
@@ -849,7 +854,20 @@ function toggleCod(){
 
 function onCodAmountChange(){ scheduleCodCalc(); }
 
+// Κρατα το snapshot συγχρονισμενο με ο,τι πληκτρολογει ο χρηστης, ωστε ενα
+// επομενο re-render (π.χ. προσθηκη τιμοκαταλογου) να μη γυρναει τις τιμες πισω.
+function syncCodSnapshotFromInputs(){
+  if(!codEnabled)return;
+  const ff=document.getElementById('cod-flat_fee'), pct=document.getElementById('cod-percentage');
+  if(!ff||!pct)return;
+  const s=pendingCodSnapshot||(pendingCodSnapshot={});
+  const _f=parseFloat(ff.value), _p=parseFloat(pct.value);
+  if(isFinite(_f)) s.flat_fee=_f;
+  if(isFinite(_p)) s.tier_pct=_p;
+}
+
 function scheduleCodCalc(){
+  syncCodSnapshotFromInputs();
   clearTimeout(codFeeTimer);
   codFeeTimer=setTimeout(calculateCodFee,400);
 }
