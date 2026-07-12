@@ -458,6 +458,15 @@ const SVC_NAMES = {
   S1051:    '🌍 🚛 🇬🇷 ↙️ ✈️ 🇨🇾'
 };
 const SVC_IS_CY   = id => id.includes('_CY') || id === 'S1050' || id === 'S1051';
+// Καθαρό όνομα υπηρεσίας από το registry (servicesCache), με strip αρχικών emoji/συμβόλων.
+// Defensive: καθαρίζει ό,τι κι αν έρθει από τη βάση (flags/✈/↗/ZWJ/VS) — no-op αν είναι ήδη καθαρό.
+// PDF-only· τα UI chips (renderPlTags) κρατούν τα emoji τους.
+function svcCleanName(id){
+  const s=(servicesCache||[]).find(x=>x.code===id);
+  const raw=String((s&&s.name)?s.name:'');
+  // αρχικό run: pictographs + regional-indicator flags + arrows (U+2190–21FF, U+2B00–2BFF) + VS16 + ZWJ + κενά
+  return raw.replace(/^[\p{Extended_Pictographic}\p{Regional_Indicator}←-⇿⬀-⯿️‍\s]+/u,'').trim();
+}
 let OFFICES = [];
 async function loadOffices(){
   try { const r=await apiFetch(`${API}/offices.php`); const d=await r.json(); OFFICES=Array.isArray(d)?d:[]; } catch(e){ OFFICES=[]; }
@@ -1346,7 +1355,7 @@ async function previewPDF(returnBytes=false){
   toc.push({pg:pg++,t:'Δίκτυο Γραφείων 4A Express'});
   toc.push({pg:pg++,t:'Πώς Λειτουργεί ο Τιμοκατάλογος & Tracking'});
   toc.push({pg:pg++,t:'Ζώνες Χωρών'});
-  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''} <span style="color:${p.fuel_enabled?'#c62828':'#bbb'};" title="${p.fuel_enabled?'Με επίναυλο καυσίμου':'Χωρίς επίναυλο'}">⛽</span>`});
+  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${svcCleanName(p.service_id)} <span style="color:${p.fuel_enabled?'#c62828':'#bbb'};" title="${p.fuel_enabled?'Με επίναυλο καυσίμου':'Χωρίς επίναυλο'}">⛽</span>`});
   if(volOn) toc.push({pg:pg++,t:'Ογκομέτρηση Δεμάτων'});
   toc.push({pg:pg++,t:'Όροι, Επίναυλος & Χρεώσεις'});
   toc.push({pg:pg,  t:'Σύμβαση & Αποδοχή Προσφοράς'});
@@ -1478,7 +1487,7 @@ async function previewPDF(returnBytes=false){
     <div class="meta-item"><div class="lbl">Πληρωμή</div><div class="val">${payDays} ημέρες</div></div>
     <div class="meta-item"><div class="lbl">Τιμολόγηση</div><div class="val">${invoiceLbl}</div></div>
   </div>
-  ${codEnabled?`<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-top:none;padding:7px 12px;font-size:11px;font-weight:600;color:#2e7d32;margin-bottom:10px;">COD: ΝΑΙ &nbsp;|&nbsp; Ποσό: €${codAmt.toFixed(2)} &nbsp;|&nbsp; Χρέωση: €${codFee.toFixed(2)}</div>`:''}
+  ${codEnabled?`<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-top:none;padding:7px 12px;font-size:11px;font-weight:600;color:#2e7d32;margin-bottom:10px;">COD: ΝΑΙ &nbsp;|&nbsp; Χρέωση: €${codFee.toFixed(2)}</div>`:''}
   ${S('ΕΚΔΟΤΗΣ ΠΡΟΣΦΟΡΑΣ')}
   <div class="issuer-bar">
     <div class="issuer-item"><div class="lbl">Εταιρεία</div><div class="val">${issuerOffice.company||'4A Express Worldwide'}</div></div>
@@ -1617,7 +1626,7 @@ async function previewPDF(returnBytes=false){
       const dp=parseFloat(rows[rows.length-1].price)-parseFloat(rows[rows.length-2].price);
       if(dw>0){xkgLbl=`+${dw} kg`;xkgZP=[parseFloat((dp/dw).toFixed(2))];}
     }
-    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div>${p.fuel_enabled?`<div class="pls">✓ Οι τιμές επιβαρύνονται με Επίναυλο Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div>`:`<div class="pls" style="color:#fff;opacity:0.9;">✗ ΔΕΝ χρεώνεται Επίναυλος Καυσίμου</div>`}</div>`;
+    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${svcCleanName(p.service_id)}</div>${p.fuel_enabled?`<div class="pls">✓ Οι τιμές επιβαρύνονται με Επίναυλο Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div>`:`<div class="pls" style="color:#fff;opacity:0.9;">✗ ΔΕΝ χρεώνεται Επίναυλος Καυσίμου</div>`}</div>`;
     const plFtr=`<div class="pl-footnote">* Τιμές εκτός ΦΠΑ 24% και επίναυλο καυσίμων</div>${F(String(plPg++))}`;
     if(zcount===7&&ztable.length>0){
       // LANDSCAPE: ΒΑΡΟΣ + Z1–Z7
@@ -1710,7 +1719,7 @@ async function previewPDF(returnBytes=false){
     <p>Η αποδοχή συνεπάγεται δέσμευση ως προς τον τρόπο πληρωμής (${payDays} ημέρες), τη συχνότητα τιμολόγησης (${invoiceLbl}) και τους γενικούς όρους συνεργασίας της 4A Express.</p>
     <p>Οι τιμές ισχύουν για <strong>${validDays} ημέρες</strong> από ${today} και λήγουν στις <strong>${validUntil}</strong>. Ο επίναυλος καυσίμου αναθεωρείται εβδομαδιαία βάσει διεθνών δεικτών και δεν αποτελεί μέρος της σταθερής τιμής.</p>
     <p>Υπηρεσίες που καλύπτει η παρούσα προσφορά:</p>
-    <ul>${selectedPls.map(p=>`<li>${p.service_id} — ${p.service_name||p.name||''}</li>`).join('')}</ul>
+    <ul>${selectedPls.map(p=>`<li>${p.service_id} — ${svcCleanName(p.service_id)}</li>`).join('')}</ul>
   </div>
   <div class="sigrid">
     <div class="sigbox">
@@ -1833,7 +1842,7 @@ async function buildJsPDF(offerNum){
   toc.push({pg:pg++,t:'Δίκτυο Γραφείων 4A Express'});
   toc.push({pg:pg++,t:'Πώς Λειτουργεί ο Τιμοκατάλογος & Tracking'});
   toc.push({pg:pg++,t:'Ζώνες Χωρών'});
-  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${p.service_name||p.name||''} <span style="color:${p.fuel_enabled?'#c62828':'#bbb'};" title="${p.fuel_enabled?'Με επίναυλο καυσίμου':'Χωρίς επίναυλο'}">⛽</span>`});
+  for(const p of selectedPls) toc.push({pg:pg++,t:`${p.service_id} — ${svcCleanName(p.service_id)} <span style="color:${p.fuel_enabled?'#c62828':'#bbb'};" title="${p.fuel_enabled?'Με επίναυλο καυσίμου':'Χωρίς επίναυλο'}">⛽</span>`});
 
   const CSS=`
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -1951,7 +1960,7 @@ async function buildJsPDF(offerNum){
     <div class="meta-item"><div class="lbl">Πληρωμή</div><div class="val">${payDays} ημέρες</div></div>
     <div class="meta-item"><div class="lbl">Τιμολόγηση</div><div class="val">${invoiceLbl}</div></div>
   </div>
-  ${codEnabled?`<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-top:none;padding:7px 12px;font-size:11px;font-weight:600;color:#2e7d32;margin-bottom:10px;">COD: ΝΑΙ &nbsp;|&nbsp; Ποσό: €${codAmt.toFixed(2)} &nbsp;|&nbsp; Χρέωση: €${codFee.toFixed(2)}</div>`:''}
+  ${codEnabled?`<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-top:none;padding:7px 12px;font-size:11px;font-weight:600;color:#2e7d32;margin-bottom:10px;">COD: ΝΑΙ &nbsp;|&nbsp; Χρέωση: €${codFee.toFixed(2)}</div>`:''}
   ${S('ΕΚΔΟΤΗΣ ΠΡΟΣΦΟΡΑΣ')}
   <div class="issuer-bar">
     <div class="issuer-item"><div class="lbl">Εταιρεία</div><div class="val">${issuerOffice.company||'4A Express Worldwide'}</div></div>
@@ -2084,7 +2093,7 @@ async function buildJsPDF(offerNum){
       const dp=parseFloat(rows[rows.length-1].price)-parseFloat(rows[rows.length-2].price);
       if(dw>0){xkgLbl=`+${dw} kg`;xkgZP=[parseFloat((dp/dw).toFixed(2))];}
     }
-    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${p.service_name||p.name||''}</div>${p.fuel_enabled?`<div class="pls">✓ Οι τιμές επιβαρύνονται με Επίναυλο Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div>`:`<div class="pls" style="color:#fff;opacity:0.9;">✗ ΔΕΝ χρεώνεται Επίναυλος Καυσίμου</div>`}</div>`;
+    const plHdr=`${H(offerNum)}<div class="plhdr"><div class="plt">${p.service_id} &nbsp;·&nbsp; ${svcCleanName(p.service_id)}</div>${p.fuel_enabled?`<div class="pls">✓ Οι τιμές επιβαρύνονται με Επίναυλο Καυσίμου: ${fcVal}${fuelWeek?' &nbsp;·&nbsp; '+fuelWeek:''}</div>`:`<div class="pls" style="color:#fff;opacity:0.9;">✗ ΔΕΝ χρεώνεται Επίναυλος Καυσίμου</div>`}</div>`;
     const plFtr=`<div class="pl-footnote">* Τιμές εκτός ΦΠΑ 24% και επίναυλο καυσίμων</div>${F(String(plPg++))}`;
     if(zcount===7&&ztable.length>0){
       const thz=Array.from({length:7},(_,i)=>`<th style="background:${_ZHC[i+1]}">Z${i+1}</th>`).join('');
