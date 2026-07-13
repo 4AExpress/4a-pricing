@@ -909,6 +909,43 @@ async function saveClient(){
   const afm=document.getElementById('cl-afm').value.trim();
   const email=document.getElementById('cl-email').value.trim();
   if(!name||!afm||!email){ alert('Συμπλήρωσε Επωνυμία, ΑΦΜ και Email'); return; }
+  // ── A2: validation κωδικού συνεργασίας (account) ──────────────────────────
+  {
+    const accEl=document.getElementById('cl-account');
+    // normalize: trim → αφαίρεση ΟΛΩΝ των κενών → uppercase
+    let acc=(accEl.value||'').trim().replace(/\s+/g,'').toUpperCase();
+    if(acc==='' || acc==='—'){
+      acc='—';                               // κενό επιτρέπεται (placeholder)
+    } else {
+      // μορφή: 3/4 + 7 ψηφία + προαιρετικά γράμματα (π.χ. 30001515 ή 30001515SKG)
+      if(!/^[34][0-9]{7}[A-Za-z]*$/.test(acc)){
+        alert('Μη έγκυρος κωδικός συνεργασίας (π.χ. 30001515 ή 30001515SKG)');
+        accEl.focus(); return;
+      }
+      // country cross-check: 1o ψηφίο 3→GR / 4→CY  (mirror του server κανόνα)
+      const codeCountry = acc[0]==='4' ? 'CY' : 'GR';
+      const _CTY = {LCA:'CY',NIC:'CY',QLI:'CY'};
+      const clientCountry =
+        (editingId ? (clients.find(c=>c.id===editingId)||{}).country : null)
+        || _CTY[(currentUser.office||'').toUpperCase()] || 'GR';
+      if(codeCountry !== clientCountry){
+        const L={GR:'Ελλάδα (GR)',CY:'Κύπρος (CY)'};
+        alert(`Ο κωδικός δηλώνει ${L[codeCountry]}, ο πελάτης είναι ${L[clientCountry]}`);
+        accEl.focus(); return;
+      }
+      // uniqueness: άλλος πελάτης (διαφορετικό id) με ίδιο μη-κενό account
+      const dup = clients.find(c =>
+        c.id !== (editingId||null) &&
+        ((c.account||'').trim().replace(/\s+/g,'').toUpperCase() === acc));
+      if(dup){
+        alert(`Ο κωδικός ${acc} χρησιμοποιείται ήδη από ${dup.name||'—'}`);
+        accEl.focus(); return;
+      }
+    }
+    // γράψε το normalized value πίσω στο input (κενό αν placeholder «—»)
+    accEl.value = (acc==='—') ? '' : acc;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
   if(codEnabled){
     const _flatFee=parseFloat(document.getElementById('cod-flat_fee').value)||0;
     const _pct=parseFloat(document.getElementById('cod-percentage').value)||0;
