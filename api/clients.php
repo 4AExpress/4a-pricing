@@ -40,7 +40,9 @@ if ($method === 'POST') {
     if ($action === 'save') {
         // Αυτόματος υπολογισμός country από office αν δεν δοθεί
         $office  = $b['office'] ?? '';
-        $country = $b['country'] ?? (in_array($office, ['LCA','NIC','QLI']) ? 'CY' : 'GR');
+        $country = in_array($b['country'] ?? '', ['GR','CY','EU','NONEU'], true)
+                   ? $b['country']
+                   : (in_array($office, ['LCA','NIC','QLI']) ? 'CY' : 'GR');
 
         $stmt = db()->prepare('INSERT INTO 4a_clients
             (id, name, afm, contact, email, phone, website, address, notes, account, status,
@@ -94,7 +96,9 @@ if ($method === 'POST') {
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
         foreach ($b['items'] as $c) {
             $off = $c['office'] ?? '';
-            $cty = $c['country'] ?? (in_array($off, ['LCA','NIC','QLI']) ? 'CY' : 'GR');
+            $cty = in_array($c['country'] ?? '', ['GR','CY','EU','NONEU'], true)
+                   ? $c['country']
+                   : (in_array($off, ['LCA','NIC','QLI']) ? 'CY' : 'GR');
             $stmt->execute([
                 $c['id'], $c['name'], $c['afm'] ?? '', $c['contact'] ?? '',
                 $c['email'] ?? '', $c['phone'] ?? '', $c['website'] ?? '',
