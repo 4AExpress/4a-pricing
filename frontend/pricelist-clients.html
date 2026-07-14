@@ -934,12 +934,10 @@ async function saveClient(){
         accEl.focus(); return;
       }
       // country cross-check: 1o ψηφίο 3→GR / 4→CY  (mirror του server κανόνα)
+      // EU/NONEU δεν έχουν κανόνα 1ου ψηφίου → δεν διασταυρώνονται
       const codeCountry = acc[0]==='4' ? 'CY' : 'GR';
-      const _CTY = {LCA:'CY',NIC:'CY',QLI:'CY'};
-      const clientCountry =
-        (editingId ? (clients.find(c=>c.id===editingId)||{}).country : null)
-        || _CTY[(currentUser.office||'').toUpperCase()] || 'GR';
-      if(codeCountry !== clientCountry){
+      const clientCountry = document.getElementById('cl-country').value;
+      if((clientCountry === 'GR' || clientCountry === 'CY') && codeCountry !== clientCountry){
         const L={GR:'Ελλάδα (GR)',CY:'Κύπρος (CY)'};
         alert(`Ο κωδικός δηλώνει ${L[codeCountry]}, ο πελάτης είναι ${L[clientCountry]}`);
         accEl.focus(); return;
