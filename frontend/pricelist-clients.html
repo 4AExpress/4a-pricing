@@ -268,6 +268,16 @@
       </div>
     </div>
 
+    <div class="form-group">
+      <label>Χώρα / Ταυτότητα ΦΠΑ</label>
+      <select id="cl-country">
+        <option value="GR">Ελλάδα (GR)</option>
+        <option value="CY">Κύπρος (CY)</option>
+        <option value="EU">Ε.Ε. (ενδοκοινοτικό)</option>
+        <option value="NONEU">Εκτός Ε.Ε.</option>
+      </select>
+    </div>
+
     <div class="form-group" style="margin-bottom:12px;">
       <label>Τιμοκατάλογοι από Ράφι</label>
       <div style="display:flex;align-items:flex-start;gap:10px;">
@@ -592,6 +602,7 @@ function resetForm(){
   document.getElementById('cl-payment').value='30';
   document.getElementById('cl-invoice').value='monthly';
   document.getElementById('cl-validity').value='30';
+  document.getElementById('cl-country').value=currentUser.active_station_country||'GR';
   document.getElementById('form-title').textContent='Νέος Πελάτης';
   document.querySelectorAll('.status-pill').forEach(p=>p.classList.remove('active'));
   document.querySelector('.st-prospect').classList.add('active');
@@ -1027,6 +1038,7 @@ function editClient(id){
   document.getElementById('cl-notes').value=c.notes||'';
   const wkel=document.getElementById('cl-walkin'); if(wkel){ wkel.checked=!!(c.is_walkin); onWalkinChange(); }
   document.getElementById('cl-account').value=(c.account!=='—')?c.account:'';
+  document.getElementById('cl-country').value=c.country||currentUser.active_station_country||'GR';
   document.getElementById('cl-payment').value=c.payment||'30';
   document.getElementById('cl-invoice').value=c.invoice||'monthly';
   document.getElementById('cl-validity').value=c.validity||'30';
