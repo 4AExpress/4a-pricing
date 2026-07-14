@@ -14,7 +14,7 @@ TEST_BASE_URL=https://4aexpress.com/api TEST_TOKEN=<token> ADMIN_TOKEN=<admin_to
 pytest tests/test_cod.py::test_case2_calculate_flat_min_fee -v
 ```
 
-**Deploy** — push to `main`; the live server pulls automatically via `api/deploy.php` (webhook).
+**Deploy** — `api/` (PHP) deploy = SCP per file ΜΟΝΟ. `git push` ΔΕΝ ενημερώνει το backend (webhook νεκρός, server git παγωμένο, nested `api/.git`). Frontend = `git push` → GitHub Pages.
 
 There is no build step, no bundler, no transpiler. Frontend is plain HTML/JS served directly from GitHub Pages at `https://4aexpress.github.io/4a-pricing/frontend/`.
 

@@ -985,6 +985,7 @@ async function saveClient(){
     validity:document.getElementById('cl-validity').value,
     offer_number:offerNum,
     user:currentUser.name, office:currentUser.office,
+    country:document.getElementById('cl-country').value,
     date:todayFmt(), created_at:new Date().toISOString()
   };
   clients=editingId?clients.map(c=>c.id===editingId?client:c):[client,...clients];
