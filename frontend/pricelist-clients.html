@@ -1162,8 +1162,23 @@ async function exportAllCMS(clientId){
     alert('\u039f \u03c0\u03b5\u03bb\u03ac\u03c4\u03b7\u03c2 \u03b4\u03b5\u03bd \u03ad\u03c7\u03b5\u03b9 \u03ba\u03c9\u03b4\u03b9\u03ba\u03cc \u03c3\u03c5\u03bd\u03b5\u03c1\u03b3\u03b1\u03c3\u03af\u03b1\u03c2.\n\u038c\u03c1\u03b9\u03c3\u03b5 \u03ad\u03b3\u03ba\u03c5\u03c1\u03bf AccountNo CMS \u03c3\u03c4\u03bf \u03c0\u03c1\u03bf\u03c6\u03af\u03bb \u03c0\u03c1\u03b9\u03bd \u03c4\u03bf CMS export.');
     return;
   }
-  const weFrom=prompt("Imerominia enarxis (DD-MON-YYYY):","01-JAN-2026");
-  if(!weFrom) return;
+  const _MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  let _weDef;
+  const _dp=(c.date||'').split('-');
+  const _mm=parseInt(_dp[1],10);
+  if(_dp.length===3 && _mm>=1 && _mm<=12 && /^\d{4}$/.test(_dp[2])){
+    _weDef=`01-${_MON[_mm-1]}-${_dp[2]}`;
+  } else {
+    const _n=new Date();
+    _weDef=`01-${_MON[_n.getMonth()]}-${_n.getFullYear()}`;
+  }
+  const _weRaw=prompt("Imerominia enarxis (DD-MON-YYYY):",_weDef);
+  if(!_weRaw) return;
+  const weFrom=_weRaw.trim().toUpperCase();
+  if(!/^(0[1-9]|[12]\d|3[01])-[A-Z]{3}-\d{4}$/.test(weFrom) || !_MON.includes(weFrom.split('-')[1])){
+    alert('Λάθος μορφή ημερομηνίας.\nΧρήση: DD-MON-YYYY με αγγλικό μήνα (π.χ. 01-FEB-2026)');
+    return;
+  }
   let dhlAll=null;
   try{ dhlAll=JSON.parse(localStorage.getItem("dhl_all")||"null"); }catch(e){}
   if(!dhlAll){
