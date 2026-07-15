@@ -1157,8 +1157,11 @@ async function exportAllCMS(clientId){
   if(typeof XLSX==="undefined"){
     await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
   }
-  const accountNo=(c.account && c.account!=="\u2014")?c.account:prompt("AccountNo CMS pelati:","");
-  if(!accountNo){ return; }
+  const accountNo = c.account;
+  if(!accountNo || accountNo === '\u2014'){
+    alert('\u039f \u03c0\u03b5\u03bb\u03ac\u03c4\u03b7\u03c2 \u03b4\u03b5\u03bd \u03ad\u03c7\u03b5\u03b9 \u03ba\u03c9\u03b4\u03b9\u03ba\u03cc \u03c3\u03c5\u03bd\u03b5\u03c1\u03b3\u03b1\u03c3\u03af\u03b1\u03c2.\n\u038c\u03c1\u03b9\u03c3\u03b5 \u03ad\u03b3\u03ba\u03c5\u03c1\u03bf AccountNo CMS \u03c3\u03c4\u03bf \u03c0\u03c1\u03bf\u03c6\u03af\u03bb \u03c0\u03c1\u03b9\u03bd \u03c4\u03bf CMS export.');
+    return;
+  }
   const weFrom=prompt("Imerominia enarxis (DD-MON-YYYY):","01-JAN-2026");
   if(!weFrom) return;
   let dhlAll=null;
