@@ -846,8 +846,14 @@ async function exportCMS() {
     alert('Μη έγκυρος κωδικός συνεργασίας (π.χ. 30001515 ή 30001515SKG)');
     return;
   }
-  const weFrom = prompt('Ημερομηνία έναρξης (DD-MON-YYYY):', '01-JAN-2026');
-  if (!weFrom) return;
+  const _weRaw = prompt('Ημερομηνία έναρξης (DD-MON-YYYY):', '01-JAN-2026');
+  if(!_weRaw) return;
+  const _MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const weFrom = _weRaw.trim().toUpperCase();
+  if(!/^(0[1-9]|[12]\d|3[01])-[A-Z]{3}-\d{4}$/.test(weFrom) || !_MON.includes(weFrom.split('-')[1])){
+    alert('Λάθος μορφή ημερομηνίας.\nΧρήση: DD-MON-YYYY με αγγλικό μήνα (π.χ. 01-FEB-2026)');
+    return;
+  }
 
   const isImport       = SERVICE_ID.includes('S1012') || SERVICE_ID === 'S1041';
   const originType     = isImport ? 'ZONE'    : 'COUNTRY';
