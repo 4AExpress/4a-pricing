@@ -841,6 +841,11 @@ async function exportCMS() {
   }
   const accountNo = prompt('AccountNo πελάτη (π.χ. 30004041):', '');
   if (!accountNo) return;
+  const _acc = accountNo.trim().replace(/\s+/g,'').toUpperCase();
+  if(!/^[34][0-9]{7}[A-Za-z]*$/.test(_acc)){
+    alert('Μη έγκυρος κωδικός συνεργασίας (π.χ. 30001515 ή 30001515SKG)');
+    return;
+  }
   const weFrom = prompt('Ημερομηνία έναρξης (DD-MON-YYYY):', '01-JAN-2026');
   if (!weFrom) return;
 
@@ -866,7 +871,7 @@ async function exportCMS() {
         const orig = isImport ? zone : fixedOrigin;
         const dest = isImport ? fixedDest : zone; 
         allRows.push([
-          accountNo, stationCountry, 'Slab Rate', minW, weFrom,
+          _acc, stationCountry, 'Slab Rate', minW, weFrom,
           'Normal', originType, destType, orig, dest,
           SERVICE_ID.split('_')[0], docsType,
           slab.fromW, slab.toW, slab.rate, slab.addWeight, slab.addRate, slab.uptoW
@@ -879,7 +884,7 @@ async function exportCMS() {
   const ws = XLSX.utils.aoa_to_sheet(allRows);
   ws['!cols'] = [12,16,12,12,14,14,12,16,10,12,12,12,14,12,10,12,10,12].map(w => ({wch:w}));
   XLSX.utils.book_append_sheet(wb, ws, 'CMS_Import');
-  const fname = `ClientRateImport_${accountNo}_${SERVICE_ID}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  const fname = `ClientRateImport_${_acc}_${SERVICE_ID}_${new Date().toISOString().slice(0,10)}.xlsx`;
   XLSX.writeFile(wb, fname);
 }
 // Init
