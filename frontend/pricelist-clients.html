@@ -1108,6 +1108,7 @@ function renderClients(){
       </div>
       <div class="client-actions">
         ${c.status==='accepted'?`<button class="action-btn cms" onclick="exportCMS(${c.id})">↓ CMS Export</button>`:''}
+        ${c.status==='accepted'?`<button class="action-btn" style="background:#fff3e0;color:#e65100;border-color:#ffb74d;" onclick="exportFuel(${c.id})">⛽ Fuel Export</button>`:''}
         <button class="action-btn send" onclick="editClient(${c.id})">✉️ Προσφορά</button>
         <button class="action-btn edit" onclick="editClient(${c.id})">✏️ Edit</button>
         <button class="action-btn del"  onclick="deleteClient(${c.id})">🗑</button>
@@ -1255,6 +1256,90 @@ async function exportAllCMS(clientId){
   const fname="ClientRateImport_"+accountNo+"_"+safeName+"_"+new Date().toISOString().slice(0,10)+".xlsx";
   XLSX.writeFile(wb,fname);
   alert("Etoimo! "+(allRows.length-1)+" grammes gia "+pls.length+" timokatalogous.");
+}
+
+// ── FUEL EXPORT: λίστα ΕΞΑΙΡΕΣΕΩΝ (services ΧΩΡΙΣ επίναυλο) ────────────────────
+// Το CMS χρεώνει επίναυλο παντού· εδώ γράφουμε ΜΟΝΟ όσους δεν πρέπει (fuel_enabled=0).
+async function exportFuel(clientId){
+  const c=clients.find(cl=>cl.id===clientId);
+  if(!c){ alert("Den vrethike pelatis"); return; }
+  if(c.status!=="accepted"){ alert("To Fuel Export einai diathesimo mono gia pelates pou apodextikan tin prosfora."); return; }
+  // 1) GUARD (ίδιο με A3a)
+  if(!c.account || c.account==='—'){
+    alert('Ο πελάτης δεν έχει κωδικό συνεργασίας.\nΌρισε έγκυρο AccountNo CMS στο προφίλ πριν το Fuel export.');
+    return;
+  }
+  // 2) servicesCache φορτωμένο
+  if(!servicesCache) await loadServices();
+  // 3) SKIP — το CMS δεν τους δίνει επίναυλο
+  const FUEL_SKIP=['S1039','S1059'];
+  // 4) VARIANT → BASE (η διαδρομή ορίζει το base· τα _CY κάνουν SWAP)
+  const FUEL_BASE={
+    'S1003':'S1003','S1003_GR':'S1003','S1012_CY':'S1003',
+    'S1012':'S1012','S1012_GR':'S1012','S1003_CY':'S1012',
+    'S1010':'S1010','S1041':'S1041'
+  };
+  // 5) BASE → γραμμή
+  const FUEL_MAP={
+    'S1003':{station:'GR',origin:'GR',zone:'Z9',delivery:''},
+    'S1010':{station:'GR',origin:'GR',zone:'Z9',delivery:''},
+    'S1012':{station:'CY',origin:'CY',zone:'',delivery:'GR'},
+    'S1041':{station:'CY',origin:'CY',zone:'',delivery:'GR'}
+  };
+  // 6) weFrom — ίδιο pattern με A3b
+  const _MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  let _weDef;
+  const _dp=(c.date||'').split('-');
+  const _mm=parseInt(_dp[1],10);
+  if(_dp.length===3 && _mm>=1 && _mm<=12 && /^\d{4}$/.test(_dp[2])){
+    _weDef=`01-${_MON[_mm-1]}-${_dp[2]}`;
+  } else {
+    const _n=new Date();
+    _weDef=`01-${_MON[_n.getMonth()]}-${_n.getFullYear()}`;
+  }
+  const _weRaw=prompt("Imerominia enarxis (DD-MON-YYYY):",_weDef);
+  if(!_weRaw) return;
+  const weFrom=_weRaw.trim().toUpperCase();
+  if(!/^(0[1-9]|[12]\d|3[01])-[A-Z]{3}-\d{4}$/.test(weFrom) || !_MON.includes(weFrom.split('-')[1])){
+    alert('Λάθος μορφή ημερομηνίας.\nΧρήση: DD-MON-YYYY με αγγλικό μήνα (π.χ. 01-FEB-2026)');
+    return;
+  }
+  // 7) loop ανά pricelist → κράτα μόνο τις εξαιρέσεις (fuelOn===0)
+  const pls=c.pricelists||[];
+  const seen=new Set();
+  const rows=[];
+  for(const p of pls){
+    const svcId=p.service_id;
+    if(FUEL_SKIP.includes(svcId)) continue;
+    const svc=(servicesCache||[]).find(x=>x.code===svcId);
+    // BACKFILL: fuel_enabled λείπει στο 40% — ίδια λογική με γρ. 759/1045
+    const fuelOn=Number(p.fuel_enabled ?? svc?.has_fuel ?? 1);
+    if(fuelOn===1) continue;            // έχει επίναυλο = ΟΧΙ εξαίρεση
+    const base=FUEL_BASE[svcId]; const m=FUEL_MAP[base];
+    if(!base || !m){ alert(`Άγνωστο fuel mapping για service ${svcId}.\nΤο export σταματά.`); return; }
+    // 8) dedupe
+    const key=[c.account,m.station,m.origin,m.zone,m.delivery,base].join('|');
+    if(seen.has(key)) continue;
+    seen.add(key);
+    rows.push([c.account,m.station,'',m.origin,m.zone,m.delivery,base,'0.001',weFrom]);
+  }
+  // 9) καμία γραμμή → χωρίς αρχείο
+  if(rows.length===0){
+    alert('Όλοι οι τιμοκατάλογοι έχουν επίναυλο καυσίμου.\nΔεν υπάρχουν εξαιρέσεις — το Fuel import ολοκληρώθηκε, δεν απαιτείται ανέβασμα.');
+    return;
+  }
+  // 10) XLSX (ίδιο lib pattern με exportAllCMS)
+  if(typeof XLSX==="undefined"){
+    await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+  }
+  const header=['ClientCode','StationCountryCode','OriginZoneCode','OriginCountryCode','ZoneCode','DeliveryCountryCode','ServiceTypeCode','FuelCharge','EffectiveDate'];
+  const allRows=[header,...rows];
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(allRows);
+  XLSX.utils.book_append_sheet(wb,ws,"Table");
+  const fname="FuelChargeImport_"+c.account+"_"+weFrom+".xlsx";
+  XLSX.writeFile(wb,fname);
+  alert("Etoimo! "+rows.length+" grammes eksaireseon (services xoris epinaulo).");
 }
 
 async function buildFinalPDF(offerNum){
