@@ -1,9 +1,9 @@
 {
-  "fetched_at": "2026-07-20T07:54:34.312627",
+  "fetched_at": "2026-07-21T07:29:51.243117",
   "source": "https://mydhl.express.dhl/gr/el/ship/surcharges.html#/fuel_surcharge",
   "air": [
     {
-      "week": "Ιούλιος 22-Αύγουστος 2, 2026",
+      "week": "Ιούλιος 27-Αύγουστος 2, 2026",
       "pct": 38.75,
       "is_next": true,
       "is_current": false
@@ -35,7 +35,7 @@
   ],
   "road": [
     {
-      "week": "Ιούλιος 22-Αύγουστος 2, 2026",
+      "week": "Ιούλιος 27-Αύγουστος 2, 2026",
       "pct": 27.5,
       "is_next": true,
       "is_current": false
