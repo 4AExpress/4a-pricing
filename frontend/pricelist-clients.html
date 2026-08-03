@@ -1109,6 +1109,7 @@ function renderClients(){
       <div class="client-actions">
         ${c.status==='accepted'?`<button class="action-btn cms" onclick="exportCMS(${c.id})">↓ CMS Export</button>`:''}
         ${c.status==='accepted'?`<button class="action-btn" style="background:#fff3e0;color:#e65100;border-color:#ffb74d;" onclick="exportFuel(${c.id})">⛽ Fuel Export</button>`:''}
+        ${c.status==='accepted'?`<button class="action-btn" style="background:#ede7f6;color:#4527a0;border-color:#b39ddb;" onclick="exportCOD(${c.id})">💳 COD Export</button>`:''}
         <button class="action-btn send" onclick="editClient(${c.id})">✉️ Προσφορά</button>
         <button class="action-btn edit" onclick="editClient(${c.id})">✏️ Edit</button>
         <button class="action-btn del"  onclick="deleteClient(${c.id})">🗑</button>
@@ -1340,6 +1341,94 @@ async function exportFuel(clientId){
   const fname="FuelChargeImport_"+c.account+"_"+weFrom+".xlsx";
   XLSX.writeFile(wb,fname);
   alert("Etoimo! "+rows.length+" grammes eksaireseon (services xoris epinaulo).");
+}
+
+// ── COD EXPORT: χρεώσεις αντικαταβολής ανά service ────────────────────────────
+// Οι τιμές είναι PER-CLIENT (διαπραγματευμένες), όχι per-service: πηγή αλήθειας
+// το c.cod.snapshot. Το cod_service_config.php ΔΕΝ χρησιμοποιείται (επιστρέφει 1 παντού).
+async function exportCOD(clientId){
+  const c=clients.find(cl=>cl.id===clientId);
+  if(!c){ alert("Den vrethike pelatis"); return; }
+  if(c.status!=="accepted"){ alert("To COD Export einai diathesimo mono gia pelates pou apodextikan tin prosfora."); return; }
+  // 1) GUARDS
+  if(!c.account || c.account==='—'){
+    alert('Ο πελάτης δεν έχει κωδικό συνεργασίας.\nΌρισε έγκυρο AccountNo CMS στο προφίλ πριν το COD export.');
+    return;
+  }
+  if(!c.cod?.cod_enabled){ alert('Ο πελάτης δεν έχει ενεργή αντικαταβολή (COD).'); return; }
+  const tier_pct=parseFloat(c.cod?.snapshot?.tier_pct);
+  const flat_fee=parseFloat(c.cod?.snapshot?.flat_fee);
+  // !(x>0) αντί για x<=0: πιάνει και το NaN όταν λείπει το snapshot
+  if(!(tier_pct>0)){ alert('Μη έγκυρο ποσοστό COD (tier_pct).\nΆνοιξε το προφίλ και αποθήκευσε ξανά τις τιμές COD.'); return; }
+  if(!(flat_fee>=1.30)){ alert('Το πάγιο COD είναι κάτω από το ελάχιστο 1.30 €.\nΤο export σταματά.'); return; }
+  // 2) servicesCache φορτωμένο
+  if(!servicesCache) await loadServices();
+  // 3) VARIANT → BASE (τα _CY κάνουν SWAP, όπως στο fuel)
+  const COD_BASE={
+    'S1003_GR':'S1003','S1012_CY':'S1003',
+    'S1003_CY':'S1012','S1012_GR':'S1012',
+    'S1039':'S1039','S1059':'S1059'
+  };
+  // ΠΡΟΣΟΧΗ: το COD_MAP ΔΕΝ έχει την ίδια σημασία με το FUEL_MAP.
+  // Εδώ station = η χώρα ΠΡΟΕΛΕΥΣΗΣ της αποστολής (όχι ο σταθμός χρέωσης) και δεν υπάρχει zone.
+  const COD_MAP={
+    'S1003':{station:'GR',delivery:'CY'},
+    'S1012':{station:'CY',delivery:'GR'},
+    'S1039':{station:'GR',delivery:'CY'},
+    'S1059':{station:'GR',delivery:'CY'}
+  };
+  // 4) weFrom — ίδιο pattern με exportFuel/exportAllCMS
+  const _MON=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  let _weDef;
+  const _dp=(c.date||'').split('-');
+  const _mm=parseInt(_dp[1],10);
+  if(_dp.length===3 && _mm>=1 && _mm<=12 && /^\d{4}$/.test(_dp[2])){
+    _weDef=`01-${_MON[_mm-1]}-${_dp[2]}`;
+  } else {
+    const _n=new Date();
+    _weDef=`01-${_MON[_n.getMonth()]}-${_n.getFullYear()}`;
+  }
+  const _weRaw=prompt("Imerominia enarxis (DD-MON-YYYY):",_weDef);
+  if(!_weRaw) return;
+  const weFrom=_weRaw.trim().toUpperCase();
+  if(!/^(0[1-9]|[12]\d|3[01])-[A-Z]{3}-\d{4}$/.test(weFrom) || !_MON.includes(weFrom.split('-')[1])){
+    alert('Λάθος μορφή ημερομηνίας.\nΧρήση: DD-MON-YYYY με αγγλικό μήνα (π.χ. 01-FEB-2026)');
+    return;
+  }
+  // 5) loop ανά pricelist → μόνο COD-capable services
+  const seen=new Set();
+  const rows=[];
+  for(const p of (c.pricelists||[])){
+    const svcId=p.service_id;
+    const svc=(servicesCache||[]).find(x=>x.code===svcId);
+    // parseInt: το has_cod έρχεται ως string "1" από το services.php (PDO SELECT *)
+    if(!svc || parseInt(svc.has_cod)!==1) continue;
+    const base=COD_BASE[svcId]; const m=COD_MAP[base];
+    if(!base || !m){ alert(`Άγνωστο COD mapping για service ${svcId}.\nΤο export σταματά.`); return; }
+    // 6) dedupe
+    const key=[c.account,m.station,m.delivery,base].join('|');
+    if(seen.has(key)) continue;
+    seen.add(key);
+    rows.push([c.account,m.station,m.delivery,weFrom,base,String(tier_pct),Number(flat_fee)]);
+  }
+  // 7) καμία γραμμή → χωρίς αρχείο
+  if(rows.length===0){
+    alert('Κανένα service με COD στους τιμοκαταλόγους του πελάτη.');
+    return;
+  }
+  // 8) XLSX (ίδιο lib pattern με exportFuel)
+  if(typeof XLSX==="undefined"){
+    await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+  }
+  // CODCharge = STRING, CODChargeFix = NUMBER (επιβεβαιωμένο από πραγματικό CMS export)
+  const header=['ClientCode','StationCountry','DeliveryCountry','EffectiveFromDate','ServiceType','CODCharge','CODChargeFix'];
+  const allRows=[header,...rows];
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(allRows);
+  XLSX.utils.book_append_sheet(wb,ws,"Table");
+  const fname="CODHandlingChargeImport_"+c.account+"_"+weFrom+".xlsx";
+  XLSX.writeFile(wb,fname);
+  alert("Etoimo! "+rows.length+" grammes COD.");
 }
 
 async function buildFinalPDF(offerNum){
