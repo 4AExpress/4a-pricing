@@ -330,7 +330,8 @@ async function loadServices() {
     const r = await apiFetch(`${API}/services.php?v=${Date.now()}`);
     const data = await r.json();
     renderTable(data);
-    await Promise.all(data.map(s => loadCodConfig(s.code)));
+    // panel rates μόνο για όσα services επιτρέπουν COD — τα υπόλοιπα δεν έχουν panel να γεμίσει
+    await Promise.all(data.filter(s => parseInt(s.has_cod)===1).map(s => loadCodConfig(s.code)));
   } catch(e) {
     document.getElementById('svc-tbody').innerHTML = '<tr><td colspan="10" class="empty">⚠️ Σφάλμα σύνδεσης με API</td></tr>';
   }
@@ -355,8 +356,8 @@ function renderTable(data) {
       <td><span style="font-size:11px;font-weight:600;color:#555;">${s.country||'GR'}</span></td>
       <td><span class="active-pill ${s.active=='1'?'on':'off'}">${s.active=='1'?'Ενεργό':'Ανενεργό'}</span></td>
       <td>
-        <label class="cod-toggle-wrap">
-          <input type="checkbox" id="cod-chk-${s.code}" onchange="toggleCodPanel('${s.code}',this)">
+        <label class="cod-toggle-wrap" title="Ορίζεται από το ✏️ (πεδίο COD του service)">
+          <input type="checkbox" id="cod-chk-${s.code}" disabled ${parseInt(s.has_cod)===1?'checked':''}>
           <span style="font-size:12px;color:#555;">Επιτρέπει COD</span>
         </label>
         <div id="cod-badge-${s.code}" style="display:none;font-size:11px;color:#4a7c59;margin-top:4px;line-height:1.4;"></div>
@@ -366,7 +367,8 @@ function renderTable(data) {
         <button class="action-btn" onclick="deleteService('${esc(s.code)}')" title="Διαγραφή">🗑️</button>
       </td>
     </tr>
-    <tr id="cod-row-${s.code}" style="display:none;">
+    ${parseInt(s.has_cod)===1 ? `
+    <tr id="cod-row-${s.code}">
       <td colspan="10" style="padding:0;border-bottom:1px solid #e0e0e0;">
         <div class="cod-panel">
           <div class="cod-fields-grid">
@@ -391,7 +393,7 @@ function renderTable(data) {
           <span id="cod-status-${s.code}" style="font-size:12px;margin-left:8px;color:#555;"></span>
         </div>
       </td>
-    </tr>
+    </tr>` : ''}
   `).join('');
 }
 
@@ -502,13 +504,11 @@ async function deleteService(code) {
   }
 }
 
-// COD CONFIG
+// COD CONFIG — μόνο rates. Το enablement είναι το has_cod του service (services.php).
 async function loadCodConfig(code) {
   try {
     const r = await apiFetch(`${API}/cod_service_config.php?service_code=${encodeURIComponent(code)}`);
     const d = await r.json();
-    const chk = document.getElementById(`cod-chk-${code}`);
-    if (chk) chk.checked = !!parseInt(d.cod_enabled);
     const set = (field, val) => {
       const el = document.getElementById(`cod-${field}-${code}`);
       if (el) el.value = parseFloat(val).toFixed(2);
@@ -532,14 +532,8 @@ function updateCodBadge(code) {
   badge.style.display = '';
 }
 
-function toggleCodPanel(code, chk) {
-  document.getElementById(`cod-row-${code}`).style.display = chk.checked ? '' : 'none';
-  updateCodBadge(code);
-}
-
 async function saveCodConfig(code) {
   const get = field => parseFloat(document.getElementById(`cod-${field}-${code}`).value) || 0;
-  const chk      = document.getElementById(`cod-chk-${code}`);
   const statusEl = document.getElementById(`cod-status-${code}`);
   statusEl.textContent = '⏳ Αποθήκευση...';
   try {
@@ -548,7 +542,6 @@ async function saveCodConfig(code) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         service_code: code,
-        cod_enabled:  chk.checked ? 1 : 0,
         flat_limit:   get('flat_limit'),
         flat_fee:     get('flat_fee'),
         min_fee:      get('min_fee'),

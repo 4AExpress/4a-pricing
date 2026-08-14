@@ -803,7 +803,7 @@ async function fetchCodConfig(serviceCode){
     if(!L.flat_fee||!L.tier_limit||!L.min_fee||!L.tier_pct) return null;
     // adapter: νεα ονοματα -> παλια (calculateCodFee/updateCodFormula αμεταβλητα)
     return {
-      service_code:serviceCode, cod_enabled:1,
+      service_code:serviceCode,
       flat_limit:L.tier_limit.value, flat_fee:L.flat_fee.value,
       min_fee:L.min_fee.value, percentage:L.tier_pct.value,
       _snapshot:{flat_fee:L.flat_fee.value, tier_limit:L.tier_limit.value, min_fee:L.min_fee.value, tier_pct:L.tier_pct.value, asof:asof}
