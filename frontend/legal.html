@@ -43,6 +43,7 @@
   .save{background:var(--red2);color:#fff}
   .save:disabled{background:#c9ccd1;cursor:not-allowed}
   #msg{margin-left:12px;font-size:13px}
+  .ver{position:fixed;bottom:6px;right:10px;font-size:11px;color:#b9bec5}
 </style>
 </head>
 <body>
@@ -68,6 +69,7 @@
     </div>
   </div>
 </div>
+<div class="ver">build 2026.08.17-legal-v1.1</div>
 
 <script>
 const API = 'https://4aexpress.com/api';
@@ -96,7 +98,7 @@ function token(){
   const raw = sessionStorage.getItem('4a_current_user')
            || localStorage.getItem('4a_current_user');
   if(!raw) return null;
-  try{ const o = JSON.parse(raw); return o.token || o.session_token || o.access_token || null; }
+  try{ const o = JSON.parse(raw); return o._token || o.token || o.session_token || o.access_token || null; }
   catch(e){ return raw; }
 }
 function headers(){
