@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Νομικά Στοιχεία — 4A Express</title>
+<style>
+  :root{
+    --red:#950101; --red2:#C60001; --blue:#1D3B6F;
+    --bg:#f4f5f7; --line:#dde1e6; --muted:#6b7280;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font:14px/1.5 system-ui,Segoe UI,Arial,sans-serif;color:#1f2937}
+  .wrap{max-width:980px;margin:0 auto;padding:24px 16px 60px}
+  h1{font-size:20px;margin:0 0 4px;color:var(--red)}
+  .sub{color:var(--muted);margin:0 0 20px;font-size:13px}
+
+  .tabs{display:flex;gap:6px;margin-bottom:-1px}
+  .tab{padding:10px 20px;border:1px solid var(--line);border-bottom:none;
+       background:#e9ecef;border-radius:8px 8px 0 0;cursor:pointer;font-weight:600}
+  .tab.on{background:#fff;color:var(--red);box-shadow:inset 0 3px 0 var(--red2)}
+  .tab .dot{font-size:11px;margin-left:6px}
+
+  .panel{background:#fff;border:1px solid var(--line);border-radius:0 10px 10px 10px;padding:22px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+  .full{grid-column:1/-1}
+  label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px}
+  label .req{color:var(--red2)}
+  input{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff}
+  input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,59,111,.12)}
+  input[readonly]{background:#f3f4f6;color:var(--muted)}
+  input.missing{border-color:var(--red2);background:#fff5f5}
+  .hint{font-size:11px;color:var(--muted);margin-top:3px}
+
+  .banner{padding:11px 14px;border-radius:8px;margin-bottom:18px;font-size:13px}
+  .banner.warn{background:#fff4e5;border:1px solid #f0c36d;color:#7a4b00}
+  .banner.ok{background:#eaf7ee;border:1px solid #9bd6ac;color:#14532d}
+
+  .bar{display:flex;justify-content:space-between;align-items:center;margin-top:22px;
+       padding-top:16px;border-top:1px solid var(--line)}
+  .audit{font-size:12px;color:var(--muted)}
+  button{padding:10px 22px;border:none;border-radius:6px;font:inherit;font-weight:600;cursor:pointer}
+  .save{background:var(--red2);color:#fff}
+  .save:disabled{background:#c9ccd1;cursor:not-allowed}
+  #msg{margin-left:12px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚖️ Νομικά Στοιχεία Εταιρείας</h1>
+  <p class="sub">Ανά χώρα. Χρησιμοποιούνται στα έντυπα (4A-FORM-001) και στα footers των PDF.
+     Αλλαγή μόνο από Administrator.</p>
+
+  <div class="tabs">
+    <div class="tab on" data-c="GR" onclick="showTab('GR')">🇬🇷 Ελλάδα <span class="dot" id="dot-GR"></span></div>
+    <div class="tab"    data-c="CY" onclick="showTab('CY')">🇨🇾 Κύπρος <span class="dot" id="dot-CY"></span></div>
+  </div>
+
+  <div class="panel">
+    <div id="banner"></div>
+    <div id="form"></div>
+    <div class="bar">
+      <span class="audit" id="audit"></span>
+      <div>
+        <button class="save" id="btnSave" onclick="save()">💾 Αποθήκευση</button>
+        <span id="msg"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://4aexpress.com/api';
+
+const FIELDS = [
+  {k:'legal_name',      l:'Νομική Επωνυμία',           req:true,  full:true,
+   h:'Ακριβώς όπως στη βεβαίωση έναρξης / πιστοποιητικό σύστασης'},
+  {k:'trade_name',      l:'Διακριτικός Τίτλος'},
+  {k:'legal_form',      l:'Νομική Μορφή',              h:'π.χ. Ατομική Επιχείρηση, Limited, Ι.Κ.Ε.'},
+  {k:'tax_id',          l:'ΑΦΜ / Α.Φ.Τ.'},
+  {k:'tax_office',      l:'Δ.Ο.Υ. / Φορολογική Αρχή',  h:'Στην Κύπρο: Τμήμα Φορολογίας'},
+  {k:'company_reg_no',  l:'Γ.Ε.ΜΗ. / Αρ. Εφόρου Εταιρειών'},
+  {k:'regulator_name',  l:'Ρυθμιστική Αρχή',           h:'GR: Ε.Ε.Τ.Τ. · CY: ΓΕΡΗΕΤ'},
+  {k:'regulator_number',l:'Αριθμός Άδειας / Μητρώου',  req:true,
+   h:'⚠️ Αντιγραφή ΑΚΡΙΒΩΣ από το πιστοποιητικό'},
+  {k:'regulator_law',   l:'Νομική Βάση',               h:'π.χ. Ν.112(Ι)/2004'},
+  {k:'registered_addr', l:'Έδρα',                      full:true},
+  {k:'email_accounts',  l:'Email Λογιστηρίου (επιστροφή εντύπων)', req:true, full:true},
+];
+
+let DATA = {};
+let cur  = 'GR';
+
+/* ---- token: ίδιο pattern με τις υπόλοιπες σελίδες ---- */
+function token(){
+  const raw = sessionStorage.getItem('4a_current_user')
+           || localStorage.getItem('4a_current_user');
+  if(!raw) return null;
+  try{ const o = JSON.parse(raw); return o.token || o.session_token || o.access_token || null; }
+  catch(e){ return raw; }
+}
+function headers(){
+  const h = {'Content-Type':'application/json'};
+  const t = token();
+  if(t) h['Authorization'] = 'Bearer ' + t;
+  return h;
+}
+
+async function load(){
+  try{
+    const r = await fetch(API + '/legal.php?t=' + Date.now(), {headers: headers()});
+    if(r.status === 401){ msg('Δεν είστε συνδεδεμένος — κάντε login και επιστρέψτε.', true); return; }
+    if(r.status === 403){ msg('Δεν έχετε δικαίωμα προβολής.', true); return; }
+    const d = await r.json();
+    (d.legal || []).forEach(row => DATA[row.country] = row);
+    render();
+  }catch(e){
+    msg('Σφάλμα φόρτωσης: ' + e.message, true);
+  }
+}
+
+function render(){
+  const row = DATA[cur] || {};
+  const miss = row.missing || [];
+
+  let b = '';
+  if(miss.length){
+    b = '<div class="banner warn">⚠️ Λείπουν κρίσιμα πεδία — το PDF <b>δεν παράγεται</b> για '
+      + cur + ' μέχρι να συμπληρωθούν.</div>';
+  }else if(row.country){
+    b = '<div class="banner ok">✅ Πλήρη στοιχεία για ' + cur + '.</div>';
+  }
+  document.getElementById('banner').innerHTML = b;
+
+  document.getElementById('form').innerHTML = '<div class="grid">' + FIELDS.map(f => {
+    const v   = (row[f.k] ?? '').toString().replace(/"/g,'&quot;');
+    const bad = miss.includes(f.k) ? ' missing' : '';
+    return '<div class="' + (f.full ? 'full' : '') + '">'
+      + '<label>' + f.l + (f.req ? ' <span class="req">*</span>' : '') + '</label>'
+      + '<input id="f_' + f.k + '" class="' + bad.trim() + '" value="' + v + '">'
+      + (f.h ? '<div class="hint">' + f.h + '</div>' : '')
+      + '</div>';
+  }).join('') + '</div>';
+
+  document.getElementById('audit').textContent =
+    row.verified_at ? ('Τελευταία επιβεβαίωση: ' + row.verified_at + ' — ' + (row.verified_by || '—'))
+                    : 'Δεν έχει επιβεβαιωθεί ποτέ.';
+
+  ['GR','CY'].forEach(c => {
+    const d = DATA[c];
+    document.getElementById('dot-' + c).textContent = d ? (d.complete ? '✅' : '⚠️') : '';
+  });
+}
+
+function showTab(c){
+  collect();                                   // κράτα ό,τι πληκτρολογήθηκε
+  cur = c;
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('on', t.dataset.c === c));
+  render();
+}
+
+function collect(){
+  if(!DATA[cur]) return;
+  FIELDS.forEach(f => {
+    const el = document.getElementById('f_' + f.k);
+    if(el) DATA[cur][f.k] = el.value.trim();
+  });
+}
+
+async function save(){
+  collect();
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true; msg('Αποθήκευση…');
+  try{
+    const rows = ['GR','CY'].filter(c => DATA[c]).map(c => {
+      const o = {country:c};
+      FIELDS.forEach(f => o[f.k] = DATA[c][f.k] ?? '');
+      return o;
+    });
+    const r = await fetch(API + '/legal.php', {
+      method:'POST', headers: headers(),
+      body: JSON.stringify({action:'save_legal', rows})
+    });
+    const d = await r.json();
+    if(r.status === 403){ msg('Μόνο Administrator μπορεί να αποθηκεύσει.', true); }
+    else if(d.ok){ msg('✅ Αποθηκεύτηκε'); DATA = {}; await load(); }
+    else { msg('Σφάλμα: ' + (d.error || 'άγνωστο'), true); }
+  }catch(e){
+    msg('Σφάλμα: ' + e.message, true);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function msg(t, err){
+  const m = document.getElementById('msg');
+  m.textContent = t;
+  m.style.color = err ? '#C60001' : '#14532d';
+  if(!err) setTimeout(() => m.textContent = '', 3000);
+}
+
+load();
+</script>
+</body>
+</html>
