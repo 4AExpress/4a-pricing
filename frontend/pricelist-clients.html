@@ -1110,6 +1110,7 @@ function renderClients(){
         ${c.status==='accepted'?`<button class="action-btn cms" onclick="exportCMS(${c.id})">↓ CMS Export</button>`:''}
         ${c.status==='accepted'?`<button class="action-btn" style="background:#fff3e0;color:#e65100;border-color:#ffb74d;" onclick="exportFuel(${c.id})">⛽ Fuel Export</button>`:''}
         ${c.status==='accepted'?`<button class="action-btn" style="background:#ede7f6;color:#4527a0;border-color:#b39ddb;" onclick="exportCOD(${c.id})">💳 COD Export</button>`:''}
+        ${c.status==='accepted' && c.cod && c.cod.cod_enabled?`<button class="action-btn" style="background:#e3f2fd;color:#0d47a1;border-color:#90caf9;" onclick="codBankForm(${c.id})">🏦 Έντυπο IBAN</button>`:''}
         <button class="action-btn send" onclick="editClient(${c.id})">✉️ Προσφορά</button>
         <button class="action-btn edit" onclick="editClient(${c.id})">✏️ Edit</button>
         <button class="action-btn del"  onclick="deleteClient(${c.id})">🗑</button>
@@ -2427,6 +2428,134 @@ async function sendOffer(){
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// 4A-FORM-001 — Έντυπο γνωστοποίησης τραπεζικού λογαριασμού αντικαταβολών
+// Η χώρα/οντότητα βγαίνει από τον ΣΤΑΘΜΟ ΤΟΥ ΧΡΗΣΤΗ, όχι από τον πελάτη.
+// ─────────────────────────────────────────────────────────────────────
+let _codForm = null;
+
+async function codBankForm(clientId){
+  const station = (currentUser && currentUser.active_station) || '';
+  if(!station){ alert('Δεν έχει επιλεγεί σταθμός. Συνδεθείτε ξανά και επιλέξτε σταθμό.'); return; }
+  let d;
+  try{
+    const r = await apiFetch(`${API}/form_cod_bank.php`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({client_id: clientId, station})
+    });
+    d = await r.json().catch(()=>({}));
+    if(!r.ok || !d.ok){ alert('⚠️ '+(d.error||('Σφάλμα '+r.status))); return; }
+  }catch(e){ alert('Σφάλμα επικοινωνίας: '+e.message); return; }
+  _codForm = d;
+  openCodFormModal(d);
+}
+
+function openCodFormModal(d){
+  let ov = document.getElementById('codform-modal');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = 'codform-modal';
+    ov.className = 'modal-overlay';
+    document.body.appendChild(ov);
+  }
+  const flag = d.country==='CY' ? '🇨🇾' : '🇬🇷';
+  ov.innerHTML = `<div class="modal-box" style="width:520px;">
+    <div class="modal-title">🏦 Έντυπο Τραπεζικού Λογαριασμού Αντικαταβολών</div>
+    <div style="font-size:12.5px;line-height:1.7;background:#f7f9fc;border:1px solid #e0e6ef;border-radius:6px;padding:10px 12px;">
+      <div><b>Πελάτης:</b> ${escHtml(d.company)}</div>
+      <div><b>Κωδικός:</b> <span style="font-family:monospace;">${escHtml(d.account)}</span></div>
+      <div><b>Σταθμός:</b> ${escHtml(d.station)} ${flag} ${escHtml(d.country)}</div>
+      <div><b>Οντότητα:</b> ${escHtml(d.legal_name)} · ${escHtml(d.regulator||'')}</div>
+      <div><b>Επιστροφή στο:</b> ${escHtml(d.return_email||'')}</div>
+    </div>
+    <div style="margin-top:14px;">
+      <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px;">Email παραλήπτη</label>
+      <input id="codform-email" type="email" value="${escHtml(d.suggested_email||'')}"
+             style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:4px;font-size:13px;">
+      <div style="font-size:11px;color:#888;margin-top:4px;">Μπορείτε να το αλλάξετε πριν την αποστολή.</div>
+    </div>
+    <div id="codform-msg" style="font-size:12px;margin-top:10px;"></div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="closeCodFormModal()">Κλείσιμο</button>
+      <button class="btn btn-orange" onclick="codFormDownload()">⬇ Λήψη PDF</button>
+      <button id="codform-send" class="btn btn-green" onclick="codFormSend()">✉ Αποστολή</button>
+    </div>
+  </div>`;
+  ov.classList.add('open');
+}
+
+function closeCodFormModal(){
+  const ov = document.getElementById('codform-modal');
+  if(ov) ov.classList.remove('open');
+}
+
+function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function _b64ToBlob(b64, mime){
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  return new Blob([arr],{type:mime||'application/pdf'});
+}
+
+function codFormDownload(){
+  if(!_codForm) return;
+  const url = URL.createObjectURL(_b64ToBlob(_codForm.pdf,'application/pdf'));
+  const a = document.createElement('a');
+  a.href = url; a.download = _codForm.filename || '4A-FORM-001.pdf';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+}
+
+async function codFormSend(){
+  if(!_codForm) return;
+  const to = (document.getElementById('codform-email').value||'').trim();
+  const msg = document.getElementById('codform-msg');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)){
+    msg.innerHTML='<span style="color:#c62828;">Μη έγκυρη διεύθυνση email.</span>'; return;
+  }
+  const btn = document.getElementById('codform-send');
+  btn.disabled = true; btn.textContent = '⏳ Αποστολή...';
+  msg.innerHTML = '';
+  const body =
+`Αγαπητοί συνεργάτες,
+
+Μετά την αποδοχή της συνεργασίας μας, για να αποδίδονται τα ποσά των αντικαταβολών που εισπράττουμε για λογαριασμό σας, απαιτείται η γνωστοποίηση του τραπεζικού σας λογαριασμού.
+
+Παρακαλούμε συμπληρώστε το συνημμένο έντυπο (4A-FORM-001), σφραγίστε και υπογράψτε το, και επιστρέψτε το στο ${_codForm.return_email||''}.
+
+Τα εμβάσματα των αντικαταβολών ξεκινούν μόλις παραλάβουμε το υπογεγραμμένο έντυπο.
+
+Πελάτης: ${_codForm.company}
+Κωδικός πελάτη: ${_codForm.account}
+
+Με εκτίμηση,
+${_codForm.legal_name}`;
+  try{
+    const r = await apiFetch(`${API}/send_email.php`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        to,
+        subject: '4A Express — Γνωστοποίηση Τραπεζικού Λογαριασμού Αντικαταβολών',
+        body,
+        pdf_base64: _codForm.pdf,
+        filename: _codForm.filename || '4A-FORM-001.pdf'
+      })
+    });
+    const d = await r.json().catch(()=>({}));
+    if(r.ok && d.ok){
+      msg.innerHTML = '<span style="color:#2e7d32;">✅ Το έντυπο στάλθηκε στο '+escHtml(to)+'.</span>';
+      btn.textContent = '✅ Στάλθηκε';
+    } else {
+      msg.innerHTML = '<span style="color:#c62828;">Σφάλμα αποστολής: '+escHtml(d.error||('HTTP '+r.status))+'</span>';
+      btn.disabled = false; btn.textContent = '✉ Αποστολή';
+    }
+  }catch(e){
+    msg.innerHTML = '<span style="color:#c62828;">Σφάλμα επικοινωνίας: '+escHtml(e.message)+'</span>';
+    btn.disabled = false; btn.textContent = '✉ Αποστολή';
+  }
+}
+
 function doLogout(){ window.location.href='pricelist-editor.html'; }
 
 document.addEventListener('visibilitychange',()=>{
@@ -2438,6 +2567,6 @@ document.addEventListener('visibilitychange',()=>{
 
 init();
 </script>
-<div id="app-version" title="Έκδοση εφαρμογής — αν αλλάζει, φόρτωσε νέα έκδοση" style="position:fixed;bottom:6px;right:10px;font-size:10px;color:#888;background:rgba(255,255,255,0.9);padding:3px 9px;border-radius:10px;z-index:9998;font-family:monospace;box-shadow:0 1px 3px rgba(0,0,0,0.12);">4A Pricing · build 2026.07.05-1</div>
+<div id="app-version" title="Έκδοση εφαρμογής — αν αλλάζει, φόρτωσε νέα έκδοση" style="position:fixed;bottom:6px;right:10px;font-size:10px;color:#888;background:rgba(255,255,255,0.9);padding:3px 9px;border-radius:10px;z-index:9998;font-family:monospace;box-shadow:0 1px 3px rgba(0,0,0,0.12);">4A Pricing · build 2026.08.18-1 · FORM-001</div>
 </body>
 </html>
