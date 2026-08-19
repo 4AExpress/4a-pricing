@@ -89,38 +89,9 @@ if ($method === 'POST') {
         respond(['ok' => true]);
     }
 
-    // sync — migration από localStorage
-    if ($action === 'sync') {
-        $pdo = db();
-        $pdo->exec('DELETE FROM 4a_clients');
-        $stmt = $pdo->prepare('INSERT INTO 4a_clients
-            (id, name, afm, contact, email, phone, website, address, notes, account, status,
-             pricelists, surcharges, managers, cod, payment, invoice, validity,
-             offer_number, user, office, country, date, is_walkin, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-        foreach ($b['items'] as $c) {
-            $off = $c['office'] ?? '';
-            $cty = in_array($c['country'] ?? '', ['GR','CY','EU','NONEU'], true)
-                   ? $c['country']
-                   : (in_array($off, ['LCA','NIC','QLI']) ? 'CY' : 'GR');
-            $stmt->execute([
-                $c['id'], $c['name'], $c['afm'] ?? '', $c['contact'] ?? '',
-                $c['email'] ?? '', $c['phone'] ?? '', $c['website'] ?? '',
-                $c['address'] ?? '', $c['notes'] ?? '',
-                $c['account'] ?? '—', $c['status'] ?? 'prospect',
-                json_encode($c['pricelists'] ?? [], JSON_UNESCAPED_UNICODE),
-                json_encode($c['surcharges'] ?? [], JSON_UNESCAPED_UNICODE),
-                json_encode($c['managers']   ?? [], JSON_UNESCAPED_UNICODE),
-                json_encode($c['cod']        ?? null, JSON_UNESCAPED_UNICODE),
-                $c['payment'] ?? '30', $c['invoice'] ?? 'monthly',
-                $c['validity'] ?? '30', $c['offer_number'] ?? '',
-                $c['user'] ?? '', $off, $cty,
-                $c['date'] ?? '', (int)($c['is_walkin'] ?? 0),
-                $c['created_at'] ?? date('Y-m-d H:i:s')
-            ]);
-        }
-        respond(['ok' => true, 'synced' => count($b['items'])]);
-    }
+    // Το action 'sync' (εφάπαξ migration από localStorage) αφαιρέθηκε 19-08-2026:
+    // έκανε DELETE FROM 4a_clients χωρίς transaction, χωρίς έλεγχο του items,
+    // και δεν το καλούσε κανένα frontend αρχείο.
 }
 
 respond(['error' => 'Bad request'], 400);
