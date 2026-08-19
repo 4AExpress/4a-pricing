@@ -88,6 +88,7 @@
   <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
     <a class="nav-btn" href="services.html">🔧 Services</a>
     <a class="nav-btn" href="docs.html">📄 Docs Προσφοράς</a>
+    <a class="nav-btn" id="nav-legal" href="legal.html" style="display:none;">⚖️ Νομικά</a>
     <a class="nav-btn" href="fuel-surcharge-dashboard.html">⛽ Επίναυλος</a>
     <a class="nav-btn" href="help.html">❓ Help</a>
   <a class="nav-btn active" href="fuel-surcharge-dashboard.html">⛽ Επίναυλος</a>
@@ -313,5 +314,26 @@ fetch(JSON_URL)
     document.getElementById('content').innerHTML = '';
   });
 </script>
+<!-- nav-legal gating | RBAC module 'legal' | 19-08-2026 -->
+<script>
+(function(){
+  var el = document.getElementById('nav-legal');
+  if (!el) return;
+  var u = null;
+  try { u = JSON.parse(sessionStorage.getItem('4a_current_user') || 'null'); } catch (e) {}
+  if (!u || !u._token) return;
+  function apply(p){ el.style.display = (p && p.legal && p.legal.view) ? '' : 'none'; }
+  try { apply(JSON.parse(sessionStorage.getItem('4a_perms') || 'null')); } catch (e) {}
+  fetch('https://4aexpress.com/api/permissions.php', {headers:{'Authorization':'Bearer ' + u._token}})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok || !d.data || !d.data.permissions) return;
+      sessionStorage.setItem('4a_perms', JSON.stringify(d.data.permissions));
+      apply(d.data.permissions);
+    })
+    .catch(function(){});
+})();
+</script>
+<!-- 4A build 2026.08.19-legal -->
 </body>
 </html>

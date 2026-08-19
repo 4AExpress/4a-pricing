@@ -131,6 +131,7 @@
   <a class="nav-btn active" href="users.html">⚙️ Χρήστες</a>
   <a class="nav-btn" href="services.html">🔧 Services</a>
   <a class="nav-btn" href="docs.html">📄 Docs Προσφοράς</a>
+  <a class="nav-btn" id="nav-legal" href="legal.html" style="display:none;">⚖️ Νομικά</a>
   <a class="nav-btn" href="fuel-surcharge-dashboard.html">⛽ Επίναυλος</a>
   <a class="nav-btn" href="help.html">❓ Help</a>
 </div>
@@ -384,16 +385,17 @@ const MODULES = [
   { id: 'services',          label: '🔧 Services' },
   { id: 'docs',              label: '📄 Documents' },
   { id: 'help',              label: '❓ Help / Wiki' },
+  { id: 'legal',             label: '⚖️ Νομικά Στοιχεία' },
   { id: 'users',             label: '⚙️ Users' },
 ];
 const ACTIONS = ['view','add','edit','delete','export'];
 
 // Default permissions per role (mirrors role_permissions table)
 const ROLE_DEFAULTS = {
-  administrator: { 'pricelist-editor':{view:1,add:1,edit:1,delete:1,export:1}, 'pricelist-clients':{view:1,add:1,edit:1,delete:1,export:1}, services:{view:1,add:1,edit:1,delete:1,export:1}, docs:{view:1,add:1,edit:1,delete:1,export:1}, help:{view:1,add:1,edit:1,delete:1,export:1}, users:{view:1,add:1,edit:1,delete:1,export:1} },
-  manager:       { 'pricelist-editor':{view:1,add:1,edit:1,delete:0,export:1}, 'pricelist-clients':{view:1,add:1,edit:1,delete:0,export:1}, services:{view:1,add:0,edit:1,delete:0,export:0}, docs:{view:1,add:0,edit:0,delete:0,export:1}, help:{view:1,add:0,edit:0,delete:0,export:0}, users:{view:1,add:0,edit:0,delete:0,export:0} },
-  staff:         { 'pricelist-editor':{view:1,add:0,edit:0,delete:0,export:0}, 'pricelist-clients':{view:1,add:0,edit:0,delete:0,export:1}, services:{view:1,add:0,edit:0,delete:0,export:0}, docs:{view:1,add:0,edit:0,delete:0,export:1}, help:{view:1,add:0,edit:0,delete:0,export:0}, users:{view:0,add:0,edit:0,delete:0,export:0} },
-  readonly:      { 'pricelist-editor':{view:1,add:0,edit:0,delete:0,export:0}, 'pricelist-clients':{view:1,add:0,edit:0,delete:0,export:0}, services:{view:1,add:0,edit:0,delete:0,export:0}, docs:{view:1,add:0,edit:0,delete:0,export:0}, help:{view:1,add:0,edit:0,delete:0,export:0}, users:{view:0,add:0,edit:0,delete:0,export:0} },
+  administrator: { 'pricelist-editor':{view:1,add:1,edit:1,delete:1,export:1}, 'pricelist-clients':{view:1,add:1,edit:1,delete:1,export:1}, services:{view:1,add:1,edit:1,delete:1,export:1}, docs:{view:1,add:1,edit:1,delete:1,export:1}, help:{view:1,add:1,edit:1,delete:1,export:1}, legal:{view:1,add:1,edit:1,delete:1,export:1}, users:{view:1,add:1,edit:1,delete:1,export:1} },
+  manager:       { 'pricelist-editor':{view:1,add:1,edit:1,delete:0,export:1}, 'pricelist-clients':{view:1,add:1,edit:1,delete:0,export:1}, services:{view:1,add:0,edit:1,delete:0,export:0}, docs:{view:1,add:0,edit:0,delete:0,export:1}, help:{view:1,add:0,edit:0,delete:0,export:0}, legal:{view:1,add:0,edit:0,delete:0,export:0}, users:{view:1,add:0,edit:0,delete:0,export:0} },
+  staff:         { 'pricelist-editor':{view:1,add:0,edit:0,delete:0,export:0}, 'pricelist-clients':{view:1,add:0,edit:0,delete:0,export:1}, services:{view:1,add:0,edit:0,delete:0,export:0}, docs:{view:1,add:0,edit:0,delete:0,export:1}, help:{view:1,add:0,edit:0,delete:0,export:0}, legal:{view:0,add:0,edit:0,delete:0,export:0}, users:{view:0,add:0,edit:0,delete:0,export:0} },
+  readonly:      { 'pricelist-editor':{view:1,add:0,edit:0,delete:0,export:0}, 'pricelist-clients':{view:1,add:0,edit:0,delete:0,export:0}, services:{view:1,add:0,edit:0,delete:0,export:0}, docs:{view:1,add:0,edit:0,delete:0,export:0}, help:{view:1,add:0,edit:0,delete:0,export:0}, legal:{view:1,add:0,edit:0,delete:0,export:0}, users:{view:0,add:0,edit:0,delete:0,export:0} },
 };
 
 const ROLE_LABELS = { administrator:'Administrator', manager:'Manager', staff:'Staff', readonly:'Ανάγνωση μόνο', user:'User' };
@@ -761,5 +763,26 @@ function doLogout() {
 
 init();
 </script>
+<!-- nav-legal gating | RBAC module 'legal' | 19-08-2026 -->
+<script>
+(function(){
+  var el = document.getElementById('nav-legal');
+  if (!el) return;
+  var u = null;
+  try { u = JSON.parse(sessionStorage.getItem('4a_current_user') || 'null'); } catch (e) {}
+  if (!u || !u._token) return;
+  function apply(p){ el.style.display = (p && p.legal && p.legal.view) ? '' : 'none'; }
+  try { apply(JSON.parse(sessionStorage.getItem('4a_perms') || 'null')); } catch (e) {}
+  fetch('https://4aexpress.com/api/permissions.php', {headers:{'Authorization':'Bearer ' + u._token}})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok || !d.data || !d.data.permissions) return;
+      sessionStorage.setItem('4a_perms', JSON.stringify(d.data.permissions));
+      apply(d.data.permissions);
+    })
+    .catch(function(){});
+})();
+</script>
+<!-- 4A build 2026.08.19-legal -->
 </body>
 </html>

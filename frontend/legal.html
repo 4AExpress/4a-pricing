@@ -44,9 +44,27 @@
   .save:disabled{background:#c9ccd1;cursor:not-allowed}
   #msg{margin-left:12px;font-size:13px}
   .ver{position:fixed;bottom:6px;right:10px;font-size:11px;color:#b9bec5}
+
+  /* NAV — ίδιο set links με τις υπόλοιπες σελίδες */
+  .nav{background:#fff;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap}
+  .nav-btn{padding:10px 18px;font-size:13px;color:#555;text-decoration:none;
+           border-bottom:2px solid transparent;display:inline-block}
+  .nav-btn:hover{background:#f8f8f8}
+  .nav-btn.active{color:var(--red);border-bottom-color:var(--red);font-weight:600}
 </style>
 </head>
 <body>
+<div class="nav">
+  <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
+  <a class="nav-btn" href="pricelist-clients.html">👥 Πελάτες</a>
+  <a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
+  <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
+  <a class="nav-btn" href="services.html">🔧 Services</a>
+  <a class="nav-btn" href="docs.html">📄 Docs Προσφοράς</a>
+  <a class="nav-btn active" href="legal.html">⚖️ Νομικά</a>
+  <a class="nav-btn" href="fuel-surcharge-dashboard.html">⛽ Επίναυλος</a>
+  <a class="nav-btn" href="help.html">❓ Help</a>
+</div>
 <div class="wrap">
   <h1>⚖️ Νομικά Στοιχεία Εταιρείας</h1>
   <p class="sub">Ανά χώρα. Χρησιμοποιούνται στα έντυπα (4A-FORM-001) και στα footers των PDF.
@@ -69,7 +87,7 @@
     </div>
   </div>
 </div>
-<div class="ver">build 2026.08.17-legal-v1.1</div>
+<div class="ver">build 2026.08.19-legal</div>
 
 <script>
 const API = 'https://4aexpress.com/api';
