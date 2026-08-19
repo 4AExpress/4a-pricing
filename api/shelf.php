@@ -42,22 +42,8 @@ if ($method === 'POST') {
         $stmt->execute([$b['id']]);
         respond(['ok' => true]);
     }
-    if ($action === 'sync') {
-        $pdo = db();
-        $pdo->exec('DELETE FROM 4a_shelf');
-        $stmt = $pdo->prepare('INSERT INTO 4a_shelf
-            (id, name, service_id, service_name, markup, global_markup, account, user, office, date, created_at, `rows`)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
-        foreach ($b['items'] as $item) {
-            $stmt->execute([
-                $item['id'], $item['name'], $item['service_id'], $item['service_name'] ?? '',
-                $item['markup'], $item['global_markup'] ?? $item['markup'],
-                $item['account'] ?? '—', $item['user'] ?? '', $item['office'] ?? '',
-                $item['date'] ?? '', $item['created_at'] ?? date('Y-m-d H:i:s'),
-                json_encode(array_map(function($r){$r['price']=(float)number_format((float)($r['price']??0),2,'.','');return $r;},$item['rows']??[]))
-            ]);
-        }
-        respond(['ok' => true, 'synced' => count($b['items'])]);
-    }
+    // Το action 'sync' (εφάπαξ migration από localStorage) αφαιρέθηκε 19-08-2026:
+    // έκανε DELETE FROM 4a_shelf χωρίς transaction, χωρίς έλεγχο του items,
+    // και δεν το καλούσε κανένα frontend αρχείο. Ίδια αφαίρεση με το clients.php.
 }
 respond(['error' => 'Bad request'], 400);
