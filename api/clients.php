@@ -38,11 +38,15 @@ if ($method === 'POST') {
     $action = $b['action'] ?? 'save';
 
     if ($action === 'save') {
-        // Αυτόματος υπολογισμός country από office αν δεν δοθεί
+        // Το country είναι υποχρεωτικό — καμία εικασία.
+        // v1.x μάντευε από το $office, αλλά το office κρατά όνομα πόλης («Αθήνα»)
+        // και όχι κωδικό σταθμού, οπότε η εικασία κατέληγε ΠΑΝΤΑ 'GR' και ένας
+        // κυπριακός πελάτης εξαφανιζόταν σιωπηλά από τους CY χρήστες.
         $office  = $b['office'] ?? '';
-        $country = in_array($b['country'] ?? '', ['GR','CY','EU','NONEU'], true)
-                   ? $b['country']
-                   : (in_array($office, ['LCA','NIC','QLI']) ? 'CY' : 'GR');
+        $country = $b['country'] ?? '';
+        if (!in_array($country, ['GR','CY','EU','NONEU'], true)) {
+            respond(['error' => 'Λείπει ή είναι άκυρη η χώρα του πελάτη (country). Επιτρεπτές τιμές: GR, CY, EU, NONEU.'], 400);
+        }
 
         $stmt = db()->prepare('INSERT INTO 4a_clients
             (id, name, afm, contact, email, phone, website, address, notes, account, status,
