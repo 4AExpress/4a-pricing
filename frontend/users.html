@@ -53,6 +53,8 @@
   .perms-table input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: #cc0000; }
   .perms-table input[type=checkbox]:disabled { cursor: not-allowed; opacity: 0.4; }
   .module-icon { margin-right: 6px; }
+  /* Εξαίρεση = διαφέρει από ό,τι δίνει ο ρόλος */
+  .perms-table input[type=checkbox].perm-exception { outline: 2px solid #ff9800; outline-offset: 1px; border-radius: 2px; }
   .perm-all-row td { background: #fff8e1; font-weight: 700; }
 
   .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
@@ -224,7 +226,10 @@
       <div class="perms-box">
         <div class="perms-title">
           <span>🔐 Δικαιώματα ανά Module</span>
-          <span class="perms-note">Αλλάζοντας ρόλο → συμπληρώνεται αυτόματα · μπορείς να τροποποιήσεις χειροκίνητα</span>
+          <span style="display:flex;align-items:center;gap:10px;">
+            <span class="perms-note" id="perms-note"></span>
+            <button class="action-btn" id="perms-reset-btn" style="display:none;" onclick="resetPermsToRole()">↺ Επαναφορά στον ρόλο</button>
+          </span>
         </div>
         <table class="perms-table" id="perms-table">
           <thead>
@@ -379,24 +384,21 @@ function apiFetch(url, opts={}) {
 }
 
 // ─── MODULES ──────────────────────────────────────────────────────────────────
-const MODULES = [
-  { id: 'pricelist-editor',  label: '📋 Pricelist Editor' },
-  { id: 'pricelist-clients', label: '👥 Client Pricelists' },
-  { id: 'services',          label: '🔧 Services' },
-  { id: 'docs',              label: '📄 Documents' },
-  { id: 'help',              label: '❓ Help / Wiki' },
-  { id: 'legal',             label: '⚖️ Νομικά Στοιχεία' },
-  { id: 'users',             label: '⚙️ Users' },
+// Αρχική λίστα μόνο ως fallback — αντικαθίσταται από τον πίνακα modules της
+// βάσης, μέσω permissions.php?role=X. Μη προσθέτεις modules εδώ.
+let MODULES = [
+  { id: 'pricelist-editor',  label: 'Pricelist Editor' },
+  { id: 'pricelist-clients', label: 'Client Pricelists' },
+  { id: 'services',          label: 'Services' },
+  { id: 'docs',              label: 'Documents' },
+  { id: 'legal',             label: 'Νομικά Στοιχεία' },
+  { id: 'help',              label: 'Help / Wiki' },
+  { id: 'users',             label: 'Users' },
 ];
 const ACTIONS = ['view','add','edit','delete','export'];
 
-// Default permissions per role (mirrors role_permissions table)
-const ROLE_DEFAULTS = {
-  administrator: { 'pricelist-editor':{view:1,add:1,edit:1,delete:1,export:1}, 'pricelist-clients':{view:1,add:1,edit:1,delete:1,export:1}, services:{view:1,add:1,edit:1,delete:1,export:1}, docs:{view:1,add:1,edit:1,delete:1,export:1}, help:{view:1,add:1,edit:1,delete:1,export:1}, legal:{view:1,add:1,edit:1,delete:1,export:1}, users:{view:1,add:1,edit:1,delete:1,export:1} },
-  manager:       { 'pricelist-editor':{view:1,add:1,edit:1,delete:0,export:1}, 'pricelist-clients':{view:1,add:1,edit:1,delete:0,export:1}, services:{view:1,add:0,edit:1,delete:0,export:0}, docs:{view:1,add:0,edit:0,delete:0,export:1}, help:{view:1,add:0,edit:0,delete:0,export:0}, legal:{view:1,add:0,edit:0,delete:0,export:0}, users:{view:1,add:0,edit:0,delete:0,export:0} },
-  staff:         { 'pricelist-editor':{view:1,add:0,edit:0,delete:0,export:0}, 'pricelist-clients':{view:1,add:0,edit:0,delete:0,export:1}, services:{view:1,add:0,edit:0,delete:0,export:0}, docs:{view:1,add:0,edit:0,delete:0,export:1}, help:{view:1,add:0,edit:0,delete:0,export:0}, legal:{view:0,add:0,edit:0,delete:0,export:0}, users:{view:0,add:0,edit:0,delete:0,export:0} },
-  readonly:      { 'pricelist-editor':{view:1,add:0,edit:0,delete:0,export:0}, 'pricelist-clients':{view:1,add:0,edit:0,delete:0,export:0}, services:{view:1,add:0,edit:0,delete:0,export:0}, docs:{view:1,add:0,edit:0,delete:0,export:0}, help:{view:1,add:0,edit:0,delete:0,export:0}, legal:{view:1,add:0,edit:0,delete:0,export:0}, users:{view:0,add:0,edit:0,delete:0,export:0} },
-};
+// Τα δικαιώματα ανά ρόλο ΔΕΝ ζουν πια στο JS — έρχονται από τη βάση
+// (permissions.php?role=X). Ένας καθρέφτης λιγότερος να αποκλίνει.
 
 const ROLE_LABELS = { administrator:'Administrator', manager:'Manager', staff:'Staff', readonly:'Ανάγνωση μόνο', user:'User' };
 const ROLE_COLORS = { administrator:'#cc0000', manager:'#1565c0', staff:'#388e3c', readonly:'#757575', user:'#555' };
@@ -405,6 +407,8 @@ const STATIONS = { ATH:'Αθήνα', LCA:'Λάρνακα', NIC:'Λευκωσία
 let currentUser = null;
 let users = [];
 let editingId = null;
+let myPerms = {};      // effective δικαιώματα του συνδεδεμένου χρήστη (permissions.php)
+let myRole  = '';
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 function init() {
@@ -412,26 +416,78 @@ function init() {
   if (!currentUser) { window.location.href = 'pricelist-editor.html'; return; }
   document.getElementById('topbar-user').textContent = `${currentUser.name} · ${currentUser.active_station||currentUser.office}`;
     try{ fetch(`${API}/me.php`,{headers:{'Authorization':'Bearer '+(currentUser._token||'')}}).then(r=>r.json()).then(_m=>{if(_m.expires_at)startSessionTimer(_m.expires_at);}); }catch(e){}
-  if (currentUser.role !== 'administrator') {
-    document.getElementById('form-body').innerHTML = '<div class="no-access">⛔ Μόνο οι Administrator μπορούν να διαχειριστούν χρήστες.</div>';
-  } else {
-    buildPermsTable();
-  }
+  // Η φόρμα κρίνεται από τα ΔΙΚΑΙΩΜΑΤΑ, όχι από τον ρόλο: ένας manager με
+  // users.edit διαχειρίζεται staff/readonly των σταθμών του (ο server επιβάλλει
+  // τους περιορισμούς — εδώ απλώς δεν δείχνουμε ό,τι θα απορριφθεί).
+  apiFetch(`${API}/permissions.php`)
+    .then(r => r.json())
+    .then(d => {
+      myPerms = (d.ok && d.data && d.data.permissions) ? d.data.permissions : {};
+      myRole  = (d.ok && d.data && d.data.role) ? d.data.role : currentUser.role;
+      if (!myPerms.users || !myPerms.users.edit) {
+        document.getElementById('form-body').innerHTML =
+          '<div class="no-access">⛔ Δεν έχετε δικαίωμα διαχείρισης χρηστών (μόνο προβολή).</div>';
+      } else {
+        buildPermsTable({});
+      }
+      renderUsers();
+    })
+    .catch(() => {
+      document.getElementById('form-body').innerHTML =
+        '<div class="no-access">⛔ Αποτυχία ελέγχου δικαιωμάτων.</div>';
+    });
   loadUsers();
 }
 
 // ─── PERMISSIONS TABLE ────────────────────────────────────────────────────────
-function buildPermsTable(permsData) {
-  const role = document.getElementById('u-role')?.value || 'readonly';
-  const defaults = permsData || ROLE_DEFAULTS[role] || ROLE_DEFAULTS.readonly;
+// Τα δικαιώματα του ρόλου έρχονται από τη ΒΑΣΗ (permissions.php?role=X), όχι από
+// hardcoded JS. Οι per-user εξαιρέσεις έρχονται με τη λίστα χρηστών
+// (users.php → perm_exceptions) και σημαίνονται οπτικά.
+const _roleCache = {};
+let _lastExceptions = {};
+
+async function loadRolePerms(role) {
+  if (_roleCache[role]) return _roleCache[role];
+  const r = await apiFetch(`${API}/permissions.php?role=${encodeURIComponent(role)}`);
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.error || 'role fetch failed');
+  if (Array.isArray(d.modules) && d.modules.length) {
+    MODULES = d.modules.map(m => ({ id: m.id, label: m.label || m.id }));
+  }
+  _roleCache[role] = d.permissions || {};
+  return _roleCache[role];
+}
+
+async function buildPermsTable(exceptions) {
   const tbody = document.getElementById('perms-tbody');
   if (!tbody) return;
+  const role = document.getElementById('u-role')?.value || 'readonly';
+  _lastExceptions = exceptions || {};
+
+  let base = {};
+  try { base = await loadRolePerms(role); }
+  catch (e) { tbody.innerHTML = `<tr><td colspan="6" style="color:#c62828;">Αποτυχία φόρτωσης δικαιωμάτων ρόλου: ${e.message}</td></tr>`; return; }
+
+  const isAdmin = role === 'administrator';
+  const note = document.getElementById('perms-note');
+  if (note) note.textContent = isAdmin
+    ? 'Οι Administrators έχουν πάντα πλήρη πρόσβαση — το grid είναι ενημερωτικό.'
+    : 'Βάση = ο ρόλος. Ό,τι αλλάξεις αποθηκεύεται ως εξαίρεση για αυτόν τον χρήστη.';
+  const resetBtn = document.getElementById('perms-reset-btn');
+  if (resetBtn) resetBtn.style.display = (!isAdmin && editingId) ? '' : 'none';
+
   tbody.innerHTML = MODULES.map(m => {
-    const p = defaults[m.id] || {view:0,add:0,edit:0,delete:0,export:0};
-    return `<tr>
-      <td>${m.label}</td>
-      ${ACTIONS.map(a => `<td><input type="checkbox" id="p-${m.id}-${a}" ${p[a] ? 'checked' : ''} /></td>`).join('')}
-    </tr>`;
+    const b = base[m.id] || {view:0,add:0,edit:0,delete:0,export:0};
+    const x = _lastExceptions[m.id] || null;
+    const cells = ACTIONS.map(a => {
+      const roleVal = b[a] ? 1 : 0;
+      const eff = isAdmin ? 1 : (x ? (x[a] ? 1 : 0) : roleVal);
+      const isExc = !isAdmin && eff !== roleVal;
+      const title = isExc ? `Εξαίρεση — ο ρόλος ${role} δίνει ${roleVal ? 'ναι' : 'όχι'}` : '';
+      return `<td><input type="checkbox" id="p-${m.id}-${a}" ${eff ? 'checked' : ''} ${isAdmin ? 'disabled' : ''}
+               class="${isExc ? 'perm-exception' : ''}" title="${title}" /></td>`;
+    }).join('');
+    return `<tr><td>${m.label}</td>${cells}</tr>`;
   }).join('');
 }
 
@@ -446,10 +502,26 @@ function getPermsFromTable() {
   return result;
 }
 
+// «↺ Επαναφορά στον ρόλο» — σβήνει ΟΛΕΣ τις εξαιρέσεις του χρήστη.
+async function resetPermsToRole() {
+  if (!editingId) return;
+  if (!confirm('Να διαγραφούν όλες οι εξαιρέσεις δικαιωμάτων αυτού του χρήστη;')) return;
+  try {
+    const r = await apiFetch(`${API}/users.php`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ action: 'reset_permissions', id: editingId })
+    });
+    const d = await r.json();
+    if (!d.ok) { alert('Σφάλμα: ' + (d.error || 'άγνωστο')); return; }
+    await buildPermsTable({});
+    loadUsers();
+  } catch (e) { alert('Σφάλμα επικοινωνίας: ' + e.message); }
+}
+
 // ─── FORM LOGIC ───────────────────────────────────────────────────────────────
 function onRoleChange() {
   const role = document.getElementById('u-role').value;
-  buildPermsTable(ROLE_DEFAULTS[role]);
+  buildPermsTable({});
   const isAdmin = role === 'administrator';
   document.querySelectorAll('.station-check').forEach(el => {
     const cb = el.querySelector('input');
@@ -501,7 +573,7 @@ function resetForm() {
     el.classList.remove('locked');
   });
   document.getElementById('stations-note').textContent = '';
-  buildPermsTable(ROLE_DEFAULTS.readonly);
+  buildPermsTable({});
   checkForm();
 }
 
@@ -519,21 +591,15 @@ async function saveUser() {
 
   if (!name || !email || pin.length !== 4) { alert('Συμπλήρωσε όλα τα υποχρεωτικά πεδία'); return; }
 
-  // Flatten perms for backward compat (global can_* = OR across modules)
-  const can_view   = Object.values(perms).some(p=>p.view)   ? 1 : 0;
-  const can_add    = Object.values(perms).some(p=>p.add)    ? 1 : 0;
-  const can_edit   = Object.values(perms).some(p=>p.edit)   ? 1 : 0;
-  const can_delete = Object.values(perms).some(p=>p.delete) ? 1 : 0;
-  const can_export = Object.values(perms).some(p=>p.export) ? 1 : 0;
-  const can_all    = (can_view && can_add && can_edit && can_delete && can_export) ? 1 : 0;
-
+  // Η OR-συμπίεση σε καθολικά can_* αφαιρέθηκε: έχανε την πληροφορία «ποιο
+  // module» και τα can_* του 4a_users δεν τα διαβάζει κανένας έλεγχος πρόσβασης.
+  // Το module_permissions πάει αυτούσιο· ο server κρατά μόνο τις εξαιρέσεις.
   const payload = {
     action: editingId ? 'edit' : 'add',
     id: editingId,
     user_code: code, name, email, pin, role, office, stations,
     pricelist_scope: document.getElementById('u-scope').value,
     default_station: document.getElementById('u-default-station').value,
-    can_view, can_add, can_edit, can_delete, can_export, can_all,
     module_permissions: perms,
   };
 
@@ -588,10 +654,9 @@ function renderUsers() {
         <div class="user-meta">${u.email||'—'}</div>
       </div>
       <div class="user-actions">
-        ${currentUser.role==='administrator' ? `
-          <button class="action-btn" onclick="editUser(${u.id})">✏️ Edit</button>
-          ${!isMe ? `<button class="action-btn del" onclick="deleteUser(${u.id})">Del</button>` : ''}
-        ` : ''}
+        ${(myPerms.users && myPerms.users.edit && (myRole==='administrator' || isMe || u.role==='staff' || u.role==='readonly')) ? `
+          <button class="action-btn" onclick="editUser(${u.id})">✏️ Edit</button>` : ''}
+        ${(myRole==='administrator' && !isMe) ? `<button class="action-btn del" onclick="deleteUser(${u.id})">Del</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -623,14 +688,10 @@ function editUser(id) {
     document.getElementById('stations-note').textContent = '';
   }
 
-  // Load permissions from API
-  apiFetch(`${API}/permissions.php?user_id=${id}`)
-    .then(r => r.json())
-    .then(d => {
-      const perms = d.ok && d.data?.permissions ? d.data.permissions : ROLE_DEFAULTS[u.role];
-      buildPermsTable(perms);
-    })
-    .catch(() => buildPermsTable(ROLE_DEFAULTS[u.role] || ROLE_DEFAULTS.readonly));
+  // Οι εξαιρέσεις έρχονται μαζί με τη λίστα χρηστών (users.php → perm_exceptions).
+  // Το παλιό permissions.php?user_id=… δεν κοίταζε ποτέ το user_id: επέστρεφε τα
+  // δικαιώματα του ΣΥΝΔΕΔΕΜΕΝΟΥ χρήστη, όχι του χρήστη που επεξεργαζόσουν.
+  buildPermsTable(u.perm_exceptions || {});
 
   document.getElementById('form-title').textContent = `✏️ Επεξεργασία: ${u.name}`;
   document.getElementById('save-btn').disabled = false;
@@ -783,6 +844,6 @@ init();
     .catch(function(){});
 })();
 </script>
-<!-- 4A build 2026.08.19-legal -->
+<!-- 4A build 2026.08.20 · rbac (per-user permissions) -->
 </body>
 </html>
