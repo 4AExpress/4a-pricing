@@ -85,6 +85,40 @@ function get_user_permissions(int $user_id): array {
             'export' => (int)$row['can_export'],
         ];
     }
+    // ── Overrides ───────────────────────────────────────────────────────────
+    // Ο ρόλος δίνει τη ΒΑΣΗ. Οι administrators έχουν πάντα πλήρη πρόσβαση σε
+    // όλα τα modules — αγνοούν το user_permissions, ώστε να μην μπορεί κανείς
+    // (ούτε ο ίδιος) να κλειδωθεί έξω. Για κάθε άλλο ρόλο, το user_permissions
+    // ΑΝΤΙΚΑΘΙΣΤΑ ολόκληρο το module όπου υπάρχει εγγραφή· όπου δεν υπάρχει,
+    // ισχύει αυτούσιος ο ρόλος.
+    // Τα try/catch είναι σκόπιμα: αν λείπει ο πίνακας, πέφτουμε πίσω στον
+    // ρόλο αντί να ρίξουμε 500 σε κάθε endpoint της πλατφόρμας.
+    if ($first['role'] === 'administrator') {
+        $full = ['view' => 1, 'add' => 1, 'edit' => 1, 'delete' => 1, 'export' => 1];
+        foreach ($permissions as $m => $_) $permissions[$m] = $full;
+        try {
+            $mods = db()->query("SELECT id FROM modules WHERE active = 1")->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($mods as $m) $permissions[$m] = $full;
+        } catch (Exception $e) { /* metadata table — ο ρόλος αρκεί */ }
+    } else {
+        try {
+            $ups = db()->prepare(
+                "SELECT module_id, can_view, can_add, can_edit, can_delete, can_export
+                 FROM user_permissions WHERE user_id = ?"
+            );
+            $ups->execute([$user_id]);
+            foreach ($ups->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $permissions[$row['module_id']] = [
+                    'view'   => (int)$row['can_view'],
+                    'add'    => (int)$row['can_add'],
+                    'edit'   => (int)$row['can_edit'],
+                    'delete' => (int)$row['can_delete'],
+                    'export' => (int)$row['can_export'],
+                ];
+            }
+        } catch (Exception $e) { /* χωρίς πίνακα → ισχύει ο ρόλος, ποτέ lockout */ }
+    }
+
     return [
         'role'            => $first['role'],
         'stations'        => $stations,
