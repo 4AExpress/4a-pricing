@@ -185,12 +185,16 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Pricelist Scope</label>
-          <select id="u-scope">
-            <option value="GR">GR — Ελλάδα</option>
-            <option value="CY">CY — Κύπρος</option>
-            <option value="BOTH">BOTH — Και τα δύο</option>
-          </select>
+          <label>Τιμοκατάλογοι που βλέπει</label>
+          <div class="station-checks" id="scope-checks" style="margin-top:0;">
+            <label class="station-check" id="sco-GR">
+              <input type="checkbox" value="GR" onchange="onScopeChange()" /> 🇬🇷 GR — Ελληνικοί
+            </label>
+            <label class="station-check" id="sco-CY">
+              <input type="checkbox" value="CY" onchange="onScopeChange()" /> 🇨🇾 CY — Κυπριακοί
+            </label>
+          </div>
+          <div class="admin-note" id="scope-note"></div>
         </div>
       </div>
 
@@ -522,6 +526,7 @@ async function resetPermsToRole() {
 function onRoleChange() {
   const role = document.getElementById('u-role').value;
   buildPermsTable({});
+  onScopeChange();
   const isAdmin = role === 'administrator';
   document.querySelectorAll('.station-check').forEach(el => {
     const cb = el.querySelector('input');
@@ -530,6 +535,52 @@ function onRoleChange() {
   });
   document.getElementById('stations-note').textContent = isAdmin ? '* Administrator έχει πρόσβαση σε όλους τους σταθμούς' : '';
   checkForm();
+}
+
+// ─── PRICELIST SCOPE (pills GR/CY) ────────────────────────────────────────────
+// Το 4a_users.pricelist_scope παραμένει ΜΙΑ τιμή. Τα δύο checkbox απλώς
+// κωδικοποιούν: GR / CY / BOTH / NONE (κανένα = κανένας τιμοκατάλογος).
+function getScopeValue() {
+  if (document.getElementById('u-role')?.value === 'administrator') return 'BOTH';
+  const gr = document.getElementById('sco-GR')?.querySelector('input')?.checked;
+  const cy = document.getElementById('sco-CY')?.querySelector('input')?.checked;
+  if (gr && cy) return 'BOTH';
+  if (gr) return 'GR';
+  if (cy) return 'CY';
+  return 'NONE';
+}
+
+function setScopeValue(scope) {
+  const gr = (scope === 'GR' || scope === 'BOTH');
+  const cy = (scope === 'CY' || scope === 'BOTH');
+  [['sco-GR', gr], ['sco-CY', cy]].forEach(([id, on]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.querySelector('input').checked = on;
+    el.classList.toggle('checked', on);
+  });
+  onScopeChange();
+}
+
+function onScopeChange() {
+  const isAdmin = document.getElementById('u-role')?.value === 'administrator';
+  const note = document.getElementById('scope-note');
+  document.querySelectorAll('#scope-checks .station-check').forEach(el => {
+    const cb = el.querySelector('input');
+    if (isAdmin) { cb.checked = true; el.classList.add('checked', 'locked'); }
+    else { el.classList.remove('locked'); el.classList.toggle('checked', cb.checked); }
+  });
+  if (!note) return;
+  if (isAdmin) {
+    note.style.color = '';
+    note.textContent = '* Οι Administrators βλέπουν πάντα όλους τους τιμοκαταλόγους';
+    return;
+  }
+  const v = getScopeValue();
+  if (v === 'BOTH')      { note.style.color = ''; note.textContent = 'Βλέπει όλους τους τιμοκαταλόγους.'; }
+  else if (v === 'GR')   { note.style.color = ''; note.textContent = 'Βλέπει μόνο τους ελληνικούς τιμοκαταλόγους.'; }
+  else if (v === 'CY')   { note.style.color = ''; note.textContent = 'Βλέπει μόνο τους κυπριακούς τιμοκαταλόγους.'; }
+  else { note.style.color = '#e65100'; note.textContent = '⚠️ Δεν βλέπει κανέναν τιμοκατάλογο.'; }
 }
 
 function onStationChange() {
@@ -564,7 +615,7 @@ function resetForm() {
   editingId = null;
   ['u-code','u-name','u-email','u-pin'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('u-role').value = 'readonly';
-  document.getElementById('u-scope').value = 'GR';
+  setScopeValue('GR');
   document.getElementById('form-title').textContent = 'Νέος Χρήστης';
   document.querySelectorAll('.station-check').forEach(el => {
     const cb = el.querySelector('input');
@@ -598,7 +649,7 @@ async function saveUser() {
     action: editingId ? 'edit' : 'add',
     id: editingId,
     user_code: code, name, email, pin, role, office, stations,
-    pricelist_scope: document.getElementById('u-scope').value,
+    pricelist_scope: getScopeValue(),
     default_station: document.getElementById('u-default-station').value,
     module_permissions: perms,
   };
@@ -649,7 +700,9 @@ function renderUsers() {
           ${u.name} ${isMe?'<span style="font-size:10px;color:#888;">(εσύ)</span>':''}
           <span class="role-badge role-${u.role}">${ROLE_LABELS[u.role]||u.role}</span>
           ${stationBadges}
-          <span style="font-size:10px;color:#888;background:#f5f5f5;padding:2px 6px;border-radius:4px;">${u.pricelist_scope||'GR'}</span>
+          ${(u.pricelist_scope||'GR')==='NONE'
+            ? `<span title="Δεν βλέπει κανέναν τιμοκατάλογο" style="font-size:10px;color:#e65100;background:#fff3e0;border:1px solid #ffcc80;padding:2px 6px;border-radius:4px;font-weight:700;">⚠️ NONE</span>`
+            : `<span style="font-size:10px;color:#888;background:#f5f5f5;padding:2px 6px;border-radius:4px;">${u.pricelist_scope||'GR'}</span>`}
         </div>
         <div class="user-meta">${u.email||'—'}</div>
       </div>
@@ -671,7 +724,7 @@ function editUser(id) {
   document.getElementById('u-email').value = u.email || '';
   document.getElementById('u-pin').value   = '';
   document.getElementById('u-role').value  = u.role  || 'readonly';
-  document.getElementById('u-scope').value = u.pricelist_scope || 'GR';
+  setScopeValue(u.pricelist_scope || 'GR');
   document.getElementById('u-default-station').value = u.default_station || 'ATH';
 
   const userStations = (u.stations||'ATH').split(',');
@@ -844,6 +897,6 @@ init();
     .catch(function(){});
 })();
 </script>
-<!-- 4A build 2026.08.20 · rbac (per-user permissions) -->
+<!-- 4A build 2026.08.20 · rbac · scope -->
 </body>
 </html>

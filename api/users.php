@@ -4,6 +4,22 @@ require_once 'config.php';
 require_once 'auth.php';
 
 const PERM_ACTIONS = ['view', 'add', 'edit', 'delete', 'export'];
+const SCOPES       = ['GR', 'CY', 'BOTH', 'NONE'];
+
+/** Το scope ως σύνολο χωρών — ώστε η οροφή να είναι απλή τομή. */
+function scope_to_set(string $s): array {
+    if ($s === 'BOTH') return ['GR', 'CY'];
+    if ($s === 'NONE') return [];
+    return [$s];
+}
+function set_to_scope(array $set): string {
+    $gr = in_array('GR', $set, true);
+    $cy = in_array('CY', $set, true);
+    if ($gr && $cy) return 'BOTH';
+    if ($gr) return 'GR';
+    if ($cy) return 'CY';
+    return 'NONE';
+}
 
 /** Επιτρεπτά module_id — whitelist από τον πίνακα modules. */
 function module_whitelist(): array {
@@ -127,6 +143,7 @@ if ($method === 'POST') {
     $me       = (int)$session['id'];
     $my_role  = $session['permissions']['role'] ?? '';
     $my_perms = $session['permissions']['permissions'] ?? [];
+    $my_scope = $session['permissions']['pricelist_scope'] ?? 'GR';
     $is_admin = ($my_role === 'administrator');
 
     $b      = body();
@@ -150,6 +167,19 @@ if ($method === 'POST') {
         if (!$is_admin && !in_array($role, ['staff', 'readonly'], true)) {
             respond(['error' => 'Μόνο ο Administrator δημιουργεί χρήστες με ρόλο ' . $role . '.'], 403);
         }
+        // pricelist_scope: whitelist, καμία σιωπηλή εικασία (μάθημα από το country
+        // του clients.php). Ο administrator βλέπει πάντα τα πάντα.
+        $scope = strtoupper(trim((string)($b['pricelist_scope'] ?? 'GR')));
+        if (!in_array($scope, SCOPES, true)) {
+            respond(['error' => 'Άκυρη τιμή pricelist_scope: «' . $scope . '». Επιτρεπτές: GR, CY, BOTH, NONE.'], 400);
+        }
+        if ($role === 'administrator') {
+            $scope = 'BOTH';
+        } elseif (!$is_admin) {
+            // ΟΡΟΦΗ: ο μη-admin δεν δίνει scope ευρύτερο από το δικό του.
+            $scope = set_to_scope(array_intersect(scope_to_set($scope), scope_to_set($my_scope)));
+        }
+
         $code = !empty($b['user_code']) ? strtoupper(trim($b['user_code'])) : nextUserCode(db());
         $stmt = db()->prepare('INSERT INTO 4a_users (user_code, name, office, role, pin, email, stations, active_station, default_station, pricelist_scope) VALUES (?,?,?,?,?,?,?,?,?,?)');
         $stmt->execute([
@@ -159,7 +189,7 @@ if ($method === 'POST') {
             $b['stations'] ?? 'ATH',
             $b['default_station'] ?? 'ATH',
             $b['default_station'] ?? 'ATH',
-            $b['pricelist_scope'] ?? 'GR'
+            $scope
         ]);
         $new_id = (int)db()->lastInsertId();
         if ($mp !== null && $role !== 'administrator') {
@@ -170,13 +200,14 @@ if ($method === 'POST') {
 
     if ($action === 'edit') {
         $tid = (int)($b['id'] ?? 0);
-        $st  = db()->prepare('SELECT id, role FROM 4a_users WHERE id = ?');
+        $st  = db()->prepare('SELECT id, role, pricelist_scope FROM 4a_users WHERE id = ?');
         $st->execute([$tid]);
         $target = $st->fetch(PDO::FETCH_ASSOC);
         if (!$target) respond(['error' => 'Ο χρήστης δεν βρέθηκε.'], 404);
 
-        $target_role = $target['role'];
-        $role        = $b['role'] ?? $target_role;
+        $target_role  = $target['role'];
+        $target_scope = $target['pricelist_scope'] ?? 'GR';
+        $role         = $b['role'] ?? $target_role;
 
         if (!$is_admin) {
             // Ο manager επεμβαίνει μόνο σε staff/readonly — ποτέ σε manager ή admin.
@@ -190,12 +221,26 @@ if ($method === 'POST') {
         // Κανείς δεν αλλάζει τα ΔΙΚΑ ΤΟΥ δικαιώματα (ρόλος/σταθμοί ναι, permissions όχι).
         if ($tid === $me) $mp = null;
 
+        $scope = strtoupper(trim((string)($b['pricelist_scope'] ?? $target_scope)));
+        if (!in_array($scope, SCOPES, true)) {
+            respond(['error' => 'Άκυρη τιμή pricelist_scope: «' . $scope . '». Επιτρεπτές: GR, CY, BOTH, NONE.'], 400);
+        }
+        if ($role === 'administrator') {
+            $scope = 'BOTH';                       // οι admins βλέπουν πάντα τα πάντα
+        } elseif (!$is_admin) {
+            if ($tid === $me) {
+                $scope = $target_scope;            // ποτέ αλλαγή του δικού του scope
+            } else {
+                $scope = set_to_scope(array_intersect(scope_to_set($scope), scope_to_set($my_scope)));
+            }
+        }
+
         $sql = 'UPDATE 4a_users SET user_code=?, name=?, office=?, role=?, email=?, stations=?, default_station=?, pricelist_scope=?';
         $params = [
             $b['user_code'] ?? '', $b['name'], $b['office'] ?? 'Αθήνα', $role,
             $b['email'] ?? '', $b['stations'] ?? 'ATH',
             $b['default_station'] ?? 'ATH',
-            $b['pricelist_scope'] ?? 'GR'
+            $scope
         ];
         if (!empty($b['pin']) && strlen($b['pin']) === 4) {
             $sql .= ', pin=?';
