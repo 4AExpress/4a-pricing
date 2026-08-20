@@ -22,7 +22,7 @@ function require_admin(): array {
     }
 
     $stmt = db()->prepare(
-        "SELECT user_id, user_role FROM `4a_sessions`
+        "SELECT user_id, user_role, expires_at FROM `4a_sessions`
          WHERE token = ? AND expires_at > NOW()"
     );
     $stmt->execute([$m[1]]);
@@ -31,7 +31,7 @@ function require_admin(): array {
     if (!$row) respond(['error' => 'Unauthorized'], 401);
     if ($row['user_role'] !== 'administrator') respond(['error' => 'Forbidden'], 403);
 
-    return ['id' => (int)$row['user_id'], 'role' => $row['user_role']];
+    return ['id' => (int)$row['user_id'], 'role' => $row['user_role'], 'expires_at' => $row['expires_at'] ?? null];
 }
 
 /**
@@ -45,7 +45,7 @@ function require_user(): array {
     }
 
     $stmt = db()->prepare(
-        "SELECT user_id, user_role FROM `4a_sessions`
+        "SELECT user_id, user_role, expires_at FROM `4a_sessions`
          WHERE token = ? AND expires_at > NOW()"
     );
     $stmt->execute([$m[1]]);
@@ -53,7 +53,7 @@ function require_user(): array {
 
     if (!$row) respond(['error' => 'Unauthorized'], 401);
 
-    return ['id' => (int)$row['user_id'], 'role' => $row['user_role']];
+    return ['id' => (int)$row['user_id'], 'role' => $row['user_role'], 'expires_at' => $row['expires_at'] ?? null];
 }
 /**
  * Returns all permissions for a given user_id.
