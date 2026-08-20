@@ -35,6 +35,19 @@
   .form-group label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
   .form-group input, .form-group select, .form-group textarea { padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; color: #333; background: white; }
   .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #00BCD4; }
+
+  /* Καφέ = προεπιλογή του συστήματος. Σβήνει μόλις αποφασίσει ο χρήστης. */
+  .is-default { color: #8B5E00 !important; font-weight: 600; }
+  .form-hint    { font-size: 11px; color: #888; margin-top: 4px; }
+  .form-caption { font-size: 11px; color: #888; margin: 0 0 12px; }
+  /* Placeholders: γκρι italic ώστε να μη μοιάζουν με συμπληρωμένες τιμές */
+  #cl-name::placeholder, #cl-afm::placeholder, #cl-contact::placeholder,
+  #cl-email::placeholder, #cl-phone::placeholder, #cl-website::placeholder,
+  #cl-address::placeholder, #cl-notes::placeholder, #cl-account::placeholder
+    { color: #9aa0a6; font-style: italic; }
+  /* Validation στο submit */
+  .field-error { border: 2px solid #C60001 !important; background: #fff5f5 !important; }
+  .form-error-msg { color: #C60001; font-size: 12px; font-weight: 600; margin-right: auto; align-self: center; }
   .form-group textarea { resize: vertical; font-family: inherit; }
   .walkin-box { background: #fff8e1; border: 1.5px solid #ffcc02; border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
   .walkin-box input[type=checkbox] { width: 18px; height: 18px; accent-color: #cc0000; cursor: pointer; flex-shrink: 0; }
@@ -201,6 +214,8 @@
   </div>
   <div class="section-body">
 
+    <div class="form-caption">Τα πεδία με καφέ γραμματοσειρά είναι προεπιλογές — μπορείτε να τις αλλάξετε.</div>
+
     <!-- Walk-in -->
     <div class="walkin-box" onclick="document.getElementById('cl-walkin').click()">
       <input type="checkbox" id="cl-walkin" onclick="event.stopPropagation()" onchange="onWalkinChange()" />
@@ -213,30 +228,30 @@
     <div class="form-grid3">
       <div class="form-group">
         <label>Επωνυμία *</label>
-        <input type="text" id="cl-name" placeholder="ALPHA LOGISTICS ΑΕ" oninput="checkForm()" />
+        <input type="text" id="cl-name" placeholder="π.χ. ALPHA LOGISTICS ΑΕ" oninput="checkForm()" />
       </div>
       <div class="form-group">
         <label>ΑΦΜ <span id="afm-required">*</span></label>
-        <input type="text" id="cl-afm" placeholder="998877665" oninput="checkForm()" />
+        <input type="text" id="cl-afm" placeholder="π.χ. 998877665" oninput="checkForm()" />
       </div>
       <div class="form-group">
-        <label>Υπεύθυνος *</label>
-        <input type="text" id="cl-contact" placeholder="Νίκος Παπαδόπουλος" oninput="checkForm()" />
+        <label>Υπεύθυνος</label>
+        <input type="text" id="cl-contact" placeholder="π.χ. Νίκος Παπαδόπουλος" oninput="checkForm()" />
       </div>
     </div>
 
     <div class="form-grid3">
       <div class="form-group">
         <label>Email *</label>
-        <input type="email" id="cl-email" placeholder="nikos@company.gr" oninput="checkForm()" />
+        <input type="email" id="cl-email" placeholder="π.χ. info@company.gr" oninput="checkForm()" />
       </div>
       <div class="form-group">
         <label>Τηλέφωνο</label>
-        <input type="text" id="cl-phone" placeholder="+30 210 1234567" />
+        <input type="text" id="cl-phone" placeholder="π.χ. +30 210 1234567" />
       </div>
       <div class="form-group">
         <label>Website</label>
-        <input type="text" id="cl-website" placeholder="www.company.gr" />
+        <input type="text" id="cl-website" placeholder="π.χ. www.company.gr" />
       </div>
     </div>
 
@@ -244,11 +259,11 @@
     <div style="margin-bottom:12px;">
       <div class="form-group" style="margin-bottom:8px;">
         <label>Διεύθυνση Έδρας</label>
-        <input type="text" id="cl-address" placeholder="Λεωφ. Αθηνών 100, 12345, Αθήνα" />
+        <input type="text" id="cl-address" placeholder="π.χ. Λεωφ. Αθηνών 100, 12345, Αθήνα" />
       </div>
       <div class="form-group">
         <label>Σχόλια / Σημειώσεις</label>
-        <textarea id="cl-notes" rows="2" placeholder="Εσωτερικές σημειώσεις για τον πελάτη..."></textarea>
+        <textarea id="cl-notes" rows="2" placeholder="π.χ. εσωτερικές σημειώσεις για τον πελάτη"></textarea>
       </div>
     </div>
 
@@ -272,11 +287,12 @@
     <div class="form-group">
       <label>Χώρα / Ταυτότητα ΦΠΑ</label>
       <select id="cl-country">
-        <option value="GR">Ελλάδα (GR)</option>
-        <option value="CY">Κύπρος (CY)</option>
-        <option value="EU">Ε.Ε. (ενδοκοινοτικό)</option>
-        <option value="NONEU">Εκτός Ε.Ε.</option>
+        <option value="GR">🇬🇷 Ελλάδα (GR)</option>
+        <option value="CY">🇨🇾 Κύπρος (CY)</option>
+        <option value="EU">🇪🇺 Ε.Ε. (EU)</option>
+        <option value="NONEU">🌍 Εκτός Ε.Ε. (NONEU)</option>
       </select>
+      <div class="form-hint" id="cl-country-hint"></div>
     </div>
 
     <div class="form-group" style="margin-bottom:12px;">
@@ -369,6 +385,7 @@
     </div>
 
     <div class="btn-row">
+      <span id="form-error-msg" class="form-error-msg" style="display:none;">Συμπληρώστε τα υποχρεωτικά πεδία (με *)</span>
       <button class="btn btn-secondary" onclick="resetForm()">Ακύρωση</button>
       <button class="btn btn-orange"  id="preview-btn" onclick="previewPDF()" disabled>📄 Προεπισκόπηση PDF</button>
       <button class="btn btn-green"   id="send-btn"    onclick="sendOffer()"  disabled>✉️ Αποστολή Προσφοράς</button>
@@ -564,7 +581,10 @@ async function init(){
   managers=currentUser.email?[currentUser.email]:[];
   await loadOffices();
   loadServices().then(()=>{ if(selectedPls.length) renderPlTags(); });
-  updateOfferNum(); renderManagers(); renderClients();
+  // Οι προεπιλογές έμπαιναν μόνο από τη resetForm(), που δεν τρέχει στο load —
+  // γι' αυτό ο χρήστης NIC έβλεπε «Ελλάδα» στη χώρα.
+  wireFormUx(); applyFormDefaults();
+  updateOfferNum(); renderManagers(); renderClients(); checkForm();
 }
 
 function updateOfferNum(){
@@ -578,12 +598,78 @@ function setStatus(s,el){
   el.classList.add('active'); checkForm();
 }
 
+// ── Προεπιλογές (καφέ) & validation στο submit ────────────────────────────
+// Καφέ = το διάλεξε το σύστημα. Μόλις αλλάξει ο χρήστης την τιμή, σβήνει
+// οριστικά — ακόμη κι αν επαναφέρει την αρχική τιμή.
+const DEFAULT_FIELDS = ['cl-country','cl-payment','cl-invoice','cl-validity'];
+// Υποχρεωτικά = όσα έχουν * στη label. Το ΑΦΜ εξαιρείται στους walk-in.
+// Ο Υπεύθυνος ΔΕΝ είναι υποχρεωτικός: 5 από τους 42 υπάρχοντες πελάτες τον
+// έχουν κενό και δεν πρέπει να μπλοκάρει η επεξεργασία τους (20-08-2026).
+const REQUIRED_FIELDS = [
+  {id:'cl-name'}, {id:'cl-afm', optionalForWalkin:true}, {id:'cl-email'}
+];
+
+function applyFormDefaults(){
+  const c=document.getElementById('cl-country');
+  if(c) c.value=(currentUser&&currentUser.active_station_country)||'GR';
+  const hint=document.getElementById('cl-country-hint');
+  if(hint){
+    const st=(currentUser&&currentUser.active_station)||'';
+    hint.textContent = st ? `Προεπιλογή από σταθμό ${st} — μπορείτε να την αλλάξετε` : '';
+  }
+  DEFAULT_FIELDS.forEach(id=>document.getElementById(id)?.classList.add('is-default'));
+}
+function clearDefaultMarks(){
+  DEFAULT_FIELDS.forEach(id=>document.getElementById(id)?.classList.remove('is-default'));
+}
+function wireFormUx(){
+  DEFAULT_FIELDS.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('change',()=>el.classList.remove('is-default'));
+  });
+  REQUIRED_FIELDS.forEach(f=>{
+    const el=document.getElementById(f.id);
+    if(el) el.addEventListener('input',()=>{ el.classList.remove('field-error'); refreshFormErrorMsg(); });
+  });
+}
+function refreshFormErrorMsg(){
+  const msg=document.getElementById('form-error-msg');
+  if(msg && !document.querySelector('.field-error')) msg.style.display='none';
+}
+function clearFieldErrors(){
+  document.querySelectorAll('.field-error').forEach(el=>el.classList.remove('field-error'));
+  refreshFormErrorMsg();
+}
+// Επιστρέφει true αν η φόρμα είναι έγκυρη. Δεν τρέχει πριν το πρώτο submit.
+function validateRequired(){
+  const isWalkin=document.getElementById('cl-walkin')?.checked;
+  let first=null;
+  REQUIRED_FIELDS.forEach(f=>{
+    const el=document.getElementById(f.id);
+    if(!el) return;
+    const required=!(f.optionalForWalkin&&isWalkin);
+    const empty=required&&!el.value.trim();
+    el.classList.toggle('field-error',empty);
+    if(empty&&!first) first=el;
+  });
+  const msg=document.getElementById('form-error-msg');
+  if(first){
+    if(msg) msg.style.display='';
+    first.scrollIntoView({behavior:'smooth',block:'center'});
+    first.focus({preventScroll:true});
+    return false;
+  }
+  if(msg) msg.style.display='none';
+  return true;
+}
+
 function checkForm(){
   const isWalkin = document.getElementById('cl-walkin')?.checked;
   const afmOk = isWalkin || document.getElementById('cl-afm').value.trim();
   const ok=document.getElementById('cl-name').value.trim() && afmOk &&
            document.getElementById('cl-email').value.trim();
-  document.getElementById('save-btn').disabled=!ok;
+  // Η Αποθήκευση μένει πάντα πατήσιμη — το validateRequired() δείχνει τι λείπει.
+  document.getElementById('save-btn').disabled=false;
   document.getElementById('preview-btn').disabled=!ok;
   document.getElementById('send-btn').disabled=!(ok&&selectedPls.length>0);
   document.getElementById('draft-btn').disabled=!(ok&&selectedPls.length>0);
@@ -600,7 +686,8 @@ function resetForm(){
   document.getElementById('cl-payment').value='30';
   document.getElementById('cl-invoice').value='monthly';
   document.getElementById('cl-validity').value='30';
-  document.getElementById('cl-country').value=currentUser.active_station_country||'GR';
+  applyFormDefaults();
+  clearFieldErrors();
   document.getElementById('form-title').textContent='Νέος Πελάτης';
   document.querySelectorAll('.status-pill').forEach(p=>p.classList.remove('active'));
   document.querySelector('.st-prospect').classList.add('active');
@@ -917,7 +1004,7 @@ async function saveClient(){
   const name=document.getElementById('cl-name').value.trim();
   const afm=document.getElementById('cl-afm').value.trim();
   const email=document.getElementById('cl-email').value.trim();
-  if(!name||!afm||!email){ alert('Συμπλήρωσε Επωνυμία, ΑΦΜ και Email'); return; }
+  if(!validateRequired()) return;
   // ── A2: validation κωδικού συνεργασίας (account) ──────────────────────────
   {
     const accEl=document.getElementById('cl-account');
@@ -1039,6 +1126,8 @@ function editClient(id){
   document.getElementById('cl-payment').value=c.payment||'30';
   document.getElementById('cl-invoice').value=c.invoice||'monthly';
   document.getElementById('cl-validity').value=c.validity||'30';
+  // Σε επεξεργασία υπάρχοντος πελάτη οι τιμές είναι αποθηκευμένες, όχι προτάσεις.
+  clearDefaultMarks(); clearFieldErrors();
   currentStatus=c.status||'prospect';
   selectedPls=(c.pricelists||[]).map(pl=>{ if(pl.fuel_enabled===undefined||pl.fuel_enabled===null){ const _sv=(servicesCache||[]).find(x=>x.code===pl.service_id); pl.fuel_enabled=parseInt(_sv?_sv.has_fuel:0)===1?1:0; } return {...pl}; });
   surcharges=c.surcharges?[...c.surcharges]:[];
@@ -2374,8 +2463,7 @@ async function buildJsPDF(offerNum){
 async function draftOffer(){
   const name=document.getElementById('cl-name').value.trim();
   const email=document.getElementById('cl-email').value.trim();
-  if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
-  if(!email){ alert('Απαιτείται email παραλήπτη'); return; }
+  if(!validateRequired()) return;
   if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
   document.getElementById('draft-btn').textContent='⏳ Draft...';
   document.getElementById('draft-btn').disabled=true;
@@ -2564,7 +2652,7 @@ document.addEventListener('visibilitychange',()=>{
 
 init();
 </script>
-<div id="app-version" title="Έκδοση εφαρμογής — αν αλλάζει, φόρτωσε νέα έκδοση" style="position:fixed;bottom:6px;right:10px;font-size:10px;color:#888;background:rgba(255,255,255,0.9);padding:3px 9px;border-radius:10px;z-index:9998;font-family:monospace;box-shadow:0 1px 3px rgba(0,0,0,0.12);">4A Pricing · build 2026.08.19 · FORM-001 · legal</div>
+<div id="app-version" title="Έκδοση εφαρμογής — αν αλλάζει, φόρτωσε νέα έκδοση" style="position:fixed;bottom:6px;right:10px;font-size:10px;color:#888;background:rgba(255,255,255,0.9);padding:3px 9px;border-radius:10px;z-index:9998;font-family:monospace;box-shadow:0 1px 3px rgba(0,0,0,0.12);">4A Pricing · build 2026.08.20 · FORM-001 · legal · ux</div>
 <!-- nav-legal gating | RBAC module 'legal' | 19-08-2026 -->
 <script>
 (function(){
