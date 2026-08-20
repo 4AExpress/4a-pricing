@@ -53,6 +53,9 @@
   .perms-table input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: #cc0000; }
   .perms-table input[type=checkbox]:disabled { cursor: not-allowed; opacity: 0.4; }
   .module-icon { margin-right: 6px; }
+  /* Validation στο submit — ίδιο pattern με το pricelist-clients.html */
+  .field-error { border: 2px solid #C60001 !important; background: #fff5f5 !important; }
+  .form-error-msg { color: #C60001; font-size: 12px; font-weight: 600; margin-right: auto; align-self: center; }
   /* Εξαίρεση = διαφέρει από ό,τι δίνει ο ρόλος */
   .perms-table input[type=checkbox].perm-exception { outline: 2px solid #ff9800; outline-offset: 1px; border-radius: 2px; }
   .perm-all-row td { background: #fff8e1; font-weight: 700; }
@@ -169,7 +172,7 @@
           <input type="email" id="u-email" placeholder="nikos@4aexpress.com" oninput="checkForm()" />
         </div>
         <div class="form-group">
-          <label>PIN * (4 ψηφία)</label>
+          <label id="u-pin-label">PIN * (4 ψηφία)</label>
           <input type="password" id="u-pin" maxlength="4" placeholder="••••" oninput="checkForm()" />
         </div>
       </div>
@@ -253,6 +256,7 @@
       </div>
 
       <div class="btn-row">
+        <span id="form-error-msg" class="form-error-msg" style="display:none;"></span>
         <button class="btn btn-secondary" onclick="resetForm()">Ακύρωση</button>
         <button class="btn btn-primary" id="save-btn" onclick="saveUser()" disabled>💾 Αποθήκευση</button>
       </div>
@@ -440,6 +444,7 @@ function init() {
       document.getElementById('form-body').innerHTML =
         '<div class="no-access">⛔ Αποτυχία ελέγχου δικαιωμάτων.</div>';
     });
+  wireUserFormUx();
   loadUsers();
 }
 
@@ -603,16 +608,75 @@ function validateCode(el) {
   return ok;
 }
 
+// Το PIN είναι υποχρεωτικό ΜΟΝΟ σε νέο χρήστη. Σε επεξεργασία το πεδίο είναι
+// κενό (δείχνει placeholder) και κενό σημαίνει «μην αλλάξεις το PIN» — έτσι το
+// χειρίζεται ήδη το users.php: if (!empty($b['pin']) && strlen($b['pin'])===4).
+function pinState() {
+  const v = (document.getElementById('u-pin')?.value || '').trim();
+  if (!editingId) return v.length === 4 ? 'ok' : 'missing';   // νέος χρήστης
+  if (v === '')   return 'ok';                                 // edit: δεν αλλάζει
+  return v.length === 4 ? 'ok' : 'invalid';                    // edit: μισοσυμπληρωμένο
+}
+
 function checkForm() {
   const ok = (editingId || /^E\d{4}$/.test(document.getElementById('u-code')?.value||'')) &&
              document.getElementById('u-name').value.trim() &&
              document.getElementById('u-email').value.trim() &&
-             document.getElementById('u-pin').value.trim().length === 4;
+             pinState() === 'ok';
   document.getElementById('save-btn').disabled = !ok;
+  const lbl = document.getElementById('u-pin-label');
+  if (lbl) lbl.textContent = editingId ? 'PIN (4 ψηφία — κενό = δεν αλλάζει)' : 'PIN * (4 ψηφία)';
+}
+
+// ─── VALIDATION ΣΤΟ SUBMIT (ίδιο pattern με pricelist-clients.html) ──────────
+function refreshFormErrorMsg() {
+  const msg = document.getElementById('form-error-msg');
+  if (msg && !document.querySelector('.field-error')) msg.style.display = 'none';
+}
+function clearFieldErrors() {
+  document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+  refreshFormErrorMsg();
+}
+function wireUserFormUx() {
+  ['u-code','u-name','u-email','u-pin'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => { el.classList.remove('field-error'); refreshFormErrorMsg(); });
+  });
+}
+function validateRequired() {
+  const bad = [];
+  const nameEl = document.getElementById('u-name');
+  const mailEl = document.getElementById('u-email');
+  const pinEl  = document.getElementById('u-pin');
+  const codeEl = document.getElementById('u-code');
+
+  if (!editingId && !/^E\d{4}$/.test((codeEl?.value || '').trim())) bad.push(codeEl);
+  if (!(nameEl?.value || '').trim()) bad.push(nameEl);
+  if (!(mailEl?.value || '').trim()) bad.push(mailEl);
+  if (pinState() !== 'ok') bad.push(pinEl);
+
+  document.querySelectorAll('#form-body .field-error').forEach(el => el.classList.remove('field-error'));
+  bad.filter(Boolean).forEach(el => el.classList.add('field-error'));
+
+  const msg = document.getElementById('form-error-msg');
+  if (bad.length) {
+    if (msg) {
+      msg.textContent = (pinState() === 'invalid' && bad.length === 1)
+        ? 'Το PIN πρέπει να έχει 4 ψηφία (ή αφήστε το κενό για να μην αλλάξει).'
+        : 'Συμπληρώστε τα υποχρεωτικά πεδία (με *)';
+      msg.style.display = '';
+    }
+    bad[0].scrollIntoView({behavior:'smooth', block:'center'});
+    bad[0].focus({preventScroll:true});
+    return false;
+  }
+  if (msg) msg.style.display = 'none';
+  return true;
 }
 
 function resetForm() {
   editingId = null;
+  clearFieldErrors();
   ['u-code','u-name','u-email','u-pin'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('u-role').value = 'readonly';
   setScopeValue('GR');
@@ -640,7 +704,7 @@ async function saveUser() {
   const office = STATIONS[firstStation] || 'Αθήνα';
   const perms = getPermsFromTable();
 
-  if (!name || !email || pin.length !== 4) { alert('Συμπλήρωσε όλα τα υποχρεωτικά πεδία'); return; }
+  if (!validateRequired()) return;
 
   // Η OR-συμπίεση σε καθολικά can_* αφαιρέθηκε: έχανε την πληροφορία «ποιο
   // module» και τα can_* του 4a_users δεν τα διαβάζει κανένας έλεγχος πρόσβασης.
@@ -723,6 +787,7 @@ function editUser(id) {
   document.getElementById('u-name').value  = u.name  || '';
   document.getElementById('u-email').value = u.email || '';
   document.getElementById('u-pin').value   = '';
+  clearFieldErrors();
   document.getElementById('u-role').value  = u.role  || 'readonly';
   setScopeValue(u.pricelist_scope || 'GR');
   document.getElementById('u-default-station').value = u.default_station || 'ATH';
@@ -747,7 +812,7 @@ function editUser(id) {
   buildPermsTable(u.perm_exceptions || {});
 
   document.getElementById('form-title').textContent = `✏️ Επεξεργασία: ${u.name}`;
-  document.getElementById('save-btn').disabled = false;
+  checkForm();   // ενημερώνει και τη label του PIN («κενό = δεν αλλάζει»)
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -897,6 +962,6 @@ init();
     .catch(function(){});
 })();
 </script>
-<!-- 4A build 2026.08.20 · rbac · scope -->
+<!-- 4A build 2026.08.20 · rbac · scope · pinfix -->
 </body>
 </html>
