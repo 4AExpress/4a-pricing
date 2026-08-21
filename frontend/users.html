@@ -533,7 +533,7 @@ function onRoleChange() {
   buildPermsTable({});
   onScopeChange();
   const isAdmin = role === 'administrator';
-  document.querySelectorAll('.station-check').forEach(el => {
+  document.querySelectorAll('#station-checks .station-check').forEach(el => {
     const cb = el.querySelector('input');
     if (isAdmin) { cb.checked = true; el.classList.add('checked','locked'); }
     else { el.classList.remove('locked'); el.classList.toggle('checked', cb.checked); }
@@ -589,16 +589,25 @@ function onScopeChange() {
 }
 
 function onStationChange() {
-  document.querySelectorAll('.station-check').forEach(el => {
+  document.querySelectorAll('#station-checks .station-check').forEach(el => {
     el.classList.toggle('checked', el.querySelector('input').checked);
   });
 }
 
+// Οι μοναδικοί πραγματικοί σταθμοί. Ίδιο whitelist με το form_cod_bank.php και
+// με το modal επιλογής σταθμού στο login.
+const STATION_WHITELIST = ['ATH','LCA','NIC','QLI'];
+
 function getSelectedStations() {
   const role = document.getElementById('u-role').value;
-  if (role === 'administrator') return 'ATH,LCA,NIC,QLI';
-  return Array.from(document.querySelectorAll('.station-check input:checked'))
-    .map(cb => cb.value).join(',') || 'ATH';
+  if (role === 'administrator') return STATION_WHITELIST.join(',');
+  // Διπλή άμυνα: ο scoped selector κρατά έξω τα scope pills, το whitelist
+  // κρατά έξω ΚΑΘΕ μελλοντική ομάδα pills που θα έπαιρνε την ίδια κλάση.
+  // Το pricelist_scope δεν είναι σταθμός και δεν επιτρέπεται να καταλήξει εδώ.
+  const picked = Array.from(document.querySelectorAll('#station-checks .station-check input:checked'))
+    .map(cb => (cb.value || '').trim().toUpperCase())
+    .filter(v => STATION_WHITELIST.includes(v));
+  return [...new Set(picked)].join(',') || 'ATH';
 }
 
 function validateCode(el) {
@@ -680,7 +689,7 @@ function resetForm() {
   document.getElementById('u-role').value = 'readonly';
   setScopeValue('GR');
   document.getElementById('form-title').textContent = 'Νέος Χρήστης';
-  document.querySelectorAll('.station-check').forEach(el => {
+  document.querySelectorAll('#station-checks .station-check').forEach(el => {
     const cb = el.querySelector('input');
     cb.checked = cb.value === 'ATH';
     el.classList.toggle('checked', cb.value === 'ATH');
@@ -792,14 +801,14 @@ function editUser(id) {
   document.getElementById('u-default-station').value = u.default_station || 'ATH';
 
   const userStations = (u.stations||'ATH').split(',');
-  document.querySelectorAll('.station-check').forEach(el => {
+  document.querySelectorAll('#station-checks .station-check').forEach(el => {
     const cb = el.querySelector('input');
     cb.checked = userStations.includes(cb.value);
     el.classList.toggle('checked', cb.checked);
     el.classList.remove('locked');
   });
   if (u.role === 'administrator') {
-    document.querySelectorAll('.station-check').forEach(el => el.classList.add('locked'));
+    document.querySelectorAll('#station-checks .station-check').forEach(el => el.classList.add('locked'));
     document.getElementById('stations-note').textContent = '* Administrator έχει πρόσβαση σε όλους τους σταθμούς';
   } else {
     document.getElementById('stations-note').textContent = '';
@@ -961,6 +970,6 @@ init();
     .catch(function(){});
 })();
 </script>
-<!-- 4A build 2026.08.20 · rbac · scope · pinfix2 -->
+<!-- 4A build 2026.08.21 · rbac · scope · stationfix -->
 </body>
 </html>

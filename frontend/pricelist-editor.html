@@ -349,13 +349,33 @@ async function doLogin() {
     try { const _me = await fetch(`${API}/me.php`, {headers:{'Authorization':'Bearer '+currentUser._token}}).then(r=>r.json()); if(_me.expires_at) startSessionTimer(_me.expires_at); } catch(e){}
   } catch(e) { err.textContent = 'Σφάλμα σύνδεσης'; return; }
 
+  // ΜΟΝΟ πραγματικοί σταθμοί. Το pricelist_scope (GR/CY/BOTH/NONE) ΔΕΝ είναι
+  // σταθμός· αν βρεθεί μέσα στο stations, αγνοείται εδώ και δεν γίνεται ποτέ
+  // επιλέξιμη κάρτα. Το whitelist είναι το ίδιο με του form_cod_bank.php.
   const _CMAP={ATH:'GR',LCA:'CY',NIC:'CY',QLI:'CY'};
   const _SLBL={ATH:'ATH — Αθήνα',LCA:'LCA — Λάρνακα',NIC:'NIC — Λευκωσία',QLI:'QLI — Λεμεσός'};
-  const _allowed=(currentUser.stations||'ATH').split(',').map(s=>s.trim());
-  const _countries=[...new Set(_allowed.map(s=>_CMAP[s]||'GR'))];
+  const _raw=(currentUser.stations||'').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  const _allowed=[...new Set(_raw.filter(s=>_CMAP[s]))];
+  const _bogus=_raw.filter(s=>!_CMAP[s]);
+  if(_bogus.length) console.warn('Αγνοήθηκαν μη έγκυροι σταθμοί στο 4a_users.stations:', _bogus);
   window._completeLogin=function(st){
+    st=(st||'').trim().toUpperCase();
+    // Καμία σιωπηλή υπόθεση GR: άγνωστος σταθμός → default_station αν είναι
+    // έγκυρος, αλλιώς καθαρό σφάλμα και δεν μπαίνει στην εφαρμογή.
+    if(!_CMAP[st]){
+      const _def=(currentUser.default_station||'').trim().toUpperCase();
+      if(_CMAP[_def]){
+        console.warn('Μη έγκυρος σταθμός «'+st+'» — fallback στο default_station «'+_def+'»');
+        st=_def;
+      } else {
+        document.getElementById('station-modal').style.display='none';
+        err.style.color='#c62828';
+        err.textContent='⚠️ Μη έγκυρος σταθμός «'+st+'». Επικοινωνήστε με τον διαχειριστή.';
+        return;
+      }
+    }
     currentUser.active_station=st;
-    currentUser.active_station_country=_CMAP[st]||'GR';
+    currentUser.active_station_country=_CMAP[st];
     sessionStorage.setItem('4a_current_user',JSON.stringify(currentUser));
     document.getElementById('station-modal').style.display='none';
     document.getElementById('login-screen').style.display='none';
@@ -364,13 +384,22 @@ async function doLogin() {
     _updateBadge();
     init();
   }
+  if(!_allowed.length){
+    // Κανένας έγκυρος σταθμός: δεν μπαίνουμε στην εφαρμογή με μαντεψιά.
+    err.style.color='#c62828';
+    err.textContent='⚠️ Δεν σας έχει ανατεθεί έγκυρος σταθμός (ATH/LCA/NIC/QLI). Επικοινωνήστε με τον διαχειριστή.';
+    return;
+  }
   if(_allowed.length>1){
-    const _flag=s=>_CMAP[s]==='GR'?'GR':'CY';
+    const _flag=s=>_CMAP[s];
     const _opts=_allowed.map(s=>'<div onclick="_completeLogin(\'' +s+ '\')" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1.5px solid #ddd;border-radius:8px;cursor:pointer;margin-bottom:8px;"><span style="font-size:13px;font-weight:700;padding:3px 8px;border-radius:4px;background:#f0f0f0;">'+_flag(s)+'</span><div><div style="font-weight:500;">'+(_SLBL[s]||s)+'</div><div style="font-size:11px;color:#888;">'+(_CMAP[s]==='GR'?'Ελλάδα · ΦΠΑ 24%':'Κύπρος · ΦΠΑ 19%')+'</div></div></div>').join('');
     document.getElementById('station-modal-body').innerHTML=_opts;
     document.getElementById('station-modal').style.display='flex';
   } else {
-    _completeLogin(currentUser.default_station||_allowed[0]);
+    // Το default_station χρησιμοποιείται μόνο αν είναι ΟΝΤΩΣ ένας από τους
+    // σταθμούς του χρήστη — αλλιώς ο μοναδικός έγκυρος.
+    const _def=(currentUser.default_station||'').trim().toUpperCase();
+    _completeLogin(_allowed.includes(_def) ? _def : _allowed[0]);
   }
   sessionStorage.setItem('4a_current_user', JSON.stringify(currentUser));
   document.getElementById('login-screen').style.display = 'none';
@@ -932,7 +961,7 @@ function _updateBadge(){
     .catch(function(){});
 })();
 </script>
-<!-- 4A build 2026.08.21 · rbac · scope · shelf -->
+<!-- 4A build 2026.08.21 · rbac · scope · shelf · stationfix -->
 </body>
 </html>
 
