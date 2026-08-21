@@ -258,7 +258,7 @@
       <div class="btn-row">
         <span id="form-error-msg" class="form-error-msg" style="display:none;"></span>
         <button class="btn btn-secondary" onclick="resetForm()">Ακύρωση</button>
-        <button class="btn btn-primary" id="save-btn" onclick="saveUser()" disabled>💾 Αποθήκευση</button>
+        <button class="btn btn-primary" id="save-btn" onclick="saveUser()">💾 Αποθήκευση</button>
       </div>
     </div>
 
@@ -619,11 +619,10 @@ function pinState() {
 }
 
 function checkForm() {
-  const ok = (editingId || /^E\d{4}$/.test(document.getElementById('u-code')?.value||'')) &&
-             document.getElementById('u-name').value.trim() &&
-             document.getElementById('u-email').value.trim() &&
-             pinState() === 'ok';
-  document.getElementById('save-btn').disabled = !ok;
+  // Η Αποθήκευση μένει ΠΑΝΤΑ πατήσιμη: μοναδικός φύλακας είναι το
+  // validateRequired(). Ένα disabled κουμπί δεν εξηγεί τι λείπει — το κόκκινο
+  // περίγραμμα το δείχνει. (Ίδια απόφαση με το pricelist-clients.html.)
+  document.getElementById('save-btn').disabled = false;
   const lbl = document.getElementById('u-pin-label');
   if (lbl) lbl.textContent = editingId ? 'PIN (4 ψηφία — κενό = δεν αλλάζει)' : 'PIN * (4 ψηφία)';
 }
@@ -962,6 +961,6 @@ init();
     .catch(function(){});
 })();
 </script>
-<!-- 4A build 2026.08.20 · rbac · scope · pinfix -->
+<!-- 4A build 2026.08.20 · rbac · scope · pinfix2 -->
 </body>
 </html>
