@@ -14,6 +14,11 @@ if ($method === 'GET') {
     $perms   = get_user_permissions($session['id']);
     $scope   = $perms['pricelist_scope'] ?? 'GR';
 
+    // NONE: ρητά κανένας πελάτης. Μέχρι τώρα κατέληγε σε WHERE country='NONE'
+    // πάνω σε ENUM που δεν έχει αυτή την τιμή — δούλευε κατά σύμπτωση.
+    // Το σχήμα της απάντησης παραμένει σκέτος πίνακας, όπως παρακάτω.
+    if ($scope === 'NONE') respond([]);
+
     if ($scope === 'BOTH') {
         $rows = db()->query('SELECT * FROM 4a_clients ORDER BY created_at DESC')->fetchAll();
     } else {

@@ -40,12 +40,30 @@ if ($count == 0) {
 
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'OPTIONS') { http_response_code(204); exit; }
-if ($method === 'GET')  { require_permission('services', 'view'); }
-if ($method === 'POST') { require_permission('services', 'edit'); }
+$session = null;
+if ($method === 'GET')  { $session = require_permission('services', 'view'); }
+if ($method === 'POST') { $session = require_permission('services', 'edit'); }
 
-// GET — φόρτωση όλων των services
+// GET — φιλτραρισμένο ανά pricelist_scope του χρήστη.
+// ?all=1 → ΠΑΡΑΚΑΜΨΗ, για τη μία διαδρομή που χρειάζεται μεταδεδομένα ΟΛΩΝ των
+// services ανεξαρτήτως χρήστη: η loadServices() του pricelist-clients.html
+// διαβάζει name/has_cod/has_fuel για τιμοκαταλόγους ΗΔΗ αποθηκευμένων πελατών
+// (και για την παραγωγή PDF). Χωρίς αυτό, κυπριακός χρήστης που ανοίγει
+// προσφορά με ελληνικό τιμοκατάλογο θα έχανε ονόματα και σημαίες.
 if ($method === 'GET') {
-    $rows = db()->query("SELECT * FROM `4a_services` ORDER BY `sort_order` ASC, `code` ASC")->fetchAll(PDO::FETCH_ASSOC);
+    $scope    = $session['permissions']['pricelist_scope'] ?? 'GR';
+    $role     = $session['permissions']['role'] ?? '';
+    $sees_all = ($role === 'administrator' || $scope === 'BOTH' || !empty($_GET['all']));
+
+    if (!$sees_all && $scope === 'NONE') respond([]);
+
+    if ($sees_all) {
+        $rows = db()->query("SELECT * FROM `4a_services` ORDER BY `sort_order` ASC, `code` ASC")->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $stmt = db()->prepare("SELECT * FROM `4a_services` WHERE `country` = ? ORDER BY `sort_order` ASC, `code` ASC");
+        $stmt->execute([$scope]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
     respond($rows);
 }
 

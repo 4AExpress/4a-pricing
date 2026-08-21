@@ -702,7 +702,11 @@ const _MODAL_COLOR={blue:"#1565c0",yellow:"#f9a825",green:"#2e7d32",red:"#c62828
 
 async function loadServices(){
   if(servicesCache) return servicesCache;
-  try{ const r=await apiFetch(`${API}/services.php?v=${Date.now()}`); const d=await r.json(); servicesCache=Array.isArray(d)?d:[]; }
+  // ?all=1: εδώ χρειαζόμαστε μεταδεδομένα (name/has_cod/has_fuel) για services
+  // ΗΔΗ αποθηκευμένων τιμοκαταλόγων πελατών και για τα PDF — όχι τη λίστα που
+  // επιτρέπεται να δημιουργήσει ο χρήστης. Χωρίς αυτό, κυπριακός χρήστης που
+  // ανοίγει προσφορά με ελληνικό τιμοκατάλογο θα έχανε ονόματα και σημαίες.
+  try{ const r=await apiFetch(`${API}/services.php?all=1&v=${Date.now()}`); const d=await r.json(); servicesCache=Array.isArray(d)?d:[]; }
   catch(e){ servicesCache=[]; }
   return servicesCache;
 }
@@ -2652,7 +2656,7 @@ document.addEventListener('visibilitychange',()=>{
 
 init();
 </script>
-<div id="app-version" title="Έκδοση εφαρμογής — αν αλλάζει, φόρτωσε νέα έκδοση" style="position:fixed;bottom:6px;right:10px;font-size:10px;color:#888;background:rgba(255,255,255,0.9);padding:3px 9px;border-radius:10px;z-index:9998;font-family:monospace;box-shadow:0 1px 3px rgba(0,0,0,0.12);">4A Pricing · build 2026.08.20 · FORM-001 · legal · ux</div>
+<div id="app-version" title="Έκδοση εφαρμογής — αν αλλάζει, φόρτωσε νέα έκδοση" style="position:fixed;bottom:6px;right:10px;font-size:10px;color:#888;background:rgba(255,255,255,0.9);padding:3px 9px;border-radius:10px;z-index:9998;font-family:monospace;box-shadow:0 1px 3px rgba(0,0,0,0.12);">4A Pricing · build 2026.08.21 · FORM-001 · legal · ux · shelf</div>
 <!-- nav-legal gating | RBAC module 'legal' | 19-08-2026 -->
 <script>
 (function(){

@@ -439,23 +439,63 @@ function formatDate(isoStr) {
 }
 function todayFormatted() { return formatDate(new Date().toISOString()); }
 
+// ─── SCOPE ────────────────────────────────────────────────────────────────────
+// Ποιες υπηρεσίες βλέπει ο χρήστης το αποφασίζει ΑΠΟΚΛΕΙΣΤΙΚΑ ο server
+// (services.php φιλτραρισμένο ανά pricelist_scope). Ο πίνακας SERVICES παραμένει
+// μόνο ως πηγή μεταδεδομένων: αρχείο tariff, zone, surcharge keys — πράγματα που
+// δεν υπάρχουν στη βάση. Καμία απόφαση ορατότητας δεν παίρνεται εδώ.
+let allowedIds   = null;   // Set κωδικών· null = δεν απάντησε ο server
+let scopeCountries = [];   // ['GR'], ['CY'], ή και τα δύο
+
+async function loadAllowedServices() {
+  try {
+    const r = await apiFetch(`${API}/services.php?v=${Date.now()}`);
+    const d = await r.json();
+    if (!Array.isArray(d)) return;
+    allowedIds = new Set(d.filter(s => String(s.active) !== '0').map(s => s.code));
+    scopeCountries = [...new Set(d.map(s => s.country).filter(Boolean))];
+  } catch (e) { console.warn('services load failed', e); }
+}
+
+function visibleServices() {
+  return allowedIds ? SERVICES.filter(s => allowedIds.has(s.id)) : SERVICES;
+}
+
+// Το μήνυμα όταν δεν υπάρχει τίποτα να δείξουμε — ο χρήστης πρέπει να καταλάβει
+// ΓΙΑΤΙ, όχι να νομίζει ότι έσπασε κάτι.
+function scopeEmptyMsg(what) {
+  if (allowedIds && allowedIds.size === 0) {
+    return 'Δεν σας έχουν ανατεθεί τιμοκατάλογοι. Επικοινωνήστε με τον διαχειριστή.';
+  }
+  const label = scopeCountries.length === 1
+    ? (scopeCountries[0] === 'CY' ? 'κυπριακούς' : 'ελληνικούς') : '';
+  return label
+    ? `Δεν υπάρχουν ${what} για τους ${label} τιμοκαταλόγους που βλέπετε.`
+    : `Δεν υπάρχουν ${what}.`;
+}
+
 async function init() {
   try {
     const rs = await apiFetch(`${API}/settings.php?v=${Date.now()}`);
     cySettings = await rs.json();
   } catch(e) { console.warn('Settings load failed', e); }
 
+  await loadAllowedServices();
+  const vis = visibleServices();
+  if (vis.length && !vis.some(s => s.id === activeShelfTab)) activeShelfTab = vis[0].id;
+
   await Promise.all([loadDHL(), loadFuel()]);
 
   try {
     const r = await apiFetch(`${API}/shelf.php?v=${Date.now()}`);
     const remote = await r.json();
-    if (Object.keys(remote).length > 0) {
-      shelf = remote;
-      localStorage.setItem('4a_shelf', JSON.stringify(shelf));
-    }
+    // Η απάντηση του server ισχύει ΑΥΤΟΥΣΙΑ, ακόμη κι αν είναι άδεια: για χρήστη
+    // με scope=NONE το {} είναι το σωστό αποτέλεσμα. Παλιότερα, άδεια απάντηση
+    // άφηνε το localStorage cache — που θα παρέκαμπτε το φίλτρο.
+    shelf = (remote && typeof remote === 'object') ? remote : {};
+    localStorage.setItem('4a_shelf', JSON.stringify(shelf));
   } catch(e) {
-    shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');
+    shelf = JSON.parse(localStorage.getItem('4a_shelf') || '{}');   // μόνο σε σφάλμα δικτύου
   }
 
   renderCyPanel();
@@ -465,7 +505,8 @@ async function init() {
 
 async function loadDHL() {
   const loaded = {};
-  await Promise.all(SERVICES.map(async svc => {
+  // Μόνο για τις υπηρεσίες που βλέπει ο χρήστης — τίποτα άλλο δεν χρειάζεται.
+  await Promise.all(visibleServices().map(async svc => {
     if (!loaded[svc.file]) {
       const r = await fetch(BASE + svc.file);
       loaded[svc.file] = await r.json();
@@ -639,10 +680,12 @@ function makeCard(svc) {
 }
 
 function renderServices() {
-  const grSvcs = SERVICES.filter(s => !s.cy && !s.cy_surcharge);
-  const cySvcs = SERVICES.filter(s => s.cy || s.cy_surcharge);
-  document.getElementById('services-grid-gr').innerHTML = grSvcs.map(makeCard).join('');
-  document.getElementById('services-grid-cy').innerHTML = cySvcs.map(makeCard).join('');
+  const vis    = visibleServices();
+  const grSvcs = vis.filter(s => !s.cy && !s.cy_surcharge);
+  const cySvcs = vis.filter(s => s.cy || s.cy_surcharge);
+  const empty  = `<div class="shelf-empty">${scopeEmptyMsg('υπηρεσίες')}</div>`;
+  document.getElementById('services-grid-gr').innerHTML = grSvcs.length ? grSvcs.map(makeCard).join('') : (cySvcs.length ? '' : empty);
+  document.getElementById('services-grid-cy').innerHTML = cySvcs.length ? cySvcs.map(makeCard).join('') : '';
 }
 
 function onMarkup(serviceId, value) {
@@ -774,7 +817,14 @@ function confirmSave() {
 function renderShelf() {
   const tabsEl = document.getElementById('shelf-tabs');
   if (!tabsEl) return;
-  tabsEl.innerHTML = SERVICES.map(svc => {
+  const vis = visibleServices();
+  if (!vis.length) {
+    tabsEl.innerHTML = '';
+    const el = document.getElementById('shelf-content');
+    if (el) el.innerHTML = `<div class="shelf-empty">${scopeEmptyMsg('τιμοκατάλογοι')}</div>`;
+    return;
+  }
+  tabsEl.innerHTML = vis.map(svc => {
     const isGR = svc.greece && !svc.cy && !svc.cy_surcharge;
     const isCY = svc.cy || svc.cy_surcharge;
     const bgColor   = svc.id === activeShelfTab ? (isGR ? '#1565c0' : isCY ? '#f0a000' : '#555') : (isGR ? '#e3f2fd' : isCY ? '#fffde7' : '#f0f0f0');
@@ -882,7 +932,7 @@ function _updateBadge(){
     .catch(function(){});
 })();
 </script>
-<!-- 4A build 2026.08.19-legal -->
+<!-- 4A build 2026.08.21 · rbac · scope · shelf -->
 </body>
 </html>
 
