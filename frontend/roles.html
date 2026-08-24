@@ -1,0 +1,326 @@
+<!-- roles.html | v1.0 | 24-08-2026 — η ΒΑΣΗ των δικαιωμάτων ανά ρόλο -->
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4A Express — Ρόλοι</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f0f0; color: #1a1a1a; min-height: 100vh; }
+  .topbar { background: #cc0000; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; height: 42px; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { display: flex; align-items: center; gap: 6px; }
+  .topbar-logo-box { background: white; color: #cc0000; font-size: 13px; font-weight: 800; padding: 2px 6px; border-radius: 3px; }
+  .topbar-logo-text { color: white; font-size: 10px; font-weight: 600; line-height: 1.2; }
+  .topbar-title { color: white; font-size: 13px; font-weight: 500; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 12px; }
+  .topbar-user { color: white; font-size: 11px; opacity: 0.9; }
+  .topbar-logout { background: rgba(255,255,255,0.2); color: white; border: none; padding: 4px 10px; border-radius: 3px; font-size: 11px; cursor: pointer; }
+  .nav { background: white; border-bottom: 1px solid #ddd; display: flex; flex-wrap: wrap; }
+  .nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer; color: #666; border-bottom: 2px solid transparent; text-decoration: none; display: flex; align-items: center; }
+  .nav-btn.active { color: #cc0000; border-bottom-color: #cc0000; font-weight: 600; }
+  .nav-btn:hover { background: #f8f8f8; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
+  .tab-bar { display:flex; gap:0; margin-bottom:20px; border-bottom:2px solid #ddd; }
+  .tab-btn { padding:9px 20px; border:none; background:none; font-size:13px; font-weight:600; color:#666; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; text-decoration:none; display:inline-block; }
+  .tab-btn.active { color:#cc0000; border-bottom-color:#cc0000; }
+  .tab-btn:hover:not(.active) { background:#f8f8f8; color:#333; }
+  .section-header { background: #00BCD4; color: white; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 4px 4px 0 0; display:flex; justify-content:space-between; align-items:center; }
+  .section-body { background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; padding: 16px; margin-bottom: 20px; }
+  .role-row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .role-row label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+  .role-row select { padding: 7px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; background: white; }
+  .role-counts { font-size: 12px; color: #555; }
+  .role-counts .exc { color: #e65100; font-weight: 600; }
+  .admin-note { font-size: 12px; color: #888; font-style: italic; margin-top: 8px; }
+  .warn-box { background:#fff8e1; border:1px solid #ffcc02; border-radius:6px; padding:10px 14px; font-size:12px; color:#7c6d00; margin-bottom:14px; }
+  .perms-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .perms-table th { padding: 6px 10px; text-align: center; font-size: 10px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 0.04em; background: #f0f0f0; border-bottom: 2px solid #ddd; }
+  .perms-table th:first-child { text-align: left; }
+  .perms-table th.all-col { background:#e8f5e9; color:#2e7d32; }
+  .perms-table td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; text-align: center; vertical-align: middle; }
+  .perms-table td:first-child { text-align: left; font-size: 12px; font-weight: 600; color: #444; }
+  .perms-table td.all-col { background:#f6fbf6; }
+  .perms-table tr:last-child td { border-bottom: none; }
+  .perms-table tr:hover td { background: #fafafa; }
+  .perms-table input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: #cc0000; }
+  .perms-table td.all-col input[type=checkbox] { accent-color: #2e7d32; }
+  .perms-table input[type=checkbox]:disabled { cursor: not-allowed; opacity: 0.4; }
+  .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; align-items:center; }
+  .btn { padding: 8px 18px; border: none; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-primary { background: #cc0000; color: white; }
+  .btn-primary:hover { background: #aa0000; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .form-error-msg { color: #C60001; font-size: 12px; font-weight: 600; margin-right: auto; }
+  .form-ok-msg { color: #2e7d32; font-size: 12px; font-weight: 600; margin-right: auto; }
+  .no-access { text-align: center; padding: 40px; color: #c62828; font-size: 14px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">
+      <div class="topbar-logo-box">4A</div>
+      <div class="topbar-logo-text">WORLDWIDE<br>EXPRESS</div>
+    </div>
+    <span class="topbar-title">Ρόλοι &amp; Δικαιώματα</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="topbar-user" id="topbar-user"></span>
+    <button class="topbar-logout" onclick="doLogout()">Έξοδος</button>
+  </div>
+</div>
+
+<div class="nav">
+  <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
+  <a class="nav-btn" href="pricelist-editor.html#shelf">📦 Ράφι</a>
+  <a class="nav-btn" href="pricelist-clients.html">👥 Πελάτες</a>
+  <a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
+  <a class="nav-btn active" href="users.html">⚙️ Χρήστες</a>
+  <a class="nav-btn" href="services.html">🔧 Services</a>
+  <a class="nav-btn" href="docs.html">📄 Docs Προσφοράς</a>
+  <a class="nav-btn" id="nav-legal" href="legal.html" style="display:none;">⚖️ Νομικά</a>
+  <a class="nav-btn" href="fuel-surcharge-dashboard.html">⛽ Επίναυλος</a>
+  <a class="nav-btn" href="help.html">❓ Help</a>
+</div>
+
+<div class="container">
+
+  <div class="tab-bar">
+    <a class="tab-btn" href="users.html">⚙️ Χρήστες</a>
+    <a class="tab-btn" href="users.html#offices">🏢 Γραφεία</a>
+    <span class="tab-btn active">🛡️ Ρόλοι</span>
+  </div>
+
+  <div class="section-header">
+    <span>🛡️ Δικαιώματα ανά Ρόλο</span>
+    <span style="font-size:11px;font-weight:400;opacity:0.9;">Η βάση για κάθε χρήστη του ρόλου</span>
+  </div>
+  <div class="section-body" id="body">
+    <div class="warn-box">
+      Ο ρόλος είναι η <b>βάση</b> των δικαιωμάτων και επηρεάζει <b>όλους</b> τους χρήστες του, τώρα και στο μέλλον.
+      Οι ατομικές εξαιρέσεις (σελίδα Χρήστες) <b>υπερισχύουν</b> αυτών των τιμών. Δεν υπάρχει «↺ Επαναφορά» εδώ.
+    </div>
+
+    <div class="role-row">
+      <label for="role-select">Ρόλος</label>
+      <select id="role-select" onchange="renderGrid()"></select>
+      <span class="role-counts" id="role-counts"></span>
+    </div>
+
+    <table class="perms-table">
+      <thead>
+        <tr>
+          <th>Module</th>
+          <th class="all-col">ALL</th>
+          <th>View</th><th>Add</th><th>Edit</th><th>Delete</th><th>Export</th>
+        </tr>
+      </thead>
+      <tbody id="grid-body"></tbody>
+    </table>
+
+    <div class="admin-note" id="grid-note"></div>
+
+    <div class="btn-row">
+      <span id="form-msg" style="display:none;"></span>
+      <button class="btn btn-primary" id="save-btn" onclick="saveRole()">💾 Αποθήκευση</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = 'https://4aexpress.com/api';
+const ACTIONS = ['view','add','edit','delete','export'];
+
+function apiFetch(url, opts={}) {
+  const u = sessionStorage.getItem('4a_current_user');
+  const token = u ? (JSON.parse(u)._token || '') : '';
+  opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
+  return fetch(url, opts).then(function(r){
+    if (r.status === 401) { sessionStorage.removeItem('4a_current_user'); alert('Η συνεδρία έληξε. Παρακαλώ συνδεθείτε ξανά.'); location.href='pricelist-editor.html'; }
+    return r;
+  });
+}
+function doLogout(){ window.location.href='pricelist-editor.html'; }
+
+let currentUser = null;
+let myRole = '';
+let DATA = { roles: [], modules: [], permissions: {}, counts: {} };
+
+function msg(text, ok) {
+  const el = document.getElementById('form-msg');
+  if (!text) { el.style.display = 'none'; return; }
+  el.className = ok ? 'form-ok-msg' : 'form-error-msg';
+  el.textContent = text;
+  el.style.display = '';
+}
+
+async function init() {
+  currentUser = JSON.parse(sessionStorage.getItem('4a_current_user') || 'null');
+  if (!currentUser) { window.location.href = 'pricelist-editor.html'; return; }
+  document.getElementById('topbar-user').textContent =
+    `${currentUser.name} · ${currentUser.active_station || currentUser.office || ''}`;
+
+  try {
+    const r = await apiFetch(`${API}/permissions.php?v=${Date.now()}`);
+    const d = await r.json();
+    myRole = (d.ok && d.data) ? d.data.role : '';
+  } catch (e) { myRole = ''; }
+
+  try {
+    const r = await apiFetch(`${API}/roles.php?v=${Date.now()}`);
+    if (r.status === 403) {
+      document.getElementById('body').innerHTML = '<div class="no-access">⛔ Δεν έχετε πρόσβαση στη διαχείριση ρόλων.</div>';
+      return;
+    }
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'σφάλμα');
+    DATA = d;
+  } catch (e) {
+    document.getElementById('body').innerHTML = '<div class="no-access">⛔ Αποτυχία φόρτωσης ρόλων: ' + e.message + '</div>';
+    return;
+  }
+
+  const sel = document.getElementById('role-select');
+  sel.innerHTML = DATA.roles.map(r => `<option value="${r.name}">${r.label || r.name}</option>`).join('');
+  const firstEditable = DATA.roles.find(r => r.name !== 'administrator');
+  if (firstEditable) sel.value = firstEditable.name;
+  renderGrid();
+}
+
+function currentRole() {
+  const name = document.getElementById('role-select').value;
+  return DATA.roles.find(r => r.name === name) || null;
+}
+
+// Ο administrator παρακάμπτει το RBAC στο auth.php — το grid του είναι
+// ενημερωτικό, ποτέ επεξεργάσιμο. Αλλιώς φτιάχνουμε νέο ψεύτικο checkbox.
+function renderGrid() {
+  msg('');
+  const role = currentRole();
+  if (!role) return;
+  const isAdminRole = role.name === 'administrator';
+  const iAmAdmin    = myRole === 'administrator';
+  const editable    = iAmAdmin && !isAdminRole;
+
+  const base = DATA.permissions[String(role.id)] || {};
+  const tbody = document.getElementById('grid-body');
+
+  tbody.innerHTML = DATA.modules.map(m => {
+    const p = base[m.id] || {view:0,add:0,edit:0,delete:0,export:0};
+    const vals = ACTIONS.map(a => isAdminRole ? 1 : (p[a] ? 1 : 0));
+    const allOn = vals.every(v => v === 1);
+    const cells = ACTIONS.map((a, i) =>
+      `<td><input type="checkbox" id="p-${m.id}-${a}" data-mod="${m.id}"
+         ${vals[i] ? 'checked' : ''} ${editable ? '' : 'disabled'}
+         onchange="syncAll('${m.id}')"></td>`).join('');
+    return `<tr>
+      <td>${m.label || m.id}</td>
+      <td class="all-col"><input type="checkbox" id="all-${m.id}" ${allOn ? 'checked' : ''}
+        ${editable ? '' : 'disabled'} onchange="toggleAll('${m.id}', this.checked)"
+        title="Όλα τα δικαιώματα αυτής της γραμμής"></td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  const c = DATA.counts[role.name] || {users:0, with_exceptions:0};
+  document.getElementById('role-counts').innerHTML =
+    `👥 ${c.users} ${c.users === 1 ? 'χρήστης' : 'χρήστες'}` +
+    (c.with_exceptions ? ` · <span class="exc">⚠ ${c.with_exceptions} με εξαιρέσεις</span>` : '');
+
+  const note = document.getElementById('grid-note');
+  if (isAdminRole) note.textContent = 'Οι Administrators έχουν πάντα πλήρη πρόσβαση — το grid είναι ενημερωτικό.';
+  else if (!iAmAdmin) note.textContent = 'Μόνο ο Administrator μπορεί να αλλάξει τα δικαιώματα ρόλων.';
+  else note.textContent = 'Οι ατομικές εξαιρέσεις χρηστών υπερισχύουν αυτών των τιμών.';
+
+  document.getElementById('save-btn').disabled = !editable;
+}
+
+// ALL ανά ΓΡΑΜΜΗ — κανένα καθολικό ALL, κανένα ALL ανά στήλη.
+function toggleAll(mid, on) {
+  ACTIONS.forEach(a => {
+    const el = document.getElementById(`p-${mid}-${a}`);
+    if (el && !el.disabled) el.checked = on;
+  });
+}
+// Αμφίδρομο: ξετικάρισμα ενός κελιού σβήνει το ALL, τικάρισμα και των 5 το ανάβει.
+function syncAll(mid) {
+  const all = document.getElementById(`all-${mid}`);
+  if (!all) return;
+  all.checked = ACTIONS.every(a => document.getElementById(`p-${mid}-${a}`)?.checked);
+}
+
+function collectPerms() {
+  const out = {};
+  DATA.modules.forEach(m => {
+    out[m.id] = {};
+    ACTIONS.forEach(a => { out[m.id][a] = document.getElementById(`p-${m.id}-${a}`)?.checked ? 1 : 0; });
+  });
+  return out;
+}
+
+async function saveRole() {
+  msg('');
+  const role = currentRole();
+  if (!role) return;
+  if (role.name === 'administrator') { msg('Ο ρόλος Administrator δεν αποθηκεύεται.', false); return; }
+  if (myRole !== 'administrator')     { msg('Μόνο ο Administrator μπορεί να αλλάξει δικαιώματα ρόλων.', false); return; }
+
+  const c = DATA.counts[role.name] || {users:0, with_exceptions:0};
+  const lines = [
+    `Αλλάζετε τα δικαιώματα του ρόλου «${role.label || role.name}».`,
+    `Επηρεάζονται ${c.users} ενεργοί χρήστες.`,
+  ];
+  if (c.with_exceptions) lines.push(`${c.with_exceptions} από αυτούς έχει εξαιρέσεις που υπερισχύουν.`);
+  lines.push('Συνέχεια;');
+  if (!confirm(lines.join('\n'))) return;
+
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true; btn.textContent = '💾 Αποθήκευση…';
+  try {
+    const r = await apiFetch(`${API}/roles.php`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ action: 'save_role_permissions', role: role.name, permissions: collectPerms() })
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.ok) { msg('Σφάλμα: ' + (d.error || ('HTTP ' + r.status)), false); return; }
+    // Ξαναφόρτωση από τη βάση — ό,τι βλέπουμε να είναι ό,τι αποθηκεύτηκε.
+    const rr = await apiFetch(`${API}/roles.php?v=${Date.now()}`);
+    const dd = await rr.json();
+    if (dd.ok) DATA = dd;
+    renderGrid();
+    msg(`✅ Αποθηκεύτηκαν τα δικαιώματα του ρόλου «${role.label || role.name}».`, true);
+  } catch (e) {
+    msg('Σφάλμα επικοινωνίας: ' + e.message, false);
+  } finally {
+    btn.textContent = '💾 Αποθήκευση'; btn.disabled = (myRole !== 'administrator' || currentRole()?.name === 'administrator');
+  }
+}
+
+init();
+</script>
+<!-- nav-legal gating | RBAC module 'legal' | 19-08-2026 -->
+<script>
+(function(){
+  var el = document.getElementById('nav-legal');
+  if (!el) return;
+  var u = null;
+  try { u = JSON.parse(sessionStorage.getItem('4a_current_user') || 'null'); } catch (e) {}
+  if (!u || !u._token) return;
+  function apply(p){ el.style.display = (p && p.legal && p.legal.view) ? '' : 'none'; }
+  try { apply(JSON.parse(sessionStorage.getItem('4a_perms') || 'null')); } catch (e) {}
+  fetch('https://4aexpress.com/api/permissions.php', {headers:{'Authorization':'Bearer ' + u._token}})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d || !d.ok || !d.data || !d.data.permissions) return;
+      sessionStorage.setItem('4a_perms', JSON.stringify(d.data.permissions));
+      apply(d.data.permissions);
+    })
+    .catch(function(){});
+})();
+</script>
+<!-- 4A build 2026.08.24 · rbac · roles -->
+</body>
+</html>
