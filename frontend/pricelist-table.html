@@ -117,6 +117,7 @@
       </div>
       <div class="ctrl-group">
         <button class="btn btn-gray" onclick="expandTable()" id="expand-btn">▶ Ανάπτυξη πίνακα</button>
+        <button class="btn btn-gray" onclick="toggleBreakdown()" id="breakdown-btn" style="display:none;">👁 Ανάλυση</button>
       </div>
       <div class="ctrl-group" id="save-group" style="margin-left:auto;display:flex;gap:8px;">
         <button class="btn btn-gray" id="print-btn" onclick="printTable()" style="display:none;">🖨️ Print</button>
@@ -227,6 +228,8 @@ const SVC_MODE   = svcMeta.mode;
 const SVC_FILE   = svcMeta.file;
 const IS_CY      = SERVICE_ID.endsWith('_CY') || SERVICE_ID.endsWith('_GR')|| SERVICE_ID === 'S1039' || SERVICE_ID === 'S1059';
 const IS_COMBI_SVC = svcMeta.combi || IS_COMBI;
+// Ανάλυση κόστους (raw DHL + surcharge): μόνο για τα δύο COMBI services
+const HAS_BREAKDOWN = SERVICE_ID === 'S1050' || SERVICE_ID === 'S1051';
 
 // ─── UI init ─────────────────────────────────────────────────────────────────
 document.getElementById('topbar-title').textContent = URL_NAME ? `${SERVICE_ID} — ${URL_NAME}` : `Τιμοκατάλογος — ${SERVICE_ID} ${svcMeta.name}`;
@@ -258,6 +261,7 @@ let fuelFc     = SVC_MODE === 'ROAD' ? 35.25 : 47.0;
 let markupData = [];
 let tableVisible = false;
 let globalMarkup = URL_MARKUP;
+let showBreakdown = false;   // display-only· δεν επηρεάζει κανέναν υπολογισμό
 
 // ─── LOAD ─────────────────────────────────────────────────────────────────────
 async function loadData() {
@@ -361,6 +365,13 @@ function applyGlobal() {
 }
 
 // ─── EXPAND TABLE ─────────────────────────────────────────────────────────────
+function toggleBreakdown() {
+  showBreakdown = !showBreakdown;
+  const b = document.getElementById('breakdown-btn');
+  b.className = showBreakdown ? 'btn btn-cyan' : 'btn btn-gray';
+  if (tableVisible) renderTable();
+}
+
 function expandTable() {
   if (!dhlData) { alert('Φόρτωση...'); return; }
   if (!tableVisible) {
@@ -431,6 +442,7 @@ function renderTable() {
   document.getElementById('print-btn').style.display = okCount > 0 ? 'inline-block' : 'none';
   document.getElementById('view-slabs-btn').style.display  = okCount > 0 ? 'inline-block' : 'none';
   document.getElementById('export-cms-btn').style.display  = okCount > 0 ? 'inline-block' : 'none';
+  document.getElementById('breakdown-btn').style.display   = HAS_BREAKDOWN ? 'inline-block' : 'none';
   document.getElementById('save-btn2').disabled = !saveOk;
   document.getElementById('save-info').textContent =
     saveOk ? `✅ ${okCount} γραμμές έγκυρες — έτοιμο για αποθήκευση`
@@ -446,7 +458,8 @@ function renderTable() {
       <th class="valid-col">R1</th>
       <th class="markup-col" style="background:#e8f5e9;color:#2e7d32;">Min%</th>
       <th class="markup-col">Markup %</th>
-      ${ZONE_LABELS.map(z => `<th class="zone-col">${z}<br><span style="font-size:9px;color:#aaa;font-weight:400">DHL · Τιμή</span></th>`).join('')}
+      ${(() => { const zoneHdr = HAS_BREAKDOWN ? 'DHL+Surch · Τιμή' : 'DHL · Τιμή';
+        return ZONE_LABELS.map(z => `<th class="zone-col">${z}<br><span style="font-size:9px;color:#aaa;font-weight:400">${zoneHdr}</span></th>`).join(''); })()}
     </tr></thead><tbody>`;
 
   for (let i = 0; i < markupData.length; i++) {
@@ -516,7 +529,14 @@ function renderTable() {
       const dhl   = row.dhl_costs[zi];
       const price = row.prices[zi];
       const isErr = row.error_zones && row.error_zones.includes(zi);
-      html += `<td class="zone-cell">
+      // Ανάλυση: raw DHL + surcharge = κόστος (display-only — το dhl παραμένει η πηγή αλήθειας)
+      const surchPart = URL_SURCHARGE * row.weight;
+      const bd = (showBreakdown && HAS_BREAKDOWN && dhl > 0)
+        ? `<span style="color:#1565c0;font-size:10px">${(dhl - surchPart).toFixed(2)}</span>
+           <span style="color:#7c6d00;font-size:10px"> +${surchPart.toFixed(2)}</span>
+           <span style="color:#888;font-size:9px"> = </span>`
+        : '';
+      html += `<td class="zone-cell">${bd}
         <span style="color:#1565c0;font-size:10px">${dhl.toFixed(2)}</span>
         <span style="color:#888;font-size:9px"> → </span>
         <span class="${isErr ? 'zone-val error' : 'zone-val'}">${price.toFixed(2)}</span>
