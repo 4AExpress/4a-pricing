@@ -49,6 +49,7 @@
   thead th.weight-col { text-align: left; min-width: 65px; }
   thead th.markup-col { background: #fff8e1; min-width: 80px; }
   thead th.zone-col   { min-width: 75px; }
+  thead th.net-col    { min-width: 90px; background: #f3f0ff; color: #5e35b1; }
   thead th.valid-col  { min-width: 35px; }
 
   tbody tr { border-bottom: 1px solid #f0f0f0; }
@@ -197,6 +198,7 @@ const PARAMS      = new URLSearchParams(window.location.search);
 const SERVICE_ID  = PARAMS.get('service') || 'S1003';
 const URL_MARKUP  = parseFloat(PARAMS.get('markup')) || 0;
 const URL_SURCHARGE = parseFloat(PARAMS.get('surcharge')) || 0;
+const COST_PER_KG = parseFloat(PARAMS.get('cost')) || 0;   // κόστος αέρα €/kg
 const IS_COMBI    = PARAMS.get('combi') === '1';
 const URL_VIEW_ID = PARAMS.get('view_id');
 const _viewData   = URL_VIEW_ID ? (() => { try { return JSON.parse(localStorage.getItem('shelf_view_' + URL_VIEW_ID) || '{}'); } catch(e) { return {}; } })() : {};
@@ -460,6 +462,7 @@ function renderTable() {
       <th class="markup-col">Markup %</th>
       ${(() => { const zoneHdr = HAS_BREAKDOWN ? 'DHL+Surch · Τιμή' : 'DHL · Τιμή';
         return ZONE_LABELS.map(z => `<th class="zone-col">${z}<br><span style="font-size:9px;color:#aaa;font-weight:400">${zoneHdr}</span></th>`).join(''); })()}
+      ${HAS_BREAKDOWN ? `<th class="net-col">Καθαρό<br><span style="font-size:9px;color:#9575cd;font-weight:400">Z1 · ${COST_PER_KG}€/kg</span></th>` : ''}
     </tr></thead><tbody>`;
 
   for (let i = 0; i < markupData.length; i++) {
@@ -542,6 +545,22 @@ function renderTable() {
         <span class="${isErr ? 'zone-val error' : 'zone-val'}">${price.toFixed(2)}</span>
       </td>`;
     }
+
+    // Καθαρό κέρδος — Z1 μόνο, display-only (δεν τροφοδοτεί prices/minPct/dhl_costs)
+    if (HAS_BREAKDOWN) {
+      const priceZ1 = row.prices[0];
+      if (COST_PER_KG > 0 && priceZ1 > 0) {
+        const rawDhlZ1  = row.dhl_costs[0] - (URL_SURCHARGE * row.weight);
+        const netProfit = priceZ1 - rawDhlZ1 - (COST_PER_KG * row.weight);
+        const netPct    = netProfit / priceZ1 * 100;
+        const netColor  = netPct > 50 ? '#2e7d32' : (netPct >= 30 ? '#ef6c00' : '#c62828');
+        html += `<td class="zone-cell" style="background:#faf8ff;font-weight:600;color:${netColor};">
+          ${netProfit.toFixed(2)} <span style="font-size:10px;font-weight:400;">(${Math.round(netPct)}%)</span>
+        </td>`;
+      } else {
+        html += `<td class="zone-cell" style="background:#faf8ff;color:#bbb;">—</td>`;
+      }
+    }
     html += `</tr>`;
   }
 
@@ -581,6 +600,7 @@ function renderTable() {
             <span style="color:#888;font-size:9px"> → </span>
             <span style="color:#333;font-size:11px">${(adderPrices[zi]||adderPrices[0]||0).toFixed(2)}</span>
           </td>`).join('')}
+          ${HAS_BREAKDOWN ? `<td class="zone-cell" style="background:#faf8ff;color:#bbb;">—</td>` : ''}
         </tr>
       </table></div>
     </div>`;
