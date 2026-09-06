@@ -199,6 +199,19 @@ const SERVICE_ID  = PARAMS.get('service') || 'S1003';
 const URL_MARKUP  = parseFloat(PARAMS.get('markup')) || 0;
 const URL_SURCHARGE = parseFloat(PARAMS.get('surcharge')) || 0;
 const COST_PER_KG = parseFloat(PARAMS.get('cost')) || 0;   // κόστος αέρα €/kg
+
+// ─── Χρωματικά κατώφλια «Μικτό κέρδος» ──────────────────────────
+// Το μικτό % = markup/(1+markup). Ισοδυναμίες:
+//   markup  30%  →  μικτό 23.1%
+//   markup  50%  →  μικτό 33.3%
+//   markup  70%  →  μικτό 41.2%
+//   markup 100%  →  μικτό 50.0%
+// Άλλαξε ΜΟΝΟ εδώ τα όρια — χρησιμοποιούνται στη στήλη Μικτό κέρδος.
+const GROSS_THRESHOLDS = {
+  good:    33,        // ≥ αυτό → πράσινο  (markup ≥ 50%)
+  warn:    23,        // ≥ αυτό → πορτοκαλί (markup ≥ 30%)
+  colors: { good: '#2e7d32', warn: '#ef6c00', bad: '#c62828' }
+};
 const IS_COMBI    = PARAMS.get('combi') === '1';
 const URL_VIEW_ID = PARAMS.get('view_id');
 const _viewData   = URL_VIEW_ID ? (() => { try { return JSON.parse(localStorage.getItem('shelf_view_' + URL_VIEW_ID) || '{}'); } catch(e) { return {}; } })() : {};
@@ -367,6 +380,12 @@ function applyGlobal() {
 }
 
 // ─── EXPAND TABLE ─────────────────────────────────────────────────────────────
+// Γραμμή tooltip με τελείες γεμίσματος: «Βάση ............. 28.37»
+function tipLine(label, val) {
+  const fill = 17 - label.length;
+  return label + ' ' + (fill > 0 ? '.'.repeat(fill) : '') + ' ' + val;
+}
+
 function toggleBreakdown() {
   showBreakdown = !showBreakdown;
   const b = document.getElementById('breakdown-btn');
@@ -444,7 +463,7 @@ function renderTable() {
   document.getElementById('print-btn').style.display = okCount > 0 ? 'inline-block' : 'none';
   document.getElementById('view-slabs-btn').style.display  = okCount > 0 ? 'inline-block' : 'none';
   document.getElementById('export-cms-btn').style.display  = okCount > 0 ? 'inline-block' : 'none';
-  document.getElementById('breakdown-btn').style.display   = HAS_BREAKDOWN ? 'inline-block' : 'none';
+  document.getElementById('breakdown-btn').style.display   = (HAS_BREAKDOWN && URL_SURCHARGE > 0) ? 'inline-block' : 'none';
   document.getElementById('save-btn2').disabled = !saveOk;
   document.getElementById('save-info').textContent =
     saveOk ? `✅ ${okCount} γραμμές έγκυρες — έτοιμο για αποθήκευση`
@@ -462,7 +481,7 @@ function renderTable() {
       <th class="markup-col">Markup %</th>
       ${(() => { const zoneHdr = HAS_BREAKDOWN ? 'DHL+Surch · Τιμή' : 'DHL · Τιμή';
         return ZONE_LABELS.map(z => `<th class="zone-col">${z}<br><span style="font-size:9px;color:#aaa;font-weight:400">${zoneHdr}</span></th>`).join(''); })()}
-      ${HAS_BREAKDOWN ? `<th class="net-col">Καθαρό<br><span style="font-size:9px;color:#9575cd;font-weight:400">Z1 · ${COST_PER_KG}€/kg</span></th>` : ''}
+      ${HAS_BREAKDOWN ? `<th class="net-col">Μικτό κέρδος<br><span style="font-size:9px;color:#9575cd;font-weight:400">Z1</span></th>` : ''}
     </tr></thead><tbody>`;
 
   for (let i = 0; i < markupData.length; i++) {
@@ -534,28 +553,49 @@ function renderTable() {
       const isErr = row.error_zones && row.error_zones.includes(zi);
       // Ανάλυση: raw DHL + surcharge = κόστος (display-only — το dhl παραμένει η πηγή αλήθειας)
       const surchPart = URL_SURCHARGE * row.weight;
-      const bd = (showBreakdown && HAS_BREAKDOWN && dhl > 0)
+      // Με surcharge 0 το «+0.00» θα ήταν ψευδής ισχυρισμός, όχι απουσία δεδομένων
+      const bd = (showBreakdown && HAS_BREAKDOWN && Number(dhl) > 0 && URL_SURCHARGE > 0)
         ? `<span style="color:#1565c0;font-size:10px">${(dhl - surchPart).toFixed(2)}</span>
            <span style="color:#7c6d00;font-size:10px"> +${surchPart.toFixed(2)}</span>
            <span style="color:#888;font-size:9px"> = </span>`
         : '';
-      html += `<td class="zone-cell">${bd}
+
+      // Tooltip πλήρους ανάλυσης — μόνο ήδη υπολογισμένες τιμές του κελιού/γραμμής
+      // Χωρίς surcharge στο URL (π.χ. readonly από ράφι) η ανάλυση θα έδειχνε
+      // Βάση = τιμή και «+0.00» — τότε δεν γράφεται καθόλου title.
+      let tip = '';
+      if (HAS_BREAKDOWN && Number(dhl) > 0 && URL_SURCHARGE > 0) {
+        const rawDhl    = dhl - surchPart;
+        const markupAmt = price - dhl;
+        const grossPct  = price > 0 ? markupAmt / price * 100 : 0;
+        const lines = [
+          tipLine(`DHL ${SVC_MODE}`, rawDhl.toFixed(2)),
+          tipLine(`Surcharge ${URL_SURCHARGE.toFixed(2)}×${row.weight}`, surchPart.toFixed(2)),
+          tipLine('Βάση', dhl.toFixed(2)),
+          tipLine('Τιμή', price.toFixed(2)),
+          tipLine(`Μικτό κέρδος ${row.markup}%`, `${markupAmt.toFixed(2)} (${grossPct.toFixed(1)}%)`),
+        ];
+        tip = ` title="${lines.join('\n')}"`;
+      }
+      html += `<td class="zone-cell"${tip}>${bd}
         <span style="color:#1565c0;font-size:10px">${dhl.toFixed(2)}</span>
         <span style="color:#888;font-size:9px"> → </span>
         <span class="${isErr ? 'zone-val error' : 'zone-val'}">${price.toFixed(2)}</span>
       </td>`;
     }
 
-    // Καθαρό κέρδος — Z1 μόνο, display-only (δεν τροφοδοτεί prices/minPct/dhl_costs)
+    // Μικτό κέρδος — Z1 μόνο, display-only (δεν τροφοδοτεί prices/minPct/dhl_costs)
+    // Τιμή − κόστος DHL (το dhl είναι effective: περιλαμβάνει ήδη το surcharge)
     if (HAS_BREAKDOWN) {
       const priceZ1 = row.prices[0];
-      if (COST_PER_KG > 0 && priceZ1 > 0) {
-        const rawDhlZ1  = row.dhl_costs[0] - (URL_SURCHARGE * row.weight);
-        const netProfit = priceZ1 - rawDhlZ1 - (COST_PER_KG * row.weight);
-        const netPct    = netProfit / priceZ1 * 100;
-        const netColor  = netPct > 50 ? '#2e7d32' : (netPct >= 30 ? '#ef6c00' : '#c62828');
-        html += `<td class="zone-cell" style="background:#faf8ff;font-weight:600;color:${netColor};">
-          ${netProfit.toFixed(2)} <span style="font-size:10px;font-weight:400;">(${Math.round(netPct)}%)</span>
+      if (URL_SURCHARGE > 0 && priceZ1 > 0) {
+        const grossProfit = priceZ1 - row.dhl_costs[0];
+        const grossPct    = grossProfit / priceZ1 * 100;
+        const grossColor  = grossPct >= GROSS_THRESHOLDS.good ? GROSS_THRESHOLDS.colors.good
+                          : grossPct >= GROSS_THRESHOLDS.warn ? GROSS_THRESHOLDS.colors.warn
+                          : GROSS_THRESHOLDS.colors.bad;
+        html += `<td class="zone-cell" style="background:#faf8ff;font-weight:600;color:${grossColor};">
+          ${grossProfit.toFixed(2)} <span style="font-size:10px;font-weight:400;">(${grossPct.toFixed(1)}%)</span>
         </td>`;
       } else {
         html += `<td class="zone-cell" style="background:#faf8ff;color:#bbb;">—</td>`;
