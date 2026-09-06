@@ -16,7 +16,10 @@
   .topbar-logo-text { color: white; font-size: 10px; font-weight: 600; line-height: 1.2; }
   .topbar-title { color: white; font-size: 13px; font-weight: 500; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 12px; }
 
-  .container { max-width: 1200px; margin: 0 auto; padding: 20px 16px; }
+  /* Δίχτυ ασφαλείας: ό,τι ξεχειλίζει (π.χ. #pbadge με πολλά διαστήματα) δεν
+     μεγαλώνει το scrollWidth του εγγράφου, άρα η .topbar μένει στο viewport.
+     Ο πίνακας κυλά ήδη μόνος του μέσα στο .table-wrap. */
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px 16px; overflow-x: hidden; }
 
   .section-header { background: #00BCD4; color: white; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
   .section-body { background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; padding: 16px; margin-bottom: 20px; }
@@ -145,7 +148,9 @@
       <div class="legend-item"><span style="color:#cc0000">■</span> <span>Τιμή πελάτη</span></div>
     </div>
 
-    <div id="pbadge" style="display:none;margin:8px 0;"></div>
+    <!-- Το inline-grid μέσα έχει σταθερές στήλες 90px· με πολλά διαστήματα ξεπερνά
+         το πλάτος της σελίδας, οπότε κυλάει οριζόντια μέσα στο ίδιο το κουτί. -->
+    <div id="pbadge" style="display:none;margin:8px 0;max-width:100%;overflow-x:auto;"></div>
     <!-- TABLE -->
     <div id="table-container">
       <div class="loading">Φόρτωση τιμών DHL... Πατήστε "Ανάπτυξη" για εμφάνιση πίνακα.</div>
