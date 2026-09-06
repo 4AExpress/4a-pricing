@@ -43,6 +43,7 @@ try {
 
     $mail->setFrom('sales@4aexpress.com', '4A Express');
     $mail->addAddress($input['to']);
+    $mail->addBCC('sales@4aexpress.com');
 
     $mail->Subject = $input['subject'];
     $mail->isHTML(false);
