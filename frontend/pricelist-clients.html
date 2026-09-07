@@ -2483,37 +2483,277 @@ async function draftOffer(){
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// ΑΡΧΕΙΟΘΕΤΗΣΗ ΠΡΙΝ ΤΗΝ ΑΠΟΣΤΟΛΗ — βλ. docs/snapshot_spec.md
+//   PDF → offer_archive.php (create) → send_email.php → status
+// Το snapshot πρέπει να είναι ΑΥΤΑΡΚΕΣ: ό,τι λείπει από εδώ θα
+// ξαναϋπολογιζόταν αργότερα από ΤΡΕΧΟΝΤΑ δεδομένα.
+// ─────────────────────────────────────────────────────────────────────
+
+async function _loadFuelCache(){
+  let fd=null;
+  try{ fd=JSON.parse(localStorage.getItem('4a_fuel_cache')||'null'); }catch(e){}
+  if(!fd){
+    try{
+      fd=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json());
+      localStorage.setItem('4a_fuel_cache',JSON.stringify(fd));
+    }catch(e){ fd=null; }
+  }
+  return fd;
+}
+
+async function _loadZonesCache(){
+  let zd=null;
+  try{ zd=JSON.parse(localStorage.getItem('4a_zones_cache')||'null'); }catch(e){}
+  if(!zd){
+    try{
+      zd=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/dhl_zones_2026.json').then(r=>r.json());
+      localStorage.setItem('4a_zones_cache',JSON.stringify(zd));
+    }catch(e){ zd=null; }
+  }
+  return zd;
+}
+
+// χώρα→ζώνη, ΟΠΩΣ έρχεται. Δεν αντιστρέφεται: η ίδια χώρα ανήκει σε
+// άλλη ζώνη κατά AIR και σε άλλη κατά ROAD — ένας χάρτης θα έχανε πληροφορία.
+function _countryZoneMap(list){
+  const m={};
+  (list||[]).forEach(z=>{ const zn=parseInt(z.zone); if(z&&z.code&&!isNaN(zn)) m[z.code]=zn; });
+  return m;
+}
+
+// Τιμές ΟΛΩΝ των ζωνών ανά βάρος.
+// Ο τύπος μένει σε ΕΝΑ σημείο (modalPrice), αλλά η εγκυρότητα ελέγχεται με
+// _dhlMap: όταν λείπει το κόστος Z1, η modalPrice() επιστρέφει σιωπηλά την
+// τιμή Z1 για ΚΑΘΕ ζώνη (γρ. 735) — αυτό θα περνούσε ως έγκυρο.
+function _zonePricesFor(pl){
+  const svcId  = pl.service_id;
+  const zcount = _MODAL_ZN[svcId] || 1;
+  const dm     = _dhlMap(svcId);
+  const rows   = [];
+  const missing= new Set();
+  for(const r of (pl.rows||[])){
+    const w   = parseFloat(r.weight);
+    const z1c = (dm[w]||{})[1];
+    const prices=[];
+    for(let z=1; z<=zcount; z++){
+      if(z===1){
+        const p=parseFloat(r.price);
+        if(!isFinite(p)){ prices.push(null); missing.add('z1'); }
+        else prices.push(+p.toFixed(2));
+        continue;
+      }
+      if(z1c==null || (dm[w]||{})[z]==null){ prices.push(null); missing.add('z'+z); continue; }
+      const res=modalPrice(svcId,pl,w,z);
+      const p=res&&res.price;
+      if(p==null||!isFinite(p)){ prices.push(null); missing.add('z'+z); }
+      else prices.push(+Number(p).toFixed(2));
+    }
+    rows.push({ weight:w, prices, markup: parseFloat(pl.global_markup ?? pl.markup ?? 0) });
+  }
+  return { zcount, rows, missing:[...missing] };
+}
+
 async function sendOffer(){
   const name=document.getElementById('cl-name').value.trim();
   const email=document.getElementById('cl-email').value.trim();
   if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
   if(!email){ alert('Απαιτείται email παραλήπτη'); return; }
   if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
-  document.getElementById('send-btn').textContent='⏳ Αποστολή...';
-  document.getElementById('send-btn').disabled=true;
+  // Χωρίς αποθηκευμένο πελάτη το client_id θα πήγαινε null και η προσφορά θα
+  // έμενε ασύνδετη. Απλούστερο και ασφαλέστερο από αυτόματο saveClient().
+  if(!editingId){ alert('Αποθήκευσε πρώτα τον πελάτη πριν στείλεις προσφορά.'); return; }
+
+  const btn=document.getElementById('send-btn');
+  btn.textContent='⏳ Έλεγχος δεδομένων...';
+  btn.disabled=true;
+
+  let logId=null;
   try {
-    const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+    // ── 1. ΣΥΛΛΟΓΗ ΠΗΓΩΝ ────────────────────────────────────────────────
+    // Το _modalDhl είναι αυτό που διαβάζει η _dhlMap(). Αν δεν έχει ανοίξει
+    // ποτέ το modal ραφιού, είναι null — και τότε ΟΛΕΣ οι ζώνες θα έπαιρναν
+    // σιωπηλά την τιμή Z1. Το θέτουμε ρητά ΠΡΙΝ από κάθε modalPrice().
+    _modalDhl = await ensureDhlAll();
+
+    const fd = await _loadFuelCache();
+    const zd = await _loadZonesCache();
+
+    const missing=[];
+    if(!_modalDhl) missing.push('τιμολόγιο DHL (dhl_all)');
+
+    // fuel: ΑΡΙΘΜΟΙ, όχι "35.25%" — η στήλη είναι DECIMAL(6,3)
+    const fAir  = ((fd&&fd.air)||[]).find(x=>x.is_current);
+    const fRoad = ((fd&&fd.road)||[]).find(x=>x.is_current);
+    const airPct  = fAir  ? parseFloat(fAir.pct)  : NaN;
+    const roadPct = fRoad ? parseFloat(fRoad.pct) : NaN;
+    if(!isFinite(airPct))  missing.push('fuel.air');
+    if(!isFinite(roadPct)) missing.push('fuel.road');
+
+    const zmAir  = _countryZoneMap(zd&&zd.air&&zd.air.zones);
+    const zmRoad = _countryZoneMap(zd&&zd.road&&zd.road.zones);
+    if(!Object.keys(zmAir).length)  missing.push('zones_map.air');
+    if(!Object.keys(zmRoad).length) missing.push('zones_map.road');
+
+    // COD ενεργό χωρίς όρια = snapshot που δεν κλειδώνει τη χρέωση
+    if(codEnabled && !codConfig) missing.push('όρια COD (codConfig)');
+
+    // τιμές ΟΛΩΝ των ζωνών ανά τιμοκατάλογο
+    const plSnap=[];
+    for(const p of selectedPls){
+      const zp=_zonePricesFor(p);
+      if(zp.missing.length) missing.push(`τιμές ζωνών: ${p.service_id} (${zp.missing.join(', ')})`);
+      const isAir=String(p.service_id).includes('S1003')||String(p.service_id).includes('S1012');
+      plSnap.push({
+        service_id: p.service_id,
+        service_name: SVC_NAMES[p.service_id]||p.service_id,
+        mode: isAir?'AIR':'ROAD',
+        zones: Array.from({length:zp.zcount},(_,i)=>'z'+(i+1)),
+        fuel_enabled: p.fuel_enabled?1:0,
+        fuel_pct_applied: p.fuel_enabled ? (isAir?airPct:roadPct) : 0,
+        markup_global: parseFloat(p.global_markup ?? p.markup ?? 0),
+        rows: zp.rows
+      });
+    }
+
+    // surcharges: strings → αριθμοί, ματαίωση σε NaN
+    const surchSnap=[];
+    for(const s of surcharges){
+      if(!s.name || s.value===''||s.value==null) continue;
+      const v=parseFloat(String(s.value).replace(',','.'));
+      if(!isFinite(v)) missing.push(`surcharge "${s.name}" = "${s.value}" (μη αριθμητικό)`);
+      else surchSnap.push({ name:s.name, value:v, unit:s.unit||'' });
+    }
+
+    // ── 2. ΕΛΕΓΧΟΣ — ΠΡΙΝ από PDF και ΠΡΙΝ από κάθε POST ────────────────
+    // Έτσι δεν δεσμεύεται αριθμός από το 4a_offer_seq σε αποτυχημένη
+    // προσπάθεια, και δεν αρχειοθετείται ποτέ ελλιπής προσφορά.
+    if(missing.length){
+      alert('Η προσφορά ΔΕΝ στάλθηκε — λείπουν από το snapshot:\n\n  • '
+            + missing.join('\n  • ')
+            + '\n\nΚαμία εγγραφή δεν δημιουργήθηκε.');
+      return;
+    }
+
+    // ── 3. Snapshot ─────────────────────────────────────────────────────
+    const offerNum  = editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+    const validDays = parseInt(document.getElementById('cl-validity').value)||30;
+    const anyAir    = selectedPls.some(p=>String(p.service_id).includes('S1003')||String(p.service_id).includes('S1012'));
+
+    const snapshot={
+      schema_version:1,
+      captured_at:new Date().toISOString(),
+      offer:{ pdf_number:offerNum, date:todayFmt(), validity_days:validDays },
+      issuer:{
+        user_name:currentUser?.name||null,
+        station:currentUser?.active_station||null,
+        country:currentUser?.active_station_country||null
+      },
+      client:{
+        name, afm:document.getElementById('cl-afm').value.trim(),
+        email, contact:document.getElementById('cl-contact').value.trim(),
+        phone:document.getElementById('cl-phone').value.trim(),
+        address:document.getElementById('cl-address').value.trim(),
+        country:document.getElementById('cl-country').value,
+        account:document.getElementById('cl-account').value.trim()||'—',
+        payment:document.getElementById('cl-payment').value,
+        invoice:document.getElementById('cl-invoice').value
+      },
+      pricelists:plSnap,
+      fuel:{ air_pct:airPct, road_pct:roadPct, week:(fAir&&fAir.week)||null,
+             source:'fuel_surcharge_cache.json' },
+      surcharges:surchSnap,
+      cod: codEnabled ? {
+        enabled:true,
+        amount:parseFloat(document.getElementById('cod-amount')?.value)||0,
+        fee:codFee,
+        limits: codConfig ? {
+          flat_fee:parseFloat(document.getElementById('cod-flat_fee')?.value)||parseFloat(codConfig.flat_fee),
+          tier_limit:parseFloat(codConfig.flat_limit),
+          min_fee:parseFloat(codConfig.min_fee),
+          tier_pct:parseFloat(document.getElementById('cod-percentage')?.value)||parseFloat(codConfig.percentage),
+          asof:(codConfig._snapshot&&codConfig._snapshot.asof)||null
+        } : null
+      } : { enabled:false },
+      zones_map:{ air:zmAir, road:zmRoad }
+    };
+
+    // ── 4. PDF ──────────────────────────────────────────────────────────
+    btn.textContent='⏳ Παραγωγή PDF...';
     const finalBytes = await previewPDF(true);
     let binary='';
     for(let i=0;i<finalBytes.length;i++) binary+=String.fromCharCode(finalBytes[i]);
     const pdf_base64 = btoa(binary);
+
+    // Το subject μένει ελληνικό: κωδικοποιείται με MIME encoded-word (RFC 2047)
+    // και δεν απαιτεί SMTPUTF8. Το filename ΟΧΙ — ελληνικά εκεί ενεργοποιούν
+    // SMTPUTF8, που ο SMTP server δεν υποστηρίζει.
+    const subject = `Προσφορά 4A Express — ${offerNum}`;
+
+    // ── 5. Αρχειοθέτηση ΠΡΙΝ το SMTP ────────────────────────────────────
+    btn.textContent='⏳ Αρχειοθέτηση...';
+    const arc = await apiFetch(`${API}/offer_archive.php`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        client_id: editingId||null,
+        client_name: name,
+        client_afm: document.getElementById('cl-afm').value.trim()||null,
+        client_email: email,
+        country: document.getElementById('cl-country').value||'GR',
+        to: email, subject,
+        snapshot,
+        fuel_pct: anyAir?airPct:roadPct,
+        validity_days: validDays,
+        pdf_base64
+      })
+    });
+    const arcData = await arc.json().catch(()=>({}));
+    if(!arcData.ok){
+      alert('Σφάλμα αρχειοθέτησης: '+(arcData.error||`HTTP ${arc.status}`)
+            +'\n\nΗ προσφορά ΔΕΝ στάλθηκε.');
+      return;
+    }
+    logId=arcData.log_id;
+    const offerRef=arcData.offer_ref;
+    const filename=`Offer_4A_Express_${offerRef}.pdf`;   // ASCII μόνο — SMTPUTF8
+
+    // ── 6. Αποστολή ─────────────────────────────────────────────────────
+    btn.textContent='⏳ Αποστολή...';
     const r = await apiFetch(`${API}/send_email.php`,{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        to: email,
-        subject: `Προσφορά 4A Express — ${offerNum}`,
+        to: email, subject,
         body: `Αγαπητέ/ή ${name},\n\nΣας αποστέλλουμε την προσφορά μας.\n\nΜε εκτίμηση,\nΗ ομάδα 4A Express`,
-        pdf_base64,
-        filename: `Προσφορά_4A_Express_${offerNum}.pdf`
+        pdf_base64, filename
       })
     });
-    const d = await r.json();
-    if(d.ok){ alert('Η προσφορά στάλθηκε επιτυχώς!'); }
-    else { alert('Σφάλμα αποστολής: '+(d.error||'Άγνωστο')); }
-  } catch(e){ alert('Σφάλμα: '+e.message); }
+    const d = await r.json().catch(()=>({}));
+
+    // ── 7. Ενημέρωση κατάστασης ─────────────────────────────────────────
+    await apiFetch(`${API}/offer_archive.php?action=status`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ log_id:logId, success:!!d.ok,
+                             error:d.ok?null:(d.error||'Άγνωστο σφάλμα SMTP') })
+    }).catch(()=>{});
+
+    if(d.ok){ alert(`Η προσφορά ${offerRef} στάλθηκε επιτυχώς!`); }
+    else { alert('Σφάλμα αποστολής: '+(d.error||'Άγνωστο')
+                 +`\n\nΗ προσφορά ${offerRef} αρχειοθετήθηκε και μπορεί να σταλεί ξανά.`); }
+
+  } catch(e){
+    if(logId){
+      try{
+        await apiFetch(`${API}/offer_archive.php?action=status`,{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ log_id:logId, success:false, error:e.message })
+        });
+      }catch(_){}
+    }
+    alert('Σφάλμα: '+e.message);
+  }
   finally {
-    document.getElementById('send-btn').textContent='✉️ Αποστολή Προσφοράς';
-    document.getElementById('send-btn').disabled=false;
+    btn.textContent='✉️ Αποστολή Προσφοράς';
+    btn.disabled=false;
   }
 }
 
