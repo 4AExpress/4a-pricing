@@ -124,6 +124,27 @@
 
   .empty { text-align: center; padding: 30px; color: #bbb; font-size: 13px; }
 
+  /* Ιστορικό αποστολών */
+  .ob-wrap  { overflow-x: auto; border: 1px solid #e8e8e8; border-radius: 4px; }
+  .ob-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 820px; }
+  .ob-table th { background: #f8f8f8; padding: 7px 10px; text-align: left; font-weight: 600;
+                 color: #555; border-bottom: 2px solid #e0e0e0; white-space: nowrap; }
+  .ob-table td { padding: 6px 10px; border-bottom: 1px solid #f2f2f2; }
+  .ob-table tbody tr { cursor: pointer; }
+  .ob-table tbody tr:hover { background: #f6fbfc; }
+  .ob-ref   { font-family: monospace; font-weight: 600; color: #00838f; }
+  .ob-num   { text-align: right; color: #777; white-space: nowrap; }
+  .ob-pill  { display: inline-block; padding: 2px 8px; border-radius: 10px;
+              font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .ob-sent    { background: #e8f5e9; color: #2e7d32; }
+  .ob-failed  { background: #ffebee; color: #c62828; cursor: help; }
+  .ob-pending { background: #fff8e1; color: #f57f17; }
+  .ob-mini  { font-size: 11px; color: #777; margin-top: 3px; display: flex;
+              flex-wrap: wrap; gap: 4px 10px; }
+  .ob-mini b { color: #00838f; font-family: monospace; font-weight: 600; }
+  .ob-mini span { cursor: pointer; }
+  .ob-mini span:hover { text-decoration: underline; }
+
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
   .modal-box { background: white; border-radius: 8px; padding: 24px; width: 480px; max-height: 80vh; overflow-y: auto; }
@@ -411,6 +432,36 @@
     <div id="clients-list"><div class="empty">Δεν υπάρχουν πελάτες ακόμα</div></div>
   </div>
 
+  <!-- ΙΣΤΟΡΙΚΟ ΑΠΟΣΤΟΛΩΝ — κρυφό μέχρι να επιβεβαιωθεί το δικαίωμα offers:view -->
+  <div id="outbox-section" style="display:none;">
+    <div class="section-header">
+      <span>📤 Ιστορικό αποστολών (<span id="outbox-count">0</span>)</span>
+      <button onclick="loadOutbox(0)" style="background:rgba(255,255,255,0.2);color:white;border:none;padding:3px 10px;border-radius:3px;font-size:11px;cursor:pointer;">↻ Ανανέωση</button>
+    </div>
+    <div class="section-body">
+      <div class="filter-bar">
+        <select id="ob-client" class="ctrl-input" style="width:auto;min-width:200px;" onchange="loadOutbox(0)">
+          <option value="">Όλοι οι πελάτες</option>
+        </select>
+        <span style="font-size:11px;color:#888;">Ημερομηνία δημιουργίας:</span>
+        <input type="date" id="ob-from" class="ctrl-input" style="width:auto;" onchange="loadOutbox(0)" />
+        <span style="font-size:11px;color:#888;">έως</span>
+        <input type="date" id="ob-to" class="ctrl-input" style="width:auto;" onchange="loadOutbox(0)" />
+        <select id="ob-status" class="ctrl-input" style="width:auto;" onchange="renderOutbox()">
+          <option value="">Κάθε κατάσταση</option>
+          <option value="sent">✅ Στάλθηκαν</option>
+          <option value="failed">🔴 Απέτυχαν</option>
+          <option value="pending">🟡 Εκκρεμούν</option>
+        </select>
+        <button class="filter-btn" onclick="obReset()">Καθαρισμός</button>
+      </div>
+      <div id="outbox-list"><div class="empty">Φόρτωση…</div></div>
+      <div style="text-align:center;margin-top:10px;">
+        <button id="ob-more" class="filter-btn" style="display:none;" onclick="loadOutbox(_obOffset + OB_LIMIT)">Φόρτωση περισσότερων</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- MODAL -->
@@ -585,6 +636,11 @@ async function init(){
   // γι' αυτό ο χρήστης NIC έβλεπε «Ελλάδα» στη χώρα.
   wireFormUx(); applyFormDefaults();
   updateOfferNum(); renderManagers(); renderClients(); checkForm();
+  // Ασύγχρονα: αν λείπει το δικαίωμα offers:view, και τα δύο αποτυγχάνουν
+  // σιωπηλά και η σελίδα μένει ακριβώς όπως ήταν.
+  obClientOptions();
+  loadOutbox(0);
+  loadOffersByClient();
 }
 
 function updateOfferNum(){
@@ -1194,6 +1250,7 @@ function renderClients(){
         <div class="client-meta">ΑΦΜ: ${c.afm||'—'} · ${c.contact||'—'} · ${c.email||'—'}${c.phone?' · '+c.phone:''}${c.address?' · 📍'+c.address:''} · ${c.date||'—'} · ${c.user||'—'}</div>
         ${c.notes?`<div style="font-size:11px;color:#888;margin-top:2px;">💬 ${c.notes}</div>`:''}
         <div class="client-pls">📋 ${plStr}</div>
+        ${obMiniList(c.id)}
         ${c.cod?.cod_enabled?`<div class="client-cod-badge">💳 COD: €${parseFloat(c.cod.snapshot?.flat_fee||c.cod.cod_fee||0).toFixed(2)} έως €${parseFloat(c.cod.snapshot?.tier_limit||500).toFixed(0)} · ${parseFloat(c.cod.snapshot?.tier_pct||0).toFixed(2)}% άνω</div>`:''}
       </div>
       <div class="client-actions">
@@ -2819,6 +2876,162 @@ function closeCodFormModal(){
 }
 
 function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─────────────────────────────────────────────────────────────────────
+// ΙΣΤΟΡΙΚΟ ΑΠΟΣΤΟΛΩΝ — offer_archive.php?action=list / action=file
+// Το endpoint θέλει offers:view. Σε 403 η ενότητα μένει κρυφή αντί να
+// δείχνει σπασμένο πίνακα (ίδιο μοτίβο με το nav-legal).
+// ─────────────────────────────────────────────────────────────────────
+const OB_LIMIT = 50;
+let _obRows = [], _obOffset = 0, _obHasMore = false;
+let offersByClient = {};      // client_id -> γραμμές, για τη μίνι-λίστα στην κάρτα
+
+function obFmtBytes(n){
+  const b = parseInt(n);
+  if(!isFinite(b) || b <= 0) return '—';
+  return b >= 1048576 ? (b/1048576).toFixed(1)+' MB' : Math.round(b/1024)+' KB';
+}
+
+function obFmtDT(s){
+  if(!s) return null;
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+  return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}` : String(s);
+}
+
+// sent_at είναι NULL σε pending/failed — τότε δείχνουμε created_at με ένδειξη
+function obWhen(r){
+  const sent = obFmtDT(r.sent_at);
+  if(sent) return escHtml(sent);
+  const cre = obFmtDT(r.created_at);
+  return `<span style="color:#aaa;">${escHtml(cre||'—')} <i style="font-size:10px;">(δημ.)</i></span>`;
+}
+
+function obPill(r){
+  const st = r.status || 'pending';
+  const cls = st==='sent' ? 'ob-sent' : st==='failed' ? 'ob-failed' : 'ob-pending';
+  const lbl = st==='sent' ? '✅ Στάλθηκε' : st==='failed' ? '🔴 Απέτυχε' : '🟡 Εκκρεμεί';
+  const tip = (st==='failed' && r.error_message) ? ` title="${escHtml(r.error_message)}"` : '';
+  return `<span class="ob-pill ${cls}"${tip}>${lbl}</span>`;
+}
+
+function obRef(r){
+  const ref = r.offer_ref || r.reference || '—';
+  const rev = parseInt(r.revision);
+  return escHtml(ref) + (rev > 0 ? `<span style="color:#f57f17;"> R${rev}</span>` : '');
+}
+
+function obClientOptions(){
+  const sel = document.getElementById('ob-client');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Όλοι οι πελάτες</option>' +
+    clients.map(c=>`<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+  sel.value = cur;
+}
+
+async function loadOutbox(offset){
+  const sec = document.getElementById('outbox-section');
+  if(!sec) return;
+  _obOffset = offset || 0;
+  const qs = new URLSearchParams({ action:'list', limit:OB_LIMIT, offset:_obOffset });
+  const cid = document.getElementById('ob-client')?.value;
+  const from= document.getElementById('ob-from')?.value;
+  const to  = document.getElementById('ob-to')?.value;
+  if(cid)  qs.set('client_id', cid);
+  if(from) qs.set('from', from);
+  if(to)   qs.set('to', to);
+
+  try {
+    const r = await apiFetch(`${API}/offer_archive.php?${qs}`);
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok || !d.ok){ sec.style.display='none'; return; }   // 403 ή σφάλμα -> κρυφό
+    sec.style.display='';
+    obClientOptions();
+    const rows = d.rows || [];
+    _obHasMore = rows.length === OB_LIMIT;
+    _obRows = _obOffset === 0 ? rows : _obRows.concat(rows);
+    renderOutbox();
+  } catch(e){ sec.style.display='none'; }
+}
+
+function renderOutbox(){
+  const el = document.getElementById('outbox-list');
+  if(!el) return;
+  const f = document.getElementById('ob-status')?.value || '';
+  const list = f ? _obRows.filter(r=>(r.status||'pending')===f) : _obRows;   // φίλτρο client-side
+  document.getElementById('outbox-count').textContent = list.length;
+  document.getElementById('ob-more').style.display = _obHasMore ? '' : 'none';
+
+  if(!list.length){ el.innerHTML='<div class="empty">Καμία αποστολή</div>'; return; }
+  el.innerHTML = `<div class="ob-wrap"><table class="ob-table">
+    <thead><tr>
+      <th>Ημ/νία αποστολής</th><th>Αριθμός</th><th>Πελάτης</th>
+      <th>Παραλήπτης</th><th>Χρήστης</th><th>Κατάσταση</th><th class="ob-num">Μέγεθος</th>
+    </tr></thead><tbody>` +
+    list.map(r=>`<tr onclick="openArchivedPdf(${r.id})" title="sha256: ${escHtml(String(r.file_sha256||'—').slice(0,16))}…">
+      <td>${obWhen(r)}</td>
+      <td class="ob-ref">${obRef(r)}</td>
+      <td>${escHtml(r.client_name||'—')}</td>
+      <td>${escHtml(r.sent_to||'—')}</td>
+      <td>${escHtml(r.actor_name||'—')}</td>
+      <td>${obPill(r)}</td>
+      <td class="ob-num">${obFmtBytes(r.file_bytes)}</td>
+    </tr>`).join('') + '</tbody></table></div>';
+}
+
+function obReset(){
+  ['ob-client','ob-from','ob-to','ob-status'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  loadOutbox(0);
+}
+
+// Το action=file απαιτεί Authorization header — window.open() θα έδινε 401.
+// Άρα: fetch με token -> blob -> objectURL. Σε σφάλμα το endpoint γυρίζει
+// JSON, όχι PDF, γι' αυτό ελέγχουμε το content-type πριν το ανοίξουμε.
+async function openArchivedPdf(id){
+  try {
+    const r = await apiFetch(`${API}/offer_archive.php?action=file&id=${encodeURIComponent(id)}`);
+    const ct = (r.headers.get('content-type')||'').toLowerCase();
+    if(!r.ok || ct.indexOf('application/pdf') === -1){
+      const d = await r.json().catch(()=>({}));
+      alert('Δεν ήταν δυνατό το άνοιγμα του PDF: ' + (d.error || `HTTP ${r.status}`));
+      return;
+    }
+    const url = URL.createObjectURL(await r.blob());
+    window.open(url, '_blank');
+    setTimeout(()=>URL.revokeObjectURL(url), 60000);
+  } catch(e){ alert('Σφάλμα: ' + e.message); }
+}
+
+// Μία κλήση στο load, ομαδοποίηση ανά πελάτη για τη μίνι-λίστα της κάρτας.
+// Η renderClients() είναι σύγχρονη, οπότε δεν μπορεί να κάνει fetch ανά κάρτα.
+// Όριο 200: στους σημερινούς ρυθμούς (44 προσφορές) αργεί χρόνια να χτυπήσει.
+async function loadOffersByClient(){
+  try {
+    const r = await apiFetch(`${API}/offer_archive.php?action=list&limit=200`);
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok || !d.ok) return;
+    const map = {};
+    (d.rows||[]).forEach(row=>{
+      if(row.client_id == null) return;
+      const k = String(row.client_id);
+      (map[k] = map[k] || []).push(row);
+    });
+    offersByClient = map;
+    renderClients();
+  } catch(e){ /* χωρίς δικαίωμα ή offline — η κάρτα απλώς δεν δείχνει λίστα */ }
+}
+
+function obMiniList(clientId){
+  const rows = offersByClient[String(clientId)] || [];
+  if(!rows.length) return '';
+  const last = rows.slice(0, 5);
+  return `<div class="ob-mini">📤 Προσφορές που στάλθηκαν: ` + last.map(r=>{
+    const st = r.status==='sent' ? '✅' : r.status==='failed' ? '🔴' : '🟡';
+    const dt = obFmtDT(r.sent_at || r.created_at) || '';
+    return `<span onclick="event.stopPropagation();openArchivedPdf(${r.id})" title="${escHtml(r.sent_to||'')}">`
+         + `<b>${escHtml(r.offer_ref||r.reference||'—')}</b> ${escHtml(dt.split(' ')[0])} ${st}</span>`;
+  }).join(' · ') + (rows.length > 5 ? ` <i style="color:#bbb;">+${rows.length-5}</i>` : '') + `</div>`;
+}
 
 function _b64ToBlob(b64, mime){
   const bin = atob(b64);
