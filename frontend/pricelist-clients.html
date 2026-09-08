@@ -139,6 +139,9 @@
   .ob-sent    { background: #e8f5e9; color: #2e7d32; }
   .ob-failed  { background: #ffebee; color: #c62828; cursor: help; }
   .ob-pending { background: #fff8e1; color: #f57f17; }
+  .ob-reserved  { background: #e3f2fd; color: #1565c0; cursor: help; }
+  .ob-abandoned { background: #f0f0f0; color: #888; cursor: help; }
+  .ob-table tbody tr.ob-nofile { cursor: default; opacity: 0.85; }
   .ob-mini  { font-size: 11px; color: #777; margin-top: 3px; display: flex;
               flex-wrap: wrap; gap: 4px 10px; }
   .ob-mini b { color: #00838f; font-family: monospace; font-weight: 600; }
@@ -452,6 +455,8 @@
           <option value="sent">✅ Στάλθηκαν</option>
           <option value="failed">🔴 Απέτυχαν</option>
           <option value="pending">🟡 Εκκρεμούν</option>
+          <option value="reserved">🔵 Δεσμευμένοι</option>
+          <option value="abandoned">⚪ Εγκαταλελειμμένοι</option>
         </select>
         <button class="filter-btn" onclick="obReset()">Καθαρισμός</button>
       </div>
@@ -578,11 +583,10 @@ let codEnabled=false, codConfig=null, codFee=0, codFeeTimer=null, pendingCodSnap
 function formatDate(iso){ const d=new Date(iso); if(isNaN(d))return iso; return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
 function todayFmt(){ return formatDate(new Date().toISOString()); }
 function initials(n){ return (n||'?').split(/\s+/).map(w=>w[0]||'').join('').substring(0,2).toUpperCase(); }
-function nextOfferNumber(){
-  const y=new Date().getFullYear();
-  const nums=clients.map(c=>{ const m=(c.offer_number||'').match(/4A-\d{4}-(\d+)/); return m?parseInt(m[1]):0; });
-  return `4A-${y}-${String((nums.length?Math.max(...nums):0)+1).padStart(4,'0')}`;
-}
+// Η nextOfferNumber() αφαιρέθηκε: ο αριθμός προσφοράς παράγεται πλέον
+// ΑΠΟΚΛΕΙΣΤΙΚΑ από τον server (4a_offer_seq, ατομικά). Ο client-side
+// υπολογισμός max+1 έτρεχε πάνω σε λίστα φιλτραρισμένη κατά pricelist_scope
+// και παρήγαγε διπλούς/αποκλίνοντες αριθμούς. Βλ. docs/offer_numbering_plan.md
 
 function onWalkinChange(){
   const isWalkin = document.getElementById('cl-walkin').checked;
@@ -644,8 +648,10 @@ async function init(){
 }
 
 function updateOfferNum(){
-  const n=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
-  document.getElementById('offer-num-display').textContent=n;
+  // Ο αριθμός δίνεται από τον server τη στιγμή της αποστολής — δεν προβλέπεται.
+  const _last=editingId?(clients.find(c=>c.id===editingId)?.offer_number||''):'';
+  document.getElementById('offer-num-display').textContent =
+    _last ? `τελευταία: ${_last}` : 'θα δοθεί κατά την αποστολή';
 }
 
 function setStatus(s,el){
@@ -1109,7 +1115,10 @@ async function saveClient(){
     if(_pct<_pctFloor){ alert(`⚠️ Το ποσοστό δεν επιτρέπεται κάτω από ${_pctFloor.toFixed(2)}%`); return; }
     // COD ορια: κλειδωνουν στο save μεσω snapshot. Η προσφορα ΔΕΝ γραφει global config.
   }
-  const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+  // Ο αριθμός ΔΕΝ παράγεται πια εδώ. Πηγή είναι ο server (4a_offer_seq) και
+  // το πεδίο ενημερώνεται από το offer_archive.php όταν η προσφορά σταλεί.
+  // Στο save απλώς διατηρούμε ό,τι υπάρχει ήδη.
+  const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||''):'';
   const client={
     id:editingId||Date.now(), name, afm,
     contact:document.getElementById('cl-contact').value.trim(),
@@ -1668,7 +1677,10 @@ async function buildFinalPDF(offerNum){
   }
 }
 
-async function previewPDF(returnBytes=false){
+// forcedRef: ο αριθμός που δέσμευσε ο server (create). Χωρίς αυτόν, η
+// συνάρτηση συμπεριφέρεται όπως πάντα — για την απλή προεπισκόπηση, που
+// ΔΕΝ πρέπει να δεσμεύει αριθμό.
+async function previewPDF(returnBytes=false, forcedRef=null){
   const name=document.getElementById('cl-name').value.trim();
   if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
   if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
@@ -1681,7 +1693,7 @@ async function previewPDF(returnBytes=false){
   const payDays    = document.getElementById('cl-payment').value;
   const invoiceMode= document.getElementById('cl-invoice').value;
   const validDays  = parseInt(document.getElementById('cl-validity').value)||30;
-  const offerNum   = editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
+  const offerNum   = forcedRef || (editingId?(clients.find(c=>c.id===editingId)?.offer_number||'—'):'—');
   const today      = todayFmt();
   const dd=new Date(); dd.setDate(dd.getDate()+validDays);
   const validUntil = formatDate(dd.toISOString());
@@ -2529,8 +2541,8 @@ async function draftOffer(){
   document.getElementById('draft-btn').textContent='⏳ Draft...';
   document.getElementById('draft-btn').disabled=true;
   try {
-    const offerNum=editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
-    const blob = await buildJsPDF(offerNum);
+    // Το draft δεν δεσμεύει αριθμό — δεν είναι έγγραφο προς αποστολή.
+    const blob = await buildJsPDF('ΠΡΟΣΧΕΔΙΟ');
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
   } catch(e){ alert('Σφάλμα: '+e.message); }
@@ -2611,6 +2623,43 @@ function _zonePricesFor(pl){
   return { zcount, rows, missing:[...missing] };
 }
 
+// Δέσμευση αριθμού από τον server (4a_offer_seq). Καμία παραγωγή PDF.
+async function reserveOffer(payload){
+  try{
+    const r = await apiFetch(`${API}/offer_archive.php`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok || !d.ok) return {ok:false, error:(d.error||`HTTP ${r.status}`)};
+    return {ok:true, offer_id:d.offer_id, offer_ref:d.offer_ref};
+  }catch(e){ return {ok:false, error:e.message}; }
+}
+
+// PDF με συγκεκριμένο αριθμό, σε base64.
+async function buildPdfBase64(offerRef){
+  const bytes = await previewPDF(true, offerRef);
+  let binary='';
+  for(let i=0;i<bytes.length;i++) binary+=String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+// Επισύναψη PDF+snapshot σε δεσμευμένη προσφορά. Το offer_status επιστρέφεται
+// στο 409 ώστε ο καλών να ξεχωρίσει 'abandoned' (ξαναδέσμευση) από
+// 'draft'/'sent' (διπλή υποβολή — καμία επανάληψη).
+async function attachOffer(offerId, pdf_base64, snapshot, fuelPct, to, subject){
+  try{
+    const r = await apiFetch(`${API}/offer_archive.php?action=attach`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ offer_id:offerId, pdf_base64, snapshot,
+                             fuel_pct:fuelPct, to, subject })
+    });
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok || !d.ok) return {ok:false, error:(d.error||`HTTP ${r.status}`), offer_status:d.offer_status||null};
+    return {ok:true, log_id:d.log_id, offer_ref:d.offer_ref};
+  }catch(e){ return {ok:false, error:e.message, offer_status:null}; }
+}
+
 async function sendOffer(){
   const name=document.getElementById('cl-name').value.trim();
   const email=document.getElementById('cl-email').value.trim();
@@ -2626,6 +2675,7 @@ async function sendOffer(){
   btn.disabled=true;
 
   let logId=null;
+  let reservedRef=null;   // ορατό από το catch: ο αριθμός που δεσμεύτηκε
   try {
     // ── 1. ΣΥΛΛΟΓΗ ΠΗΓΩΝ ────────────────────────────────────────────────
     // Το _modalDhl είναι αυτό που διαβάζει η _dhlMap(). Αν δεν έχει ανοίξει
@@ -2693,14 +2743,13 @@ async function sendOffer(){
     }
 
     // ── 3. Snapshot ─────────────────────────────────────────────────────
-    const offerNum  = editingId?(clients.find(c=>c.id===editingId)?.offer_number||nextOfferNumber()):nextOfferNumber();
     const validDays = parseInt(document.getElementById('cl-validity').value)||30;
     const anyAir    = selectedPls.some(p=>String(p.service_id).includes('S1003')||String(p.service_id).includes('S1012'));
 
     const snapshot={
       schema_version:1,
       captured_at:new Date().toISOString(),
-      offer:{ pdf_number:offerNum, date:todayFmt(), validity_days:validDays },
+      offer:{ pdf_number:null, date:todayFmt(), validity_days:validDays },   // συμπληρώνεται μετά το create
       issuer:{
         user_name:currentUser?.name||null,
         station:currentUser?.active_station||null,
@@ -2735,46 +2784,69 @@ async function sendOffer(){
       zones_map:{ air:zmAir, road:zmRoad }
     };
 
-    // ── 4. PDF ──────────────────────────────────────────────────────────
+    // ── 4. ΔΕΣΜΕΥΣΗ ΑΡΙΘΜΟΥ (create, χωρίς PDF) ─────────────────────────
+    // Ο αριθμός πρέπει να υπάρχει ΠΡΙΝ παραχθεί το PDF: τυπώνεται μέσα στο
+    // έγγραφο και στο έντυπο αποδοχής. Ο έλεγχος snapshot έχει ήδη περάσει,
+    // ώστε να μην καίγεται αριθμός σε αποτυχία επικύρωσης.
+    const reservePayload = {
+      client_id: editingId,
+      client_name: name,
+      client_afm: document.getElementById('cl-afm').value.trim()||null,
+      client_email: email,
+      country: document.getElementById('cl-country').value||'GR',
+      validity_days: validDays
+    };
+
+    btn.textContent='⏳ Δέσμευση αριθμού...';
+    let res = await reserveOffer(reservePayload);
+    if(!res.ok){ alert('Σφάλμα δέσμευσης αριθμού: '+res.error+'\n\nΗ προσφορά ΔΕΝ στάλθηκε.'); return; }
+    let offerId = res.offer_id, offerRef = res.offer_ref;
+    reservedRef = offerRef;
+
+    // ── 5. PDF με τον ΟΡΙΣΤΙΚΟ αριθμό ───────────────────────────────────
     btn.textContent='⏳ Παραγωγή PDF...';
-    const finalBytes = await previewPDF(true);
-    let binary='';
-    for(let i=0;i<finalBytes.length;i++) binary+=String.fromCharCode(finalBytes[i]);
-    const pdf_base64 = btoa(binary);
+    let pdf_base64 = await buildPdfBase64(offerRef);
+    snapshot.offer.pdf_number = offerRef;
 
     // Το subject μένει ελληνικό: κωδικοποιείται με MIME encoded-word (RFC 2047)
     // και δεν απαιτεί SMTPUTF8. Το filename ΟΧΙ — ελληνικά εκεί ενεργοποιούν
     // SMTPUTF8, που ο SMTP server δεν υποστηρίζει.
-    const subject = `Προσφορά 4A Express — ${offerNum}`;
+    let subject = `Προσφορά 4A Express — ${offerRef}`;
 
-    // ── 5. Αρχειοθέτηση ΠΡΙΝ το SMTP ────────────────────────────────────
+    // ── 6. ATTACH ───────────────────────────────────────────────────────
     btn.textContent='⏳ Αρχειοθέτηση...';
-    const arc = await apiFetch(`${API}/offer_archive.php`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        client_id: editingId||null,
-        client_name: name,
-        client_afm: document.getElementById('cl-afm').value.trim()||null,
-        client_email: email,
-        country: document.getElementById('cl-country').value||'GR',
-        to: email, subject,
-        snapshot,
-        fuel_pct: anyAir?airPct:roadPct,
-        validity_days: validDays,
-        pdf_base64
-      })
-    });
-    const arcData = await arc.json().catch(()=>({}));
-    if(!arcData.ok){
-      alert('Σφάλμα αρχειοθέτησης: '+(arcData.error||`HTTP ${arc.status}`)
-            +'\n\nΗ προσφορά ΔΕΝ στάλθηκε.');
+    let att = await attachOffer(offerId, pdf_base64, snapshot, anyAir?airPct:roadPct, email, subject);
+
+    // 409 + abandoned: η δέσμευση έληξε (>30′). Ξαναδεσμεύουμε ΜΙΑ φορά και
+    // ΞΑΝΑΠΑΡΑΓΟΥΜΕ το PDF — ο αριθμός είναι τυπωμένος μέσα του, δεν αρκεί
+    // νέο attach. Σε 'draft'/'sent' ΔΕΝ ξαναδοκιμάζουμε: είναι διπλή υποβολή.
+    if(!att.ok && att.offer_status === 'abandoned'){
+      btn.textContent='⏳ Νέα δέσμευση...';
+      res = await reserveOffer(reservePayload);
+      if(!res.ok){ alert('Η δέσμευση έληξε και η νέα απέτυχε: '+res.error+'\n\nΗ προσφορά ΔΕΝ στάλθηκε.'); return; }
+      offerId = res.offer_id; offerRef = res.offer_ref; reservedRef = offerRef;
+
+      btn.textContent='⏳ Επαναπαραγωγή PDF...';
+      pdf_base64 = await buildPdfBase64(offerRef);
+      snapshot.offer.pdf_number = offerRef;
+      subject = `Προσφορά 4A Express — ${offerRef}`;
+
+      btn.textContent='⏳ Αρχειοθέτηση...';
+      att = await attachOffer(offerId, pdf_base64, snapshot, anyAir?airPct:roadPct, email, subject);
+    }
+
+    if(!att.ok){
+      const extra = att.offer_status ? `\nΚατάσταση προσφοράς: ${att.offer_status}.` : '';
+      alert('Σφάλμα αρχειοθέτησης: '+att.error+extra
+            +`\n\nΟ αριθμός ${offerRef} είχε δεσμευτεί και θα αποδεσμευτεί αυτόματα`
+            +' (θα εμφανιστεί ως «εγκαταλελειμμένος» στο Ιστορικό αποστολών).'
+            +'\n\nΗ προσφορά ΔΕΝ στάλθηκε — μπορείς να ξαναδοκιμάσεις.');
       return;
     }
-    logId=arcData.log_id;
-    const offerRef=arcData.offer_ref;
+    logId = att.log_id;
     const filename=`Offer_4A_Express_${offerRef}.pdf`;   // ASCII μόνο — SMTPUTF8
 
-    // ── 6. Αποστολή ─────────────────────────────────────────────────────
+    // ── 7. Αποστολή ─────────────────────────────────────────────────────
     btn.textContent='⏳ Αποστολή...';
     const r = await apiFetch(`${API}/send_email.php`,{
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -2786,7 +2858,7 @@ async function sendOffer(){
     });
     const d = await r.json().catch(()=>({}));
 
-    // ── 7. Ενημέρωση κατάστασης ─────────────────────────────────────────
+    // ── 8. Ενημέρωση κατάστασης ─────────────────────────────────────────
     await apiFetch(`${API}/offer_archive.php?action=status`,{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ log_id:logId, success:!!d.ok,
@@ -2806,7 +2878,13 @@ async function sendOffer(){
         });
       }catch(_){}
     }
-    alert('Σφάλμα: '+e.message);
+    // Αν είχε ήδη δεσμευτεί αριθμός (π.χ. έσκασε η παραγωγή PDF), πες το —
+    // αλλιώς ο χρήστης ξαναπατά «Αποστολή» και καίει δεύτερο αριθμό χωρίς
+    // να καταλάβει γιατί η αρίθμηση πήδηξε.
+    const _res = reservedRef
+      ? `\n\nΟ αριθμός ${reservedRef} είχε δεσμευτεί και θα αποδεσμευτεί αυτόματα.`
+      : '';
+    alert('Σφάλμα: '+e.message+_res);
   }
   finally {
     btn.textContent='✉️ Αποστολή Προσφοράς';
@@ -2906,11 +2984,21 @@ function obWhen(r){
   return `<span style="color:#aaa;">${escHtml(cre||'—')} <i style="font-size:10px;">(δημ.)</i></span>`;
 }
 
+const OB_PILL = {
+  sent:      ['ob-sent',      '✅ Στάλθηκε'],
+  failed:    ['ob-failed',    '🔴 Απέτυχε'],
+  pending:   ['ob-pending',   '🟡 Εκκρεμεί'],
+  reserved:  ['ob-reserved',  '🔵 Δεσμευμένος'],
+  abandoned: ['ob-abandoned', '⚪ Εγκαταλείφθηκε']
+};
+
 function obPill(r){
   const st = r.status || 'pending';
-  const cls = st==='sent' ? 'ob-sent' : st==='failed' ? 'ob-failed' : 'ob-pending';
-  const lbl = st==='sent' ? '✅ Στάλθηκε' : st==='failed' ? '🔴 Απέτυχε' : '🟡 Εκκρεμεί';
-  const tip = (st==='failed' && r.error_message) ? ` title="${escHtml(r.error_message)}"` : '';
+  const [cls, lbl] = OB_PILL[st] || OB_PILL.pending;
+  let tip = '';
+  if(st==='failed' && r.error_message) tip = ` title="${escHtml(r.error_message)}"`;
+  else if(st==='abandoned') tip = ' title="Ο αριθμός δεσμεύτηκε αλλά η προσφορά δεν ολοκληρώθηκε — εξηγεί κενό στην αρίθμηση"';
+  else if(st==='reserved')  tip = ' title="Δέσμευση σε εξέλιξη ή πρόσφατη — αποδεσμεύεται αυτόματα μετά από 30 λεπτά"';
   return `<span class="ob-pill ${cls}"${tip}>${lbl}</span>`;
 }
 
@@ -2949,7 +3037,19 @@ async function loadOutbox(offset){
     obClientOptions();
     const rows = d.rows || [];
     _obHasMore = rows.length === OB_LIMIT;
-    _obRows = _obOffset === 0 ? rows : _obRows.concat(rows);
+    // Ορφανές δεσμεύσεις: αριθμοί που δόθηκαν αλλά δεν έφτασαν ποτέ σε
+    // αποστολή. Δεν έχουν γραμμή log, γι' αυτό έρχονται χωριστά — αλλιώς
+    // η αρίθμηση θα είχε ανεξήγητα κενά.
+    const orphans = (d.orphans || []).map(o => ({
+      id: null, offer_id: o.offer_id, reference: o.offer_ref, offer_ref: o.offer_ref,
+      revision: o.revision, client_id: o.client_id, client_name: o.client_name,
+      actor_name: o.actor_name, status: o.offer_status, error_message: null,
+      sent_to: null, file_bytes: null, file_sha256: null,
+      created_at: o.created_at, sent_at: null
+    }));
+    const merged = (_obOffset === 0 ? rows : _obRows.concat(rows)).concat(_obOffset === 0 ? orphans : []);
+    merged.sort((a,b) => String(b.created_at||'').localeCompare(String(a.created_at||'')));
+    _obRows = merged;
     renderOutbox();
   } catch(e){ sec.style.display='none'; }
 }
@@ -2968,7 +3068,13 @@ function renderOutbox(){
       <th>Ημ/νία αποστολής</th><th>Αριθμός</th><th>Πελάτης</th>
       <th>Παραλήπτης</th><th>Χρήστης</th><th>Κατάσταση</th><th class="ob-num">Μέγεθος</th>
     </tr></thead><tbody>` +
-    list.map(r=>`<tr onclick="openArchivedPdf(${r.id})" title="sha256: ${escHtml(String(r.file_sha256||'—').slice(0,16))}…">
+    list.map(r=>{
+      // Ορφανή δέσμευση: δεν υπάρχει αρχείο, άρα ούτε κλικ για άνοιγμα PDF
+      const noFile = (r.id == null);
+      const attr = noFile
+        ? ` class="ob-nofile" title="Δεν παρήχθη αρχείο — η προσφορά δεν ολοκληρώθηκε"`
+        : ` onclick="openArchivedPdf(${r.id})" title="sha256: ${escHtml(String(r.file_sha256||'—').slice(0,16))}…"`;
+      return `<tr${attr}>
       <td>${obWhen(r)}</td>
       <td class="ob-ref">${obRef(r)}</td>
       <td>${escHtml(r.client_name||'—')}</td>
@@ -2976,7 +3082,7 @@ function renderOutbox(){
       <td>${escHtml(r.actor_name||'—')}</td>
       <td>${obPill(r)}</td>
       <td class="ob-num">${obFmtBytes(r.file_bytes)}</td>
-    </tr>`).join('') + '</tbody></table></div>';
+    </tr>`;}).join('') + '</tbody></table></div>';
 }
 
 function obReset(){
