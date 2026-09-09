@@ -34,12 +34,16 @@ header('Content-Type: application/json; charset=utf-8');
 // ΕΚΤΟΣ webroot. Επιβεβαιώθηκε γράψιμο (WRITABLE) στις 06/09/2026.
 const ARCHIVE_ROOT = '/home/customer/www/4aexpress.com/offers_archive';
 const MAX_PDF_BYTES = 20 * 1024 * 1024;   // 20 MB
+// Πόσο μένει «reserved» μια δέσμευση πριν θεωρηθεί εγκαταλελειμμένη.
+// Η παραγωγή PDF παίρνει 5-15 δευτ., οπότε τα 30 λεπτά είναι γενναιόδωρα.
+const ABANDON_TTL_MIN = 30;
 
 $action = $_GET['action'] ?? 'create';
 
 try {
     switch ($action) {
         case 'create': handleCreate(); break;
+        case 'attach': handleAttach(); break;
         case 'status': handleStatus(); break;
         case 'list':   handleList();   break;
         case 'file':   handleFile();   break;
@@ -55,7 +59,12 @@ try {
 
 
 // ════════════════════════════════════════════════════════════════════════════
-// CREATE — νέα προσφορά / αναθεώρηση + αρχειοθέτηση PDF
+// CREATE — δεσμεύει αριθμό προσφοράς (status='reserved'), ΧΩΡΙΣ PDF
+//
+// LEGACY: αν το request περιέχει pdf_base64, συμπεριφέρεται όπως πριν τη
+// Φάση 2 — δεσμεύει ΚΑΙ αρχειοθετεί μονομιάς, με status='draft'. Υπάρχει
+// ώστε το παλιό frontend να μη σπάσει στο διάστημα μεταξύ SCP και push.
+// Αφαιρείται όταν επιβεβαιωθεί ότι κανείς δεν στέλνει πια pdf_base64 εδώ.
 // ════════════════════════════════════════════════════════════════════════════
 function handleCreate(): void
 {
@@ -68,30 +77,23 @@ function handleCreate(): void
 
     $in = json_decode(file_get_contents('php://input'), true) ?: [];
 
-    foreach (['client_name', 'pdf_base64', 'snapshot'] as $req) {
-        if (empty($in[$req])) {
-            http_response_code(400);
-            echo json_encode(['ok' => false, 'error' => "Λείπει το πεδίο: $req"]);
-            return;
-        }
+    if (empty($in['client_name'])) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Λείπει το πεδίο: client_name']);
+        return;
     }
 
-    // ── PDF ─────────────────────────────────────────────────────────────────
-    $pdf = base64_decode($in['pdf_base64'], true);
-    if ($pdf === false || strlen($pdf) < 100) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Άκυρο PDF']);
-        return;
-    }
-    if (strlen($pdf) > MAX_PDF_BYTES) {
-        http_response_code(413);
-        echo json_encode(['ok' => false, 'error' => 'Το PDF είναι πολύ μεγάλο']);
-        return;
-    }
-    if (substr($pdf, 0, 5) !== '%PDF-') {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Το αρχείο δεν είναι PDF']);
-        return;
+    // Legacy: PDF μαζί με το create -> παλιά συμπεριφορά (create + attach μαζί)
+    $legacy = !empty($in['pdf_base64']);
+    $pdf    = null;
+    if ($legacy) {
+        if (empty($in['snapshot'])) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Λείπει το πεδίο: snapshot']);
+            return;
+        }
+        $pdf = decodePdfOrFail($in['pdf_base64']);
+        if ($pdf === null) return;   // το μήνυμα το έστειλε ήδη η decodePdfOrFail
     }
 
     // Το country πάει σε ENUM. Χωρίς έλεγχο, μια άκυρη τιμή (π.χ. '' ή πεζά)
@@ -109,6 +111,12 @@ function handleCreate(): void
 
     $pdo = db();
     $actorName = actorName($pdo, (int)$actor['id']);
+
+    // Lazy sweep: σημαίνει ως 'abandoned' όσες δεσμεύσεις έμειναν ορφανές
+    // (ο χρήστης έκλεισε το παράθυρο μετά το create). Δεν διαγράφει — ο
+    // αριθμός πρέπει να έχει γραμμή που εξηγεί τι απέγινε.
+    sweepAbandoned($pdo);
+
     $pdo->beginTransaction();
 
     try {
@@ -144,8 +152,8 @@ function handleCreate(): void
              (offer_number, revision, offer_ref, client_id, client_name,
               client_afm, client_email, country, status, snapshot, fuel_pct,
               tariff_version, validity_days, valid_until,
-              created_by, created_by_name)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,DATE_ADD(CURDATE(), INTERVAL ? DAY),?,?)'
+              created_by, created_by_name, reserved_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,DATE_ADD(CURDATE(), INTERVAL ? DAY),?,?,?)'
         );
         $st->execute([
             $offerNumber,
@@ -156,75 +164,137 @@ function handleCreate(): void
             $in['client_afm']   ?? null,
             $in['client_email'] ?? null,
             $country,
-            'draft',
-            json_encode($in['snapshot'], JSON_UNESCAPED_UNICODE),
+            $legacy ? 'draft' : 'reserved',
+            $legacy ? json_encode($in['snapshot'], JSON_UNESCAPED_UNICODE) : null,
             $in['fuel_pct']       ?? null,
             $in['tariff_version'] ?? null,
             $validity,
             $validity,
             $actor['id'],
             $actorName,
+            $legacy ? null : date('Y-m-d H:i:s'),
         ]);
         $offerId = (int)$pdo->lastInsertId();
 
-        // ── Αποθήκευση αρχείου ──────────────────────────────────────────────
-        $relDir = date('Y/m');
-        $absDir = ARCHIVE_ROOT . '/' . $relDir;
-        if (!is_dir($absDir) && !mkdir($absDir, 0750, true) && !is_dir($absDir)) {
-            throw new RuntimeException('Αδυναμία δημιουργίας φακέλου αρχείου');
+        // Χωρίς PDF: εδώ τελειώνει. Ο αριθμός είναι δεσμευμένος και το
+        // frontend μπορεί να τον τυπώσει ΜΕΣΑ στο PDF πριν καλέσει attach.
+        if (!$legacy) {
+            $pdo->commit();
+            echo json_encode([
+                'ok'        => true,
+                'offer_id'  => $offerId,
+                'offer_ref' => $offerRef,
+                'status'    => 'reserved',
+            ], JSON_UNESCAPED_UNICODE);
+            return;
         }
 
-        $safeRef  = preg_replace('/[^A-Za-z0-9\-]/', '_', $offerRef);
-        $fileName = $safeRef . '_' . date('Ymd_His') . '.pdf';
-        $absPath  = "$absDir/$fileName";
-        $relPath  = "$relDir/$fileName";
-
-        if (file_put_contents($absPath, $pdf, LOCK_EX) === false) {
-            throw new RuntimeException('Αδυναμία εγγραφής PDF');
-        }
-        chmod($absPath, 0640);
-
-        $sha = hash('sha256', $pdf);
-
-        // ── Εγγραφή αποστολής (pending — το SMTP δεν έχει τρέξει ακόμη) ──────
-        $st = $pdo->prepare(
-            "INSERT INTO `4a_outbound_log`
-             (direction, doc_type, offer_id, client_id, client_name, reference,
-              sent_to, sent_bcc, subject, file_name, file_path, file_sha256,
-              file_bytes, status, actor_id, actor_name, ip)
-             VALUES ('out','offer',?,?,?,?,?,?,?,?,?,?,?,'pending',?,?,?)"
-        );
-        $st->execute([
-            $offerId,
-            $in['client_id'] ?? null,
-            $in['client_name'],
-            $offerRef,
-            $in['to']      ?? null,
-            'sales@4aexpress.com',
-            $in['subject'] ?? null,
-            $in['filename'] ?? $fileName,
-            $relPath,
-            $sha,
-            strlen($pdf),
-            $actor['id'],
-            $actorName,
-            $_SERVER['REMOTE_ADDR'] ?? null,
-        ]);
-        $logId = (int)$pdo->lastInsertId();
-
+        // ── LEGACY: αρχείο + log στην ίδια κλήση ────────────────────────────
+        $res = storePdfAndLog($pdo, $in, $offerId, $offerRef, $pdf,
+                              (int)$actor['id'], $actorName, $absPath);
         $pdo->commit();
 
         echo json_encode([
             'ok'        => true,
             'offer_id'  => $offerId,
-            'log_id'    => $logId,
+            'log_id'    => $res['log_id'],
             'offer_ref' => $offerRef,
-            'sha256'    => $sha,
+            'sha256'    => $res['sha256'],
         ], JSON_UNESCAPED_UNICODE);
 
     } catch (Throwable $e) {
         $pdo->rollBack();
         if (isset($absPath) && is_file($absPath)) @unlink($absPath);
+        throw $e;
+    }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// ATTACH — PDF + snapshot σε ΗΔΗ δεσμευμένη προσφορά· reserved -> draft
+// ════════════════════════════════════════════════════════════════════════════
+function handleAttach(): void
+{
+    $actor = require_permission('offers', 'add');
+    $in    = json_decode(file_get_contents('php://input'), true) ?: [];
+
+    $offerId = (int)($in['offer_id'] ?? 0);
+    if ($offerId <= 0 || empty($in['pdf_base64']) || empty($in['snapshot'])) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Λείπει offer_id, pdf_base64 ή snapshot']);
+        return;
+    }
+
+    $pdf = decodePdfOrFail($in['pdf_base64']);
+    if ($pdf === null) return;
+
+    $pdo = db();
+    $actorName = actorName($pdo, (int)$actor['id']);
+    $pdo->beginTransaction();
+
+    try {
+        // Κλείδωμα της γραμμής ώστε δύο ταυτόχρονα attach να μη γράψουν δύο αρχεία
+        $st = $pdo->prepare('SELECT offer_ref, client_id, client_name, status
+                             FROM `4a_offers` WHERE id = ? FOR UPDATE');
+        $st->execute([$offerId]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if (!$row) throw new RuntimeException('NOT_FOUND');
+
+        // Το φίλτρο status κάνει το attach ιδεμποτέντ: δεύτερη κλήση -> 0 γραμμές
+        $up = $pdo->prepare(
+            "UPDATE `4a_offers`
+                SET snapshot = ?, fuel_pct = ?, tariff_version = ?, status = 'draft'
+              WHERE id = ? AND status = 'reserved'"
+        );
+        $up->execute([
+            json_encode($in['snapshot'], JSON_UNESCAPED_UNICODE),
+            $in['fuel_pct']       ?? null,
+            $in['tariff_version'] ?? null,
+            $offerId,
+        ]);
+        if ($up->rowCount() === 0) throw new RuntimeException('NOT_RESERVED:' . $row['status']);
+
+        // Το client_name του log έρχεται από τη ΓΡΑΜΜΗ, όχι από το request:
+        // η δέσμευση είναι η πηγή αλήθειας, όχι ό,τι ξαναστείλει ο browser.
+        $in['client_id']   = $row['client_id'];
+        $in['client_name'] = $row['client_name'];
+
+        $res = storePdfAndLog($pdo, $in, $offerId, $row['offer_ref'], $pdf,
+                              (int)$actor['id'], $actorName, $absPath);
+        $pdo->commit();
+
+        echo json_encode([
+            'ok'        => true,
+            'offer_id'  => $offerId,
+            'log_id'    => $res['log_id'],
+            'offer_ref' => $row['offer_ref'],
+            'sha256'    => $res['sha256'],
+        ], JSON_UNESCAPED_UNICODE);
+
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        if (isset($absPath) && is_file($absPath)) @unlink($absPath);
+
+        $msg = $e->getMessage();
+        if ($msg === 'NOT_FOUND') {
+            http_response_code(404);
+            echo json_encode(['ok' => false, 'error' => 'Η προσφορά δεν βρέθηκε'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+        if (strpos($msg, 'NOT_RESERVED:') === 0) {
+            $st = substr($msg, 13);
+            http_response_code(409);
+            // Το offer_status είναι μηχαναγνώσιμο: το frontend αποφασίζει από
+            // αυτό αν θα ξαναδεσμεύσει ('abandoned') ή θα σταματήσει
+            // ('draft'/'sent' = διπλή υποβολή). Parsing του ελληνικού κειμένου
+            // θα ήταν εύθραυστο.
+            echo json_encode([
+                'ok'           => false,
+                'error'        => 'Η προσφορά δεν είναι σε κατάσταση reserved (είναι: ' . $st . ')',
+                'offer_status' => $st,
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
         throw $e;
     }
 }
@@ -272,6 +342,19 @@ function handleStatus(): void
                  WHERE l.id = ? AND o.status = 'draft'"
             )->execute([$logId]);
 
+            // «Τελευταία προσφορά» στην κάρτα πελάτη (badge, γρ. 1192).
+            // ΕΔΩ και όχι στο create/attach: δέσμευση σημαίνει «πήρε αριθμό»
+            // και attach σημαίνει «επισυνάφθηκε PDF» — κανένα από τα δύο δεν
+            // σημαίνει «έφυγε». Μόνο εδώ, με success=true, έχει όντως σταλεί.
+            // Το uq_offer_number έπεσε στη Φάση 1, οπότε καμία σύγκρουση.
+            $pdo->prepare(
+                "UPDATE `4a_clients` c
+                 JOIN `4a_outbound_log` l ON l.id = ?
+                 JOIN `4a_offers` o ON o.id = l.offer_id
+                 SET c.offer_number = o.offer_ref
+                 WHERE c.id = o.client_id"
+            )->execute([$logId]);
+
             // Οι προηγούμενες αναθεωρήσεις γίνονται 'superseded'
             $pdo->prepare(
                 "UPDATE `4a_offers` prev
@@ -301,6 +384,11 @@ function handleList(): void
     // Ξεχωριστό δικαίωμα ανάγνωσης: το ιστορικό περιέχει τιμολόγηση πελατών.
     $actor = require_permission('offers', 'view');
 
+    // Το sweep έτρεχε ΜΟΝΟ στο create — μια ορφανή δέσμευση περίμενε την
+    // επόμενη αποστολή για να χαρακτηριστεί. Εδώ τρέχει σε κάθε άνοιγμα της
+    // σελίδας πελατών, οπότε τα κενά αρίθμησης γίνονται ορατά σε λεπτά.
+    sweepAbandoned(db());
+
     $where = ['1=1'];
     $args  = [];
 
@@ -325,10 +413,33 @@ function handleList(): void
 
     $st = db()->prepare($sql);
     $st->execute($args);
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+
+    // ── Ορφανές δεσμεύσεις ──────────────────────────────────────────────────
+    // Προσφορές που πήραν αριθμό αλλά δεν έφτασαν ποτέ σε αρχειοθέτηση, άρα
+    // ΔΕΝ έχουν γραμμή στο 4a_outbound_log. Χωρίς αυτές, κάποιος βλέπει
+    // 0047 -> 0050 και δεν έχει πουθενά να κοιτάξει τι μεσολάβησε.
+    $ow   = ['l.id IS NULL', "o.status IN ('reserved','abandoned')"];
+    $oarg = [];
+    if (!empty($_GET['client_id'])) { $ow[] = 'o.client_id = ?';  $oarg[] = (int)$_GET['client_id']; }
+    if (!empty($_GET['from']))      { $ow[] = 'o.created_at >= ?'; $oarg[] = $_GET['from'] . ' 00:00:00'; }
+    if (!empty($_GET['to']))        { $ow[] = 'o.created_at <= ?'; $oarg[] = $_GET['to']   . ' 23:59:59'; }
+
+    $osql = 'SELECT o.id AS offer_id, o.offer_ref, o.revision, o.status AS offer_status,
+                    o.client_id, o.client_name, o.created_by_name AS actor_name,
+                    o.created_at, o.reserved_at
+             FROM `4a_offers` o
+             LEFT JOIN `4a_outbound_log` l ON l.offer_id = o.id
+             WHERE ' . implode(' AND ', $ow) . '
+             ORDER BY o.created_at DESC
+             LIMIT 100';
+    $ost = db()->prepare($osql);
+    $ost->execute($oarg);
 
     echo json_encode([
-        'ok'   => true,
-        'rows' => $st->fetchAll(PDO::FETCH_ASSOC),
+        'ok'      => true,
+        'rows'    => $rows,
+        'orphans' => $ost->fetchAll(PDO::FETCH_ASSOC),
     ], JSON_UNESCAPED_UNICODE);
 }
 
@@ -372,6 +483,101 @@ function handleFile(): void
 // ════════════════════════════════════════════════════════════════════════════
 // Βοηθητικά
 // ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Αποκωδικοποίηση + έλεγχος PDF. Σε αποτυχία στέλνει το σφάλμα και
+ * επιστρέφει null — ο καλών κάνει σκέτο return.
+ */
+function decodePdfOrFail(string $b64): ?string
+{
+    $pdf = base64_decode($b64, true);
+    if ($pdf === false || strlen($pdf) < 100) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Άκυρο PDF'], JSON_UNESCAPED_UNICODE);
+        return null;
+    }
+    if (strlen($pdf) > MAX_PDF_BYTES) {
+        http_response_code(413);
+        echo json_encode(['ok' => false, 'error' => 'Το PDF είναι πολύ μεγάλο'], JSON_UNESCAPED_UNICODE);
+        return null;
+    }
+    if (substr($pdf, 0, 5) !== '%PDF-') {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Το αρχείο δεν είναι PDF'], JSON_UNESCAPED_UNICODE);
+        return null;
+    }
+    return $pdf;
+}
+
+/**
+ * Γράφει το PDF στο αρχείο και δημιουργεί τη γραμμή 4a_outbound_log.
+ * Κοινό για legacy create και για attach — ΕΝΑ σημείο αλήθειας για τη
+ * σύμβαση ονοματοδοσίας και τα δικαιώματα αρχείου.
+ * Το $absPath βγαίνει by-ref ώστε ο καλών να το σβήσει σε rollback.
+ */
+function storePdfAndLog(PDO $pdo, array $in, int $offerId, string $offerRef,
+                        string $pdf, int $actorId, ?string $actorName, &$absPath): array
+{
+    $relDir = date('Y/m');
+    $absDir = ARCHIVE_ROOT . '/' . $relDir;
+    if (!is_dir($absDir) && !mkdir($absDir, 0750, true) && !is_dir($absDir)) {
+        throw new RuntimeException('Αδυναμία δημιουργίας φακέλου αρχείου');
+    }
+
+    $safeRef  = preg_replace('/[^A-Za-z0-9\-]/', '_', $offerRef);
+    $fileName = $safeRef . '_' . date('Ymd_His') . '.pdf';
+    $absPath  = "$absDir/$fileName";
+    $relPath  = "$relDir/$fileName";
+
+    if (file_put_contents($absPath, $pdf, LOCK_EX) === false) {
+        throw new RuntimeException('Αδυναμία εγγραφής PDF');
+    }
+    chmod($absPath, 0640);
+    $sha = hash('sha256', $pdf);
+
+    $st = $pdo->prepare(
+        "INSERT INTO `4a_outbound_log`
+         (direction, doc_type, offer_id, client_id, client_name, reference,
+          sent_to, sent_bcc, subject, file_name, file_path, file_sha256,
+          file_bytes, status, actor_id, actor_name, ip)
+         VALUES ('out','offer',?,?,?,?,?,?,?,?,?,?,?,'pending',?,?,?)"
+    );
+    $st->execute([
+        $offerId,
+        $in['client_id'] ?? null,
+        $in['client_name'] ?? null,
+        $offerRef,
+        $in['to']       ?? null,
+        'sales@4aexpress.com',
+        $in['subject']  ?? null,
+        $in['filename'] ?? $fileName,
+        $relPath,
+        $sha,
+        strlen($pdf),
+        $actorId,
+        $actorName,
+        $_SERVER['REMOTE_ADDR'] ?? null,
+    ]);
+
+    return ['log_id' => (int)$pdo->lastInsertId(), 'sha256' => $sha, 'file_name' => $fileName];
+}
+
+/**
+ * Σημαίνει ως 'abandoned' τις δεσμεύσεις που έμειναν ορφανές.
+ * Δεν διαγράφει: ο αριθμός πρέπει να έχει γραμμή που εξηγεί τι απέγινε —
+ * αλλιώς ξαναγυρίζουμε στα κενά χωρίς εξήγηση.
+ */
+function sweepAbandoned(PDO $pdo): int
+{
+    $st = $pdo->prepare(
+        "UPDATE `4a_offers` SET status = 'abandoned'
+          WHERE status = 'reserved'
+            AND reserved_at IS NOT NULL
+            AND reserved_at < (NOW() - INTERVAL " . ABANDON_TTL_MIN . " MINUTE)"
+    );
+    $st->execute();
+    return $st->rowCount();
+}
 
 /**
  * Όνομα χρήστη για το audit trail.
