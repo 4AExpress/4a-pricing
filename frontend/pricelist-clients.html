@@ -2623,6 +2623,17 @@ function _zonePricesFor(pl){
   return { zcount, rows, missing:[...missing] };
 }
 
+// Ένδειξη βήματος στο κουμπί. Αν το βήμα κρατήσει πάνω από `ms`, προσθέτει
+// υπενθύμιση ώστε ο χρήστης να μη νομίσει ότι κόλλησε (η παραγωγή PDF μέσω
+// WeasyPrint + gs μπορεί να ξεπεράσει τα 10 δευτ.).
+// Επιστρέφει συνάρτηση ακύρωσης — ΠΡΕΠΕΙ να κληθεί σε finally.
+function btnStep(btn, label, ms){
+  btn.textContent = label;
+  if(!ms) return ()=>{};
+  const t = setTimeout(()=>{ btn.textContent = label + ' (λίγο ακόμα...)'; }, ms);
+  return ()=>clearTimeout(t);
+}
+
 // Δέσμευση αριθμού από τον server (4a_offer_seq). Καμία παραγωγή PDF.
 async function reserveOffer(payload){
   try{
@@ -2804,8 +2815,9 @@ async function sendOffer(){
     reservedRef = offerRef;
 
     // ── 5. PDF με τον ΟΡΙΣΤΙΚΟ αριθμό ───────────────────────────────────
-    btn.textContent='⏳ Παραγωγή PDF...';
-    let pdf_base64 = await buildPdfBase64(offerRef);
+    let _stop = btnStep(btn, '📄 Παραγωγή PDF...', 8000);
+    let pdf_base64;
+    try { pdf_base64 = await buildPdfBase64(offerRef); } finally { _stop(); }
     snapshot.offer.pdf_number = offerRef;
 
     // Το subject μένει ελληνικό: κωδικοποιείται με MIME encoded-word (RFC 2047)
@@ -2814,24 +2826,24 @@ async function sendOffer(){
     let subject = `Προσφορά 4A Express — ${offerRef}`;
 
     // ── 6. ATTACH ───────────────────────────────────────────────────────
-    btn.textContent='⏳ Αρχειοθέτηση...';
+    btn.textContent='💾 Αρχειοθέτηση...';
     let att = await attachOffer(offerId, pdf_base64, snapshot, anyAir?airPct:roadPct, email, subject);
 
     // 409 + abandoned: η δέσμευση έληξε (>30′). Ξαναδεσμεύουμε ΜΙΑ φορά και
     // ΞΑΝΑΠΑΡΑΓΟΥΜΕ το PDF — ο αριθμός είναι τυπωμένος μέσα του, δεν αρκεί
     // νέο attach. Σε 'draft'/'sent' ΔΕΝ ξαναδοκιμάζουμε: είναι διπλή υποβολή.
     if(!att.ok && att.offer_status === 'abandoned'){
-      btn.textContent='⏳ Νέα δέσμευση...';
+      btn.textContent='⏳ Νέα δέσμευση αριθμού...';
       res = await reserveOffer(reservePayload);
       if(!res.ok){ alert('Η δέσμευση έληξε και η νέα απέτυχε: '+res.error+'\n\nΗ προσφορά ΔΕΝ στάλθηκε.'); return; }
       offerId = res.offer_id; offerRef = res.offer_ref; reservedRef = offerRef;
 
-      btn.textContent='⏳ Επαναπαραγωγή PDF...';
-      pdf_base64 = await buildPdfBase64(offerRef);
+      _stop = btnStep(btn, '🔄 Επαναπαραγωγή PDF...', 8000);
+      try { pdf_base64 = await buildPdfBase64(offerRef); } finally { _stop(); }
       snapshot.offer.pdf_number = offerRef;
       subject = `Προσφορά 4A Express — ${offerRef}`;
 
-      btn.textContent='⏳ Αρχειοθέτηση...';
+      btn.textContent='💾 Αρχειοθέτηση...';
       att = await attachOffer(offerId, pdf_base64, snapshot, anyAir?airPct:roadPct, email, subject);
     }
 
@@ -2847,7 +2859,7 @@ async function sendOffer(){
     const filename=`Offer_4A_Express_${offerRef}.pdf`;   // ASCII μόνο — SMTPUTF8
 
     // ── 7. Αποστολή ─────────────────────────────────────────────────────
-    btn.textContent='⏳ Αποστολή...';
+    btn.textContent='✉️ Αποστολή email...';
     const r = await apiFetch(`${API}/send_email.php`,{
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
