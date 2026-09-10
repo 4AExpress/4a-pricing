@@ -29,3 +29,7 @@ desktop.ini
 
 # Local dumps (diagnostiko, oxi pigi alitheias)
 auth_dump.txt
+
+# Εσωτερικά prompts — περιέχουν SSH host, χρήστη, θύρα, path κλειδιού.
+# Το repo είναι PUBLIC και σερβίρεται από GitHub Pages.
+CLAUDE_CODE_PROMPT_*.md
