@@ -1313,6 +1313,8 @@ async function exportAllCMS(clientId){
   if(c.status!=="accepted"){ alert("To CMS Export einai diathesimo mono gia pelates pou apodextikan tin prosfora."); return; }
   const pls=c.pricelists||[];
   if(!pls.length){ alert("O pelatis den exei timokatalogous"); return; }
+  // servicesCache φορτωμένο: country/direction ανά υπηρεσία
+  if(!servicesCache) await loadServices();
   if(typeof XLSX==="undefined"){
     await new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
   }
@@ -1377,30 +1379,35 @@ async function exportAllCMS(clientId){
       });
     }
     if(!ztable.length) continue;
-    const isImport=svcId.includes("S1012")||svcId==="S1041";
+    // Χώρα και κατεύθυνση ΜΟΝΟ από τη γραμμή της ίδιας της υπηρεσίας στο 4a_services.
+    // Κανένα fallback: όλα τα variants υπάρχουν ως γραμμές, οπότε αποτυχία εύρεσης
+    // είναι σφάλμα δεδομένων. Το σιωπηλό «χωρίς _CY άρα GR» έβγαζε τα COMBI ως GR.
+    const svc=(servicesCache||[]).find(x=>x.code===svcId);
+    if(!svc){ alert(`Η υπηρεσία ${svcId} δεν βρέθηκε στο μητρώο υπηρεσιών.\nΤο CMS export σταματά.`); return; }
+    if(!svc.country || (svc.direction!=="IMPORT" && svc.direction!=="EXPORT")){
+      alert(`Η υπηρεσία ${svcId} δεν έχει έγκυρη χώρα/κατεύθυνση (country="${svc.country??""}", direction="${svc.direction??""}").\nΤο CMS export σταματά.`);
+      return;
+    }
+    const country=svc.country;
+    const isImport=svc.direction==="IMPORT";
     const originType=isImport?"ZONE":"COUNTRY";
     const destType=isImport?"COUNTRY":"ZONE";
-    const stationCountry=svcId.includes("_CY")?"CY":"GR";
-    const fixedOrigin=svcId.includes("_CY")?"CY":"GR";
-    const fixedDest=svcId.includes("_CY")?"CY":"GR";
-    const cmsService=svcId.split("_")[0];
+    const cmsService=svcId.split("_")[0];   // προς CMS πάντα ο base code
     const zoneCodes = zcount===1 ? ["z9"] : Array.from({length:zcount},(_,i)=>"z"+(i+1));
     for(let zi=0;zi<zoneCodes.length;zi++){
       const zone=zoneCodes[zi];
+      const orig=isImport?zone:country;
+      const dest=isImport?country:zone;
       const prices=ztable.map(r=>({weight:r.w,price:r.zp[zi]})).filter(x=>x.price!=null);
       if(!prices.length) continue;
       const slabs=buildSlabsCMS(prices,0.02);
       const minW=slabs[0]?.toW||0.5;
       for(const docsType of ["docs","non docs"]){
         for(const slab of slabs){
-          const orig=isImport?zone:fixedOrigin;
-          const dest=isImport?fixedDest:zone;
-          allRows.push([accountNo,stationCountry,"Slab Rate",minW,weFrom,"Normal",originType,destType,orig,dest,cmsService,docsType,slab.fromW,slab.toW,slab.rate,slab.addWeight,slab.addRate,slab.uptoW]);
+          allRows.push([accountNo,country,"Slab Rate",minW,weFrom,"Normal",originType,destType,orig,dest,cmsService,docsType,slab.fromW,slab.toW,slab.rate,slab.addWeight,slab.addRate,slab.uptoW]);
         }
         if(extraKgPrice!=null){
-          const orig=isImport?zone:fixedOrigin;
-          const dest=isImport?fixedDest:zone;
-          allRows.push([accountNo,stationCountry,"Slab Rate",minW,weFrom,"Normal",originType,destType,orig,dest,cmsService,docsType,70.001,71,extraKgPrice,1,extraKgPrice,1000]);
+          allRows.push([accountNo,country,"Slab Rate",minW,weFrom,"Normal",originType,destType,orig,dest,cmsService,docsType,70.001,71,extraKgPrice,1,extraKgPrice,1000]);
         }
       }
     }
