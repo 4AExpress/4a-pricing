@@ -120,7 +120,8 @@
   .action-btn.edit { background: #f8f8f8; color: #555; }
   .action-btn.del  { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
   .renewal-badge { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
-  .offer-badge   { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; font-family: monospace; }
+  .offer-badge   { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; padding: 1px 5px; border-radius: 20px; font-size: 9px; font-weight: 600; font-family: monospace; }
+  .account-badge { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; padding: 1px 5px; border-radius: 20px; font-size: 9px; font-weight: 700; font-family: monospace; }
 
   .empty { text-align: center; padding: 30px; color: #bbb; font-size: 13px; }
 
@@ -423,7 +424,7 @@
   </div>
   <div class="section-body">
     <div class="filter-bar">
-      <input class="search-input" type="text" placeholder="🔍 Αναζήτηση επωνυμία / ΑΦΜ / υπεύθυνος..." oninput="filterClients(this.value)" />
+      <input class="search-input" type="text" placeholder="🔍 Επωνυμία / ΑΦΜ / AccountNo / email / υπεύθυνος / τηλέφωνο / αρ. προσφοράς..." oninput="filterClients(this.value)" />
       <button class="filter-btn active" onclick="filterByStatus('all',this)">Όλοι</button>
       <button class="filter-btn" onclick="filterByStatus('prospect',this)">🔵 Υποψήφιοι</button>
       <button class="filter-btn" onclick="filterByStatus('negotiate',this)">🟡 Διαπραγμάτευση</button>
@@ -1243,7 +1244,15 @@ function renderClients(){
   document.getElementById('client-count').textContent=list.length;
   if(filterStatus==='walkin') list=list.filter(c=>c.is_walkin);
   else if(filterStatus!=='all')list=list.filter(c=>c.status===filterStatus);
-  if(filterSearch){ const q=filterSearch.toLowerCase(); list=list.filter(c=>(c.name||'').toLowerCase().includes(q)||(c.afm||'').includes(q)||(c.contact||'').toLowerCase().includes(q)); }
+  // Αναζήτηση: case-insensitive contains σε 6 πεδία + τηλέφωνο μόνο με ψηφία
+  // («210 429 4388» βρίσκει «2104294388-389»). Το account '—' σημαίνει «χωρίς κωδικό».
+  const q=(filterSearch||'').trim().toLowerCase();
+  if(q){
+    const qDigits=q.replace(/\D/g,'');
+    list=list.filter(c=>[c.name,c.afm,c.account!=='—'?c.account:'',c.email,c.contact,c.offer_number]
+      .some(v=>String(v??'').toLowerCase().includes(q))
+      || (qDigits!=='' && String(c.phone??'').replace(/\D/g,'').includes(qDigits)));
+  }
   if(!list.length){ el.innerHTML='<div class="empty">Δεν βρέθηκαν πελάτες</div>'; return; }
   el.innerHTML=list.map(c=>{
     const plStr=(c.pricelists||[]).map(p=>`${SVC_NAMES[p.service_id]||p.service_id}${p.markup?' '+p.markup+'%':''}`).join(' · ')||'—';
@@ -1255,6 +1264,7 @@ function renderClients(){
           ${c.is_walkin?'<span class="walkin-badge">🚶 Walk-in</span>':'<span class="status-pill st-'+c.status+'" style="font-size:10px;padding:2px 8px;cursor:default;">'+STATUS_LABELS[c.status]+'</span>'}
           ${isRenewal&&!c.is_walkin?'<span class="renewal-badge">↻ Ανανέωση</span>':''}
           <span class="offer-badge">${c.offer_number||'—'}</span>
+          ${(c.account||'').trim()&&c.account!=='—'?`<span class="account-badge">${escHtml(c.account)}</span>`:''}
         </div>
         <div class="client-meta">ΑΦΜ: ${c.afm||'—'} · ${c.contact||'—'} · ${c.email||'—'}${c.phone?' · '+c.phone:''}${c.address?' · 📍'+c.address:''} · ${c.date||'—'} · ${c.user||'—'}</div>
         ${c.notes?`<div style="font-size:11px;color:#888;margin-top:2px;">💬 ${c.notes}</div>`:''}
