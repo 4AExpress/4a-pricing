@@ -1358,9 +1358,28 @@ async function exportAllCMS(clientId){
     const rows=p.rows||[];
     if(!rows.length) continue;
     const svcId=p.service_id;
-    const dhlKey=_DHL_ALIAS[svcId]||svcId;
-    const zcount=_ZN[svcId]||1;
+    // Χώρα, κατεύθυνση, ζώνες και πίνακας κόστους ΜΟΝΟ από τη γραμμή της ίδιας της
+    // υπηρεσίας στο 4a_services. Κανένα fallback: όλα τα variants υπάρχουν ως γραμμές,
+    // οπότε αποτυχία εύρεσης είναι σφάλμα δεδομένων. Το σιωπηλό «χωρίς _CY άρα GR»
+    // έβγαζε τα COMBI ως GR· οι hardcoded λίστες ζωνών τα έβγαζαν 7 ζώνες με κόστη AIR.
+    const svc=(servicesCache||[]).find(x=>x.code===svcId);
+    if(!svc){ alert(`Η υπηρεσία ${svcId} δεν βρέθηκε στο μητρώο υπηρεσιών.\nΤο CMS export σταματά.`); return; }
+    if(!svc.country || (svc.direction!=="IMPORT" && svc.direction!=="EXPORT")){
+      alert(`Η υπηρεσία ${svcId} δεν έχει έγκυρη χώρα/κατεύθυνση (country="${svc.country??""}", direction="${svc.direction??""}").\nΤο CMS export σταματά.`);
+      return;
+    }
+    const zoneList=String(svc.zone_list??"").split(",").map(z=>z.trim()).filter(Boolean);
+    if(!zoneList.length || !svc.tariff_source){
+      alert(`Η υπηρεσία ${svcId} δεν έχει ζώνες/πίνακα κόστους (zone_list="${svc.zone_list??""}", tariff_source="${svc.tariff_source??""}").\nΤο CMS export σταματά.`);
+      return;
+    }
+    const dhlKey=svc.tariff_source;
+    const zcount=zoneList.length;
     const dhlEnt=dhlAll[dhlKey]||[];
+    if(zcount>1 && !dhlEnt.length){
+      alert(`Δεν βρέθηκε πίνακας κόστους ${dhlKey} για την υπηρεσία ${svcId}.\nΤο CMS export σταματά.`);
+      return;
+    }
     const dm={};
     dhlEnt.forEach(e=>{const w=parseFloat(e.weight_kg),z=parseInt(String(e.zone_code).replace("z",""));if(!dm[w])dm[w]={};dm[w][z]=parseFloat(e.cost);});
     const ztable=[];
@@ -1374,26 +1393,17 @@ async function exportAllCMS(clientId){
         if(!z1c)return;
         const mk=(sp/z1c-1)*100;
         const zp=[];
-        for(let z=1;z<=zcount;z++){const cc=dm[w]?.[z];zp.push(cc!=null?parseFloat((cc*(1+mk/100)).toFixed(2)):null);}
+        for(const zl of zoneList){const cc=dm[w]?.[parseInt(zl.replace("z",""))];zp.push(cc!=null?parseFloat((cc*(1+mk/100)).toFixed(2)):null);}
         ztable.push({w,zp});
       });
     }
     if(!ztable.length) continue;
-    // Χώρα και κατεύθυνση ΜΟΝΟ από τη γραμμή της ίδιας της υπηρεσίας στο 4a_services.
-    // Κανένα fallback: όλα τα variants υπάρχουν ως γραμμές, οπότε αποτυχία εύρεσης
-    // είναι σφάλμα δεδομένων. Το σιωπηλό «χωρίς _CY άρα GR» έβγαζε τα COMBI ως GR.
-    const svc=(servicesCache||[]).find(x=>x.code===svcId);
-    if(!svc){ alert(`Η υπηρεσία ${svcId} δεν βρέθηκε στο μητρώο υπηρεσιών.\nΤο CMS export σταματά.`); return; }
-    if(!svc.country || (svc.direction!=="IMPORT" && svc.direction!=="EXPORT")){
-      alert(`Η υπηρεσία ${svcId} δεν έχει έγκυρη χώρα/κατεύθυνση (country="${svc.country??""}", direction="${svc.direction??""}").\nΤο CMS export σταματά.`);
-      return;
-    }
     const country=svc.country;
     const isImport=svc.direction==="IMPORT";
     const originType=isImport?"ZONE":"COUNTRY";
     const destType=isImport?"COUNTRY":"ZONE";
     const cmsService=svcId.split("_")[0];   // προς CMS πάντα ο base code
-    const zoneCodes = zcount===1 ? ["z9"] : Array.from({length:zcount},(_,i)=>"z"+(i+1));
+    const zoneCodes = zoneList;
     for(let zi=0;zi<zoneCodes.length;zi++){
       const zone=zoneCodes[zi];
       const orig=isImport?zone:country;
