@@ -38,3 +38,12 @@ CLAUDE_CODE_PROMPT_*.md
 # Πλήρης κατάσταση έργου — SSH/DB/paths, ανοιχτές ευπάθειες, ονόματα.
 # Η δημόσια εκδοχή είναι το docs/STATUS.md.
 docs/STATUS.local.md
+
+# Έλεγχος server — απόλυτα paths webroot, δομή αρχείων, αδρανής αλλά
+# υπαρκτή ευπάθεια στο api/api/. Δεν φεύγει ΠΟΤΕ σε public repo.
+server_audit.txt
+
+# Σχέδιο καθαρισμού server — SSH host/χρήστης/θύρα, webroot, κατάσταση
+# του παγωμένου git. Untracked αλλά όχι ignored σημαίνει ότι ένα
+# git add -A το στέλνει σε public repo.
+SERVER_CLEANUP_PLAN.md
