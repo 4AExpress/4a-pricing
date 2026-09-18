@@ -1,5 +1,8 @@
 <?php
-// shelf.php | v1.3 | 21-08-2026 — φίλτρο ανά pricelist_scope
+// shelf.php | v1.4 | 16-09-2026 — soft delete (v1.3: φίλτρο ανά pricelist_scope)
+// Το delete θέτει active=0, δεν σβήνει γραμμή. Το GET δείχνει μόνο active=1.
+// Το σκληρό DELETE άφησε εννιά στοιχεία πελατών να δείχνουν σε ανύπαρκτους
+// τιμοκαταλόγους, πέντε από αυτά χωρίς τιμές πουθενά.
 // Πηγή αλήθειας για τη χώρα κάθε τιμοκαταλόγου είναι το 4a_services.country,
 // ΠΟΤΕ το suffix του κωδικού (τα S1050/S1051 είναι CY χωρίς _CY) και ποτέ το
 // 4a_shelf.office (είναι «Αθήνα» και στις 56 εγγραφές).
@@ -33,12 +36,12 @@ if ($method === 'GET') {
     if (!$sees_all && $scope === 'NONE') respond((object)[]);
 
     if ($sees_all) {
-        $rows = db()->query('SELECT * FROM 4a_shelf ORDER BY created_at DESC')->fetchAll();
+        $rows = db()->query('SELECT * FROM 4a_shelf WHERE active = 1 ORDER BY created_at DESC')->fetchAll();
     } else {
         $stmt = db()->prepare(
             'SELECT sh.* FROM 4a_shelf sh
              JOIN `4a_services` sv ON sv.code = sh.service_id COLLATE utf8mb4_unicode_ci
-             WHERE sv.country = ?
+             WHERE sv.country = ? AND sh.active = 1
              ORDER BY sh.created_at DESC'
         );
         $stmt->execute([$scope]);
@@ -67,11 +70,14 @@ if ($method === 'POST') {
                                     . '. Οι τιμοκατάλογοί σας: ' . $scope . '.'], 403);
             }
         }
+        // active=1 στο ON DUPLICATE: χωρίς αυτό, αποθήκευση πάνω σε soft-deleted id
+        // γράφει εγγραφή που υπάρχει στη βάση αλλά δεν επιστρέφεται ποτέ από το GET.
         $stmt = db()->prepare('INSERT INTO 4a_shelf
             (id, name, service_id, service_name, markup, global_markup, account, user, office, date, created_at, `rows`)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
             ON DUPLICATE KEY UPDATE
-            name=VALUES(name), markup=VALUES(markup), global_markup=VALUES(global_markup), `rows`=VALUES(`rows`)');
+            name=VALUES(name), markup=VALUES(markup), global_markup=VALUES(global_markup), `rows`=VALUES(`rows`),
+            active=1');
         $stmt->execute([
             $b['id'], $b['name'], $b['service_id'], $b['service_name'] ?? '',
             $b['markup'], $b['global_markup'] ?? $b['markup'],
@@ -92,7 +98,9 @@ if ($method === 'POST') {
                 respond(['error' => 'Δεν έχετε πρόσβαση σε αυτόν τον τιμοκατάλογο.'], 403);
             }
         }
-        $stmt = db()->prepare('DELETE FROM 4a_shelf WHERE id=?');
+        // Soft delete: η γραμμή μένει, βγαίνει από το GET. Οι προσφορές που τη
+        // δείχνουν κρατούν αντίγραφο τιμών, αλλά το ίχνος δεν χάνεται πια.
+        $stmt = db()->prepare('UPDATE 4a_shelf SET active = 0 WHERE id = ?');
         $stmt->execute([$b['id']]);
         respond(['ok' => true]);
     }
