@@ -96,6 +96,8 @@
   .modal-field { margin-bottom: 12px; }
   .modal-field label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; }
   .modal-field input { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+  .modal-field select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; background: white; }
+  .modal-field input[type=checkbox] { width: auto; margin: 0; }
   .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
   .btn { padding: 8px 16px; border: none; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer; }
   .btn-primary { background: #cc0000; color: white; }
@@ -241,6 +243,32 @@
     <div class="modal-btns">
       <button class="btn btn-secondary" onclick="closeModal()">Ακύρωση</button>
       <button class="btn btn-primary" onclick="confirmSave()">💾 Αποθήκευση</button>
+    </div>
+  </div>
+</div>
+
+<!-- Επεξεργασία label/category/is_hot. Χωριστό από το #modal-bg: εκείνο το
+     confirmSave() ΔΗΜΙΟΥΡΓΕΙ νέα εγγραφή — κοινό modal = κίνδυνος διπλότυπου. -->
+<div id="meta-modal-bg" class="modal-bg" style="display:none;">
+  <div class="modal">
+    <div class="modal-title" id="meta-modal-title">Επεξεργασία</div>
+    <div class="modal-field">
+      <label>Τίτλος</label>
+      <input type="text" id="meta-label" maxlength="80" placeholder="π.χ. 1ESHOP2026" />
+    </div>
+    <div class="modal-field">
+      <label>Κατηγορία</label>
+      <select id="meta-category"></select>
+    </div>
+    <div class="modal-field">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:#333;">
+        <input type="checkbox" id="meta-hot" /> ⭐ Συχνός
+      </label>
+    </div>
+    <div id="meta-error" style="display:none;font-size:12px;color:#c62828;margin-top:4px;"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeMetaModal()">Ακύρωση</button>
+      <button class="btn btn-primary" id="meta-save-btn" onclick="saveShelfMeta()">💾 Αποθήκευση</button>
     </div>
   </div>
 </div>
@@ -937,6 +965,7 @@ function renderShelfContent() {
       </div>
       <div class="shelf-actions">
         <button class="btn-small" onclick="viewShelfItem('${activeShelfTab}', ${p.id})">👁 Προβολή</button>
+        <button class="btn-small" onclick="openMetaModal('${activeShelfTab}', ${p.id})" title="Τίτλος, κατηγορία, ⭐">✏️</button>
         <button class="btn-small btn-delete" onclick="deleteShelfItem('${activeShelfTab}', ${p.id})">Διαγραφή</button>
       </div>
     </div>`;
@@ -967,6 +996,89 @@ function deleteShelfItem(svcId, id) {
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action:'delete', id})
   }).catch(e=>console.error('API delete error:', e));
+  renderShelf();
+}
+
+// ─── ✏️ ΤΙΤΛΟΣ / ΚΑΤΗΓΟΡΙΑ / ⭐ ──────────────────────────────────────────────
+// Στέλνει ΠΑΝΤΑ και τα τρία πεδία στο action=meta: το shelf.php απορρίπτει
+// μερικό body, ώστε πεδίο που λείπει να μη γίνεται σιωπηλά ''/0.
+let metaTarget = null;   // {svcId, id} του τιμοκαταλόγου που επεξεργαζόμαστε
+
+// Χωρίς cache: κατηγορία που προστέθηκε μόλις φαίνεται στο επόμενο ✏️.
+async function loadShelfCategories() {
+  const r = await apiFetch(`${API}/shelf.php?action=categories&v=${Date.now()}`);
+  const d = await r.json().catch(() => null);
+  if (!r.ok || !Array.isArray(d)) throw new Error((d && d.error) || ('HTTP ' + r.status));
+  return d;
+}
+
+async function openMetaModal(svcId, id) {
+  const item = (shelf[svcId]||[]).find(p => p.id === id);
+  if (!item) return;
+  metaTarget = { svcId, id };
+  const sel = document.getElementById('meta-category');
+  const err = document.getElementById('meta-error');
+  const btn = document.getElementById('meta-save-btn');
+  document.getElementById('meta-modal-title').textContent = `Επεξεργασία — ${item.name || id}`;
+  document.getElementById('meta-label').value = item.label || '';
+  document.getElementById('meta-hot').checked = Number(item.is_hot) === 1;
+  sel.innerHTML = ''; sel.add(new Option('Φόρτωση…', '')); sel.disabled = true;
+  err.style.display = 'none'; btn.disabled = true;
+  document.getElementById('meta-modal-bg').style.display = 'flex';
+
+  let cats;
+  try { cats = await loadShelfCategories(); }
+  catch (e) {
+    // Χωρίς λίστα, η αποθήκευση θα έστελνε category='' και θα έσβηνε την τρέχουσα.
+    sel.innerHTML = ''; sel.add(new Option('—', ''));
+    err.textContent = 'Οι κατηγορίες δεν φορτώθηκαν: ' + e.message + '. Η αποθήκευση είναι κλειδωμένη.';
+    err.style.display = '';
+    return;
+  }
+  if (!metaTarget || metaTarget.id !== id) return;   // έκλεισε όσο φόρτωνε
+  sel.innerHTML = '';
+  sel.add(new Option('— χωρίς κατηγορία —', ''));
+  cats.forEach(c => sel.add(new Option(`${c.label} (${c.code})`, c.code)));
+  // Κατηγορία που απενεργοποιήθηκε μετά την ανάθεση: φαίνεται, αλλιώς θα
+  // χανόταν σιωπηλά στην επόμενη αποθήκευση. Ο server θα την απορρίψει ρητά.
+  const cur = item.category || '';
+  if (cur && !cats.some(c => c.code === cur)) sel.add(new Option(`${cur} (ανενεργή)`, cur));
+  sel.value = cur;
+  sel.disabled = false; btn.disabled = false;
+}
+
+function closeMetaModal() {
+  document.getElementById('meta-modal-bg').style.display = 'none';
+  metaTarget = null;
+}
+
+async function saveShelfMeta() {
+  if (!metaTarget) return;
+  const { svcId, id } = metaTarget;
+  const label    = document.getElementById('meta-label').value.trim();
+  const category = document.getElementById('meta-category').value;
+  const is_hot   = document.getElementById('meta-hot').checked ? 1 : 0;
+  const err = document.getElementById('meta-error');
+  const btn = document.getElementById('meta-save-btn');
+  btn.disabled = true; err.style.display = 'none';
+  try {
+    const r = await apiFetch(`${API}/shelf.php`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ action: 'meta', id, label, category, is_hot })
+    });
+    const d = await r.json().catch(() => null);
+    if (!r.ok || !d || !d.ok) throw new Error((d && d.error) || ('HTTP ' + r.status));
+  } catch (e) {
+    err.textContent = 'Δεν αποθηκεύτηκε: ' + e.message;
+    err.style.display = ''; btn.disabled = false;
+    return;
+  }
+  // Τοπική ενημέρωση ΜΟΝΟ μετά το ok του server — όχι αισιόδοξα όπως το save/delete.
+  const item = (shelf[svcId]||[]).find(p => p.id === id);
+  if (item) Object.assign(item, { label, category, is_hot });
+  localStorage.setItem('4a_shelf', JSON.stringify(shelf));
+  closeMetaModal();
   renderShelf();
 }
 
