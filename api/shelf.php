@@ -1,5 +1,5 @@
 <?php
-// shelf.php | v1.4 | 16-09-2026 — soft delete (v1.3: φίλτρο ανά pricelist_scope)
+// shelf.php | v1.5 | 18-09-2026 — POST action=meta (label/category/is_hot), GET action=categories (v1.4: soft delete)
 // Το delete θέτει active=0, δεν σβήνει γραμμή. Το GET δείχνει μόνο active=1.
 // Το σκληρό DELETE άφησε εννιά στοιχεία πελατών να δείχνουν σε ανύπαρκτους
 // τιμοκαταλόγους, πέντε από αυτά χωρίς τιμές πουθενά.
@@ -31,6 +31,16 @@ function service_country(string $code): ?string {
 }
 
 if ($method === 'GET') {
+    // Κατηγορίες ραφιού — λίστα επιλογών, όχι δεδομένα τιμοκαταλόγων: δεν
+    // φιλτράρονται ανά χώρα, γι' αυτό πριν τον έλεγχο NONE.
+    if (($_GET['action'] ?? '') === 'categories') {
+        $cats = db()->query(
+            'SELECT `code`, `label`, `kind`, `sort_order` FROM `4a_shelf_categories`
+              WHERE `active` = 1 ORDER BY `sort_order`, `code`'
+        )->fetchAll();
+        respond($cats);
+    }
+
     // NONE: ρητά κανένας τιμοκατάλογος — να μη στηριζόμαστε σε WHERE που
     // «τυχαίνει» να μη βρίσκει τίποτα.
     if (!$sees_all && $scope === 'NONE') respond((object)[]);
@@ -102,6 +112,60 @@ if ($method === 'POST') {
         // δείχνουν κρατούν αντίγραφο τιμών, αλλά το ίχνος δεν χάνεται πια.
         $stmt = db()->prepare('UPDATE 4a_shelf SET active = 0 WHERE id = ?');
         $stmt->execute([$b['id']]);
+        respond(['ok' => true]);
+    }
+    if ($action === 'meta') {
+        // ΜΟΝΟ label, category, is_hot. Ποτέ rows/markup/year/active: το save
+        // με μερικό body γράφει rows=[] και σβήνει τις τιμές — γι' αυτό ξεχωριστό action.
+        // Και τα τρία πεδία υποχρεωτικά: πεδίο που λείπει ΔΕΝ γίνεται σιωπηλά ''/0.
+        foreach (['id', 'label', 'category', 'is_hot'] as $k) {
+            if (!array_key_exists($k, $b)) respond(['error' => "Λείπει το πεδίο $k."], 400);
+        }
+        if (!preg_match('/^\d+$/', (string)$b['id'])) respond(['error' => 'Μη έγκυρο id.'], 400);
+        if (!is_string($b['label']) || !is_string($b['category'])) {
+            respond(['error' => 'Τα label και category πρέπει να είναι κείμενο.'], 400);
+        }
+        $label    = trim($b['label']);
+        $category = trim($b['category']);
+        // Όρια στηλών (VARCHAR 80 / 40): σφάλμα, όχι σιωπηλό κόψιμο.
+        if (mb_strlen($label) > 80)    respond(['error' => 'Το label ξεπερνά τους 80 χαρακτήρες.'], 400);
+        if (mb_strlen($category) > 40) respond(['error' => 'Η κατηγορία ξεπερνά τους 40 χαρακτήρες.'], 400);
+        if (!in_array($b['is_hot'], [0, 1, '0', '1', true, false], true)) {
+            respond(['error' => 'Το is_hot πρέπει να είναι 0 ή 1.'], 400);
+        }
+        $is_hot = (int)(bool)$b['is_hot'];
+
+        // Ο τιμοκατάλογος πρέπει να υπάρχει και να μην είναι διαγραμμένος —
+        // αλλιώς το UPDATE θα «πετύχαινε» χωρίς να αλλάξει τίποτα.
+        $st = db()->prepare('SELECT service_id FROM 4a_shelf WHERE id = ? AND active = 1');
+        $st->execute([$b['id']]);
+        $svc_code = $st->fetchColumn();
+        if ($svc_code === false) respond(['error' => 'Ο τιμοκατάλογος δεν βρέθηκε.'], 404);
+
+        // Ίδιος έλεγχος scope με το delete: ό,τι δεν βλέπεις, δεν το αλλάζεις.
+        if (!$sees_all) {
+            $svc_code = (string)$svc_code;
+            $svc_ctry = $svc_code === '' ? null : service_country($svc_code);
+            if ($scope === 'NONE' || $svc_ctry === null || $svc_ctry !== $scope) {
+                respond(['error' => 'Δεν έχετε πρόσβαση σε αυτόν τον τιμοκατάλογο.'], 403);
+            }
+        }
+
+        // Κενή κατηγορία = «χωρίς κατηγορία». Οποιαδήποτε άλλη πρέπει να είναι ενεργή.
+        // Αποθηκεύεται ο code ΟΠΩΣ είναι στον πίνακα: το utf8mb4_unicode_ci ταιριάζει
+        // και το "eshops" με το "ESHOPS", και δεν θέλουμε δύο γραφές στο 4a_shelf.
+        if ($category !== '') {
+            $st = db()->prepare('SELECT `code` FROM `4a_shelf_categories` WHERE `code` = ? AND `active` = 1');
+            $st->execute([$category]);
+            $canon = $st->fetchColumn();
+            if ($canon === false) {
+                respond(['error' => 'Η κατηγορία «' . $category . '» δεν υπάρχει ή είναι ανενεργή.'], 400);
+            }
+            $category = $canon;
+        }
+
+        $stmt = db()->prepare('UPDATE 4a_shelf SET label = ?, category = ?, is_hot = ? WHERE id = ? AND active = 1');
+        $stmt->execute([$label, $category, $is_hot, $b['id']]);
         respond(['ok' => true]);
     }
     // Το action 'sync' (εφάπαξ migration από localStorage) αφαιρέθηκε 19-08-2026:
