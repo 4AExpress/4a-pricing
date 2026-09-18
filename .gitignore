@@ -5,6 +5,13 @@
 *.MIXED-BROKEN.*
 *.abce625.*
 
+# Χειροκίνητα αντίγραφα σελίδων (π.χ. pricelist-clients.BACKUP-20260601-080930.html).
+# Το frontend/ σερβίρεται ΔΗΜΟΣΙΑ από GitHub Pages: ένα tracked αντίγραφο
+# είναι παλιά σελίδα που λειτουργεί και παρακάμπτει κάθε μεταγενέστερη
+# διόρθωση (δύο τέτοια διάβαζαν ακόμα το ράφι από localStorage, 18-09-2026).
+*.BACKUP-*
+*.PREVIOUS-*
+
 # Snapshots tou live server (pulled gia diagnostiko, oxi pigi alitheias)
 *_LIVE.php
 
