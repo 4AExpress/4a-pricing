@@ -622,7 +622,7 @@ async function init(){
   const _activeLabel=currentUser.active_station||currentUser.office||'';
   document.getElementById('topbar-user').textContent=`${currentUser.name} · ${_activeLabel}`;
     try{ fetch(`${API}/me.php`,{headers:{'Authorization':'Bearer '+(currentUser._token||'')}}).then(r=>r.json()).then(_m=>{if(_m.expires_at)startSessionTimer(_m.expires_at);}); }catch(e){}
-  shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
+  loadShelf();   // χωρίς await: το ράφι το χρειάζεται μόνο το modal, που το ξαναφέρνει
   try {
     const rc = await apiFetch(`${API}/clients.php?v=${Date.now()}`);
     const remote = await rc.json();
@@ -774,6 +774,25 @@ async function loadServices(){
   catch(e){ servicesCache=[]; }
   return servicesCache;
 }
+// Το ράφι έρχεται ΜΟΝΟ από το shelf.php, ποτέ από το localStorage['4a_shelf']:
+// εκείνο το γράφουν ο editor και το table πριν απαντήσει ο server, και δεν
+// περνά από το φίλτρο χώρας. Σε αποτυχία: άδειο ράφι + μήνυμα, όχι σιωπηλό
+// fallback. Χωρίς cache (σε αντίθεση με τη loadServices): κάθε κλήση φέρνει
+// φρέσκα δεδομένα, αλλιώς το modal θα έδειχνε το ράφι της φόρτωσης σελίδας.
+let _shelfError=null;
+async function loadShelf(){
+  try{
+    const r=await apiFetch(`${API}/shelf.php?v=${Date.now()}`);
+    const d=await r.json().catch(()=>null);
+    if(!r.ok) throw new Error((d&&d.error)||('HTTP '+r.status));
+    if(!d||typeof d!=="object"||Array.isArray(d)) throw new Error("μη αναμενόμενη απάντηση από τον server");
+    shelf=d; _shelfError=null;
+  }catch(e){
+    shelf={}; _shelfError=e.message||String(e);
+    console.error("shelf load failed", e);
+  }
+  return shelf;
+}
 async function ensureDhlAll(){
   let all=null; try{ all=JSON.parse(localStorage.getItem("dhl_all")||"null"); }catch(e){}
   if(all) return all;
@@ -803,12 +822,12 @@ function modalPrice(svcId,pl,weight,zone){
 }
 
 async function showPlModal(){
-  shelf=JSON.parse(localStorage.getItem("4a_shelf")||"{}");
   document.getElementById("pl-modal").classList.add("open");
   const cont=document.getElementById("pl-modal-content");
   cont.innerHTML='<div style="padding:24px;text-align:center;color:#999;">Φόρτωση ραφιού…</div>';
-  const res=await Promise.all([loadServices(),ensureDhlAll()]); _modalDhl=res[1];
+  const res=await Promise.all([loadServices(),ensureDhlAll(),loadShelf()]); _modalDhl=res[1];
   cont.innerHTML=
+    (_shelfError?'<div style="margin:0 0 10px;padding:10px 12px;border-radius:6px;background:#ffebee;color:#c62828;font-size:13px;">⚠ Το ράφι δεν φορτώθηκε: '+escHtml(_shelfError)+'. Κλείστε και ξανανοίξτε το παράθυρο ή ανανεώστε τη σελίδα.</div>':'')+
     '<div class="rg-search"><span>🔍</span><input type="text" id="rg-q" placeholder="Αναζήτηση service, περιγραφή ή τιμοκαταλόγου…" oninput="_modalQ=this.value;renderPlGroups();"></div>'+
     '<div class="rg-toolbar"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" '+(_modalHideEmpty?"checked":"")+' onchange="_modalHideEmpty=this.checked;renderPlGroups();"> Απόκρυψη κενών services</label><span>🔒 ένας ανά service</span></div>'+
     '<div id="rg-list"></div>';
@@ -3250,7 +3269,7 @@ function doLogout(){ window.location.href='pricelist-editor.html'; }
 
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
-    shelf=JSON.parse(localStorage.getItem('4a_shelf')||'{}');
+    loadShelf();
     renderClients();
   }
 });
