@@ -1,18 +1,24 @@
 {
-  "fetched_at": "2026-09-18T09:20:14.246132",
+  "fetched_at": "2026-09-19T09:08:02.433478",
   "source": "https://mydhl.express.dhl/gr/el/ship/surcharges.html#/fuel_surcharge",
   "air": [
     {
-      "week": "Σεπτέμβριος 21-27, 2026",
-      "pct": 45.0,
+      "week": "Σεπτέμβριος 28-Οκτώβριος 4, 2026",
+      "pct": 46.25,
       "is_next": true,
       "is_current": false
+    },
+    {
+      "week": "Σεπτέμβριος 21-27, 2026",
+      "pct": 45.0,
+      "is_next": false,
+      "is_current": true
     },
     {
       "week": "Σεπτέμβριος 14-20, 2026",
       "pct": 43.75,
       "is_next": false,
-      "is_current": true
+      "is_current": false
     },
     {
       "week": "Σεπτέμβριος 7-13, 2026",
@@ -25,26 +31,26 @@
       "pct": 43.25,
       "is_next": false,
       "is_current": false
-    },
-    {
-      "week": "Αύγουστος 24-30, 2026",
-      "pct": 42.5,
-      "is_next": false,
-      "is_current": false
     }
   ],
   "road": [
     {
-      "week": "Σεπτέμβριος 21-27, 2026",
-      "pct": 37.0,
+      "week": "Σεπτέμβριος 28-Οκτώβριος 4, 2026",
+      "pct": 38.25,
       "is_next": true,
       "is_current": false
+    },
+    {
+      "week": "Σεπτέμβριος 21-27, 2026",
+      "pct": 37.0,
+      "is_next": false,
+      "is_current": true
     },
     {
       "week": "Σεπτέμβριος 14-20, 2026",
       "pct": 35.5,
       "is_next": false,
-      "is_current": true
+      "is_current": false
     },
     {
       "week": "Σεπτέμβριος 7-13, 2026",
@@ -57,17 +63,11 @@
       "pct": 34.5,
       "is_next": false,
       "is_current": false
-    },
-    {
-      "week": "Αύγουστος 24-30, 2026",
-      "pct": 33.75,
-      "is_next": false,
-      "is_current": false
     }
   ],
-  "current_air": 43.75,
-  "current_road": 35.5,
-  "changed": false,
+  "current_air": 45.0,
+  "current_road": 37.0,
+  "changed": true,
   "previous_air": 43.75,
   "previous_road": 35.5
 }
