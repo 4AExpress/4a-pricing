@@ -78,9 +78,6 @@
   .save-svc-btn { width: 100%; margin-top: 10px; padding: 7px; background: #00BCD4; color: white; border: none; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; display: none; }
   .save-svc-btn:hover { background: #0097a7; }
   .save-svc-btn.visible { display: block; }
-  .shelf-tabs { display: flex; gap: 4px; margin-bottom: 0; flex-wrap: wrap; }
-  .shelf-tab { padding: 6px 14px; font-size: 12px; border: 1px solid #ddd; border-bottom: none; border-radius: 4px 4px 0 0; background: #f0f0f0; cursor: pointer; color: #666; }
-  .shelf-tab.active { background: #00BCD4; color: white; border-color: #00BCD4; }
   .shelf-content { background: white; border: 1px solid #ddd; border-radius: 0 4px 4px 4px; min-height: 80px; }
   .shelf-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #f0f0f0; }
   .shelf-item:last-child { border-bottom: none; }
@@ -90,16 +87,40 @@
   .btn-small { padding: 4px 10px; font-size: 11px; border: none; border-radius: 3px; cursor: pointer; font-weight: 500; }
   .btn-delete { background: #ffebee; color: #c62828; }
   .shelf-empty { text-align: center; padding: 24px; color: #bbb; font-size: 13px; }
-  .shelf-tabs { flex-direction: column; gap: 10px; margin-bottom: 10px; }
-  .shelf-block { border-left: 4px solid #ccc; padding: 4px 0 4px 10px; }
-  .shelf-block.gr { border-left-color: #1565c0; }
-  .shelf-block.cy { border-left-color: #f0a000; }
-  .shelf-block-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #555; margin-bottom: 6px; }
-  .shelf-block-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-  .shelf-block .shelf-tab { border-bottom: 1px solid; border-radius: 4px; }
-  .shelf-tab.zero { opacity: .45; }
-  .shelf-tab .cnt { font-size: 10px; opacity: .8; }
-  .shelf-warn { padding: 8px 12px; border-radius: 6px; background: #fff3e0; color: #e65100; font-size: 12px; }
+  /* Ράφι: κάθετη στήλη services αριστερά, περιεχόμενα δεξιά.
+     align-items:start είναι απαραίτητο — αλλιώς το grid item τεντώνεται σε όλο
+     το ύψος και το position:sticky της στήλης δεν έχει πού να κολλήσει. */
+  .shelf-layout { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 16px; align-items: start; }
+  .shelf-side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 8px; }
+  .shelf-nav-block + .shelf-nav-block { margin-top: 12px; }
+  .shelf-nav-country { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #555; padding: 3px 0 3px 8px; margin-bottom: 6px; border-left: 4px solid #ccc; }
+  .shelf-nav-block.gr .shelf-nav-country { border-left-color: #1565c0; }
+  .shelf-nav-block.cy .shelf-nav-country { border-left-color: #f0a000; }
+  /* Το mode είναι κουτί, όχι απλή ετικέτα — ουδέτερα γκρι, ώστε το μόνο χρώμα
+     στη στήλη να μένει το μπλε/κίτρινο της χώρας. overflow:hidden για να
+     κόβονται οι γωνίες των services στο στρογγύλεμα του κουτιού. */
+  .shelf-mode-box { border: 1px solid #e0e0e0; border-radius: 5px; overflow: hidden; }
+  .shelf-mode-box + .shelf-mode-box { margin-top: 6px; }
+  .shelf-nav-mode { padding: 5px 10px; background: #f5f5f5; border-bottom: 1px solid #e4e4e4; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #666; }
+  .shelf-svc { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 7px 10px 7px 9px; border: none; border-left: 3px solid transparent; background: none; font-family: inherit; font-size: 12px; color: #555; cursor: pointer; }
+  .shelf-svc + .shelf-svc { border-top: 1px solid #f4f4f4; }
+  .shelf-svc:hover { background: #f5f5f5; }
+  .shelf-svc .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .shelf-svc .cnt { flex-shrink: 0; font-size: 10px; color: #aaa; }
+  .shelf-svc.zero { opacity: .45; }           /* 0 τιμοκατάλογοι: αχνό, αλλά επιλέξιμο */
+  .shelf-nav-block .shelf-svc.active { background: #f0f0f0; border-left-color: #555; color: #222; font-weight: 700; }
+  .shelf-nav-block.gr .shelf-svc.active { background: #e3f2fd; border-left-color: #1565c0; color: #0d47a1; }
+  .shelf-nav-block.cy .shelf-svc.active { background: #fff8e1; border-left-color: #f0a000; color: #7c6d00; }
+  .shelf-svc.active .cnt { color: inherit; }
+  .shelf-svc.active.zero { opacity: 1; }      /* επιλεγμένο κενό service: να φαίνεται ότι είναι επιλεγμένο */
+  .shelf-picker { display: none; width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; background: white; font-size: 13px; }
+  @media (max-width: 899px) {
+    .shelf-layout { grid-template-columns: minmax(0, 1fr); }
+    .shelf-side { position: static; max-height: none; overflow: visible; border: none; padding: 0; background: none; }
+    .shelf-nav { display: none; }
+    .shelf-picker { display: block; }
+  }
+  .shelf-warn { padding: 8px 12px; border-radius: 6px; background: #fff3e0; color: #e65100; font-size: 12px; margin-bottom: 10px; }
   .shelf-content { border-radius: 4px; }
   .shelf-svc-head { padding: 12px 14px; border-bottom: 1px solid #eee; background: #fafafa; }
   .shelf-svc-title { font-size: 15px; font-weight: 600; color: #333; }
@@ -246,8 +267,11 @@
           <p class="page-sub">Αποθηκευμένοι τιμοκατάλογοι ανά service</p>
         </div>
       </div>
-      <div class="shelf-tabs" id="shelf-tabs"></div>
-      <div class="shelf-content" id="shelf-content"></div>
+      <div id="shelf-warn-slot"></div>
+      <div class="shelf-layout">
+        <div class="shelf-side" id="shelf-side"></div>
+        <div class="shelf-content" id="shelf-content"></div>
+      </div>
     </div>
 
   </div>
@@ -952,6 +976,14 @@ const SHELF_BLOCKS = [
   { key: 'GR', cls: 'gr', title: '🇬🇷 ΕΛΛΑΔΑ' },
   { key: 'CY', cls: 'cy', title: '🇨🇾 ΚΥΠΡΟΣ' },
 ];
+// Mode μέσα σε κάθε χώρα — από το 4a_services.type. Η σειρά εδώ είναι η σειρά
+// εμφάνισης· mode χωρίς services δεν βγαίνει καθόλου.
+const SHELF_MODES = [
+  { key: 'AIR',   title: '✈️ ΑΕΡΟΠΟΡΙΚΑ' },
+  { key: 'ROAD',  title: '🚛 ΟΔΙΚΑ' },
+  { key: 'SEA',   title: '🚢 ΝΑΥΤΙΛΙΑΚΑ' },
+  { key: 'COMBI', title: '🔀 COMBI' },
+];
 let shelfSort = 'category';   // 'category' | 'date' | 'hot' — μένει ίδια σε αλλαγή καρτέλας
 let shelfCats = [];           // ενεργές κατηγορίες, ήδη ταξινομημένες κατά sort_order
 let shelfCatsError = null;
@@ -961,52 +993,88 @@ async function refreshShelfCats() {
   catch (e) { shelfCats = []; shelfCatsError = e.message || String(e); }
 }
 
+// Διπλό εμοτζί: στα 10 από τα 12 4a_services το name έχει ήδη εμοτζί μπροστά
+// ('✈️↗️ Express Export') ενώ η στήλη emoji κρατά το δικό της ('✈️') — η σκέτη
+// ένωση έβγαζε «✈️ ✈️↗️ Express Export». Τα SEA (S1039/S1059) φαίνονταν σωστά
+// επειδή το name τους είναι καθαρό ('Shipping courier'), όχι επειδή τα χειριζόταν
+// αλλιώς ο κώδικας. Κόβουμε το αρχικό run από pictographs / σημαίες / βέλη /
+// VS16 / ZWJ, όπως η svcCleanName του pricelist-clients.html — no-op σε ήδη
+// καθαρό name.
+const SHELF_NAME_LEAD = /^[\p{Extended_Pictographic}\p{Regional_Indicator}\u2190-\u21FF\u2B00-\u2BFF\uFE0F\u200D\s]+/u;
+
 function shelfSvcLabel(code) {
   const row = svcRows[code];
-  return row ? `${row.emoji || ''} ${row.name || code}`.trim() : code;
+  if (!row) return code;
+  const emoji = String(row.emoji || '').trim();
+  const raw   = String(row.name  || '').trim();
+  // Χωρίς emoji στη στήλη, το όνομα κρατά το δικό του — αλλιώς θα έμενε γυμνό.
+  if (!emoji) return raw || code;
+  const clean = raw.replace(SHELF_NAME_LEAD, '').trim();
+  return `${emoji} ${clean || raw || code}`.trim();
 }
 
 function renderShelf() {
-  const tabsEl = document.getElementById('shelf-tabs');
-  if (!tabsEl) return;
+  const sideEl = document.getElementById('shelf-side');
+  const warnEl = document.getElementById('shelf-warn-slot');
+  if (!sideEl) return;
+  if (warnEl) warnEl.innerHTML = allowedIds ? ''
+    : '<div class="shelf-warn">⚠ Τα στοιχεία υπηρεσιών (4a_services) δεν φορτώθηκαν — χώρα, mode και σειρά άγνωστες.</div>';
   const vis = visibleServices();
   if (!vis.length) {
-    tabsEl.innerHTML = '';
+    sideEl.innerHTML = '';
     const el = document.getElementById('shelf-content');
     if (el) el.innerHTML = `<div class="shelf-empty">${scopeEmptyMsg('τιμοκατάλογοι')}</div>`;
     return;
   }
-  const bySort = (a, b) => (Number(svcRows[a.id].sort_order) || 0) - (Number(svcRows[b.id].sort_order) || 0)
+  const bySort = (a, b) => (Number((svcRows[a.id] || {}).sort_order) || 0) - (Number((svcRows[b.id] || {}).sort_order) || 0)
                            || a.id.localeCompare(b.id);
-  const blocks = SHELF_BLOCKS.map(bl => ({
-    ...bl, svcs: vis.filter(s => svcRows[s.id] && svcRows[s.id].country === bl.key).sort(bySort)
-  }));
+  const modeOf = s => String((svcRows[s.id] || {}).type || '').trim().toUpperCase();
+
+  const blocks = SHELF_BLOCKS.map(bl => {
+    const svcs  = vis.filter(s => svcRows[s.id] && svcRows[s.id].country === bl.key);
+    const modes = SHELF_MODES
+      .map(m => ({ ...m, svcs: svcs.filter(s => modeOf(s) === m.key).sort(bySort) }))
+      .filter(m => m.svcs.length);
+    // Τύπος εκτός λίστας (ή κενός): χωριστά, όχι σιωπηλή απόκρυψη.
+    const rest = svcs.filter(s => !SHELF_MODES.some(m => m.key === modeOf(s))).sort(bySort);
+    if (rest.length) modes.push({ key: '?', title: '⚠ MODE ΑΓΝΩΣΤΟ', svcs: rest });
+    return { ...bl, modes };
+  }).filter(bl => bl.modes.length);
+
   // Χωρίς γραμμή στο 4a_services ή με άγνωστη χώρα: φαίνονται χωριστά, όχι μαντεψιά.
   const orphan = vis.filter(s => !svcRows[s.id] || !SHELF_BLOCKS.some(bl => bl.key === svcRows[s.id].country));
-  if (orphan.length) blocks.push({ key: '?', cls: '', title: '⚠ ΧΩΡΑ ΑΓΝΩΣΤΗ', svcs: orphan });
+  if (orphan.length) blocks.push({ key: '?', cls: '', title: '⚠ ΧΩΡΑ ΑΓΝΩΣΤΗ', modes: [{ key: '?', title: '', svcs: orphan }] });
 
-  const ordered = blocks.flatMap(bl => bl.svcs);
+  const ordered = blocks.flatMap(bl => bl.modes.flatMap(m => m.svcs));
   if (!ordered.some(s => s.id === activeShelfTab)) activeShelfTab = ordered[0].id;
 
-  const tab = (svc, bl) => {
+  const svcBtn = svc => {
     const n  = (shelf[svc.id] || []).length;
     const on = svc.id === activeShelfTab;
-    const c  = bl.key === 'GR' ? ['#1565c0', '#e3f2fd', '#1565c0', '#1565c0']
-             : bl.key === 'CY' ? ['#f0a000', '#fffde7', '#7c6d00', '#f0c040']
-             :                   ['#555',    '#f0f0f0', '#555',    '#ccc'];
-    return `<button class="shelf-tab ${on ? 'active' : ''} ${n ? '' : 'zero'}"
-      style="background:${on ? c[0] : c[1]};color:${on ? 'white' : c[2]};border-color:${c[3]};"
+    return `<button class="shelf-svc ${on ? 'active' : ''} ${n ? '' : 'zero'}"
       title="${escHtml(svc.id)}" onclick="switchShelfTab('${svc.id}')">
-      ${escHtml(shelfSvcLabel(svc.id))} <span class="cnt">(${n})</span>
+      <span class="nm">${escHtml(shelfSvcLabel(svc.id))}</span><span class="cnt">${n}</span>
     </button>`;
   };
-  tabsEl.innerHTML =
-    (allowedIds ? '' : '<div class="shelf-warn">⚠ Τα στοιχεία υπηρεσιών (4a_services) δεν φορτώθηκαν — χώρα και σειρά άγνωστες.</div>') +
-    blocks.filter(bl => bl.svcs.length).map(bl => `
-    <div class="shelf-block ${bl.cls}">
-      <div class="shelf-block-title">${bl.title}</div>
-      <div class="shelf-block-tabs">${bl.svcs.map(s => tab(s, bl)).join('')}</div>
-    </div>`).join('');
+  const optGroup = (bl, m) =>
+    `<optgroup label="${escHtml(m.title ? `${bl.title} · ${m.title}` : bl.title)}">` +
+    m.svcs.map(s => `<option value="${escHtml(s.id)}"${s.id === activeShelfTab ? ' selected' : ''}>` +
+                    `${escHtml(shelfSvcLabel(s.id))} (${(shelf[s.id] || []).length})</option>`).join('') +
+    `</optgroup>`;
+
+  // Στενή οθόνη (<900px): το ίδιο δέντρο ως dropdown πάνω από τη λίστα — ποιο
+  // από τα δύο φαίνεται το αποφασίζει το CSS, όχι JS.
+  sideEl.innerHTML =
+    `<select class="shelf-picker" onchange="switchShelfTab(this.value)">` +
+      blocks.map(bl => bl.modes.map(m => optGroup(bl, m)).join('')).join('') +
+    `</select>` +
+    `<div class="shelf-nav">` + blocks.map(bl => `
+      <div class="shelf-nav-block ${bl.cls}">
+        <div class="shelf-nav-country">${bl.title}</div>
+        ${bl.modes.map(m => `<div class="shelf-mode-box">` +
+                            (m.title ? `<div class="shelf-nav-mode">${m.title}</div>` : '') +
+                            m.svcs.map(svcBtn).join('') + `</div>`).join('')}
+      </div>`).join('') + `</div>`;
   renderShelfContent();
 }
 
