@@ -90,6 +90,30 @@
   .btn-small { padding: 4px 10px; font-size: 11px; border: none; border-radius: 3px; cursor: pointer; font-weight: 500; }
   .btn-delete { background: #ffebee; color: #c62828; }
   .shelf-empty { text-align: center; padding: 24px; color: #bbb; font-size: 13px; }
+  .shelf-tabs { flex-direction: column; gap: 10px; margin-bottom: 10px; }
+  .shelf-block { border-left: 4px solid #ccc; padding: 4px 0 4px 10px; }
+  .shelf-block.gr { border-left-color: #1565c0; }
+  .shelf-block.cy { border-left-color: #f0a000; }
+  .shelf-block-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #555; margin-bottom: 6px; }
+  .shelf-block-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .shelf-block .shelf-tab { border-bottom: 1px solid; border-radius: 4px; }
+  .shelf-tab.zero { opacity: .45; }
+  .shelf-tab .cnt { font-size: 10px; opacity: .8; }
+  .shelf-warn { padding: 8px 12px; border-radius: 6px; background: #fff3e0; color: #e65100; font-size: 12px; }
+  .shelf-content { border-radius: 4px; }
+  .shelf-svc-head { padding: 12px 14px; border-bottom: 1px solid #eee; background: #fafafa; }
+  .shelf-svc-title { font-size: 15px; font-weight: 600; color: #333; }
+  .shelf-svc-code { font-family: monospace; font-size: 12px; color: #777; margin-left: 6px; }
+  .shelf-svc-type { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 10px; background: #e0f7fa; color: #00838f; font-size: 10px; font-weight: 700; vertical-align: middle; }
+  .shelf-svc-desc { font-size: 12px; color: #777; margin-top: 4px; }
+  .shelf-sortbar { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; padding: 8px 14px; border-bottom: 1px solid #eee; font-size: 11px; color: #888; }
+  .shelf-sortbar button { padding: 3px 10px; font-size: 11px; border: 1px solid #ddd; border-radius: 12px; background: white; color: #555; cursor: pointer; }
+  .shelf-sortbar button.on { background: #00BCD4; border-color: #00BCD4; color: white; }
+  .shelf-group-head { padding: 6px 14px; background: #f5f5f5; font-size: 11px; font-weight: 700; color: #555; border-bottom: 1px solid #eee; }
+  .shelf-group-head .cnt { font-weight: 400; color: #999; }
+  .shelf-label { font-size: 14px; font-weight: 600; color: #333; }
+  .shelf-subname { font-size: 11px; color: #888; margin-top: 1px; }
+  .shelf-cat { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 10px; background: #ede7f6; color: #5e35b1; font-size: 10px; font-weight: 600; vertical-align: middle; }
   .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
   .modal { background: white; border-radius: 8px; padding: 24px; width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
   .modal-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 16px; }
@@ -514,6 +538,7 @@ function formatDate(isoStr) {
   return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
 }
 function todayFormatted() { return formatDate(new Date().toISOString()); }
+function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 // ─── SCOPE ────────────────────────────────────────────────────────────────────
 // Ποιες υπηρεσίες βλέπει ο χρήστης το αποφασίζει ΑΠΟΚΛΕΙΣΤΙΚΑ ο server
@@ -522,12 +547,14 @@ function todayFormatted() { return formatDate(new Date().toISOString()); }
 // δεν υπάρχουν στη βάση. Καμία απόφαση ορατότητας δεν παίρνεται εδώ.
 let allowedIds   = null;   // Set κωδικών· null = δεν απάντησε ο server
 let scopeCountries = [];   // ['GR'], ['CY'], ή και τα δύο
+let svcRows      = {};     // code → γραμμή 4a_services (emoji, name, type, description, country, sort_order)
 
 async function loadAllowedServices() {
   try {
     const r = await apiFetch(`${API}/services.php?v=${Date.now()}`);
     const d = await r.json();
     if (!Array.isArray(d)) return;
+    svcRows = Object.fromEntries(d.map(s => [s.code, s]));
     allowedIds = new Set(d.filter(s => String(s.active) !== '0').map(s => s.code));
     scopeCountries = [...new Set(d.map(s => s.country).filter(Boolean))];
   } catch (e) { console.warn('services load failed', e); }
@@ -560,7 +587,7 @@ async function init() {
   const vis = visibleServices();
   if (vis.length && !vis.some(s => s.id === activeShelfTab)) activeShelfTab = vis[0].id;
 
-  await Promise.all([loadDHL(), loadFuel()]);
+  await Promise.all([loadDHL(), loadFuel(), refreshShelfCats()]);
 
   try {
     const r = await apiFetch(`${API}/shelf.php?v=${Date.now()}`);
@@ -916,6 +943,29 @@ function confirmSave() {
   alert(`✅ "${name}" αποθηκεύτηκε στο Ράφι ${svcId}!`);
 }
 
+// ─── ΛΙΣΤΑ ΡΑΦΙΟΥ ─────────────────────────────────────────────────────────────
+// Χώρα, όνομα, εμοτζί, σειρά: ΜΟΝΟ από τη γραμμή του 4a_services (svcRows) —
+// ποτέ από την κατάληξη _GR/_CY (τα S1050/S1051 είναι CY χωρίς κατάληξη) ούτε
+// από τις σημαίες greece/cy του SERVICES. Το ποιες χώρες φαίνονται το αποφασίζει
+// ήδη ο server· εδώ ΔΕΝ φιλτράρουμε ξανά, μόνο ομαδοποιούμε ό,τι ήρθε.
+const SHELF_BLOCKS = [
+  { key: 'GR', cls: 'gr', title: '🇬🇷 ΕΛΛΑΔΑ' },
+  { key: 'CY', cls: 'cy', title: '🇨🇾 ΚΥΠΡΟΣ' },
+];
+let shelfSort = 'category';   // 'category' | 'date' | 'hot' — μένει ίδια σε αλλαγή καρτέλας
+let shelfCats = [];           // ενεργές κατηγορίες, ήδη ταξινομημένες κατά sort_order
+let shelfCatsError = null;
+
+async function refreshShelfCats() {
+  try { shelfCats = await loadShelfCategories(); shelfCatsError = null; }
+  catch (e) { shelfCats = []; shelfCatsError = e.message || String(e); }
+}
+
+function shelfSvcLabel(code) {
+  const row = svcRows[code];
+  return row ? `${row.emoji || ''} ${row.name || code}`.trim() : code;
+}
+
 function renderShelf() {
   const tabsEl = document.getElementById('shelf-tabs');
   if (!tabsEl) return;
@@ -926,42 +976,70 @@ function renderShelf() {
     if (el) el.innerHTML = `<div class="shelf-empty">${scopeEmptyMsg('τιμοκατάλογοι')}</div>`;
     return;
   }
-  tabsEl.innerHTML = vis.map(svc => {
-    const isGR = svc.greece && !svc.cy && !svc.cy_surcharge;
-    const isCY = svc.cy || svc.cy_surcharge;
-    const bgColor   = svc.id === activeShelfTab ? (isGR ? '#1565c0' : isCY ? '#f0a000' : '#555') : (isGR ? '#e3f2fd' : isCY ? '#fffde7' : '#f0f0f0');
-    const textColor = svc.id === activeShelfTab ? 'white' : (isGR ? '#1565c0' : isCY ? '#7c6d00' : '#555');
-    const border    = isGR ? '1px solid #1565c0' : isCY ? '1px solid #f0c040' : '1px solid #ccc';
-    return `<button class="shelf-tab ${svc.id === activeShelfTab ? 'active' : ''}"
-      style="background:${bgColor};color:${textColor};border:${border};"
-      onclick="switchShelfTab('${svc.id}', this)">
-      ${svc.id} <span style="font-size:10px;opacity:0.8">(${(shelf[svc.id]||[]).length})</span>
+  const bySort = (a, b) => (Number(svcRows[a.id].sort_order) || 0) - (Number(svcRows[b.id].sort_order) || 0)
+                           || a.id.localeCompare(b.id);
+  const blocks = SHELF_BLOCKS.map(bl => ({
+    ...bl, svcs: vis.filter(s => svcRows[s.id] && svcRows[s.id].country === bl.key).sort(bySort)
+  }));
+  // Χωρίς γραμμή στο 4a_services ή με άγνωστη χώρα: φαίνονται χωριστά, όχι μαντεψιά.
+  const orphan = vis.filter(s => !svcRows[s.id] || !SHELF_BLOCKS.some(bl => bl.key === svcRows[s.id].country));
+  if (orphan.length) blocks.push({ key: '?', cls: '', title: '⚠ ΧΩΡΑ ΑΓΝΩΣΤΗ', svcs: orphan });
+
+  const ordered = blocks.flatMap(bl => bl.svcs);
+  if (!ordered.some(s => s.id === activeShelfTab)) activeShelfTab = ordered[0].id;
+
+  const tab = (svc, bl) => {
+    const n  = (shelf[svc.id] || []).length;
+    const on = svc.id === activeShelfTab;
+    const c  = bl.key === 'GR' ? ['#1565c0', '#e3f2fd', '#1565c0', '#1565c0']
+             : bl.key === 'CY' ? ['#f0a000', '#fffde7', '#7c6d00', '#f0c040']
+             :                   ['#555',    '#f0f0f0', '#555',    '#ccc'];
+    return `<button class="shelf-tab ${on ? 'active' : ''} ${n ? '' : 'zero'}"
+      style="background:${on ? c[0] : c[1]};color:${on ? 'white' : c[2]};border-color:${c[3]};"
+      title="${escHtml(svc.id)}" onclick="switchShelfTab('${svc.id}')">
+      ${escHtml(shelfSvcLabel(svc.id))} <span class="cnt">(${n})</span>
     </button>`;
-  }).join('');
+  };
+  tabsEl.innerHTML =
+    (allowedIds ? '' : '<div class="shelf-warn">⚠ Τα στοιχεία υπηρεσιών (4a_services) δεν φορτώθηκαν — χώρα και σειρά άγνωστες.</div>') +
+    blocks.filter(bl => bl.svcs.length).map(bl => `
+    <div class="shelf-block ${bl.cls}">
+      <div class="shelf-block-title">${bl.title}</div>
+      <div class="shelf-block-tabs">${bl.svcs.map(s => tab(s, bl)).join('')}</div>
+    </div>`).join('');
   renderShelfContent();
 }
 
-function switchShelfTab(id, btn) {
+function switchShelfTab(id) {
   activeShelfTab = id;
-  document.querySelectorAll('.shelf-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  renderShelf();
+}
+
+function setShelfSort(mode) {
+  shelfSort = mode;
   renderShelfContent();
 }
 
-function renderShelfContent() {
-  const items = shelf[activeShelfTab] || [];
-  const el    = document.getElementById('shelf-content');
-  if (!items.length) {
-    el.innerHTML = '<div class="shelf-empty">Δεν υπάρχουν τιμοκατάλογοι για ' + activeShelfTab + '</div>';
-    return;
-  }
-  el.innerHTML = items.map(p => {
-    const z9info = p.markup_z9 ? ` · Z9: ${p.markup_z9}%` : '';
-    return `
+// created_at (ISO) πρώτα· αλλιώς το date σε μορφή ΗΗ-ΜΜ-ΕΕΕΕ.
+function shelfTs(p) {
+  const t = Date.parse(p.created_at || '');
+  if (!isNaN(t)) return t;
+  const m = /^(\d{2})-(\d{2})-(\d{4})$/.exec(p.date || '');
+  return m ? new Date(+m[3], +m[2] - 1, +m[1]).getTime() : 0;
+}
+
+function shelfItemHtml(p) {
+  const label  = String(p.label || '').trim();
+  const cat    = String(p.category || '');
+  const catRow = shelfCats.find(c => c.code === cat);
+  const badge  = cat ? `<span class="shelf-cat">${escHtml(catRow ? catRow.label : cat)}</span>` : '';
+  const z9info = p.markup_z9 ? ` · Z9: ${escHtml(p.markup_z9)}%` : '';
+  return `
     <div class="shelf-item">
       <div>
-        <div class="shelf-name">${p.name}</div>
-        <div class="shelf-meta">${formatDate(p.date)} · ${p.user||'—'} · ${p.office||'—'} · Markup: ${p.markup||p.global_markup||'—'}%${z9info} · AccountNo: ${p.account}</div>
+        <div class="shelf-label">${Number(p.is_hot) === 1 ? '⭐ ' : ''}${escHtml(label || p.name)}${badge}</div>
+        ${label ? `<div class="shelf-subname">${escHtml(p.name)}</div>` : ''}
+        <div class="shelf-meta">${escHtml(formatDate(p.date))} · Markup: ${escHtml(p.markup || p.global_markup || '—')}%${z9info}</div>
       </div>
       <div class="shelf-actions">
         <button class="btn-small" onclick="viewShelfItem('${activeShelfTab}', ${p.id})">👁 Προβολή</button>
@@ -969,7 +1047,58 @@ function renderShelfContent() {
         <button class="btn-small btn-delete" onclick="deleteShelfItem('${activeShelfTab}', ${p.id})">Διαγραφή</button>
       </div>
     </div>`;
-  }).join('');
+}
+
+function renderShelfContent() {
+  const el    = document.getElementById('shelf-content');
+  const row   = svcRows[activeShelfTab];
+  const items = (shelf[activeShelfTab] || []).slice().sort((a, b) => shelfTs(b) - shelfTs(a));
+
+  const head = row
+    ? `<div class="shelf-svc-head">
+         <div class="shelf-svc-title">${escHtml(shelfSvcLabel(activeShelfTab))}<span class="shelf-svc-code">${escHtml(row.code)}</span>${row.type ? `<span class="shelf-svc-type">${escHtml(row.type)}</span>` : ''}</div>
+         ${row.description ? `<div class="shelf-svc-desc">${escHtml(row.description)}</div>` : ''}
+       </div>`
+    : `<div class="shelf-svc-head"><div class="shelf-svc-title">${escHtml(activeShelfTab)}</div>
+         <div class="shelf-svc-desc">⚠ Δεν βρέθηκε γραμμή στο 4a_services για αυτόν τον κωδικό.</div></div>`;
+
+  if (!items.length) {
+    el.innerHTML = head + `<div class="shelf-empty">Δεν υπάρχουν τιμοκατάλογοι για ${escHtml(activeShelfTab)}</div>`;
+    return;
+  }
+
+  const btn = (mode, text) => `<button class="${shelfSort === mode ? 'on' : ''}" onclick="setShelfSort('${mode}')">${text}</button>`;
+  const bar = `<div class="shelf-sortbar">Ταξινόμηση: ${btn('category', 'Κατηγορία')}${btn('date', 'Ημερομηνία')}${btn('hot', '⭐ πρώτα')}</div>`;
+
+  let body;
+  if (shelfSort === 'category') {
+    // Ομάδες κατά sort_order της κατηγορίας. Κατηγορία που δεν είναι στη λίστα
+    // (ανενεργή, ή η λίστα δεν φορτώθηκε) → μετά τις γνωστές, κατά κωδικό.
+    // «Χωρίς κατηγορία» πάντα τελευταία. Μέσα στην ομάδα: νεότεροι πρώτα.
+    const groups = new Map();
+    items.forEach(p => {
+      const k = String(p.category || '');
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(p);
+    });
+    const rank = k => { const i = shelfCats.findIndex(c => c.code === k); return i < 0 ? shelfCats.length : i; };
+    const keys = [...groups.keys()].filter(k => k).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+    if (groups.has('')) keys.push('');
+    const title = k => {
+      if (!k) return 'Χωρίς κατηγορία';
+      const c = shelfCats.find(c => c.code === k);
+      return c ? escHtml(c.label) : `${escHtml(k)}${shelfCatsError ? '' : ' (ανενεργή)'}`;
+    };
+    body = (shelfCatsError ? `<div class="shelf-warn" style="margin:8px 14px;">⚠ Οι κατηγορίες δεν φορτώθηκαν (${escHtml(shelfCatsError)}) — σειρά ομάδων κατά κωδικό.</div>` : '') +
+      keys.map(k => `<div class="shelf-group-head">${title(k)} <span class="cnt">(${groups.get(k).length})</span></div>` +
+                    groups.get(k).map(shelfItemHtml).join('')).join('');
+  } else if (shelfSort === 'hot') {
+    const hot = items.filter(p => Number(p.is_hot) === 1);
+    body = hot.concat(items.filter(p => Number(p.is_hot) !== 1)).map(shelfItemHtml).join('');
+  } else {
+    body = items.map(shelfItemHtml).join('');
+  }
+  el.innerHTML = head + bar + body;
 }
 
 function viewShelfItem(svcId, id) {
@@ -1036,6 +1165,7 @@ async function openMetaModal(svcId, id) {
     return;
   }
   if (!metaTarget || metaTarget.id !== id) return;   // έκλεισε όσο φόρτωνε
+  shelfCats = cats; shelfCatsError = null;
   sel.innerHTML = '';
   sel.add(new Option('— χωρίς κατηγορία —', ''));
   cats.forEach(c => sel.add(new Option(`${c.label} (${c.code})`, c.code)));
