@@ -770,8 +770,13 @@ async function loadServices(){
   // ΗΔΗ αποθηκευμένων τιμοκαταλόγων πελατών και για τα PDF — όχι τη λίστα που
   // επιτρέπεται να δημιουργήσει ο χρήστης. Χωρίς αυτό, κυπριακός χρήστης που
   // ανοίγει προσφορά με ελληνικό τιμοκατάλογο θα έχανε ονόματα και σημαίες.
-  try{ const r=await apiFetch(`${API}/services.php?all=1&v=${Date.now()}`); const d=await r.json(); servicesCache=Array.isArray(d)?d:[]; }
-  catch(e){ servicesCache=[]; }
+  // Αποτυχία ή άδεια απάντηση → null, ΠΟΤΕ []: ο άδειος πίνακας είναι truthy και
+  // κόλλαγε στο `if(servicesCache) return` παραπάνω — κάθε επόμενη κλήση γύριζε
+  // σιωπηλά το άδειο cache χωρίς να ξαναρωτήσει τον server, οπότε κανένα
+  // «δοκιμάστε ξανά» δεν μπορούσε να πετύχει πριν από reload. Με ?all=1 ο server
+  // επιστρέφει όλες τις υπηρεσίες ανεξαρτήτως scope, άρα άδειο = αποτυχία.
+  try{ const r=await apiFetch(`${API}/services.php?all=1&v=${Date.now()}`); const d=await r.json(); servicesCache=(Array.isArray(d)&&d.length)?d:null; }
+  catch(e){ servicesCache=null; }
   return servicesCache;
 }
 // Το ράφι έρχεται ΜΟΝΟ από το shelf.php, ποτέ από το localStorage['4a_shelf']:
@@ -1734,6 +1739,12 @@ async function previewPDF(returnBytes=false, forcedRef=null){
   if(!name){ alert('Συμπλήρωσε πρώτα τα στοιχεία πελάτη'); return; }
   if(!selectedPls.length){ alert('Δεν έχεις επιλέξει τιμοκαταλόγους'); return; }
 
+  // Τα ονόματα υπηρεσιών στο PDF βγαίνουν από τη svcCleanName(), που διαβάζει το
+  // servicesCache. Με άδειο cache επέστρεφε '' και η κεφαλίδα έφευγε στον πελάτη
+  // ως «S1003 · » — καλύτερα καθόλου PDF παρά PDF χωρίς όνομα υπηρεσίας.
+  await loadServices();
+  if(!(servicesCache||[]).length){ alert('Δεν φορτώθηκαν οι υπηρεσίες — δοκιμάστε ξανά'); return; }
+
   const afm        = document.getElementById('cl-afm').value.trim();
   const contact    = document.getElementById('cl-contact').value.trim();
   const phone      = document.getElementById('cl-phone').value.trim();
@@ -2229,6 +2240,12 @@ async function previewPDF(returnBytes=false, forcedRef=null){
 }
 
 async function buildJsPDF(offerNum){
+  // Όπως στην previewPDF: χωρίς services η svcCleanName() δίνει κενό όνομα.
+  // throw, όχι return — ο καλών (draftOffer) περιμένει blob και θα έσκαγε στο
+  // URL.createObjectURL(undefined)· το try/catch του δείχνει ήδη το μήνυμα.
+  await loadServices();
+  if(!(servicesCache||[]).length) throw new Error('Δεν φορτώθηκαν οι υπηρεσίες — δοκιμάστε ξανά');
+
   const name=document.getElementById('cl-name').value.trim();
   const afm        = document.getElementById('cl-afm').value.trim();
   const contact    = document.getElementById('cl-contact').value.trim();
@@ -2746,8 +2763,14 @@ async function sendOffer(){
     const fd = await _loadFuelCache();
     const zd = await _loadZonesCache();
 
+    await loadServices();
+
     const missing=[];
     if(!_modalDhl) missing.push('τιμολόγιο DHL (dhl_all)');
+    // Εδώ, όχι μέσα στην previewPDF: ο έλεγχος πρέπει να γίνει ΠΡΙΝ δεσμευτεί
+    // αριθμός προσφοράς. Η previewPDF καλείται από το buildPdfBase64 αφού έχει
+    // ήδη δοθεί ο αριθμός, οπότε ένα return εκεί θα έκαιγε αρίθμηση.
+    if(!(servicesCache||[]).length) missing.push('υπηρεσίες (services.php)');
 
     // fuel: ΑΡΙΘΜΟΙ, όχι "35.25%" — η στήλη είναι DECIMAL(6,3)
     const fAir  = ((fd&&fd.air)||[]).find(x=>x.is_current);
