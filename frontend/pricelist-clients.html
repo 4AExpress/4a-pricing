@@ -172,22 +172,57 @@
   .cod-warn { background:#fff3cd; border:1px solid #ffc107; padding:6px 10px; border-radius:4px; font-size:11px; color:#7c6d00; margin-bottom:6px; }
   .client-cod-badge { font-size:11px; color:#2e7d32; margin-top:2px; }
   /* ===== Νέο Ράφι (grouped picker) ===== */
-  #pl-modal .modal-box { width: 600px; }
+  #pl-modal .modal-box { width: 940px; max-width: 95vw; }
   .rg-search { display:flex; align-items:center; gap:8px; border:1px solid #ddd; border-radius:6px; padding:0 10px; margin-bottom:10px; }
   .rg-search input { border:none; outline:none; flex:1; height:34px; font-family:inherit; font-size:13px; background:transparent; }
-  .rg-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#777; }
-  .rg-toolbar input[type=checkbox]{ width:14px; height:14px; vertical-align:-2px; }
-  .rg-group { border:1px solid #e0e0e0; border-radius:8px; margin-bottom:8px; overflow:hidden; }
-  .rg-group.empty { opacity:.55; }
-  .rg-head { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; background:#f7f7f9; cursor:pointer; }
-  .rg-emoji { font-size:18px; line-height:1.2; }
-  .rg-h-main { flex:1; min-width:0; }
-  .rg-h-name { font-size:14px; font-weight:600; color:#333; }
-  .rg-h-meta { font-size:11px; color:#999; margin-top:1px; }
-  .rg-h-desc { font-size:12px; color:#666; margin-top:3px; line-height:1.4; }
-  .rg-count { font-size:12px; color:#999; align-self:center; }
-  .rg-count.sel { color:#2e7d32; font-weight:600; }
-  .rg-body { padding:6px 10px 8px; }
+  /* Κεφαλίδα + καλάθι: ένα sticky μπλοκ στην κορυφή του .modal-box, που είναι ο
+     scroll container. Τα αρνητικά πλάγια margin το απλώνουν πάνω από το padding
+     24px του modal, ώστε να μη διακρίνεται λωρίδα περιεχομένου δίπλα του καθώς
+     κυλάει από κάτω. Το -6px/+6px κάθετα δίνει μαξιλάρι όταν κολλήσει, χωρίς να
+     μετακινεί τίποτα σε ηρεμία. */
+  .rg-sticky { position:sticky; top:0; z-index:3; background:#fff; margin:-6px -24px 10px; padding:6px 24px 10px; border-bottom:1px solid #eee; }
+  .rg-head-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+  .rg-close { border:none; background:none; cursor:pointer; font-size:18px; line-height:1; color:#999; padding:2px 6px; border-radius:4px; font-family:inherit; }
+  .rg-close:hover { background:#f0f0f0; color:#c62828; }
+  .rg-basket-hd { font-size:11px; font-weight:700; letter-spacing:.06em; color:#888; margin-bottom:6px; }
+  .rg-chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .rg-chip { display:inline-flex; align-items:center; gap:6px; max-width:100%; padding:4px 6px 4px 10px; border:1px solid #c8e6c9; border-radius:14px; background:#e8f5e9; font-size:12px; color:#2e7d32; }
+  .rg-chip .x { cursor:pointer; border:none; background:none; color:#2e7d32; font-size:13px; line-height:1; padding:0 2px; font-family:inherit; }
+  .rg-chip .x:hover { color:#c62828; }
+  .rg-basket-empty { font-size:12px; color:#aaa; }
+  .rg-layout { display:grid; grid-template-columns:250px minmax(0,1fr); gap:14px; align-items:start; }
+  .rg-side { border:1px solid #ddd; border-radius:4px; padding:8px; }
+  .rg-nav-block + .rg-nav-block { margin-top:12px; }
+  .rg-nav-country { font-size:11px; font-weight:700; letter-spacing:.08em; color:#555; padding:3px 0 3px 8px; margin-bottom:6px; border-left:4px solid #ccc; }
+  .rg-nav-block.gr .rg-nav-country { border-left-color:#1565c0; }
+  .rg-nav-block.cy .rg-nav-country { border-left-color:#f0a000; }
+  .rg-mode-box { border:1px solid #e0e0e0; border-radius:5px; overflow:hidden; }
+  .rg-mode-box + .rg-mode-box { margin-top:6px; }
+  .rg-mode-hd { padding:5px 10px; background:#f5f5f5; border-bottom:1px solid #e4e4e4; font-size:10px; font-weight:700; letter-spacing:.06em; color:#666; }
+  .rg-svc { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; text-align:left; padding:7px 10px 7px 9px; border:none; border-left:3px solid transparent; background:none; font-family:inherit; font-size:12px; color:#555; cursor:pointer; }
+  .rg-svc + .rg-svc { border-top:1px solid #f4f4f4; }
+  .rg-svc:hover { background:#f5f5f5; }
+  .rg-svc .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rg-svc .cnt { flex-shrink:0; font-size:10px; color:#aaa; }
+  .rg-svc.zero { opacity:.45; }                /* 0 τιμοκατάλογοι: αχνό, αλλά επιλέξιμο */
+  .rg-nav-block .rg-svc.on { background:#f0f0f0; border-left-color:#555; color:#222; font-weight:700; }
+  .rg-nav-block.gr .rg-svc.on { background:#e3f2fd; border-left-color:#1565c0; color:#0d47a1; }
+  .rg-nav-block.cy .rg-svc.on { background:#fff8e1; border-left-color:#f0a000; color:#7c6d00; }
+  .rg-svc.on .cnt { color:inherit; }
+  .rg-svc.on.zero { opacity:1; }
+  .rg-svc .tick { color:#2e7d32; font-weight:700; }
+  .rg-main-hd { padding:9px 11px; background:#fafafa; border:1px solid #eee; border-radius:4px 4px 0 0; }
+  .rg-main-name { font-size:14px; font-weight:600; color:#333; }
+  .rg-main-meta { font-size:11px; color:#999; margin-top:1px; }
+  .rg-cat-hd { padding:6px 11px; background:#f5f5f5; border-left:1px solid #eee; border-right:1px solid #eee; border-bottom:1px solid #eee; font-size:11px; font-weight:700; color:#555; }
+  .rg-cat-hd .cnt { font-weight:400; color:#999; }
+  .rg-label { font-size:14px; font-weight:600; color:#333; }
+  .rg-sub { font-size:11px; color:#888; margin-top:1px; }
+  .rg-cat { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:10px; background:#ede7f6; color:#5e35b1; font-size:10px; font-weight:600; vertical-align:middle; }
+  .rg-picked { font-size:11px; font-weight:700; color:#2e7d32; white-space:nowrap; }
+  .rg-btn-rep { border-color:#ffcc80; background:#fff3e0; color:#e65100; }
+  .rg-empty { padding:20px; text-align:center; color:#bbb; font-size:13px; border:1px solid #eee; border-top:none; }
+  @media (max-width: 899px) { .rg-layout { grid-template-columns:minmax(0,1fr); } }
   .rg-pl { border:1px solid #eee; border-radius:6px; padding:8px 10px; margin-bottom:6px; }
   .rg-pl.sel { background:#e8f5e9; border-color:#a5d6a7; }
   .rg-pl-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
@@ -474,7 +509,15 @@
 <!-- MODAL -->
 <div id="pl-modal" class="modal-overlay">
   <div class="modal-box">
-    <div class="modal-title">Επιλογή Τιμοκαταλόγου από Ράφι</div>
+    <!-- Τίτλος, ✕ και καλάθι σε ΕΝΑ sticky μπλοκ: έτσι μένουν όλα ορατά με ένα
+         μόνο position:sticky, χωρίς στοίβαξη δύο sticky με χειροκίνητα offsets. -->
+    <div class="rg-sticky">
+      <div class="rg-head-row">
+        <div class="modal-title" style="margin:0;">Επιλογή Τιμοκαταλόγου από Ράφι</div>
+        <button type="button" class="rg-close" onclick="closePlModal()" title="Κλείσιμο" aria-label="Κλείσιμο">✕</button>
+      </div>
+      <div class="rg-basket" id="rg-basket"></div>
+    </div>
     <div id="pl-modal-content"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closePlModal()">Κλείσιμο</button>
@@ -483,6 +526,7 @@
 </div>
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="shelf-grouping.js?v=2026-09-22"></script>
 <script>
 ﻿let _sessionExpiry = null;
 let _sessionTimerInterval = null;
@@ -550,8 +594,9 @@ const SVC_IS_CY   = id => id.includes('_CY') || id === 'S1050' || id === 'S1051'
 function svcCleanName(id){
   const s=(servicesCache||[]).find(x=>x.code===id);
   const raw=String((s&&s.name)?s.name:'');
-  // αρχικό run: pictographs + regional-indicator flags + arrows (U+2190–21FF, U+2B00–2BFF) + VS16 + ZWJ + κενά
-  return raw.replace(/^[\p{Extended_Pictographic}\p{Regional_Indicator}←-⇿⬀-⯿️‍\s]+/u,'').trim();
+  // Το strip το κάνει η svcStripLead του κοινού shelf-grouping.js — ίδιο
+  // regex με τον editor, ένα αντίγραφο. no-op σε ήδη καθαρό name.
+  return svcStripLead(raw);
 }
 let OFFICES = [];
 async function loadOffices(){
@@ -759,7 +804,8 @@ function resetForm(){
   renderPlTags(); renderSurcharges(); renderManagers(); updateOfferNum(); checkForm();
 }
 
-let servicesCache=null, _modalDhl=null, _modalQ="", _modalHideEmpty=true, _modalPrev={};
+let servicesCache=null, _modalDhl=null, _modalQ="", _modalPrev={};
+let shelfCats=[];   // κατηγορίες ραφιού — labels αντί για κωδικούς στα badges
 const _MODAL_ZN={S1003:7,S1012:7,S1003_CY:7,S1012_CY:7,S1050:7,S1051:7,S1010:3,S1041:3,S1003_GR:1,S1012_GR:1};
 const _MODAL_ALIAS={S1003_GR:"S1003",S1012_GR:"S1012",S1003_CY:"S1003",S1012_CY:"S1012",S1050:"S1003",S1051:"S1012"};
 const _MODAL_COLOR={blue:"#1565c0",yellow:"#f9a825",green:"#2e7d32",red:"#c62828",purple:"#6a1b9a",gray:"#546e7a"};
@@ -826,73 +872,190 @@ function modalPrice(svcId,pl,weight,zone){
   return {w, price:+(zc*(1+mk)).toFixed(2), cost:+(+zc).toFixed(2)};
 }
 
+// ─── MODAL ΡΑΦΙΟΥ ────────────────────────────────────────────────────────────
+// Ίδια δομή με τη στήλη ραφιού του pricelist-editor.html: αριστερά services σε
+// κουτιά χώρα → mode (κοινό shelf-grouping.js), δεξιά οι τιμοκατάλογοι του
+// επιλεγμένου, καλάθι sticky στην κορυφή.
+let _modalSvc  = null;   // ενεργό service στη στήλη
+let _modalQLast = null;  // για να ξέρουμε πότε ΑΛΛΑΞΕ το ερώτημα
+
+async function loadShelfCats(){
+  try{
+    const r=await apiFetch(API+"/shelf.php?action=categories&v="+Date.now());
+    const d=await r.json().catch(()=>null);
+    shelfCats=Array.isArray(d)?d:[];
+  }catch(e){ shelfCats=[]; }
+  return shelfCats;
+}
+function _catLabel(code){
+  if(!code) return "";
+  const c=shelfCats.find(x=>x.code===code);
+  return c?c.label:code;
+}
+// Εμοτζί από τη στήλη emoji + καθαρό όνομα. Το 4a_services.name κουβαλά δικό του
+// εμοτζί μπροστά — χωρίς το svcStripLead θα έβγαιναν διπλά.
+function _svcLabel(code){
+  const s=(servicesCache||[]).find(x=>x.code===code);
+  if(!s) return code;
+  const emoji=String(s.emoji||"").trim();
+  const raw=String(s.name||"").trim();
+  if(!emoji) return raw||code;
+  return (emoji+" "+(svcStripLead(raw)||raw||code)).trim();
+}
+
+// Ένα πεδίο για όλα: γράφεις "1ESHOP" και το βρίσκεις χωρίς να ξέρεις σε ποιο
+// service κάθεται. Ταιριάζει σε label / name / κατηγορία τιμοκαταλόγου ΚΑΙ σε
+// κωδικό / όνομα / περιγραφή υπηρεσίας.
+function _plHay(p){
+  return ((p.label||"")+" "+(p.name||"")+" "+_catLabel(p.category)+" "+(p.category||"")).toLowerCase();
+}
+function _svcHay(code){
+  const s=(servicesCache||[]).find(x=>x.code===code)||{};
+  return (code+" "+(s.name||"")+" "+(s.description||"")).toLowerCase();
+}
+// Οι τιμοκατάλογοι ενός service που ταιριάζουν. Αν ταιριάζει το ΙΔΙΟ το service,
+// επιστρέφονται όλοι του — αλλιώς η αναζήτηση ονόματος service δεν θα έδειχνε τίποτα.
+function _plHits(code,q){
+  const items=shelf[code]||[];
+  if(!q) return items;
+  if(_svcHay(code).indexOf(q)>=0) return items;
+  return items.filter(x=>_plHay(x).indexOf(q)>=0);
+}
+// Ποιες υπηρεσίες βλέπει ο χρήστης — ο κανόνας της σελίδας πελατών (χώρες του
+// χρήστη), ΟΧΙ το scope του editor. Services με ράφι αλλά χωρίς γραμμή registry
+// μπαίνουν κι αυτά, για να μη χαθούν τιμοκατάλογοι.
+function _modalServices(){
+  const uc=getUserCountries();
+  const rows=(servicesCache||[]).filter(s=>String(s.active)!=="0").filter(s=>{
+    if(uc.includes("GR")&&uc.includes("CY")) return true;
+    const c=s.country||"GR";
+    return c==="BOTH"||uc.includes(c);
+  }).slice();
+  const have=new Set(rows.map(s=>s.code));
+  Object.keys(shelf).forEach(code=>{ if(!have.has(code)) rows.push({code:code}); });
+  return rows;
+}
+
 async function showPlModal(){
   document.getElementById("pl-modal").classList.add("open");
   const cont=document.getElementById("pl-modal-content");
   cont.innerHTML='<div style="padding:24px;text-align:center;color:#999;">Φόρτωση ραφιού…</div>';
-  const res=await Promise.all([loadServices(),ensureDhlAll(),loadShelf()]); _modalDhl=res[1];
+  // Το καλάθι ζει πλέον στο στατικό markup, μέσα στο sticky μπλοκ. Το γεμίζουμε
+  // αμέσως ώστε οι ήδη επιλεγμένοι να φαίνονται όσο φορτώνει το ράφι.
+  const bk=document.getElementById("rg-basket"); if(bk) bk.innerHTML=_basketHtml();
+  const res=await Promise.all([loadServices(),ensureDhlAll(),loadShelf(),loadShelfCats()]);
+  _modalDhl=res[1];
   cont.innerHTML=
-    (_shelfError?'<div style="margin:0 0 10px;padding:10px 12px;border-radius:6px;background:#ffebee;color:#c62828;font-size:13px;">⚠ Το ράφι δεν φορτώθηκε: '+escHtml(_shelfError)+'. Κλείστε και ξανανοίξτε το παράθυρο ή ανανεώστε τη σελίδα.</div>':'')+
-    '<div class="rg-search"><span>🔍</span><input type="text" id="rg-q" placeholder="Αναζήτηση service, περιγραφή ή τιμοκαταλόγου…" oninput="_modalQ=this.value;renderPlGroups();"></div>'+
-    '<div class="rg-toolbar"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" '+(_modalHideEmpty?"checked":"")+' onchange="_modalHideEmpty=this.checked;renderPlGroups();"> Απόκρυψη κενών services</label><span>🔒 ένας ανά service</span></div>'+
-    '<div id="rg-list"></div>';
+    (_shelfError?'<div style="margin:0 0 10px;padding:10px 12px;border-radius:6px;background:#ffebee;color:#c62828;font-size:13px;">⚠ Το ράφι δεν φορτώθηκε: '+escHtml(_shelfError)+'. Κλείστε και ξανανοίξτε το παράθυρο ή ανανεώστε τη σελίδα.</div>':"")+
+    '<div class="rg-search"><span>🔍</span><input type="text" id="rg-q" placeholder="Αναζήτηση: τιμοκατάλογος, κατηγορία ή service…" oninput="_modalQ=this.value;renderPlGroups();"></div>'+
+    '<div class="rg-layout"><div class="rg-side" id="rg-side"></div><div id="rg-main"></div></div>';
   const qi=document.getElementById("rg-q"); if(qi) qi.value=_modalQ;
+  _modalQLast=null;
   renderPlGroups();
 }
-function _svcOrder(services){ return services.slice().sort((a,b)=>((+a.sort_order||0)-(+b.sort_order||0))||String(a.code).localeCompare(String(b.code))); }
+
+function pickPlSvc(code){ _modalSvc=code; renderPlGroups(); }
+
+function _basketHtml(){
+  if(!selectedPls.length) return '<div class="rg-basket-hd">ΕΠΙΛΟΓΕΣ</div><div class="rg-basket-empty">Καμία ακόμα — διάλεξε service αριστερά και πάτα «Προσθήκη».</div>';
+  return '<div class="rg-basket-hd">ΕΠΙΛΟΓΕΣ ('+selectedPls.length+')</div><div class="rg-chips">'+
+    selectedPls.map(p=>'<span class="rg-chip" title="'+escHtml(p.service_id)+'">'+
+      escHtml(_svcLabel(p.service_id))+' · '+escHtml(String(p.label||"").trim()||p.name||"")+
+      '<button class="x" title="Αφαίρεση" onclick="removePl('+p.id+')">✕</button></span>').join("")+'</div>';
+}
+
+function _plRow(code,p){
+  const sel=selectedPls.find(x=>x.service_id===code);
+  const isSel=!!(sel&&sel.id===p.id);
+  const hasOther=!!(sel&&sel.id!==p.id);
+  const label=String(p.label||"").trim();
+  const mk=(p.global_markup!=null?p.global_markup:p.markup);
+  const badge=p.category?'<span class="rg-cat">'+escHtml(_catLabel(p.category))+'</span>':"";
+  // Αφαίρεση ΜΟΝΟ από το καλάθι — ένα σημείο για κάθε ενέργεια.
+  const act=isSel
+    ? '<span class="rg-picked">✓ Επιλεγμένο</span>'
+    : '<button class="rg-btn '+(hasOther?"rg-btn-rep":"rg-btn-add")+'" onclick="addPl(&quot;'+code+'&quot;,'+p.id+')">'+(hasOther?"⇄ Αντικατάσταση":"+ Προσθήκη")+'</button>';
+  return '<div class="rg-pl'+(isSel?" sel":"")+'">'+
+    '<div class="rg-pl-top"><div style="min-width:0;">'+
+      '<div class="rg-label">'+(Number(p.is_hot)===1?"⭐ ":"")+escHtml(label||p.name||"")+badge+'</div>'+
+      (label?'<div class="rg-sub">'+escHtml(p.name||"")+'</div>':"")+
+      '<div class="rg-pl-meta">'+escHtml(p.date||"")+(mk!=null?(" · markup "+escHtml(mk)+"%"):"")+'</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">'+
+      '<button class="rg-btn rg-btn-eye" onclick="togglePrev(&quot;'+code+'&quot;,'+p.id+')">👁 τιμές</button>'+act+
+    '</div></div>'+
+    '<div id="rg-prev-'+code+"-"+p.id+'"></div></div>';
+}
+
 function renderPlGroups(){
-  const list=document.getElementById("rg-list"); if(!list) return;
-  const services=servicesCache||[];
+  const side=document.getElementById("rg-side"); if(!side) return;
+  const main=document.getElementById("rg-main");
+  const bask=document.getElementById("rg-basket");
+  if(bask) bask.innerHTML=_basketHtml();
+
   const q=(_modalQ||"").toLowerCase().trim();
-  const reg={}; services.forEach(s=>reg[s.code]=s);
-      const _uc2=getUserCountries();
-  const order=_svcOrder(services.filter(s=>s.active!="0")).map(s=>s.code).filter(function(code){
-    if(_uc2.includes("GR") && _uc2.includes("CY")) return true;
-    const svcDef=(servicesCache||[]).find(x=>x.code===code);
-    const svcCountry=svcDef ? svcDef.country : 'GR';
-    if(svcCountry==='BOTH') return true;
-    return _uc2.includes(svcCountry);
-  });
-  Object.keys(shelf).forEach(k=>{ if(order.indexOf(k)<0) order.push(k); });
-  let html="";
-  order.forEach(code=>{
-    const s=reg[code]||{code:code,name:(SVC_NAMES[code]||code),description:"",type:"",color:"blue",emoji:(SVC_NAMES[code]||"")};
-    const items=shelf[code]||[];
-    const sel=selectedPls.find(p=>p.service_id===code);
-    const txt=(code+" "+(s.name||"")+" "+(s.description||"")+" "+items.map(p=>p.name).join(" ")).toLowerCase();
-    if(q && txt.indexOf(q)<0) return;
-    if(!q && _modalHideEmpty && items.length===0) return;
-    const accent=_MODAL_COLOR[s.color]||"#1565c0";
-    const open=items.length>0;
-    html+='<div class="rg-group'+(items.length?"":" empty")+'" style="border-left:3px solid '+accent+';">';
-    html+='<div class="rg-head" onclick="toggleGroup(&quot;'+code+'&quot;)">'+
-      '<span class="rg-emoji">'+(s.emoji||"📦")+'</span>'+
-      '<div class="rg-h-main"><div class="rg-h-name">'+(s.name||code)+'</div>'+
-      '<div class="rg-h-meta">'+code+(s.type?(" · "+s.type):"")+'</div>'+
-      (s.description?('<div class="rg-h-desc">'+s.description+'</div>'):"")+'</div>'+
-      (sel?'<span class="rg-count sel">✓ 1</span>':'<span class="rg-count">'+items.length+'</span>')+
-      '</div>';
-    html+='<div class="rg-body" id="rg-body-'+code+'" style="display:'+(open?"block":"none")+';">';
-    if(!items.length){ html+='<div style="font-size:12px;color:#aaa;padding:6px 4px;">Δεν υπάρχουν αποθηκευμένοι τιμοκατάλογοι.</div>'; }
-    items.forEach(p=>{
-      const isSel=sel&&sel.id===p.id; const mk=(p.global_markup!=null?p.global_markup:p.markup);
-      html+='<div class="rg-pl'+(isSel?" sel":"")+'">';
-      html+='<div class="rg-pl-top"><div style="min-width:0;"><div class="rg-pl-name">'+(p.name||"")+(isSel?' <span style=&quot;color:#2e7d32;font-size:11px;&quot;>✓ επιλεγμένο</span>':"")+'</div>'+
-        '<div class="rg-pl-meta">'+(p.date||"")+(mk!=null?(" · markup "+mk+"%"):"")+'</div></div>'+
-        '<div style="display:flex;gap:6px;flex-shrink:0;">'+
-        '<button class="rg-btn rg-btn-eye" onclick="togglePrev(&quot;'+code+'&quot;,'+p.id+')">👁 τιμές</button>'+
-        (isSel?'<button class="rg-btn rg-btn-rem" onclick="removePl('+p.id+')">✕ Αφαίρεση</button>':'<button class="rg-btn rg-btn-add" onclick="addPl(&quot;'+code+'&quot;,'+p.id+')">+ Προσθήκη</button>')+
-        '</div></div>';
-      html+='<div id="rg-prev-'+code+"-"+p.id+'"></div>';
-      html+='</div>';
-    });
-    html+='</div></div>';
-  });
-  if(!html) html='<div style="color:#aaa;text-align:center;padding:24px;">Δεν βρέθηκαν τιμοκατάλογοι.</div>';
-  list.innerHTML=html;
+  const rows=_modalServices();
+  const hits={}; rows.forEach(s=>{ hits[s.code]=_plHits(s.code,q); });
+
+  // Με ενεργή αναζήτηση μένουν μόνο όσα έχουν αποτελέσματα. Κρατάμε και service
+  // που ταιριάζει ονομαστικά αλλά έχει άδειο ράφι: αλλιώς γράφοντας το όνομά του
+  // θα εξαφανιζόταν και θα έμοιαζε με σφάλμα.
+  const shown=q ? rows.filter(s=>hits[s.code].length||_svcHay(s.code).indexOf(q)>=0) : rows;
+  const blocks=shelfGroupTree(shown);
+  const ordered=blocks.flatMap(b=>b.modes.flatMap(m=>m.svcs));
+
+  // Σε ΚΑΘΕ αλλαγή του ερωτήματος πάμε στο πρώτο service με αποτελέσματα. Σε
+  // σκέτο κλικ (ίδιο q) δεν μετακινούμαστε, αλλιώς θα πηδούσε κάτω από τα δάχτυλα.
+  const qChanged=(q!==_modalQLast); _modalQLast=q;
+  if(qChanged||!ordered.some(s=>s.code===_modalSvc)){
+    const first=ordered.find(s=>hits[s.code].length)||ordered[0];
+    _modalSvc=first?first.code:null;
+  }
+
+  const svcBtn=s=>{
+    const n=hits[s.code].length;
+    const on=(s.code===_modalSvc);
+    const picked=selectedPls.some(x=>x.service_id===s.code);
+    return '<button class="rg-svc'+(on?" on":"")+(n?"":" zero")+'" title="'+escHtml(s.code)+'" onclick="pickPlSvc(&quot;'+s.code+'&quot;)">'+
+      '<span class="nm">'+escHtml(_svcLabel(s.code))+'</span>'+
+      '<span class="cnt">'+(picked?'<span class="tick">✓</span> ':"")+n+'</span></button>';
+  };
+  side.innerHTML=blocks.length
+    ? blocks.map(bl=>'<div class="rg-nav-block '+bl.cls+'">'+
+        '<div class="rg-nav-country">'+bl.title+'</div>'+
+        bl.modes.map(m=>'<div class="rg-mode-box">'+
+          (m.title?'<div class="rg-mode-hd">'+m.title+'</div>':"")+
+          m.svcs.map(svcBtn).join("")+'</div>').join("")+
+      '</div>').join("")
+    : '<div style="font-size:12px;color:#aaa;padding:8px;">Καμία υπηρεσία.</div>';
+
+  if(!main) return;
+  if(!_modalSvc){ main.innerHTML='<div class="rg-empty" style="border-top:1px solid #eee;">Δεν βρέθηκαν τιμοκατάλογοι για «'+escHtml(_modalQ)+'».</div>'; return; }
+
+  const items=hits[_modalSvc]||[];
+  const svc=(servicesCache||[]).find(x=>x.code===_modalSvc)||{};
+  let html='<div class="rg-main-hd"><div class="rg-main-name">'+escHtml(_svcLabel(_modalSvc))+'</div>'+
+           '<div class="rg-main-meta">'+escHtml(_modalSvc)+(svc.type?(" · "+escHtml(svc.type)):"")+" · "+items.length+" τιμοκατάλογοι"+(q?" (φιλτραρισμένο)":"")+'</div></div>';
+
+  if(!items.length){
+    html+='<div class="rg-empty">'+(q?"Καμία αντιστοιχία σε αυτό το service.":"Δεν υπάρχουν αποθηκευμένοι τιμοκατάλογοι.")+'</div>';
+    main.innerHTML=html; return;
+  }
+
+  // Ομάδες κατά sort_order της κατηγορίας· άγνωστη κατηγορία μετά τις γνωστές,
+  // «Χωρίς κατηγορία» πάντα τελευταία. Ίδιος κανόνας με τον editor.
+  const groups=new Map();
+  items.forEach(x=>{ const k=String(x.category||""); if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(x); });
+  const rank=k=>{ const i=shelfCats.findIndex(c=>c.code===k); return i<0?shelfCats.length:i; };
+  const keys=Array.from(groups.keys()).filter(k=>k).sort((a,b)=>rank(a)-rank(b)||a.localeCompare(b));
+  if(groups.has("")) keys.push("");
+  const title=k=>k?escHtml(_catLabel(k)):"Χωρίς κατηγορία";
+  html+=keys.map(k=>'<div class="rg-cat-hd">'+title(k)+' <span class="cnt">('+groups.get(k).length+')</span></div>'+
+                    '<div style="padding:6px 0 2px;">'+groups.get(k).map(x=>_plRow(_modalSvc,x)).join("")+'</div>').join("");
+  main.innerHTML=html;
+
   Object.keys(_modalPrev).forEach(pid=>{ const st=_modalPrev[pid]; if(st&&st.open){ const el=document.getElementById("rg-prev-"+st.code+"-"+pid); if(el) renderPrev(st.code,pid); } });
 }
-function toggleGroup(code){ const b=document.getElementById("rg-body-"+code); if(b) b.style.display=(b.style.display==="none"?"block":"none"); }
 function _findPl(code,plId){ return (shelf[code]||[]).find(p=>p.id==plId); }
 function togglePrev(code,plId){ const st=_modalPrev[plId]||(_modalPrev[plId]={code:code,zone:1,weight:5,open:false}); st.open=!st.open; st.code=code; renderPrev(code,plId); }
 function setPrevZone(code,plId,z){ const st=_modalPrev[plId]; if(!st)return; st.zone=z; renderPrev(code,plId); }
@@ -918,6 +1081,14 @@ function renderPrev(code,plId){
     '</div>';
 }
 function closePlModal(){ document.getElementById('pl-modal').classList.remove('open'); checkForm(); }
+// Esc: ίδια συνάρτηση με το ✕ της κεφαλίδας και το «Κλείσιμο» του footer —
+// καμία ξεχωριστή λογική κλεισίματος. Ενεργεί μόνο με ανοιχτό το ράφι, ώστε να
+// μη ρουφάει το Esc από άλλα σημεία της σελίδας.
+document.addEventListener('keydown', function(e){
+  if(e.key!=='Escape') return;
+  const m=document.getElementById('pl-modal');
+  if(m && m.classList.contains('open')) closePlModal();
+});
 function addPl(svcId,plId){
   const item=(shelf[svcId]||[]).find(p=>p.id===plId);
   if(!item)return;
@@ -1289,7 +1460,7 @@ function renderClients(){
           ${c.is_walkin?'<span class="walkin-badge">🚶 Walk-in</span>':'<span class="status-pill st-'+c.status+'" style="font-size:10px;padding:2px 8px;cursor:default;">'+STATUS_LABELS[c.status]+'</span>'}
           ${isRenewal&&!c.is_walkin?'<span class="renewal-badge">↻ Ανανέωση</span>':''}
           <span class="client-badges">
-            <span class="offer-badge">${c.offer_number||'—'}</span>
+            ${(c.offer_number||'').trim()&&c.offer_number!=='\u2014'?`<span class="offer-badge">${escHtml(c.offer_number)}</span>`:''}
             ${(c.account||'').trim()&&c.account!=='—'?`<span class="account-badge">${escHtml(c.account)}</span>`:''}
           </span>
         </div>

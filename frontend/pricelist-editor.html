@@ -321,6 +321,7 @@
   </div>
 </div>
 
+<script src="shelf-grouping.js?v=2026-09-22"></script>
 <script>
 const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 const API  = 'https://4aexpress.com/api';
@@ -972,18 +973,9 @@ function confirmSave() {
 // ποτέ από την κατάληξη _GR/_CY (τα S1050/S1051 είναι CY χωρίς κατάληξη) ούτε
 // από τις σημαίες greece/cy του SERVICES. Το ποιες χώρες φαίνονται το αποφασίζει
 // ήδη ο server· εδώ ΔΕΝ φιλτράρουμε ξανά, μόνο ομαδοποιούμε ό,τι ήρθε.
-const SHELF_BLOCKS = [
-  { key: 'GR', cls: 'gr', title: '🇬🇷 ΕΛΛΑΔΑ' },
-  { key: 'CY', cls: 'cy', title: '🇨🇾 ΚΥΠΡΟΣ' },
-];
-// Mode μέσα σε κάθε χώρα — από το 4a_services.type. Η σειρά εδώ είναι η σειρά
-// εμφάνισης· mode χωρίς services δεν βγαίνει καθόλου.
-const SHELF_MODES = [
-  { key: 'AIR',   title: '✈️ ΑΕΡΟΠΟΡΙΚΑ' },
-  { key: 'ROAD',  title: '🚛 ΟΔΙΚΑ' },
-  { key: 'SEA',   title: '🚢 ΝΑΥΤΙΛΙΑΚΑ' },
-  { key: 'COMBI', title: '🔀 COMBI' },
-];
+// SHELF_BLOCKS / SHELF_MODES / SHELF_NAME_LEAD / svcStripLead / shelfGroupTree:
+// από το κοινό shelf-grouping.js — ίδιος κανόνας με το modal ραφιού της
+// pricelist-clients.html, ένα αντίγραφο.
 let shelfSort = 'category';   // 'category' | 'date' | 'hot' — μένει ίδια σε αλλαγή καρτέλας
 let shelfCats = [];           // ενεργές κατηγορίες, ήδη ταξινομημένες κατά sort_order
 let shelfCatsError = null;
@@ -998,9 +990,8 @@ async function refreshShelfCats() {
 // ένωση έβγαζε «✈️ ✈️↗️ Express Export». Τα SEA (S1039/S1059) φαίνονταν σωστά
 // επειδή το name τους είναι καθαρό ('Shipping courier'), όχι επειδή τα χειριζόταν
 // αλλιώς ο κώδικας. Κόβουμε το αρχικό run από pictographs / σημαίες / βέλη /
-// VS16 / ZWJ, όπως η svcCleanName του pricelist-clients.html — no-op σε ήδη
-// καθαρό name.
-const SHELF_NAME_LEAD = /^[\p{Extended_Pictographic}\p{Regional_Indicator}\u2190-\u21FF\u2B00-\u2BFF\uFE0F\u200D\s]+/u;
+// VS16 / ZWJ. Το κόψιμο το κάνει η svcStripLead του κοινού
+// shelf-grouping.js — no-op σε ήδη καθαρό name.
 
 function shelfSvcLabel(code) {
   const row = svcRows[code];
@@ -1009,8 +1000,7 @@ function shelfSvcLabel(code) {
   const raw   = String(row.name  || '').trim();
   // Χωρίς emoji στη στήλη, το όνομα κρατά το δικό του — αλλιώς θα έμενε γυμνό.
   if (!emoji) return raw || code;
-  const clean = raw.replace(SHELF_NAME_LEAD, '').trim();
-  return `${emoji} ${clean || raw || code}`.trim();
+  return `${emoji} ${svcStripLead(raw) || raw || code}`.trim();
 }
 
 function renderShelf() {
@@ -1026,40 +1016,26 @@ function renderShelf() {
     if (el) el.innerHTML = `<div class="shelf-empty">${scopeEmptyMsg('τιμοκατάλογοι')}</div>`;
     return;
   }
-  const bySort = (a, b) => (Number((svcRows[a.id] || {}).sort_order) || 0) - (Number((svcRows[b.id] || {}).sort_order) || 0)
-                           || a.id.localeCompare(b.id);
-  const modeOf = s => String((svcRows[s.id] || {}).type || '').trim().toUpperCase();
-
-  const blocks = SHELF_BLOCKS.map(bl => {
-    const svcs  = vis.filter(s => svcRows[s.id] && svcRows[s.id].country === bl.key);
-    const modes = SHELF_MODES
-      .map(m => ({ ...m, svcs: svcs.filter(s => modeOf(s) === m.key).sort(bySort) }))
-      .filter(m => m.svcs.length);
-    // Τύπος εκτός λίστας (ή κενός): χωριστά, όχι σιωπηλή απόκρυψη.
-    const rest = svcs.filter(s => !SHELF_MODES.some(m => m.key === modeOf(s))).sort(bySort);
-    if (rest.length) modes.push({ key: '?', title: '⚠ MODE ΑΓΝΩΣΤΟ', svcs: rest });
-    return { ...bl, modes };
-  }).filter(bl => bl.modes.length);
-
-  // Χωρίς γραμμή στο 4a_services ή με άγνωστη χώρα: φαίνονται χωριστά, όχι μαντεψιά.
-  const orphan = vis.filter(s => !svcRows[s.id] || !SHELF_BLOCKS.some(bl => bl.key === svcRows[s.id].country));
-  if (orphan.length) blocks.push({ key: '?', cls: '', title: '⚠ ΧΩΡΑ ΑΓΝΩΣΤΗ', modes: [{ key: '?', title: '', svcs: orphan }] });
+  // Το δέντρο χώρα → mode → sort_order το χτίζει το κοινό shelf-grouping.js.
+  // Υπηρεσία χωρίς γραμμή στο 4a_services περνά ως {code} και καταλήγει στον
+  // κουβά «⚠ ΧΩΡΑ ΑΓΝΩΣΤΗ» — όπως και πριν, καμία μαντεψιά.
+  const blocks = shelfGroupTree(vis.map(s => svcRows[s.id] || { code: s.id }));
 
   const ordered = blocks.flatMap(bl => bl.modes.flatMap(m => m.svcs));
-  if (!ordered.some(s => s.id === activeShelfTab)) activeShelfTab = ordered[0].id;
+  if (!ordered.some(s => s.code === activeShelfTab)) activeShelfTab = ordered[0].code;
 
   const svcBtn = svc => {
-    const n  = (shelf[svc.id] || []).length;
-    const on = svc.id === activeShelfTab;
+    const n  = (shelf[svc.code] || []).length;
+    const on = svc.code === activeShelfTab;
     return `<button class="shelf-svc ${on ? 'active' : ''} ${n ? '' : 'zero'}"
-      title="${escHtml(svc.id)}" onclick="switchShelfTab('${svc.id}')">
-      <span class="nm">${escHtml(shelfSvcLabel(svc.id))}</span><span class="cnt">${n}</span>
+      title="${escHtml(svc.code)}" onclick="switchShelfTab('${svc.code}')">
+      <span class="nm">${escHtml(shelfSvcLabel(svc.code))}</span><span class="cnt">${n}</span>
     </button>`;
   };
   const optGroup = (bl, m) =>
     `<optgroup label="${escHtml(m.title ? `${bl.title} · ${m.title}` : bl.title)}">` +
-    m.svcs.map(s => `<option value="${escHtml(s.id)}"${s.id === activeShelfTab ? ' selected' : ''}>` +
-                    `${escHtml(shelfSvcLabel(s.id))} (${(shelf[s.id] || []).length})</option>`).join('') +
+    m.svcs.map(s => `<option value="${escHtml(s.code)}"${s.code === activeShelfTab ? ' selected' : ''}>` +
+                    `${escHtml(shelfSvcLabel(s.code))} (${(shelf[s.code] || []).length})</option>`).join('') +
     `</optgroup>`;
 
   // Στενή οθόνη (<900px): το ίδιο δέντρο ως dropdown πάνω από τη λίστα — ποιο
