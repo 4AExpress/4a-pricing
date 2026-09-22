@@ -72,9 +72,74 @@
     return blocks;
   }
 
+  // Κατάσταση ανοιχτό/κλειστό ανά χώρα. Μία στιγμιότυπο ανά σελίδα. Ζει στη
+  // ΜΝΗΜΗ όσο είναι ανοιχτή η σελίδα — καμία εγγραφή σε localStorage, σκόπιμα.
+  // Κρατάμε τα ΚΛΕΙΣΤΑ, ώστε το αρχικό «όλα ανοιχτά» να μη χρειάζεται αρχικοποίηση.
+  function shelfCollapse() {
+    const closed = new Set();
+    return {
+      isOpen: k => !closed.has(k),
+      toggle: k => { if (closed.has(k)) closed.delete(k); else closed.add(k); },
+      open:   k => { closed.delete(k); },
+    };
+  }
+
+  // Το HTML της στήλης: πλαίσιο ανά χώρα → κουτιά mode → services.
+  // Ό,τι διαφέρει ανά σελίδα έρχεται από το opts, ώστε η δομή να γράφεται μία
+  // φορά: prefix κλάσεων, activeCls, onPick/onToggle (ονόματα global handlers),
+  // και οι callbacks isActive / count / label / mark / isOpen / esc.
+  // ΣΗΜΑΝΤΙΚΟ: το κλείσιμο είναι ΜΟΝΟ οπτικό. Τα blocks περνούν ακέραια, οπότε
+  // η επιλογή του χρήστη και η δεξιά πλευρά δεν επηρεάζονται ποτέ.
+  function shelfNavHtml(blocks, opts) {
+    const o   = opts || {};
+    const p   = o.prefix || 'shelf';
+    const esc = o.esc || (s => String(s == null ? '' : s));
+    const act = o.activeCls || 'active';
+    const cnt = c => (o.count ? o.count(c) : 0);
+    // Μία μόνο χώρα ορατή: χωρίς [−]/[+], πάντα ανοιχτή.
+    const one = blocks.length <= 1;
+
+    const svcBtn = svc => {
+      const n = cnt(svc.code);
+      const on = o.isActive ? o.isActive(svc.code) : false;
+      return '<button type="button" class="' + p + '-svc' + (on ? ' ' + act : '') + (n ? '' : ' zero') +
+        '" title="' + esc(svc.code) + '" onclick="' + o.onPick + '(&quot;' + svc.code + '&quot;)">' +
+        '<span class="nm">' + esc(o.label ? o.label(svc.code) : svc.code) + '</span>' +
+        '<span class="cnt">' + (o.mark ? o.mark(svc.code) : '') + n + '</span></button>';
+    };
+
+    return blocks.map(bl => {
+      const nSvc = bl.modes.reduce((a, m) => a + m.svcs.length, 0);
+      const nPl  = bl.modes.reduce((a, m) => a + m.svcs.reduce((b, s) => b + cnt(s.code), 0), 0);
+      const open = one || !o.isOpen || o.isOpen(bl.key);
+      const meta = '<span class="' + p + '-country-meta">' + nSvc + ' · ' + nPl + '</span>' +
+                   // aria-hidden: το aria-expanded του κουμπιού λέει ήδη την ίδια
+                   // πληροφορία — χωρίς αυτό ο αναγνώστης οθόνης θα διάβαζε και «μείον».
+                   (one ? '' : '<span class="' + p + '-country-tg" aria-hidden="true">' + (open ? '−' : '+') + '</span>');
+      // Όλη η κεφαλίδα είναι το κουμπί — όχι μόνο το [−]/[+].
+      const head = one
+        ? '<div class="' + p + '-country-hd fixed"><span>' + bl.title + '</span>' + meta + '</div>'
+        // data-ctry: μόνο στο <button>. Το innerHTML της στήλης ξαναχτίζεται σε
+        // κάθε toggle, οπότε ο καλών χρειάζεται λαβή για να επαναφέρει την
+        // εστίαση στην ίδια κεφαλίδα. Η εκδοχή <div> δεν εστιάζεται — δεν παίρνει.
+        : '<button type="button" class="' + p + '-country-hd" data-ctry="' + esc(bl.key) + '" aria-expanded="' +
+          (open ? 'true' : 'false') +
+          '" onclick="' + o.onToggle + '(&quot;' + bl.key + '&quot;)"><span>' + bl.title + '</span>' + meta + '</button>';
+      const body = open
+        ? '<div class="' + p + '-country-bd">' + bl.modes.map(m =>
+            '<div class="' + p + '-mode-box">' +
+            (m.title ? '<div class="' + p + '-mode-hd">' + m.title + '</div>' : '') +
+            m.svcs.map(svcBtn).join('') + '</div>').join('') + '</div>'
+        : '';
+      return '<div class="' + p + '-country ' + (bl.cls || '') + '">' + head + body + '</div>';
+    }).join('');
+  }
+
   window.SHELF_BLOCKS    = SHELF_BLOCKS;
   window.SHELF_MODES     = SHELF_MODES;
   window.SHELF_NAME_LEAD = SHELF_NAME_LEAD;
   window.svcStripLead    = svcStripLead;
   window.shelfGroupTree  = shelfGroupTree;
+  window.shelfCollapse   = shelfCollapse;
+  window.shelfNavHtml    = shelfNavHtml;
 })();

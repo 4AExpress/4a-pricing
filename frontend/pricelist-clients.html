@@ -192,10 +192,29 @@
   .rg-basket-empty { font-size:12px; color:#aaa; }
   .rg-layout { display:grid; grid-template-columns:250px minmax(0,1fr); gap:14px; align-items:start; }
   .rg-side { border:1px solid #ddd; border-radius:4px; padding:8px; }
-  .rg-nav-block + .rg-nav-block { margin-top:12px; }
-  .rg-nav-country { font-size:11px; font-weight:700; letter-spacing:.08em; color:#555; padding:3px 0 3px 8px; margin-bottom:6px; border-left:4px solid #ccc; }
-  .rg-nav-block.gr .rg-nav-country { border-left-color:#1565c0; }
-  .rg-nav-block.cy .rg-nav-country { border-left-color:#f0a000; }
+  /* Πλαίσιο ανά χώρα με κεφαλίδα-κουμπί. Ίδιο markup με τη στήλη του
+     pricelist-editor.html — το χτίζει η shelfNavHtml του shelf-grouping.js. */
+  .rg-country { border:2px solid #ccc; border-radius:6px; overflow:hidden; }
+  .rg-country + .rg-country { margin-top:12px; }
+  .rg-country.gr { border-color:#1565c0; }
+  .rg-country.cy { border-color:#f0a000; }
+  .rg-country-hd { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; padding:7px 10px; border:none; background:#f0f0f0; font-family:inherit; font-size:11px; font-weight:700; letter-spacing:.08em; color:#555; text-align:left; cursor:pointer; }
+  .rg-country.gr .rg-country-hd { background:#e3f2fd; color:#0d47a1; }
+  .rg-country.cy .rg-country-hd { background:#fff8e1; color:#7c6d00; }
+  .rg-country-hd.fixed { cursor:default; }      /* μία μόνο χώρα: δεν κλείνει */
+  .rg-country-hd:not(.fixed):hover { background:#e8e8e8; }
+  .rg-country.gr .rg-country-hd:not(.fixed):hover { background:#d3e7fb; }
+  .rg-country.cy .rg-country-hd:not(.fixed):hover { background:#fdf3cf; }
+  /* outline-offset αρνητικό: το .rg-country έχει overflow:hidden και θα έκοβε
+     δακτύλιο που ξεφεύγει προς τα έξω. Πουθενά outline:none. */
+  .rg-country-hd:focus-visible { outline:2px solid #ccc; outline-offset:-3px; }
+  .rg-country.gr .rg-country-hd:focus-visible { outline-color:#1565c0; }
+  .rg-country.cy .rg-country-hd:focus-visible { outline-color:#f0a000; }
+  .rg-country-meta { font-weight:400; font-size:10px; letter-spacing:0; opacity:.8; margin-left:auto; }
+  .rg-country-tg { display:flex; align-items:center; justify-content:center; width:20px; height:20px; flex-shrink:0; border:1.5px solid #ccc; border-radius:4px; background:#fff; font-size:15px; font-weight:700; line-height:1; color:inherit; }
+  .rg-country.gr .rg-country-tg { border-color:#1565c0; }
+  .rg-country.cy .rg-country-tg { border-color:#f0a000; }
+  .rg-country-bd { padding:8px; }
   .rg-mode-box { border:1px solid #e0e0e0; border-radius:5px; overflow:hidden; }
   .rg-mode-box + .rg-mode-box { margin-top:6px; }
   .rg-mode-hd { padding:5px 10px; background:#f5f5f5; border-bottom:1px solid #e4e4e4; font-size:10px; font-weight:700; letter-spacing:.06em; color:#666; }
@@ -205,9 +224,9 @@
   .rg-svc .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .rg-svc .cnt { flex-shrink:0; font-size:10px; color:#aaa; }
   .rg-svc.zero { opacity:.45; }                /* 0 τιμοκατάλογοι: αχνό, αλλά επιλέξιμο */
-  .rg-nav-block .rg-svc.on { background:#f0f0f0; border-left-color:#555; color:#222; font-weight:700; }
-  .rg-nav-block.gr .rg-svc.on { background:#e3f2fd; border-left-color:#1565c0; color:#0d47a1; }
-  .rg-nav-block.cy .rg-svc.on { background:#fff8e1; border-left-color:#f0a000; color:#7c6d00; }
+  .rg-country .rg-svc.on { background:#f0f0f0; border-left-color:#555; color:#222; font-weight:700; }
+  .rg-country.gr .rg-svc.on { background:#e3f2fd; border-left-color:#1565c0; color:#0d47a1; }
+  .rg-country.cy .rg-svc.on { background:#fff8e1; border-left-color:#f0a000; color:#7c6d00; }
   .rg-svc.on .cnt { color:inherit; }
   .rg-svc.on.zero { opacity:1; }
   .rg-svc .tick { color:#2e7d32; font-weight:700; }
@@ -526,7 +545,7 @@
 </div>
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="shelf-grouping.js?v=2026-09-22"></script>
+<script src="shelf-grouping.js?v=2026-09-22-4"></script>
 <script>
 ﻿let _sessionExpiry = null;
 let _sessionTimerInterval = null;
@@ -878,6 +897,15 @@ function modalPrice(svcId,pl,weight,zone){
 // επιλεγμένου, καλάθι sticky στην κορυφή.
 let _modalSvc  = null;   // ενεργό service στη στήλη
 let _modalQLast = null;  // για να ξέρουμε πότε ΑΛΛΑΞΕ το ερώτημα
+// Ανοιχτό/κλειστό ανά χώρα — στη μνήμη όσο ζει η σελίδα, όχι σε localStorage.
+const plCountries = shelfCollapse();
+function togglePlCountry(key){
+  plCountries.toggle(key); renderPlGroups();
+  // Η renderPlGroups ξαναγράφει τη στήλη με innerHTML: χωρίς αυτό η εστίαση
+  // πέφτει στο <body>. preventScroll ώστε να μην κυλήσει το .modal-box.
+  const hd=document.querySelector('.rg-country-hd[data-ctry="'+key+'"]');
+  if(hd) hd.focus({preventScroll:true});
+}
 
 async function loadShelfCats(){
   try{
@@ -1012,21 +1040,22 @@ function renderPlGroups(){
     _modalSvc=first?first.code:null;
   }
 
-  const svcBtn=s=>{
-    const n=hits[s.code].length;
-    const on=(s.code===_modalSvc);
-    const picked=selectedPls.some(x=>x.service_id===s.code);
-    return '<button class="rg-svc'+(on?" on":"")+(n?"":" zero")+'" title="'+escHtml(s.code)+'" onclick="pickPlSvc(&quot;'+s.code+'&quot;)">'+
-      '<span class="nm">'+escHtml(_svcLabel(s.code))+'</span>'+
-      '<span class="cnt">'+(picked?'<span class="tick">✓</span> ':"")+n+'</span></button>';
-  };
+  // Αναζήτηση: οι χώρες με αποτελέσματα ανοίγουν μόνες τους. Ποτέ δεν κλείνουμε
+  // κάτι αυτόματα — το κλείσιμο μένει απόφαση του χρήστη.
+  if(q&&qChanged) blocks.forEach(bl=>{
+    if(bl.modes.some(m=>m.svcs.some(s=>hits[s.code].length))) plCountries.open(bl.key);
+  });
+
   side.innerHTML=blocks.length
-    ? blocks.map(bl=>'<div class="rg-nav-block '+bl.cls+'">'+
-        '<div class="rg-nav-country">'+bl.title+'</div>'+
-        bl.modes.map(m=>'<div class="rg-mode-box">'+
-          (m.title?'<div class="rg-mode-hd">'+m.title+'</div>':"")+
-          m.svcs.map(svcBtn).join("")+'</div>').join("")+
-      '</div>').join("")
+    ? shelfNavHtml(blocks,{
+        prefix:"rg", activeCls:"on", esc:escHtml,
+        onPick:"pickPlSvc", onToggle:"togglePlCountry",
+        isOpen:   k    => plCountries.isOpen(k),
+        isActive: code => code===_modalSvc,
+        count:    code => (hits[code]||[]).length,
+        label:    code => _svcLabel(code),
+        mark:     code => selectedPls.some(x=>x.service_id===code)?'<span class="tick">✓</span> ':"",
+      })
     : '<div style="font-size:12px;color:#aaa;padding:8px;">Καμία υπηρεσία.</div>';
 
   if(!main) return;

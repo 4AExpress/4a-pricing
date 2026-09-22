@@ -92,25 +92,45 @@
      το ύψος και το position:sticky της στήλης δεν έχει πού να κολλήσει. */
   .shelf-layout { display: grid; grid-template-columns: 264px minmax(0, 1fr); gap: 16px; align-items: start; }
   .shelf-side { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 4px; padding: 8px; }
-  .shelf-nav-block + .shelf-nav-block { margin-top: 12px; }
-  .shelf-nav-country { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #555; padding: 3px 0 3px 8px; margin-bottom: 6px; border-left: 4px solid #ccc; }
-  .shelf-nav-block.gr .shelf-nav-country { border-left-color: #1565c0; }
-  .shelf-nav-block.cy .shelf-nav-country { border-left-color: #f0a000; }
+  /* Κάθε χώρα είναι πλαίσιο 2px στο χρώμα της, με κεφαλίδα-κουμπί που κλείνει
+     και ανοίγει. Το markup το χτίζει η shelfNavHtml του shelf-grouping.js —
+     ίδιο με το modal ραφιού της pricelist-clients.html. */
+  .shelf-country { border: 2px solid #ccc; border-radius: 6px; overflow: hidden; }
+  .shelf-country + .shelf-country { margin-top: 12px; }
+  .shelf-country.gr { border-color: #1565c0; }
+  .shelf-country.cy { border-color: #f0a000; }
+  .shelf-country-hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 7px 10px; border: none; background: #f0f0f0; font-family: inherit; font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #555; text-align: left; cursor: pointer; }
+  .shelf-country.gr .shelf-country-hd { background: #e3f2fd; color: #0d47a1; }
+  .shelf-country.cy .shelf-country-hd { background: #fff8e1; color: #7c6d00; }
+  .shelf-country-hd.fixed { cursor: default; }   /* μία μόνο χώρα: δεν κλείνει */
+  .shelf-country-hd:not(.fixed):hover { background: #e8e8e8; }
+  .shelf-country.gr .shelf-country-hd:not(.fixed):hover { background: #d3e7fb; }
+  .shelf-country.cy .shelf-country-hd:not(.fixed):hover { background: #fdf3cf; }
+  /* outline-offset αρνητικό: το .shelf-country έχει overflow:hidden και θα έκοβε
+     δακτύλιο που ξεφεύγει προς τα έξω. Πουθενά outline:none. */
+  .shelf-country-hd:focus-visible { outline: 2px solid #ccc; outline-offset: -3px; }
+  .shelf-country.gr .shelf-country-hd:focus-visible { outline-color: #1565c0; }
+  .shelf-country.cy .shelf-country-hd:focus-visible { outline-color: #f0a000; }
+  .shelf-country-meta { font-weight: 400; font-size: 10px; letter-spacing: 0; opacity: .8; margin-left: auto; }
+  .shelf-country-tg { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; border: 1.5px solid #ccc; border-radius: 4px; background: #fff; font-size: 15px; font-weight: 700; line-height: 1; color: inherit; }
+  .shelf-country.gr .shelf-country-tg { border-color: #1565c0; }
+  .shelf-country.cy .shelf-country-tg { border-color: #f0a000; }
+  .shelf-country-bd { padding: 8px; }
   /* Το mode είναι κουτί, όχι απλή ετικέτα — ουδέτερα γκρι, ώστε το μόνο χρώμα
      στη στήλη να μένει το μπλε/κίτρινο της χώρας. overflow:hidden για να
      κόβονται οι γωνίες των services στο στρογγύλεμα του κουτιού. */
   .shelf-mode-box { border: 1px solid #e0e0e0; border-radius: 5px; overflow: hidden; }
   .shelf-mode-box + .shelf-mode-box { margin-top: 6px; }
-  .shelf-nav-mode { padding: 5px 10px; background: #f5f5f5; border-bottom: 1px solid #e4e4e4; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #666; }
+  .shelf-mode-hd { padding: 5px 10px; background: #f5f5f5; border-bottom: 1px solid #e4e4e4; font-size: 10px; font-weight: 700; letter-spacing: .06em; color: #666; }
   .shelf-svc { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 7px 10px 7px 9px; border: none; border-left: 3px solid transparent; background: none; font-family: inherit; font-size: 12px; color: #555; cursor: pointer; }
   .shelf-svc + .shelf-svc { border-top: 1px solid #f4f4f4; }
   .shelf-svc:hover { background: #f5f5f5; }
   .shelf-svc .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .shelf-svc .cnt { flex-shrink: 0; font-size: 10px; color: #aaa; }
   .shelf-svc.zero { opacity: .45; }           /* 0 τιμοκατάλογοι: αχνό, αλλά επιλέξιμο */
-  .shelf-nav-block .shelf-svc.active { background: #f0f0f0; border-left-color: #555; color: #222; font-weight: 700; }
-  .shelf-nav-block.gr .shelf-svc.active { background: #e3f2fd; border-left-color: #1565c0; color: #0d47a1; }
-  .shelf-nav-block.cy .shelf-svc.active { background: #fff8e1; border-left-color: #f0a000; color: #7c6d00; }
+  .shelf-country .shelf-svc.active { background: #f0f0f0; border-left-color: #555; color: #222; font-weight: 700; }
+  .shelf-country.gr .shelf-svc.active { background: #e3f2fd; border-left-color: #1565c0; color: #0d47a1; }
+  .shelf-country.cy .shelf-svc.active { background: #fff8e1; border-left-color: #f0a000; color: #7c6d00; }
   .shelf-svc.active .cnt { color: inherit; }
   .shelf-svc.active.zero { opacity: 1; }      /* επιλεγμένο κενό service: να φαίνεται ότι είναι επιλεγμένο */
   .shelf-picker { display: none; width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; background: white; font-size: 13px; }
@@ -321,7 +341,7 @@
   </div>
 </div>
 
-<script src="shelf-grouping.js?v=2026-09-22"></script>
+<script src="shelf-grouping.js?v=2026-09-22-4"></script>
 <script>
 const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 const API  = 'https://4aexpress.com/api';
@@ -1024,14 +1044,6 @@ function renderShelf() {
   const ordered = blocks.flatMap(bl => bl.modes.flatMap(m => m.svcs));
   if (!ordered.some(s => s.code === activeShelfTab)) activeShelfTab = ordered[0].code;
 
-  const svcBtn = svc => {
-    const n  = (shelf[svc.code] || []).length;
-    const on = svc.code === activeShelfTab;
-    return `<button class="shelf-svc ${on ? 'active' : ''} ${n ? '' : 'zero'}"
-      title="${escHtml(svc.code)}" onclick="switchShelfTab('${svc.code}')">
-      <span class="nm">${escHtml(shelfSvcLabel(svc.code))}</span><span class="cnt">${n}</span>
-    </button>`;
-  };
   const optGroup = (bl, m) =>
     `<optgroup label="${escHtml(m.title ? `${bl.title} · ${m.title}` : bl.title)}">` +
     m.svcs.map(s => `<option value="${escHtml(s.code)}"${s.code === activeShelfTab ? ' selected' : ''}>` +
@@ -1039,19 +1051,36 @@ function renderShelf() {
     `</optgroup>`;
 
   // Στενή οθόνη (<900px): το ίδιο δέντρο ως dropdown πάνω από τη λίστα — ποιο
-  // από τα δύο φαίνεται το αποφασίζει το CSS, όχι JS.
+  // από τα δύο φαίνεται το αποφασίζει το CSS, όχι JS. Το dropdown δείχνει ΠΑΝΤΑ
+  // τα πάντα: το κλείσιμο χώρας αφορά μόνο τη στήλη.
   sideEl.innerHTML =
     `<select class="shelf-picker" onchange="switchShelfTab(this.value)">` +
       blocks.map(bl => bl.modes.map(m => optGroup(bl, m)).join('')).join('') +
     `</select>` +
-    `<div class="shelf-nav">` + blocks.map(bl => `
-      <div class="shelf-nav-block ${bl.cls}">
-        <div class="shelf-nav-country">${bl.title}</div>
-        ${bl.modes.map(m => `<div class="shelf-mode-box">` +
-                            (m.title ? `<div class="shelf-nav-mode">${m.title}</div>` : '') +
-                            m.svcs.map(svcBtn).join('') + `</div>`).join('')}
-      </div>`).join('') + `</div>`;
+    `<div class="shelf-nav">` + shelfNavHtml(blocks, {
+      prefix: 'shelf', activeCls: 'active', esc: escHtml,
+      onPick: 'switchShelfTab', onToggle: 'toggleShelfCountry',
+      isOpen:   k    => shelfCountries.isOpen(k),
+      isActive: code => code === activeShelfTab,
+      count:    code => (shelf[code] || []).length,
+      label:    code => shelfSvcLabel(code),
+    }) + `</div>`;
   renderShelfContent();
+}
+
+// Ανοιχτό/κλειστό ανά χώρα — στη μνήμη, όσο είναι ανοιχτή η σελίδα. Κλείνει
+// μόνο ο χρήστης: πουθενά δεν κλείνουμε χώρα αυτόματα, οπότε η χώρα του
+// επιλεγμένου service μένει πάντα προσβάσιμη.
+const shelfCountries = shelfCollapse();
+function toggleShelfCountry(key) {
+  shelfCountries.toggle(key);
+  renderShelf();
+  // Η renderShelf ξαναγράφει όλη τη στήλη με innerHTML, οπότε το κουμπί που
+  // πατήθηκε παύει να υπάρχει και η εστίαση πέφτει στο <body> — με πληκτρολόγιο
+  // το επόμενο Tab θα ξεκινούσε από την αρχή της σελίδας. preventScroll: η
+  // στήλη είναι sticky με δικό της scroll και θα πηδούσε σε κάθε κλικ.
+  const hd = document.querySelector(`.shelf-country-hd[data-ctry="${key}"]`);
+  if (hd) hd.focus({ preventScroll: true });
 }
 
 function switchShelfTab(id) {
