@@ -102,8 +102,11 @@
     const svcBtn = svc => {
       const n = cnt(svc.code);
       const on = o.isActive ? o.isActive(svc.code) : false;
+      // data-svc: λαβή για επαναφορά εστίασης. Η επιλογή service ξαναχτίζει τη
+      // στήλη με innerHTML, οπότε το κουμπί που πατήθηκε παύει να υπάρχει.
       return '<button type="button" class="' + p + '-svc' + (on ? ' ' + act : '') + (n ? '' : ' zero') +
-        '" title="' + esc(svc.code) + '" onclick="' + o.onPick + '(&quot;' + svc.code + '&quot;)">' +
+        '" data-svc="' + esc(svc.code) + '" title="' + esc(svc.code) +
+        '" onclick="' + o.onPick + '(&quot;' + svc.code + '&quot;)">' +
         '<span class="nm">' + esc(o.label ? o.label(svc.code) : svc.code) + '</span>' +
         '<span class="cnt">' + (o.mark ? o.mark(svc.code) : '') + n + '</span></button>';
     };
