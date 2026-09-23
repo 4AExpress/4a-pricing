@@ -2,11 +2,14 @@
 // clients.php | v1.2 | 09-07-2026 — persist cod, address, notes
 require_once 'config.php';
 require_once 'auth.php';
+require_once 'tasks_create.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'OPTIONS') { http_response_code(204); exit; }
 if ($method === 'GET')  { require_permission('pricelist-clients', 'view'); }
-if ($method === 'POST') { require_permission('pricelist-clients', 'edit'); }
+// Το αποτέλεσμα κρατιέται πλέον: χρειάζεται το id του χρήστη για το
+// 4a_task_events. Ο έλεγχος δικαιώματος είναι ο ίδιος με πριν.
+if ($method === 'POST') { $session = require_permission('pricelist-clients', 'edit'); }
 
 // GET — φόρτωση πελατών με φίλτρο country βάσει pricelist_scope
 if ($method === 'GET') {
@@ -53,6 +56,14 @@ if ($method === 'POST') {
             respond(['error' => 'Λείπει ή είναι άκυρη η χώρα του πελάτη (country). Επιτρεπτές τιμές: GR, CY, EU, NONEU.'], 400);
         }
 
+        // Η ΠΑΛΙΑ κατάσταση, ΠΡΙΝ το UPSERT — μετά θα έχει χαθεί. Χωρίς αυτό
+        // δεν ξεχωρίζουμε «μόλις έγινε accepted» από «ήταν ήδη και πατήθηκε
+        // ξανά Αποθήκευση». false => νέος πελάτης.
+        $stOld = db()->prepare('SELECT `status` FROM `4a_clients` WHERE `id` = ?');
+        $stOld->execute([$b['id']]);
+        $oldStatus = $stOld->fetchColumn();
+        if ($oldStatus === false) $oldStatus = null;
+
         $stmt = db()->prepare('INSERT INTO 4a_clients
             (id, name, afm, contact, email, phone, website, address, notes, account, status,
              pricelists, surcharges, managers, cod, payment, invoice, validity,
@@ -85,7 +96,31 @@ if ($method === 'POST') {
             $b['date'] ?? '', (int)($b['is_walkin'] ?? 0),
             $b['created_at'] ?? date('Y-m-d H:i:s')
         ]);
-        respond(['ok' => true]);
+
+        // ── Εργασίες ───────────────────────────────────────────────────
+        // Ο πελάτης ΕΧΕΙ ΗΔΗ ΓΡΑΦΤΕΙ ΚΑΙ ΔΕΣΜΕΥΤΕΙ σε αυτό το σημείο: το
+        // UPSERT παραπάνω τρέχει σε autocommit, χωρίς περιβάλλουσα
+        // συναλλαγή. Η tasks_create_for_client() ανοίγει ΔΙΚΗ της
+        // συναλλαγή και δεν πετάει ποτέ εξαίρεση — ό,τι κι αν συμβεί με τις
+        // εργασίες, η αποθήκευση του πελάτη έχει ήδη πετύχει.
+        //
+        // ΑΠΟΚΛΙΣΗ ΑΠΟ ΤΟ docs/tasks_phase2_spec.md: το spec ζητούσε ΜΙΑ
+        // κοινή συναλλαγή για UPSERT + εργασίες. Υπερισχύει η απαίτηση «η
+        // αποθήκευση του πελάτη δεν χαλάει ποτέ». Το τίμημα — πελάτης
+        // accepted χωρίς εργασίες — το καλύπτει το δίχτυ ασφαλείας μέσα
+        // στην tasks_create_for_client().
+        $tasks = tasks_create_for_client(
+            db(), $b['id'],
+            isset($session['id']) ? $session['id'] : null,
+            $oldStatus, $b['status'] ?? 'prospect'
+        );
+
+        $out = ['ok' => true];
+        if ($tasks['ran'])            $out['tasks_created'] = $tasks['created'];
+        // Το κείμενο του σφάλματος μένει στο error_log, δεν φεύγει στον
+        // browser. Ο client μαθαίνει μόνο ότι κάτι δεν πήγε καλά.
+        if ($tasks['error'] !== null) $out['tasks_failed']  = true;
+        respond($out);
     }
 
     if ($action === 'delete') {
