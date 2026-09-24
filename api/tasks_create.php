@@ -8,6 +8,12 @@
 // με stub, χωρίς βάση, και το clients.php (που έχει ήδη φορτώσει τα δύο)
 // το περιλαμβάνει με require_once.
 //
+// ΦΑΣΗ 4: χρειάζεται τις tasks_fetch_one() και tasks_auto_assign() για την
+// τυχαία ανάθεση των ριζών. Το tasks_lib.php είναι κι αυτό καθαρές
+// συναρτήσεις χωρίς παρενέργειες στο include, οπότε η εξάρτηση δεν σπάει
+// τη δοκιμασιμότητα με stub.
+require_once __DIR__ . '/tasks_lib.php';
+
 // ΕΓΓΥΗΣΗ: η tasks_create_for_client() ΔΕΝ πετάει ΠΟΤΕ εξαίρεση. Κάθε
 // σφάλμα πιάνεται, καταγράφεται στο error_log και επιστρέφεται ως τιμή.
 // Η αποθήκευση του πελάτη δεν πρέπει να χαλάει επειδή έσπασε το νέο
@@ -114,7 +120,9 @@ function tasks_create_for_client($db, $clientId, $actorId, $oldStatus, $newStatu
         $fuelSvcs = array_values(array_unique($fuelSvcs));
         $hasFuel  = (count($fuelSvcs) > 0);
 
-        $types = $db->query('SELECT `code`, `condition_key` FROM `4a_task_types`
+        // Το depends_on χρειάζεται για να ξεχωρίσουν οι ΡΙΖΕΣ, που είναι οι
+        // μόνες που ανατίθενται τη στιγμή της δημιουργίας.
+        $types = $db->query('SELECT `code`, `condition_key`, `depends_on` FROM `4a_task_types`
                               WHERE `active` = 1 ORDER BY `sort_order`, `code`')
                     ->fetchAll(PDO::FETCH_ASSOC);
 
@@ -155,6 +163,17 @@ function tasks_create_for_client($db, $clientId, $actorId, $oldStatus, $newStatu
             $taskId = (int)$db->lastInsertId();
             $result['task_ids'][] = $taskId;
             $ev->execute([$taskId, 'created', $actorId, $reason]);
+
+            // ΦΑΣΗ 4 — οι ΡΙΖΕΣ ανατίθενται τυχαία εδώ.
+            // Η αρχή είναι «ανάθεση όταν η εργασία γίνεται ΔΙΑΘΕΣΙΜΗ». Οι
+            // εξαρτημένες γίνονται διαθέσιμες στο κλείσιμο της προηγούμενης·
+            // οι ρίζες γεννιούνται διαθέσιμες, άρα η στιγμή τους είναι αυτή.
+            // Χωρίς αυτό, η μοναδική ρίζα open_code δεν θα ανατίθετο ποτέ και
+            // τίποτα δεν θα ξεκινούσε αυτόματα.
+            if (!isset($t['depends_on']) || $t['depends_on'] === null) {
+                $fresh = tasks_fetch_one($db, $taskId);
+                if ($fresh) tasks_auto_assign($db, $fresh, $actorId, 'ρίζα αλυσίδας');
+            }
         }
 
         $db->commit();

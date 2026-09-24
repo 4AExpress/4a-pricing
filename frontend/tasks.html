@@ -70,8 +70,48 @@
   .btn-na    { border-color: #ce93d8; background: #f3e5f5; color: #6a1b9a; }
   .btn-rel   { border-color: #ddd;    background: #fafafa; color: #666; }
   .btn-asg   { border-color: #ffcc80; background: #fff3e0; color: #e65100; }
+  .btn-rej   { border-color: #ef9a9a; background: #ffebee; color: #c62828; }
+  .btn-steal { border-color: #b0bec5; background: #eceff1; color: #455a64; }
+  .btn-hist  { border-color: transparent; background: none; color: #999; padding: 5px 6px; }
+  .btn-hist:hover { color: #333; }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
   .lockmsg { font-size: 11px; color: #999; white-space: nowrap; }
+
+  /* Κόκκινο σήμα: κανένας δικαιούχος δεν έμεινε. Δεν είναι σφάλμα — είναι
+     αίτημα προς άνθρωπο. Γι' αυτό μένει ορατό και στη γραμμή και στην ουρά. */
+  .task.attn { background: #fff5f5; box-shadow: inset 3px 0 0 #cc0000; }
+  .attn-tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+              background: #cc0000; color: white; white-space: nowrap; }
+
+  .hist { padding: 0 14px 12px 14px; border-bottom: 1px solid #f4f4f4;
+          background: #fbfbfb; font-size: 12px; }
+  .hist-row { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px dotted #eee;
+              align-items: baseline; }
+  .hist-row:last-child { border-bottom: none; }
+  .hist-when { color: #aaa; font-size: 11px; white-space: nowrap; min-width: 122px; }
+  .hist-who  { color: #555; white-space: nowrap; min-width: 90px; }
+  .hist-what { color: #333; flex: 1; }
+  .hist-what .ev { font-weight: 600; }
+  .hist-what .note { color: #777; }
+  .hist-what .after-steal { font-size: 10px; font-weight: 700; padding: 1px 7px;
+                            border-radius: 9px; background: #fff3e0; color: #e65100;
+                            border: 1px solid #ffcc80; white-space: nowrap; }
+  .hist-empty { color: #bbb; padding: 8px 0; }
+
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex;
+              align-items: center; justify-content: center; z-index: 900; padding: 16px; }
+  .modal { background: white; border-radius: 10px; width: 100%; max-width: 420px;
+           padding: 18px; }
+  .modal h3 { font-size: 15px; margin-bottom: 4px; }
+  .modal .sub { font-size: 12px; color: #888; margin-bottom: 14px; }
+  .modal label { display: block; font-size: 12px; font-weight: 600; color: #555;
+                 margin: 10px 0 4px; }
+  .modal select, .modal textarea { width: 100%; padding: 8px; font-size: 13px;
+                 border: 1px solid #ddd; border-radius: 6px; font-family: inherit; }
+  .modal textarea { min-height: 70px; resize: vertical; }
+  .modal .req { color: #cc0000; }
+  .modal-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .modal .msg { font-size: 12px; color: #c62828; margin-top: 8px; min-height: 16px; }
 
   .empty { text-align: center; padding: 40px; color: #bbb; font-size: 14px; }
   .err { background: #ffebee; color: #c62828; padding: 10px 14px; border-radius: 6px;
@@ -92,7 +132,7 @@
     <a class="nav-btn" href="services.html">🔧 Services</a>
     <a class="nav-btn" href="help.html">❓ Help</a>
   </div>
-  <div class="whoami"><span id="whoami"></span><button class="logout" onclick="doLogout()">Έξοδος</button></div>
+  <div class="whoami"><span id="whoami"></span><button class="logout" title="Log out — Αποσύνδεση από τη συνεδρία" onclick="doLogout()">Έξοδος</button></div>
 </div>
 
 <div class="wrap">
@@ -104,6 +144,8 @@
   <div class="tabs" id="tabs"></div>
   <div id="list"><div class="loading">Φόρτωση…</div></div>
 </div>
+
+<div id="modals"></div>
 
 <script>
 const API = 'https://4aexpress.com/api';
@@ -123,9 +165,31 @@ function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/
 
 let currentUser = null, isAdmin = false;
 let view = 'queue';
+// Η τελευταία λίστα που ήρθε από τον server. Την κρατάμε για να
+// ξαναζωγραφίσουμε (άνοιγμα ιστορικού) χωρίς νέο αίτημα.
+let lastTasks = [];
 const counts = { mine: null, queue: null, all: null };
 
 const VIEW_LABELS = { mine: '📋 Οι εργασίες μου', queue: '📥 Ουρά αδιάθετων', all: '🗂 Όλες' };
+
+// Δίγλωσσα tooltips, μορφή «English — ελληνική εξήγηση». Ο αγγλικός όρος
+// πρώτος γιατί είναι αυτός που λέγεται προφορικά στο γραφείο· η ελληνική
+// φράση εξηγεί τι ΠΡΑΓΜΑΤΙΚΑ συμβαίνει στη βάση, όχι τι λέει το κουμπί.
+const VIEW_TIPS = {
+  mine:  'My tasks — Όσες σας έχουν ανατεθεί και είναι σε εξέλιξη',
+  queue: 'Queue — Αδιάθετες εργασίες που ταιριάζουν στις δεξιότητές σας',
+  all:   'All — Κάθε εργασία, όποιος κι αν την έχει. Μόνο για διαχειριστές'
+};
+const TIPS = {
+  done:   'Complete — Η εργασία έγινε. Κλείνει και ξεκλειδώνει όσες περιμένουν',
+  na:     'Not applicable — Δεν χρειάζεται για αυτόν τον πελάτη. Κλείνει και ξεκλειδώνει όσες περιμένουν',
+  rel:    'Release — Επιστρέφει στην ουρά για να την πάρει άλλος',
+  rej:    'Reject — Τη διώχνει με λόγο. Ξαναμοιράζεται σε άλλον, ποτέ σε εσάς',
+  claim:  'Claim — Την αναλαμβάνετε εσείς',
+  steal:  'Steal — Την παίρνετε από τον τρέχοντα. Καταγράφεται',
+  assign: 'Assign — Την αναθέτετε σε συγκεκριμένο χρήστη',
+  hist:   'History — Όλες οι ενέργειες με ώρα και όνομα'
+};
 
 // Καταστάσεις: ΚΑΜΙΑ σταθερή τιμή εδώ. Γεμίζει από το tasks.php, που τις
 // διαβάζει από τον 4a_task_statuses. Νέο στάδιο = γραμμή στη βάση, χωρίς
@@ -153,7 +217,7 @@ function showErr(m){ const e=document.getElementById('err'); if(!m){ e.style.dis
 function renderTabs(){
   const views = isAdmin ? ['mine','queue','all'] : ['mine','queue'];
   document.getElementById('tabs').innerHTML = views.map(v =>
-    `<button class="tab ${v===view?'on':''}" onclick="switchView('${v}')">${VIEW_LABELS[v]}` +
+    `<button class="tab ${v===view?'on':''}" title="${escHtml(VIEW_TIPS[v])}" onclick="switchView('${v}')">${VIEW_LABELS[v]}` +
     (counts[v]===null?'':`<span class="cnt">${counts[v]}</span>`) + `</button>`).join('');
 }
 
@@ -169,6 +233,7 @@ async function load(){
     if(!r.ok || !d || d.ok!==true){ showErr((d&&d.error)||`HTTP ${r.status}`); document.getElementById('list').innerHTML=''; return; }
     STATUSES = {};
     (d.statuses||[]).forEach(s => STATUSES[s.code] = s);
+    lastTasks = d.tasks || [];
     counts[view] = d.tasks.length;
     renderTabs();
     render(d.tasks);
@@ -193,6 +258,8 @@ function summaryHtml(tasks){
 }
 
 function render(tasks){
+  tasks = tasks || [];
+  lastTasks = tasks;
   const el = document.getElementById('list');
   if(!tasks.length){
     const msg = view==='mine' ? 'Δεν έχετε εργασίες σε εξέλιξη.'
@@ -232,6 +299,64 @@ function whoCell(t){
   return view==='all' ? '<span class="who none" title="αδιάθετη">—</span>' : '';
 }
 
+// Ιστορικό ΚΑΤ' ΑΠΑΙΤΗΣΗ: id -> 'loading' | πίνακας events. Ό,τι είναι εδώ
+// μέσα ξαναζωγραφίζεται μετά από κάθε load(), ώστε ένα ανοιχτό ιστορικό να
+// μην κλείνει επειδή ο χρήστης πάτησε «Ολοκλήρωση» σε άλλη εργασία.
+const histOpen = new Map();
+
+// Τα κλειδιά είναι ΑΚΡΙΒΩΣ τα event που γράφει το tasks_lib.php — όχι
+// συνώνυμα. Το «Αφήνω» γράφει 'unassigned' και η ανάληψη γράφει 'assigned'·
+// λάθος κλειδί σημαίνει ωμό αγγλικό στην οθόνη.
+const EV_LABELS = {
+  created:'δημιουργήθηκε', assigned:'ανατέθηκε', unassigned:'αφέθηκε',
+  done:'ολοκληρώθηκε', na:'δεν εφαρμόζεται',
+  auto_assigned:'αυτόματη ανάθεση', rejected:'απόρριψη', stolen:'ανέλαβε άλλος',
+  no_candidate:'χωρίς δικαιούχο'
+};
+
+async function toggleHist(id){
+  if(histOpen.has(id)){ histOpen.delete(id); render(lastTasks); return; }
+  histOpen.set(id, 'loading'); render(lastTasks);
+  try{
+    const r = await apiFetch(`${API}/tasks.php?action=history&id=${id}&v=${Date.now()}`);
+    const d = await r.json().catch(()=>null);
+    if(!r.ok || !d || d.ok!==true){ histOpen.delete(id); showErr((d&&d.error)||`HTTP ${r.status}`); }
+    else histOpen.set(id, d.events||[]);
+  }catch(e){ histOpen.delete(id); showErr('Δεν φορτώθηκε το ιστορικό — '+(e&&e.message?e.message:e)); }
+  render(lastTasks);
+}
+
+// Ο λόγος απόρριψης: προτιμάμε την ΕΤΙΚΕΤΑ από τη βάση. Αν ο λόγος έχει
+// απενεργοποιηθεί αργότερα, το tasks_history τον φέρνει ούτως ή άλλως
+// (LEFT JOIN χωρίς φίλτρο active) — δείχνουμε την ετικέτα με ένδειξη ότι
+// δεν χρησιμοποιείται πλέον. Αν λείπει εντελώς, πέφτουμε στον κωδικό.
+function histWhat(e){
+  const meta = e.meta ? (typeof e.meta==='string' ? (()=>{try{return JSON.parse(e.meta);}catch(x){return null;}})() : e.meta) : null;
+  let s = `<span class="ev">${escHtml(EV_LABELS[e.event]||e.event)}</span>`;
+  if(e.event==='rejected'){
+    const lbl = e.reason_label || (meta && meta.reason_code) || '—';
+    s += ' — ' + escHtml(lbl) + (Number(e.reason_active)===0 ? ' <span class="note">(ανενεργός λόγος)</span>' : '');
+  }
+  // Η δέσμευση του steal: ευδιάκριτη, όχι κρυμμένη μέσα στη σημείωση.
+  if(meta && meta.after_steal === true)
+    s += ' <span class="after-steal" title="Commitment — Είχε αναλάβει την εργασία από συνάδελφο και δεν την ολοκλήρωσε">μετά από ανάληψη συναδέλφου</span>';
+  if(e.note) s += ` <span class="note">· ${escHtml(e.note)}</span>`;
+  return s;
+}
+
+function histHtml(id){
+  const h = histOpen.get(id);
+  if(h===undefined) return '';
+  if(h==='loading') return `<div class="hist"><div class="hist-empty">Φόρτωση ιστορικού…</div></div>`;
+  if(!h.length)     return `<div class="hist"><div class="hist-empty">Κανένα γεγονός.</div></div>`;
+  return `<div class="hist">` + h.map(e=>`
+    <div class="hist-row">
+      <span class="hist-when">${escHtml(e.created_at||'')}</span>
+      <span class="hist-who">${escHtml(e.actor_name||'σύστημα')}</span>
+      <span class="hist-what">${histWhat(e)}</span>
+    </div>`).join('') + `</div>`;
+}
+
 function taskRow(t){
   const locked = Number(t.locked)===1;
   const mine   = currentUser && Number(t.assigned_to)===Number(currentUser.id);
@@ -242,30 +367,141 @@ function taskRow(t){
   let payload = null; try{ payload = typeof t.payload==='string'?JSON.parse(t.payload):t.payload; }catch(e){}
   if(payload && payload.services && payload.services.length) meta.push('υπηρεσίες: '+escHtml(payload.services.join(', ')));
 
+  // Διαφορετική λέξη για διαφορετική πράξη: «Ανάληψη» παίρνει κάτι από την
+  // ουρά και δεν στερεί τίποτα από κανέναν· «Αναλαμβάνω» το παίρνει από
+  // άνθρωπο και καταγράφεται. Δύο ετικέτες, δύο tooltips, δύο endpoints.
+  const takeBtn = (cls, fn, label) =>
+    `<button class="btn ${cls}" title="${escHtml(TIPS[fn])}" onclick="${fn}(${t.id})">${label}</button>`;
+  const asgBtn =
+    `<button class="btn btn-asg" title="${escHtml(TIPS.assign)}" onclick="assign(${t.id})">Ανάθεση…</button>`;
+  const doneBtn =
+    `<button class="btn btn-done" title="${escHtml(TIPS.done)}" onclick="act(${t.id},'done')">Ολοκλήρωση</button>`;
+  const naBtn =
+    `<button class="btn btn-na" title="${escHtml(TIPS.na)}" onclick="markNa(${t.id})">Δεν εφαρμόζεται</button>`;
+  const relBtn =
+    `<button class="btn btn-rel" title="${escHtml(TIPS.rel)}" onclick="act(${t.id},'release')">Αφήνω</button>`;
+
   let acts = '';
   if(locked){
-    acts = `<span class="lockmsg">🔒 Περιμένει: ${escHtml(t.blocked_by_label||t.depends_on||'—')}</span>`;
+    acts = `<span class="lockmsg" title="Locked — Ξεκλειδώνει μόλις ολοκληρωθεί η εργασία που περιμένει">`+
+           `🔒 Περιμένει: ${escHtml(t.blocked_by_label||t.depends_on||'—')}</span>`;
   } else if(t.status==='open' && t.assigned_to===null){
-    acts = `<button class="btn btn-claim" onclick="act(${t.id},'claim')">Ανάληψη</button>`;
-    if(isAdmin) acts += `<button class="btn btn-asg" onclick="assign(${t.id})">Ανάθεση…</button>`;
+    acts = takeBtn('btn-claim', 'claim', 'Ανάληψη');
+    if(isAdmin) acts += asgBtn;
   } else if(t.status==='in_progress' || t.status==='paused'){
-    if(mine || isAdmin){
-      acts = `<button class="btn btn-done" onclick="act(${t.id},'done')">Ολοκλήρωση</button>` +
-             `<button class="btn btn-na" onclick="markNa(${t.id})">Δεν εφαρμόζεται</button>` +
-             `<button class="btn btn-rel" onclick="act(${t.id},'release')">Αφήνω</button>`;
+    if(mine){
+      // Η απόρριψη ανήκει ΜΟΝΟ στον ανάδοχο — ο διαχειριστής δεν απορρίπτει
+      // «εκ μέρους» κάποιου, γιατί θα καταγραφόταν λάθος απορρίπτων.
+      acts = doneBtn + naBtn +
+             `<button class="btn btn-rej" title="${escHtml(TIPS.rej)}" onclick="openReject(${t.id})">Απόρριψη…</button>` +
+             relBtn;
+    } else {
+      if(isAdmin) acts = doneBtn + naBtn + relBtn;
+      // Ελεύθερο steal για όποιον έχει τη δεξιότητα. Η οθόνη δεν ξέρει τις
+      // δεξιότητες του χρήστη — κρίνει ο server και απαντά 403.
+      acts += takeBtn('btn-steal', 'steal', 'Αναλαμβάνω');
     }
-    if(isAdmin) acts += `<button class="btn btn-asg" onclick="assign(${t.id})">Ανάθεση…</button>`;
+    if(isAdmin) acts += asgBtn;
   }
 
-  return `<div class="task${locked?' locked':''}">
+  acts += `<button class="btn btn-hist" title="${escHtml(TIPS.hist)}" aria-expanded="${histOpen.has(t.id)?'true':'false'}"`+
+          ` onclick="toggleHist(${t.id})">${histOpen.has(t.id)?'▾':'▸'} ιστορικό</button>`;
+
+  const attn = Number(t.needs_attention)===1 && t.status==='open';
+
+  return `<div class="task${locked?' locked':''}${attn?' attn':''}">
     <div class="task-main">
       <div class="task-label">${locked?'🔒 ':''}${escHtml(t.task_label||t.task_code)}</div>
       <div class="task-meta">${escHtml(t.task_code)}${meta.length?' · '+meta.join(' · '):''}</div>
     </div>
+    ${attn?'<span class="attn-tag" title="Απορρίφθηκε από όλους τους δικαιούχους — χρειάζεται ανάθεση">χρειάζεται ανάθεση</span>':''}
     ${whoCell(t)}
     ${stBadge(t.status)}
     <div class="acts">${acts}</div>
-  </div>`;
+  </div>${histHtml(t.id)}`;
+}
+
+// Δίδυμο του steal: ίδια λέξη στο κουμπί, άλλο endpoint. Η ανάληψη
+// αδιάθετης δεν αφαιρεί τίποτα από κανέναν, άρα ΔΕΝ ζητά επιβεβαίωση.
+async function claim(id){ if((await post({action:'claim', id})).ok) load(); }
+
+async function steal(id){
+  // Η δέσμευση λέγεται ΠΡΙΝ την πράξη, όχι μετά. Δεν μπλοκάρουμε κανέναν —
+  // αλλά κανείς δεν μπορεί να πει ότι δεν το ήξερε.
+  if(!confirm('Αναλαμβάνετε εργασία άλλου συναδέλφου.\n\n'+
+              'Αναλαμβάνοντας εργασία συναδέλφου δεσμεύεστε να την ολοκληρώσετε.\n\n'+
+              'Θα καταγραφεί ποιος την πήρε και από ποιον.')) return;
+  const r = await post({action:'steal', id}, true);
+  if(r.ok){ load(); return; }
+  showErr(r.status===403
+    ? 'Δεν έχετε τη δεξιότητα για αυτή την εργασία.'
+    : ((r.data&&r.data.error)||`HTTP ${r.status}`));
+}
+
+/* --- απόρριψη με κωδικοποιημένο λόγο --- */
+let rejectId = null;
+const reasonsCache = new Map();   // task_code -> πίνακας λόγων
+
+async function openReject(id){
+  const t = (lastTasks||[]).find(x=>Number(x.id)===Number(id));
+  const code = t ? t.task_code : '';
+  rejectId = id;
+  let reasons = reasonsCache.get(code);
+  if(!reasons){
+    try{
+      const r = await apiFetch(`${API}/tasks.php?action=reject_reasons&task_code=${encodeURIComponent(code)}&v=${Date.now()}`);
+      const d = await r.json().catch(()=>null);
+      if(!r.ok || !d || d.ok!==true){ showErr((d&&d.error)||`HTTP ${r.status}`); return; }
+      reasons = d.reasons||[];
+      reasonsCache.set(code, reasons);
+    }catch(e){ showErr('Δεν φορτώθηκαν οι λόγοι απόρριψης — '+(e&&e.message?e.message:e)); return; }
+  }
+  if(!reasons.length){ showErr('Δεν υπάρχουν διαθέσιμοι λόγοι απόρριψης.'); return; }
+
+  const opts = reasons.map(x=>`<option value="${escHtml(x.code)}" data-req="${Number(x.requires_note)?1:0}">`+
+                              `${escHtml(x.label)}</option>`).join('');
+  document.getElementById('modals').innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeReject()">
+      <div class="modal" role="dialog" aria-modal="true" aria-label="Απόρριψη εργασίας">
+        <h3>Απόρριψη εργασίας</h3>
+        <div class="sub">${escHtml(t?(t.task_label||t.task_code):'')}${t&&t.client_name?' · '+escHtml(t.client_name):''}</div>
+        <label for="rej-code">Λόγος</label>
+        <select id="rej-code" onchange="rejNoteHint()">${opts}</select>
+        <label for="rej-note">Σχόλιο <span id="rej-req" class="req" style="display:none;">(υποχρεωτικό)</span></label>
+        <textarea id="rej-note" placeholder="προαιρετικό"></textarea>
+        <div id="rej-msg" class="msg"></div>
+        <div class="modal-acts">
+          <button class="btn btn-rel" title="Cancel — Κλείνει χωρίς καμία αλλαγή" onclick="closeReject()">Άκυρο</button>
+          <button class="btn btn-rej" title="${escHtml(TIPS.rej)}" onclick="sendReject()">Απόρριψη</button>
+        </div>
+      </div>
+    </div>`;
+  rejNoteHint();
+  const sel = document.getElementById('rej-code');
+  if(sel) sel.focus();
+}
+function rejNoteHint(){
+  const sel = document.getElementById('rej-code'); if(!sel) return;
+  const req = sel.options[sel.selectedIndex].getAttribute('data-req')==='1';
+  document.getElementById('rej-req').style.display = req ? '' : 'none';
+  document.getElementById('rej-note').placeholder = req ? 'υποχρεωτικό' : 'προαιρετικό';
+}
+function closeReject(){ rejectId=null; document.getElementById('modals').innerHTML=''; }
+
+async function sendReject(){
+  const sel = document.getElementById('rej-code');
+  const note = document.getElementById('rej-note').value.trim();
+  const req = sel.options[sel.selectedIndex].getAttribute('data-req')==='1';
+  const msg = document.getElementById('rej-msg');
+  // Ο ίδιος έλεγχος υπάρχει και στον server (requires_note) — εδώ μόνο για
+  // να μη χάσει ο χρήστης ό,τι έγραψε σε ένα round-trip.
+  if(req && !note){ msg.textContent = 'Αυτός ο λόγος θέλει σχόλιο.'; return; }
+  msg.textContent = '';
+  const id = rejectId;
+  const r = await post({action:'reject', id, reason_code:sel.value, note:note||null}, true);
+  if(!r.ok){ msg.textContent = (r.data&&r.data.error)||`HTTP ${r.status}`; return; }
+  closeReject();
+  load();
 }
 
 // Επιστρέφει true σε επιτυχία. Με quiet=true δεν εμφανίζει σφάλμα — ο
@@ -308,6 +544,12 @@ async function assign(id){
   }
   if(r.ok) load();
 }
+
+// Esc κλείνει το παράθυρο απόρριψης — ίδια συνάρτηση με το «Άκυρο» και με
+// το κλικ στο φόντο, ποτέ δεύτερη διαδρομή κλεισίματος.
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape' && rejectId!==null) closeReject();
+});
 
 /* --- boot (ίδιο pattern με charge-limits.html:311) --- */
 (function(){

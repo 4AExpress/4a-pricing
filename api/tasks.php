@@ -23,6 +23,30 @@ $perms = $session['permissions'];
 $db    = db();
 
 if ($method === 'GET') {
+    $action = isset($_GET['action']) ? $_GET['action'] : '';
+
+    // Το σήμα: δύο αριθμοί, φορτώνεται από το tasks-badge.js σε κάθε σελίδα
+    // που έχει τον σύνδεσμο. Κρατιέται φτηνό — δύο COUNT σε ευρετήρια.
+    if ($action === 'badge') {
+        $r = tasks_badge($db, $session, $perms);
+        respond(['ok' => true, 'attention' => $r['attention'], 'mine' => $r['mine']]);
+    }
+
+    if ($action === 'reject_reasons') {
+        respond(['ok' => true, 'reasons' => tasks_reject_reasons(
+            $db, isset($_GET['task_code']) ? $_GET['task_code'] : null)]);
+    }
+
+    // Ιστορικό ΚΑΤ' ΑΠΑΙΤΗΣΗ, ένα αίτημα ανά εργασία όταν ανοίγει το
+    // πτυσσόμενο — όχι μαζί με τη λίστα.
+    if ($action === 'history') {
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        if ($id <= 0) respond(['error' => 'λείπει το id της εργασίας'], 400);
+        $r = tasks_history($db, $session, $perms, $id);
+        if (!$r['ok']) respond(['error' => $r['error']], $r['code']);
+        respond(['ok' => true, 'events' => $r['events']]);
+    }
+
     $view = isset($_GET['view']) ? $_GET['view'] : 'queue';
     $r = tasks_list($db, $session, $perms, $view);
     if (!$r['ok']) respond(['error' => $r['error']], $r['code']);
@@ -55,6 +79,12 @@ if ($method === 'POST') {
         case 'na':
             $r = tasks_na($db, $session, $perms, $id,
                           isset($b['close_reason']) ? $b['close_reason'] : null); break;
+        case 'reject':
+            $r = tasks_reject($db, $session, $perms, $id,
+                              isset($b['reason_code']) ? $b['reason_code'] : '',
+                              isset($b['note']) ? $b['note'] : null); break;
+        case 'steal':
+            $r = tasks_steal($db, $session, $perms, $id); break;
         case 'assign':
             // force: ΜΟΝΟ αν σταλεί ρητά true. Παρακάμπτει το κλείδωμα
             // depends_on και καταγράφεται στο event.
