@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Εργασίες · 4A Express</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+         background: #f5f5f5; color: #333; }
+  .topbar { background: white; border-bottom: 1px solid #e0e0e0; padding: 0 20px;
+            display: flex; align-items: center; justify-content: space-between; }
+  .brand { font-size: 15px; font-weight: 700; color: #cc0000; padding: 14px 0; }
+  .nav { display: flex; }
+  .nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer;
+             color: #666; border-bottom: 2px solid transparent; text-decoration: none;
+             display: flex; align-items: center; }
+  .nav-btn.active { color: #cc0000; border-bottom-color: #cc0000; font-weight: 600; }
+  .nav-btn:hover { background: #f8f8f8; }
+  .whoami { font-size: 12px; color: #888; display: flex; align-items: center; gap: 10px; }
+  .logout { font-size: 12px; color: #cc0000; background: none; border: none; cursor: pointer; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px; }
+  .page-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: #888; margin-bottom: 16px; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tab { padding: 8px 16px; font-size: 13px; border: 1px solid #ddd; border-radius: 6px;
+         background: white; color: #555; cursor: pointer; font-family: inherit; }
+  .tab.on { background: #cc0000; border-color: #cc0000; color: white; font-weight: 600; }
+  .tab .cnt { font-size: 11px; opacity: .85; margin-left: 5px; }
+
+  .client-group { background: white; border: 1px solid #e0e0e0; border-radius: 8px;
+                  margin-bottom: 12px; overflow: hidden; }
+  .client-head { padding: 10px 14px; background: #fafafa; border-bottom: 1px solid #eee;
+                 display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .client-name { font-size: 14px; font-weight: 600; color: #333; }
+  .client-meta { font-size: 11px; color: #999; }
+  .flag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+  .flag.GR { background: #e3f2fd; color: #0d47a1; }
+  .flag.CY { background: #fff8e1; color: #7c6d00; }
+
+  .task { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+          border-bottom: 1px solid #f4f4f4; }
+  .task:last-child { border-bottom: none; }
+  .task.locked { opacity: .5; }
+  .task-main { flex: 1; min-width: 0; }
+  .task-label { font-size: 13px; font-weight: 600; color: #333; }
+  .task-meta { font-size: 11px; color: #999; margin-top: 2px; }
+  /* Χωρίς χρώματα ανά κατάσταση: έρχονται από τον 4a_task_statuses και
+     μπαίνουν inline. Εδώ μόνο το σχήμα του badge. */
+  .st { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+        white-space: nowrap; background: #eceff1; color: #546e7a; }
+  .who { font-size: 12px; color: #555; white-space: nowrap; min-width: 120px; }
+  .who.none { color: #bbb; }
+  .summary { background: white; border: 1px solid #e0e0e0; border-radius: 8px;
+             padding: 10px 14px; margin-bottom: 12px; font-size: 13px; color: #444;
+             display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+  .summary .lbl { font-size: 11px; font-weight: 700; letter-spacing: .06em;
+                  color: #888; margin-right: 4px; }
+  .summary .who-n { white-space: nowrap; }
+  .summary .who-n b { font-weight: 700; }
+  .summary .unassigned { color: #e65100; }
+
+  .acts { display: flex; gap: 6px; flex-shrink: 0; }
+  .btn { padding: 5px 12px; font-size: 12px; border-radius: 4px; cursor: pointer;
+         border: 1px solid; font-family: inherit; }
+  .btn-claim { border-color: #90caf9; background: #e3f2fd; color: #1565c0; }
+  .btn-done  { border-color: #a5d6a7; background: #e8f5e9; color: #2e7d32; }
+  .btn-na    { border-color: #ce93d8; background: #f3e5f5; color: #6a1b9a; }
+  .btn-rel   { border-color: #ddd;    background: #fafafa; color: #666; }
+  .btn-asg   { border-color: #ffcc80; background: #fff3e0; color: #e65100; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .lockmsg { font-size: 11px; color: #999; white-space: nowrap; }
+
+  .empty { text-align: center; padding: 40px; color: #bbb; font-size: 14px; }
+  .err { background: #ffebee; color: #c62828; padding: 10px 14px; border-radius: 6px;
+         font-size: 13px; margin-bottom: 12px; }
+  .loading { text-align: center; padding: 30px; color: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">4A EXPRESS</div>
+  <div class="nav">
+    <a class="nav-btn" href="pricelist-editor.html">+ Νέος Τιμοκατάλογος</a>
+    <a class="nav-btn" href="pricelist-clients.html">👥 Πελάτες</a>
+    <a class="nav-btn active" href="tasks.html">✅ Εργασίες</a>
+    <a class="nav-btn" href="zones.html">🌍 Ζώνες</a>
+    <a class="nav-btn" href="users.html">⚙️ Χρήστες</a>
+    <a class="nav-btn" href="services.html">🔧 Services</a>
+    <a class="nav-btn" href="help.html">❓ Help</a>
+  </div>
+  <div class="whoami"><span id="whoami"></span><button class="logout" onclick="doLogout()">Έξοδος</button></div>
+</div>
+
+<div class="wrap">
+  <h1 class="page-title">Εργασίες</h1>
+  <p class="page-sub">Ό,τι προκύπτει όταν ένας πελάτης αποδεχτεί προσφορά</p>
+
+  <div id="err" class="err" style="display:none;"></div>
+
+  <div class="tabs" id="tabs"></div>
+  <div id="list"><div class="loading">Φόρτωση…</div></div>
+</div>
+
+<script>
+const API = 'https://4aexpress.com/api';
+
+/* --- auth (ίδιο pattern με charge-limits.html:200) --- */
+function apiFetch(url, opts={}) {
+  const u = sessionStorage.getItem('4a_current_user');
+  const token = u ? (JSON.parse(u)._token || '') : '';
+  opts.headers = Object.assign({}, opts.headers||{}, token ? {'Authorization':'Bearer '+token} : {});
+  return fetch(url, opts).then(function(r){
+    if(r.status===401){ sessionStorage.removeItem('4a_current_user'); alert('Η συνεδρία έληξε. Παρακαλώ συνδεθείτε ξανά.'); location.reload(); }
+    return r;
+  });
+}
+function doLogout(){ sessionStorage.removeItem('4a_current_user'); window.location.href='pricelist-editor.html'; }
+function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+let currentUser = null, isAdmin = false;
+let view = 'queue';
+const counts = { mine: null, queue: null, all: null };
+
+const VIEW_LABELS = { mine: '📋 Οι εργασίες μου', queue: '📥 Ουρά αδιάθετων', all: '🗂 Όλες' };
+
+// Καταστάσεις: ΚΑΜΙΑ σταθερή τιμή εδώ. Γεμίζει από το tasks.php, που τις
+// διαβάζει από τον 4a_task_statuses. Νέο στάδιο = γραμμή στη βάση, χωρίς
+// deploy σε αυτό το αρχείο.
+let STATUSES = {};
+
+// Χρώμα κειμένου από τη φωτεινότητα του φόντου. Έτσι ένα νέο στάδιο
+// χρειάζεται ΜΟΝΟ χρώμα φόντου — η αναγνωσιμότητα προκύπτει μόνη της.
+function textOn(bg){
+  const m = /^#([0-9a-f]{6})$/i.exec(String(bg||''));
+  if(!m) return '#546e7a';
+  const n = parseInt(m[1],16);
+  const lum = 0.299*((n>>16)&255) + 0.587*((n>>8)&255) + 0.114*(n&255);
+  return lum > 150 ? '#333' : '#fff';
+}
+function stBadge(code){
+  const s = STATUSES[code];
+  if(!s) return `<span class="st" title="${escHtml(code)}">${escHtml(code)}</span>`;
+  return `<span class="st" style="background:${escHtml(s.color)};color:${textOn(s.color)};">`+
+         `${escHtml(s.label)}</span>`;
+}
+
+function showErr(m){ const e=document.getElementById('err'); if(!m){ e.style.display='none'; return; } e.textContent=m; e.style.display=''; }
+
+function renderTabs(){
+  const views = isAdmin ? ['mine','queue','all'] : ['mine','queue'];
+  document.getElementById('tabs').innerHTML = views.map(v =>
+    `<button class="tab ${v===view?'on':''}" onclick="switchView('${v}')">${VIEW_LABELS[v]}` +
+    (counts[v]===null?'':`<span class="cnt">${counts[v]}</span>`) + `</button>`).join('');
+}
+
+function switchView(v){ view=v; load(); }
+
+async function load(){
+  renderTabs();
+  showErr(null);
+  document.getElementById('list').innerHTML = '<div class="loading">Φόρτωση…</div>';
+  try{
+    const r = await apiFetch(`${API}/tasks.php?view=${view}&v=${Date.now()}`);
+    const d = await r.json().catch(()=>null);
+    if(!r.ok || !d || d.ok!==true){ showErr((d&&d.error)||`HTTP ${r.status}`); document.getElementById('list').innerHTML=''; return; }
+    STATUSES = {};
+    (d.statuses||[]).forEach(s => STATUSES[s.code] = s);
+    counts[view] = d.tasks.length;
+    renderTabs();
+    render(d.tasks);
+  }catch(e){ showErr('Δεν έγινε σύνδεση με τον server — '+(e&&e.message?e.message:e)); }
+}
+
+// Σύνοψη ανά άνθρωπο — μόνο στην «Όλες», όπου φαίνονται και οι ξένες.
+// «Σταύρος 3 · Εύα 2 · αδιάθετες 4»
+function summaryHtml(tasks){
+  const byWho = new Map();
+  let unassigned = 0;
+  tasks.forEach(t => {
+    if(t.assigned_to===null || !t.assigned_name){ unassigned++; return; }
+    byWho.set(t.assigned_name, (byWho.get(t.assigned_name)||0) + 1);
+  });
+  // φθίνουσα κατά πλήθος, μετά αλφαβητικά — σταθερή σειρά
+  const parts = [...byWho.entries()]
+    .sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]))
+    .map(([n,c]) => `<span class="who-n">${escHtml(n)} <b>${c}</b></span>`);
+  parts.push(`<span class="who-n unassigned">αδιάθετες <b>${unassigned}</b></span>`);
+  return `<div class="summary"><span class="lbl">ΣΥΝΟΨΗ</span>${parts.join('<span style="color:#ddd;">·</span>')}</div>`;
+}
+
+function render(tasks){
+  const el = document.getElementById('list');
+  if(!tasks.length){
+    const msg = view==='mine' ? 'Δεν έχετε εργασίες σε εξέλιξη.'
+              : view==='queue' ? 'Καμία αδιάθετη εργασία για τις δεξιότητές σας.'
+              : 'Καμία εργασία.';
+    el.innerHTML = `<div class="empty">${msg}</div>`;
+    return;
+  }
+  // Ομαδοποίηση ανά πελάτη — η αλυσίδα ενός πελάτη διαβάζεται μαζί.
+  const groups = new Map();
+  tasks.forEach(t=>{
+    const k = t.client_id;
+    if(!groups.has(k)) groups.set(k, { name:t.client_name, country:t.client_country,
+                                       account:t.client_account, offer:t.offer_number, items:[] });
+    groups.get(k).items.push(t);
+  });
+  el.innerHTML =
+    (view==='all' ? summaryHtml(tasks) : '') +
+    [...groups.values()].map(g => `
+    <div class="client-group">
+      <div class="client-head">
+        <span class="client-name">${escHtml(g.name)}</span>
+        <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>
+        <span class="client-meta">${g.account?'AccountNo '+escHtml(g.account):'χωρίς AccountNo'}
+          ${g.offer?' · προσφορά '+escHtml(g.offer):' · χωρίς προσφορά'}</span>
+      </div>
+      ${g.items.map(taskRow).join('')}
+    </div>`).join('');
+}
+
+// Σε ΠΟΙΟΝ έχει ανατεθεί — σε ΟΛΕΣ τις καρτέλες, δίπλα στο badge.
+// Ανατεθειμένη -> όνομα. Αδιάθετη -> «—» μόνο στην «Όλες», ώστε η στήλη
+// να μένει ευθυγραμμισμένη· στην «Ουρά» είναι όλες αδιάθετες και μια
+// στήλη γεμάτη παύλες δεν λέει τίποτα.
+function whoCell(t){
+  if(t.assigned_name) return `<span class="who" title="ανάδοχος">${escHtml(t.assigned_name)}</span>`;
+  return view==='all' ? '<span class="who none" title="αδιάθετη">—</span>' : '';
+}
+
+function taskRow(t){
+  const locked = Number(t.locked)===1;
+  const mine   = currentUser && Number(t.assigned_to)===Number(currentUser.id);
+  const meta   = [];
+  // Ο ανάδοχος έχει δική του στήλη δίπλα στο badge, σε ΟΛΕΣ τις καρτέλες —
+  // μη τον διπλογράφεις στα meta.
+  if(t.close_reason)  meta.push('λόγος: '+escHtml(t.close_reason));
+  let payload = null; try{ payload = typeof t.payload==='string'?JSON.parse(t.payload):t.payload; }catch(e){}
+  if(payload && payload.services && payload.services.length) meta.push('υπηρεσίες: '+escHtml(payload.services.join(', ')));
+
+  let acts = '';
+  if(locked){
+    acts = `<span class="lockmsg">🔒 Περιμένει: ${escHtml(t.blocked_by_label||t.depends_on||'—')}</span>`;
+  } else if(t.status==='open' && t.assigned_to===null){
+    acts = `<button class="btn btn-claim" onclick="act(${t.id},'claim')">Ανάληψη</button>`;
+    if(isAdmin) acts += `<button class="btn btn-asg" onclick="assign(${t.id})">Ανάθεση…</button>`;
+  } else if(t.status==='in_progress' || t.status==='paused'){
+    if(mine || isAdmin){
+      acts = `<button class="btn btn-done" onclick="act(${t.id},'done')">Ολοκλήρωση</button>` +
+             `<button class="btn btn-na" onclick="markNa(${t.id})">Δεν εφαρμόζεται</button>` +
+             `<button class="btn btn-rel" onclick="act(${t.id},'release')">Αφήνω</button>`;
+    }
+    if(isAdmin) acts += `<button class="btn btn-asg" onclick="assign(${t.id})">Ανάθεση…</button>`;
+  }
+
+  return `<div class="task${locked?' locked':''}">
+    <div class="task-main">
+      <div class="task-label">${locked?'🔒 ':''}${escHtml(t.task_label||t.task_code)}</div>
+      <div class="task-meta">${escHtml(t.task_code)}${meta.length?' · '+meta.join(' · '):''}</div>
+    </div>
+    ${whoCell(t)}
+    ${stBadge(t.status)}
+    <div class="acts">${acts}</div>
+  </div>`;
+}
+
+// Επιστρέφει true σε επιτυχία. Με quiet=true δεν εμφανίζει σφάλμα — ο
+// καλών το χειρίζεται (π.χ. το κλείδωμα στην ανάθεση).
+async function post(body, quiet){
+  const r = await apiFetch(`${API}/tasks.php`, {method:'POST',
+    headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const d = await r.json().catch(()=>null);
+  if(!r.ok || !d || d.ok!==true){
+    if(!quiet) showErr((d&&d.error)||`HTTP ${r.status}`);
+    return {ok:false, status:r.status, data:d};
+  }
+  showErr(null); return {ok:true, data:d};
+}
+async function act(id, action){ if((await post({action, id})).ok) load(); }
+
+async function markNa(id){
+  const reason = prompt('Γιατί δεν εφαρμόζεται; (υποχρεωτικό)');
+  if(reason===null) return;
+  if(!reason.trim()){ showErr('Ο λόγος είναι υποχρεωτικός.'); return; }
+  if((await post({action:'na', id, close_reason:reason.trim()})).ok) load();
+}
+
+async function assign(id){
+  const to = prompt('ID χρήστη για ανάθεση:\n(ο διαχειριστής μπορεί να αναθέσει και σε χρήστη χωρίς δεξιότητα)');
+  if(to===null) return;
+  const n = parseInt(to,10);
+  if(!n){ showErr('Μη έγκυρο id χρήστη.'); return; }
+
+  // Πρώτα ΧΩΡΙΣ force: το κλείδωμα depends_on πρέπει να είναι ορατή
+  // απόφαση, όχι σιωπηλή παράκαμψη.
+  let r = await post({action:'assign', id, to_user_id:n}, true);
+  if(!r.ok && r.status===409 && r.data && r.data.locked){
+    const waits = r.data.blocked_by || 'άλλη εργασία';
+    if(!confirm(`Η εργασία περιμένει: ${waits}.\n\nΑνάθεση παρόλα αυτά;\n`+
+                `Η παράκαμψη θα καταγραφεί στο ιστορικό της εργασίας.`)) { showErr(null); return; }
+    r = await post({action:'assign', id, to_user_id:n, force:true});
+  } else if(!r.ok){
+    showErr((r.data&&r.data.error)||`HTTP ${r.status}`);
+  }
+  if(r.ok) load();
+}
+
+/* --- boot (ίδιο pattern με charge-limits.html:311) --- */
+(function(){
+  const u = sessionStorage.getItem('4a_current_user');
+  if(!u){ window.location.href='pricelist-editor.html'; return; }
+  try{
+    currentUser = JSON.parse(u);
+    isAdmin = (currentUser.role==='administrator');
+    document.getElementById('whoami').textContent = currentUser.name || currentUser.username || '';
+  }catch(e){}
+  load();
+})();
+</script>
+</body>
+</html>
