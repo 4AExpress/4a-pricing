@@ -92,12 +92,22 @@
          border: 1px solid; font-family: inherit; }
   .btn-claim { border-color: #90caf9; background: #e3f2fd; color: #1565c0; }
   .btn-done  { border-color: #a5d6a7; background: #e8f5e9; color: #2e7d32; }
-  /* Ετοιμότητα: ΜΟΝΟ η «Ολοκλήρωση» αλλάζει όψη. Καθοδηγούμε, δεν
-     εμποδίζουμε — κανένα disabled, το κουμπί πατιέται και στις δύο
-     καταστάσεις. */
+  /* Ετοιμότητα: ΜΟΝΟ η «Ολοκλήρωση» αλλάζει όψη. Τρεις καταστάσεις,
+     ανάλογα με το ready_enforced του τύπου εργασίας:
+       ready    — έτοιμη, συμπαγές πράσινο
+       notready — ΥΠΟΔΕΙΞΗ: ξεθωριασμένο αλλά πατιέται, με επιβεβαίωση
+       blocked  — ΦΡΑΓΜΑ: disabled· ο server απαντά 409 ούτως ή άλλως */
   .btn-done.ready    { background: #2e7d32; border-color: #2e7d32; color: #fff; font-weight: 700; }
   .btn-done.ready:hover { background: #1b5e20; }
   .btn-done.notready { opacity: .45; }
+  /* Φραγμένη: ΔΕΝ είναι απλώς πιο σβηστή από την «notready» — δείχνει
+     κλειδωμένη. Ο χρήστης πρέπει να καταλάβει ότι δεν πρόκειται να
+     υποχωρήσει με δεύτερο κλικ. */
+  /* Ειδικότητα 0,3,0 ώστε να νικά το `.btn:disabled` που ορίζεται
+     παρακάτω — αλλιώς η φραγμένη θα ξεθώριαζε σαν την «notready» και οι
+     δύο καταστάσεις θα φαίνονταν ίδιες. */
+  .btn.btn-done.blocked { opacity: 1; background: #f5f5f5; border-color: #ddd;
+                          color: #aaa; cursor: not-allowed; font-weight: 400; }
   .btn-na    { border-color: #ce93d8; background: #f3e5f5; color: #6a1b9a; }
   .btn-rel   { border-color: #ddd;    background: #fafafa; color: #666; }
   .btn-asg   { border-color: #ffcc80; background: #fff3e0; color: #e65100; }
@@ -108,6 +118,8 @@
   .btn-go    { border-color: #1565c0; background: #1565c0; color: #fff; font-weight: 600;
                text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
   .btn-go:hover { background: #0d47a1; }
+  /* Όταν η ολοκλήρωση είναι φραγμένη, αυτό είναι ο ΜΟΝΟΣ δρόμος μπροστά. */
+  .btn-go.pushed { box-shadow: 0 0 0 3px rgba(21,101,192,.22); }
   .acts { flex-wrap: wrap; }
   .btn-hist  { border-color: transparent; background: none; color: #999; padding: 5px 6px; }
   .btn-hist:hover { color: #333; }
@@ -477,12 +489,12 @@ function canOpen(module){
   return !!(p[module] && p[module].view);
 }
 
-function actionBtn(t){
+function actionBtn(t, emphasise){
   const a = t.action;
   if(!a || !a.url || !a.label) return '';
   if(!ACTION_URL_OK.test(a.url)) return '';
   if(!canOpen(a.module)) return '';
-  return `<a class="btn btn-go" href="${escHtml(a.url)}"`+
+  return `<a class="btn btn-go${emphasise?' pushed':''}" href="${escHtml(a.url)}"`+
          ` title="Go — Ανοίγει το σημείο όπου γίνεται η δουλειά">→ ${escHtml(a.label)}</a>`;
 }
 
@@ -508,10 +520,16 @@ function taskRow(t){
   // Όταν είναι έτοιμη: δίγλωσσο tooltip ως συνήθως. Όταν δεν είναι: η
   // οδηγία μπαίνει στη θέση της εξήγησης, κρατώντας τον αγγλικό όρο.
   const ready = t.ready !== false;         // απουσία πεδίου = έτοιμη
+  // ΦΡΑΓΜΑ ή ΥΠΟΔΕΙΞΗ — το λέει ο server, ανά τύπο εργασίας.
+  const blocked = (t.ready_enforced === true) && !ready;
   const doneTip = ready ? TIPS.done
         : 'Complete — ' + (t.ready_hint || 'Λείπει μια προϋπόθεση για την ολοκλήρωση');
+  // Το disabled είναι ΕΥΓΕΝΕΙΑ, όχι έλεγχος: τον έλεγχο τον κάνει το
+  // tasks_lib.php και απαντά 409. Εδώ απλώς δεν αφήνουμε τον χρήστη να
+  // πατήσει κάτι που θα αποτύχει.
   const doneBtn =
-    `<button class="btn btn-done ${ready?'ready':'notready'}" title="${escHtml(doneTip)}"`+
+    `<button class="btn btn-done ${blocked?'blocked':(ready?'ready':'notready')}"`+
+    ` title="${escHtml(doneTip)}"${blocked?' disabled':''}`+
     ` onclick="act(${t.id},'done')">Ολοκλήρωση</button>`;
   const naBtn =
     `<button class="btn btn-na" title="${escHtml(TIPS.na)}" onclick="markNa(${t.id})">Δεν εφαρμόζεται</button>`;
@@ -522,7 +540,10 @@ function taskRow(t){
   // χρήστης για να κάνει τη δουλειά, τα υπόλοιπα δηλώνουν το αποτέλεσμά
   // της. Φαίνεται και σε κλειδωμένη εργασία — το άνοιγμα καρτέλας είναι
   // ανάγνωση, δεν αλλάζει τίποτα.
-  let acts = actionBtn(t);
+  // Όταν η ολοκλήρωση είναι ΦΡΑΓΜΕΝΗ, ο μόνος δρόμος μπροστά είναι το
+  // σημείο δράσης — οπότε προβάλλεται αντί να στέκει ισότιμο δίπλα σε
+  // ένα κουμπί που δεν πατιέται.
+  let acts = actionBtn(t, blocked);
   if(locked){
     // ΜΟΝΟ το όνομα της εργασίας που περιμένει. Το «Περιμένει» το λέει
     // ήδη το badge, από τη βάση — εδώ θα ήταν η ίδια λέξη δύο φορές στην

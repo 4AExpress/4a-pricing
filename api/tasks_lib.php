@@ -32,7 +32,7 @@ function tasks_base_sql()
                    c.`account` AS client_account, c.`is_demo` AS is_demo,
                    tt.`label` AS task_label, tt.`sort_order`, tt.`depends_on`,
                    tt.`action_url`, tt.`action_label`, tt.`action_module`,
-                   tt.`ready_check`, tt.`ready_hint`,
+                   tt.`ready_check`, tt.`ready_hint`, tt.`ready_enforced`,
                    dt.`label` AS blocked_by_label,
                    u.`name` AS assigned_name,
                    CASE WHEN tt.`depends_on` IS NULL THEN 0
@@ -155,10 +155,19 @@ function tasks_action_link($task)
 // ─────────────────────────────────────────────────────────────────────
 // ΕΤΟΙΜΟΤΗΤΑ: «μπορεί να ολοκληρωθεί αυτή η εργασία;» (25/09)
 //
-// ΚΑΘΟΔΗΓΟΥΜΕ, ΔΕΝ ΕΜΠΟΔΙΖΟΥΜΕ. Το `ready = false` ξεθωριάζει το κουμπί
-// και εξηγεί γιατί· ΔΕΝ το απενεργοποιεί και ΔΕΝ απορρίπτει το αίτημα.
-// Ο άνθρωπος ξέρει πράγματα που η βάση δεν ξέρει — π.χ. ότι ο κωδικός
-// καταχωρήθηκε αλλού, ή ότι η εργασία έκλεισε με άλλον τρόπο.
+// ΔΥΟ ΕΝΤΑΣΕΙΣ, ανά τύπο εργασίας, από τη στήλη `ready_enforced`:
+//
+//   0 (προεπιλογή) — ΥΠΟΔΕΙΞΗ. Ξεθωριασμένο κουμπί και επιβεβαίωση· ο
+//     server δέχεται κανονικά. Ο άνθρωπος ξέρει πράγματα που η βάση δεν
+//     ξέρει, π.χ. ότι ο κωδικός καταχωρήθηκε αλλού.
+//
+//   1 — ΦΡΑΓΜΑ. Το done επιστρέφει 409. Καμία παράκαμψη, ούτε για
+//     διαχειριστή. Μπήκε το απόγευμα της 25/09 αφού δύο open_code
+//     έκλεισαν με κενό κωδικό. Στέκει ΜΟΝΟ επειδή το «Δεν εφαρμόζεται»
+//     μένει πάντα ανοιχτό, με υποχρεωτικό λόγο: όποιος δεν μπορεί να
+//     καταχωρήσει κωδικό έχει έξοδο που λέει την αλήθεια, αντί να
+//     γράψει «ολοκληρώθηκε» σε κάτι που δεν έγινε. Χωρίς αυτή τη
+//     βαλβίδα η φραγή θα ήταν λάθος.
 //
 // Ο ΚΑΝΟΝΑΣ ΤΟΥ ΚΩΔΙΚΟΥ ΣΥΝΕΡΓΑΣΙΑΣ ΖΕΙ ΕΔΩ, ΜΙΑ ΦΟΡΑ. Σήμερα υπάρχει
 // δύο φορές σε JavaScript (pricelist-clients.html, pricelist-table.html)
@@ -196,6 +205,20 @@ function tasks_account_valid($account)
  * Το `hint` επιστρέφεται ΜΟΝΟ όταν ready = false: μια οδηγία που δεν
  * ισχύει είναι χειρότερη από καμία οδηγία.
  */
+/**
+ * Είναι η προϋπόθεση ΦΡΑΓΜΑ;
+ *
+ * Το `ready_enforced = 1` χωρίς `ready_check` θα σήμαινε «φράξε με βάση
+ * το τίποτα» — μόνιμο μπλοκάρισμα χωρίς τρόπο ικανοποίησης. Ο έλεγχος
+ * απαιτεί ΚΑΙ τα δύο, ώστε μια μισή ρύθμιση στη βάση να μη μπορεί να
+ * κλειδώσει εργασία για πάντα.
+ */
+function tasks_ready_enforced($task)
+{
+    if (!isset($task['ready_enforced']) || (int)$task['ready_enforced'] !== 1) return false;
+    return isset($task['ready_check']) && trim((string)$task['ready_check']) !== '';
+}
+
 function tasks_ready($task)
 {
     $key = isset($task['ready_check']) ? trim((string)$task['ready_check']) : '';
@@ -258,8 +281,11 @@ function tasks_with_action($task)
     $task['action'] = tasks_action_link($task);
 
     $r = tasks_ready($task);
-    $task['ready']      = $r['ready'];
-    $task['ready_hint'] = $r['hint'];
+    $task['ready']          = $r['ready'];
+    $task['ready_hint']     = $r['hint'];
+    // Η οθόνη χρειάζεται να ξέρει αν είναι φράγμα ή υπόδειξη: στο πρώτο
+    // απενεργοποιεί το κουμπί, στο δεύτερο το ξεθωριάζει και ρωτά.
+    $task['ready_enforced'] = tasks_ready_enforced($task);
     $task['display_status'] = tasks_display_status($task, $r['ready']);
 
     // Τα ωμά πεδία δεν ταξιδεύουν: η οθόνη δεν πρέπει να μπει ποτέ στον
@@ -654,6 +680,25 @@ function tasks_done($db, $session, $perms, $taskId, $note = null)
 {
     list($task, $err) = tasks_guard_owner($db, $session, $perms, $taskId);
     if ($err) return $err;
+
+    // ΦΡΑΓΜΑ. Ο έλεγχος είναι ΕΔΩ και όχι μόνο στην οθόνη: ένα
+    // απενεργοποιημένο κουμπί δεν είναι έλεγχος — παρακάμπτεται με μια
+    // κλήση, με μια παλιά σελίδα στη μνήμη του browser, ή με ένα
+    // bookmarklet. Η οθόνη καθοδηγεί· ο server αποφασίζει.
+    //
+    // ΚΑΜΙΑ ΠΑΡΑΚΑΜΨΗ ΓΙΑ ΔΙΑΧΕΙΡΙΣΤΗ. Δεν είναι θέμα δικαιώματος αλλά
+    // δεδομένων: ο κωδικός είτε υπάρχει είτε όχι, και ο ρόλος δεν τον
+    // φέρνει. Ο διαχειριστής που όντως θέλει να κλείσει την εργασία έχει
+    // το «Δεν εφαρμόζεται», που καταγράφει ΓΙΑΤΙ.
+    // ΠΡΟΣΟΧΗ: το $task έρχεται από tasks_fetch_one -> tasks_with_action,
+    // που ΑΦΑΙΡΕΙ το ωμό `ready_check`. Άρα ο έλεγχος ΔΕΝ ξαναϋπολογίζει —
+    // διαβάζει τα έτοιμα `ready` / `ready_enforced`, ακριβώς αυτά που
+    // είδε και η οθόνη. Μία πηγή, καμία απόκλιση οθόνης-server.
+    if ($task['ready_enforced'] === true && $task['ready'] !== true) {
+        $hint = isset($task['ready_hint']) && $task['ready_hint'] !== null
+              ? $task['ready_hint'] : TASKS_READY_HINT_FALLBACK;
+        return tasks_err(409, $hint);
+    }
 
     $db->prepare('UPDATE `4a_tasks` SET `status` = \'done\', `closed_at` = NOW(),
                          `closed_by` = ? WHERE `id` = ?')
