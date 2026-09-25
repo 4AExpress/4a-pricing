@@ -3,6 +3,7 @@
 require_once 'config.php';
 require_once 'auth.php';
 require_once 'tasks_create.php';
+require_once 'clients_flags.php';   // φρουρός is_demo — docs/tasks_demo_mode_spec.md §5β
 
 $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'OPTIONS') { http_response_code(204); exit; }
@@ -59,16 +60,27 @@ if ($method === 'POST') {
         // Η ΠΑΛΙΑ κατάσταση, ΠΡΙΝ το UPSERT — μετά θα έχει χαθεί. Χωρίς αυτό
         // δεν ξεχωρίζουμε «μόλις έγινε accepted» από «ήταν ήδη και πατήθηκε
         // ξανά Αποθήκευση». false => νέος πελάτης.
-        $stOld = db()->prepare('SELECT `status` FROM `4a_clients` WHERE `id` = ?');
+        $stOld = db()->prepare('SELECT `status`, `is_demo` FROM `4a_clients` WHERE `id` = ?');
         $stOld->execute([$b['id']]);
-        $oldStatus = $stOld->fetchColumn();
-        if ($oldStatus === false) $oldStatus = null;
+        $rowOld = $stOld->fetch(PDO::FETCH_ASSOC);
+        $oldStatus = $rowOld ? $rowOld['status'] : null;
+        $oldDemo   = $rowOld ? (int)$rowOld['is_demo'] : null;
+
+        // ── Σημαία «πελάτης επίδειξης» ─────────────────────────────────
+        // Την αλλάζει ΜΟΝΟ διαχειριστής. Ο έλεγχος γίνεται ΠΡΙΝ το
+        // UPSERT: αν απορριφθεί, δεν αποθηκεύεται τίποτα απολύτως — ούτε
+        // τα υπόλοιπα πεδία. Μισή αποθήκευση θα ήταν χειρότερη από καμία.
+        $permsNow  = get_user_permissions($session['id']);
+        $demoGuard = clients_demo_guard($permsNow, $oldDemo,
+                        array_key_exists('is_demo', $b) ? $b['is_demo'] : null);
+        if (!$demoGuard['ok']) respond(['error' => $demoGuard['error']], 403);
+        $isDemo = (int)$demoGuard['value'];
 
         $stmt = db()->prepare('INSERT INTO 4a_clients
             (id, name, afm, contact, email, phone, website, address, notes, account, status,
              pricelists, surcharges, managers, cod, payment, invoice, validity,
-             offer_number, user, office, country, date, is_walkin, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             offer_number, user, office, country, date, is_walkin, is_demo, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ON DUPLICATE KEY UPDATE
             name=VALUES(name), afm=VALUES(afm), contact=VALUES(contact),
             email=VALUES(email), phone=VALUES(phone), website=VALUES(website),
@@ -79,7 +91,7 @@ if ($method === 'POST') {
             invoice=VALUES(invoice), validity=VALUES(validity),
             offer_number=VALUES(offer_number), user=VALUES(user),
             office=VALUES(office), country=VALUES(country), date=VALUES(date),
-            is_walkin=VALUES(is_walkin)');
+            is_walkin=VALUES(is_walkin), is_demo=VALUES(is_demo)');
 
         $stmt->execute([
             $b['id'], $b['name'], $b['afm'] ?? '', $b['contact'] ?? '',
@@ -93,9 +105,18 @@ if ($method === 'POST') {
             $b['payment'] ?? '30', $b['invoice'] ?? 'monthly',
             $b['validity'] ?? '30', $b['offer_number'] ?? '',
             $b['user'] ?? '', $office, $country,
-            $b['date'] ?? '', (int)($b['is_walkin'] ?? 0),
+            $b['date'] ?? '', (int)($b['is_walkin'] ?? 0), $isDemo,
             $b['created_at'] ?? date('Y-m-d H:i:s')
         ]);
+
+        // ── Αρχείο αλλαγής σημαίας ─────────────────────────────────────
+        // ΜΟΝΟ όταν η τιμή πράγματι άλλαξε. Η clients_log_flag() δεν
+        // πετάει ποτέ: ο πελάτης έχει ήδη αποθηκευτεί και δεν ακυρώνεται
+        // επειδή απέτυχε το αρχείο.
+        if ($demoGuard['changed']) {
+            clients_log_flag(db(), $b['id'], 'is_demo', $oldDemo, $isDemo,
+                             isset($session['id']) ? $session['id'] : null);
+        }
 
         // ── Εργασίες ───────────────────────────────────────────────────
         // Ο πελάτης ΕΧΕΙ ΗΔΗ ΓΡΑΦΤΕΙ ΚΑΙ ΔΕΣΜΕΥΤΕΙ σε αυτό το σημείο: το

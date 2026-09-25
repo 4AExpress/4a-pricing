@@ -123,6 +123,14 @@
   .renewal-badge { background: #fff3e0; color: #e65100; border: 1px solid #ffcc80; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
   .offer-badge   { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; padding: 1px 5px; border-radius: 20px; font-size: 9px; font-weight: 600; font-family: monospace; }
   .account-badge { background: #f3e5f5; color: #6a1b9a; border: 1px solid #ce93d8; padding: 1px 5px; border-radius: 20px; font-size: 9px; font-weight: 700; font-family: monospace; }
+  /* ΕΠΙΔΕΙΞΗ: ουδέτερο, ΟΧΙ χρώμα κατάστασης και ΟΧΙ κόκκινο. Εδώ είναι
+     πιο κρίσιμο από την οθόνη εργασιών, γιατί σε αυτή τη σελίδα υπάρχει
+     κουμπί που στέλνει email σε πελάτη. */
+  .demo-badge { background: #fff; color: #555; border: 1px solid #9e9e9e; padding: 1px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; letter-spacing: .08em; }
+  .client-item.demo { background: repeating-linear-gradient(135deg, #fff, #fff 12px, #fafafa 12px, #fafafa 24px); }
+  .demo-box { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px dashed #9e9e9e; border-radius: 6px; background: #fafafa; margin-bottom: 14px; cursor: pointer; }
+  .demo-box-label { font-size: 13px; font-weight: 600; color: #444; }
+  .demo-box-sub { font-size: 11px; color: #888; margin-top: 2px; }
 
   .empty { text-align: center; padding: 30px; color: #bbb; font-size: 13px; }
 
@@ -307,6 +315,18 @@
       <div>
         <div class="walkin-box-label">🚶 Έκτακτος Πελάτης (Walk-in)</div>
         <div class="walkin-box-sub">Απόδειξη · Μετρητά / Κατάθεση · ΑΦΜ προαιρετικό</div>
+      </div>
+    </div>
+
+    <!-- Πελάτης επίδειξης — ΟΡΑΤΟ ΜΟΝΟ ΣΕ ADMINISTRATORS.
+         Το κρύψιμο εδώ είναι ευκολία, όχι ασφάλεια: τον έλεγχο τον κάνει
+         ο server (clients_flags.php). Μη-διαχειριστής που θα έστελνε τη
+         σημαία με το χέρι παίρνει 403 και δεν αποθηκεύεται τίποτα. -->
+    <div class="demo-box" id="demo-box" style="display:none;" onclick="document.getElementById('cl-demo').click()">
+      <input type="checkbox" id="cl-demo" onclick="event.stopPropagation()" />
+      <div>
+        <div class="demo-box-label">🎬 Πελάτης επίδειξης</div>
+        <div class="demo-box-sub">Οι εργασίες του δεν μετριούνται πουθενά και μοιράζονται μόνο σε διαχειριστές. Δεν διαγράφεται ποτέ — νέα επίδειξη, νέος πελάτης.</div>
       </div>
     </div>
 
@@ -688,6 +708,14 @@ async function init(){
     currentUser.active_station_country=_CMAP2[_firstSt]||'GR';
     sessionStorage.setItem('4a_current_user',JSON.stringify(currentUser));
   }
+  // Το κουτί «πελάτης επίδειξης» φαίνεται μόνο σε διαχειριστές. Κρύβεται
+  // για να μη μπερδεύει, ΟΧΙ για να προστατεύει: τον έλεγχο τον κάνει το
+  // clients_flags.php στον server, που απαντά 403 σε όποιον άλλον
+  // προσπαθήσει να την αλλάξει.
+  if(currentUser.role==='administrator'){
+    const _dbox=document.getElementById('demo-box'); if(_dbox) _dbox.style.display='';
+  }
+
   const _activeLabel=currentUser.active_station||currentUser.office||'';
   document.getElementById('topbar-user').textContent=`${currentUser.name} · ${_activeLabel}`;
     try{ fetch(`${API}/me.php`,{headers:{'Authorization':'Bearer '+(currentUser._token||'')}}).then(r=>r.json()).then(_m=>{if(_m.expires_at)startSessionTimer(_m.expires_at);}); }catch(e){}
@@ -816,6 +844,8 @@ function resetForm(){
     const el=document.getElementById(id); if(el) el.value='';
   });
   const wk=document.getElementById('cl-walkin'); if(wk){ wk.checked=false; onWalkinChange(); }
+  // Νέος πελάτης ΠΟΤΕ δεν ξεκινά ως επίδειξη — η σημαία μπαίνει ρητά.
+  const dm=document.getElementById('cl-demo'); if(dm) dm.checked=false;
   document.getElementById('cl-payment').value='30';
   document.getElementById('cl-invoice').value='monthly';
   document.getElementById('cl-validity').value='30';
@@ -1364,6 +1394,7 @@ async function saveClient(){
     address:document.getElementById('cl-address').value.trim(),
     notes:document.getElementById('cl-notes').value.trim(),
     is_walkin:document.getElementById('cl-walkin').checked?1:0,
+    is_demo:document.getElementById('cl-demo')?.checked?1:0,
     account:document.getElementById('cl-account').value.trim()||'—',
     status:currentStatus,
     pricelists:selectedPls.map(p=>({id:p.id,name:p.name,service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[],fuel_enabled:p.fuel_enabled?1:0})),
@@ -1427,6 +1458,7 @@ function editClient(id){
   document.getElementById('cl-address').value=c.address||'';
   document.getElementById('cl-notes').value=c.notes||'';
   const wkel=document.getElementById('cl-walkin'); if(wkel){ wkel.checked=!!(c.is_walkin); onWalkinChange(); }
+  const dmel=document.getElementById('cl-demo'); if(dmel) dmel.checked=Number(c.is_demo)===1;
   document.getElementById('cl-account').value=(c.account!=='—')?c.account:'';
   document.getElementById('cl-country').value=c.country||currentUser.active_station_country||'GR';
   document.getElementById('cl-payment').value=c.payment||'30';
@@ -1493,13 +1525,14 @@ function renderClients(){
   el.innerHTML=list.map(c=>{
     const plStr=(c.pricelists||[]).map(p=>`${SVC_NAMES[p.service_id]||p.service_id}${p.markup?' '+p.markup+'%':''}`).join(' · ')||'—';
     const isRenewal=c.status==='active'||c.status==='rejected';
-    return `<div class="client-item">
+    return `<div class="client-item${Number(c.is_demo)===1?' demo':''}">
       <div class="client-avatar" style="background:${c.is_walkin?'#fff8e1':STATUS_BG[c.status]||'#f0f0f0'};color:${c.is_walkin?'#7c6d00':STATUS_COLOR[c.status]||'#555'};">${c.is_walkin?'🚶':initials(c.name)}</div>
       <div class="client-info">
         <div class="client-name">${c.name}
           ${c.is_walkin?'<span class="walkin-badge">🚶 Walk-in</span>':'<span class="status-pill st-'+c.status+'" style="font-size:10px;padding:2px 8px;cursor:default;">'+STATUS_LABELS[c.status]+'</span>'}
           ${isRenewal&&!c.is_walkin?'<span class="renewal-badge">↻ Ανανέωση</span>':''}
           <span class="client-badges">
+            ${Number(c.is_demo)===1?'<span class="demo-badge" title="Demo — Πελάτης επίδειξης. Δεν είναι αληθινός πελάτης και δεν μετριέται πουθενά">ΕΠΙΔΕΙΞΗ</span>':''}
             ${(c.offer_number||'').trim()&&c.offer_number!=='\u2014'?`<span class="offer-badge">${escHtml(c.offer_number)}</span>`:''}
             ${(c.account||'').trim()&&c.account!=='—'?`<span class="account-badge">${escHtml(c.account)}</span>`:''}
           </span>

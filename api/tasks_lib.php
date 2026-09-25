@@ -29,7 +29,7 @@ function tasks_base_sql()
                    t.`closed_at`, t.`closed_by`, t.`close_reason`, t.`payload`,
                    t.`needs_attention`,
                    c.`name` AS client_name, c.`country` AS client_country,
-                   c.`account` AS client_account,
+                   c.`account` AS client_account, c.`is_demo` AS is_demo,
                    tt.`label` AS task_label, tt.`sort_order`, tt.`depends_on`,
                    dt.`label` AS blocked_by_label,
                    u.`name` AS assigned_name,
@@ -107,6 +107,34 @@ function tasks_has_skill($db, $userId, $taskCode, $country)
     return ((int)$st->fetchColumn()) > 0;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// ΛΕΙΤΟΥΡΓΙΑ ΕΠΙΔΕΙΞΗΣ (απόφαση 25/09) — docs/tasks_demo_mode_spec.md
+//
+// Σε εργασίες πελάτη με `is_demo = 1`, ο διαχειριστής κάνει τα πάντα
+// χωρίς καταχωρημένη δεξιότητα. Για ΠΡΑΓΜΑΤΙΚΟΥΣ πελάτες τίποτα δεν
+// αλλάζει — γι' αυτό ο έλεγχος είναι ΚΑΙ ρόλος ΚΑΙ σημαία, ποτέ μόνο
+// ρόλος.
+//
+// Γιατί υπάρχει: οι διαχειριστές δεν έχουν καμία δεξιότητα εξ ορισμού
+// (ρητή απόφαση 24/09, ώστε να μένουν εκτός δεξαμενής πραγματικών
+// αναθέσεων). Αυτό τους έκλεινε έξω από κάθε δοκιμή — ο έλεγχος της
+// Φάσης 4 ολοκληρώθηκε με δανεικό λογαριασμό συναδέλφου, δηλαδή
+// γράφτηκαν στο ιστορικό ενέργειες που δεν έκανε ο άνθρωπος που
+// φαίνεται να τις έκανε.
+//
+// Το `is_demo` ταξιδεύει μέσα στο $task από την tasks_base_sql() —
+// καμία επιπλέον επίσκεψη στη βάση, ίδιος τρόπος με το client_country.
+// ─────────────────────────────────────────────────────────────────────
+function tasks_is_demo($task)
+{
+    return isset($task['is_demo']) && (int)$task['is_demo'] === 1;
+}
+
+function tasks_demo_bypass($perms, $task)
+{
+    return tasks_is_admin($perms) && tasks_is_demo($task);
+}
+
 /**
  * Το `note` είναι ΑΝΘΡΩΠΙΝΟ κείμενο — αυτό που διαβάζεται στο ιστορικό.
  * Το `meta` κρατά τα δομημένα (to_user, from_user, reason_code, why), ώστε
@@ -171,8 +199,26 @@ function tasks_held_by_steal($db, $taskId, $userId)
  * ενεργοί, ΧΩΡΙΣ τους διαχειριστές, και ΠΟΤΕ όσοι την έχουν ήδη απορρίψει.
  * Το NOT IN διαβάζει τον 4a_task_rejections — εκεί ζει ο κανόνας.
  */
-function tasks_candidate_pool($db, $taskId, $taskCode, $country)
+function tasks_candidate_pool($db, $taskId, $taskCode, $country, $isDemo = false)
 {
+    // ΕΠΙΔΕΙΞΗ: η δεξαμενή είναι οι ενεργοί διαχειριστές — ακριβώς οι
+    // αποκλεισμένοι της κανονικής. Έτσι εκτελείται αυτούσιος ο ίδιος
+    // κώδικας (random_int, αποκλεισμός όσων απέρριψαν, needs_attention
+    // όταν αδειάσει), αλλά καμία δοκιμαστική εργασία δεν πέφτει στη
+    // λίστα πραγματικού ανθρώπου που θα έπρεπε να θυμάται να την
+    // αγνοεί. Ο αποκλεισμός όσων έχουν ήδη απορρίψει είναι ο ΙΔΙΟΣ.
+    if ($isDemo) {
+        $st = $db->prepare(
+            'SELECT `id`
+               FROM `4a_users`
+              WHERE `active` = 1
+                AND `role` = \'administrator\'
+                AND `id` NOT IN (SELECT `user_id` FROM `4a_task_rejections`
+                                  WHERE `task_id` = ?)');
+        $st->execute([(int)$taskId]);
+        return array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
+    }
+
     $st = $db->prepare(
         'SELECT DISTINCT s.`user_id`
            FROM `4a_user_task_skills` s
@@ -200,7 +246,8 @@ function tasks_candidate_pool($db, $taskId, $taskCode, $country)
 function tasks_auto_assign($db, $task, $actorId, $why)
 {
     $taskId = (int)$task['id'];
-    $pool = tasks_candidate_pool($db, $taskId, $task['task_code'], $task['client_country']);
+    $pool = tasks_candidate_pool($db, $taskId, $task['task_code'], $task['client_country'],
+                                 tasks_is_demo($task));
 
     if (!$pool) {
         $db->prepare('UPDATE `4a_tasks` SET `needs_attention` = 1 WHERE `id` = ?')->execute([$taskId]);
@@ -464,7 +511,17 @@ function tasks_reject($db, $session, $perms, $taskId, $reasonCode, $note = null)
     if (in_array($task['status'], ['done', 'na'], true)) {
         return tasks_err(409, 'η εργασία έχει ήδη κλείσει');
     }
-    if ($task['assigned_to'] === null || (int)$task['assigned_to'] !== $me) {
+    // Αδιάθετη δεν απορρίπτεται ΠΟΤΕ, ούτε σε επίδειξη: δεν υπάρχει
+    // απορρίπτων να γραφτεί στο 4a_task_rejections.
+    if ($task['assigned_to'] === null) {
+        return tasks_err(409, 'η εργασία είναι αδιάθετη — δεν απορρίπτεται');
+    }
+    // Σε ΠΡΑΓΜΑΤΙΚΟ πελάτη απορρίπτει μόνο ο ανάδοχος, χωρίς εξαίρεση
+    // διαχειριστή: αν απέρριπτε «εκ μέρους» κάποιου, θα καταγραφόταν ο
+    // διαχειριστής ως απορρίπτων και ο πραγματικός ανάδοχος θα έμενε
+    // υποψήφιος για την ίδια εργασία. Σε πελάτη επίδειξης η εγγραφή δεν
+    // αφορά αληθινή δουλειά, οπότε η εξαίρεση δεν κοστίζει τίποτα.
+    if ((int)$task['assigned_to'] !== $me && !tasks_demo_bypass($perms, $task)) {
         return tasks_err(403, 'απορρίπτει μόνο ο ανάδοχος');
     }
 
@@ -547,7 +604,12 @@ function tasks_steal($db, $session, $perms, $taskId)
         $b = $task['blocked_by_label'] !== null ? $task['blocked_by_label'] : $task['depends_on'];
         return tasks_err(409, 'κλειδωμένη — περιμένει: ' . $b);
     }
-    if (!tasks_has_skill($db, $me, $task['task_code'], $task['client_country'])) {
+    // Η δεξιότητα είναι υποχρεωτική — ΕΚΤΟΣ αν διαχειριστής δουλεύει σε
+    // πελάτη επίδειξης. Σε πραγματικό πελάτη ο διαχειριστής παίρνει 403
+    // όπως πριν: έχει το `assign` γι' αυτή τη δουλειά, που καταγράφει
+    // ρητά ότι η ανάθεση έγινε χωρίς δεξιότητα.
+    if (!tasks_demo_bypass($perms, $task)
+        && !tasks_has_skill($db, $me, $task['task_code'], $task['client_country'])) {
         return tasks_err(403, 'δεν έχετε τη δεξιότητα για αυτή την εργασία');
     }
 
@@ -623,7 +685,10 @@ function tasks_badge($db, $session, $perms)
     $me = (int)$session['id'];
     $countries = tasks_scope_countries($perms);
 
-    $where  = ['t.`needs_attention` = 1', 't.`status` = \'open\''];
+    // ΚΑΙ ΟΙ ΔΥΟ μετρητές αγνοούν τους πελάτες επίδειξης. Το σήμα είναι
+    // επιχειρησιακό: ό,τι δεν απαιτεί πραγματική δουλειά δεν ανάβει
+    // κόκκινο και δεν φουσκώνει το «δικές μου».
+    $where  = ['t.`needs_attention` = 1', 't.`status` = \'open\'', 'c.`is_demo` = 0'];
     $params = [];
     if (is_array($countries)) {
         if (!$countries) return ['ok' => true, 'code' => 200, 'error' => null,
@@ -637,8 +702,13 @@ function tasks_badge($db, $session, $perms)
     $st->execute($params);
     $attention = (int)$st->fetchColumn();
 
-    $st = $db->prepare('SELECT COUNT(*) FROM `4a_tasks`
-                         WHERE `assigned_to` = ? AND `status` IN (\'in_progress\',\'paused\')');
+    // Το JOIN έλειπε από τον μετρητή «δικές μου» — μπαίνει τώρα ΜΟΝΟ
+    // για το φίλτρο is_demo. Καμία άλλη αλλαγή στη σημασία του.
+    $st = $db->prepare('SELECT COUNT(*) FROM `4a_tasks` t
+                          JOIN `4a_clients` c ON c.`id` = t.`client_id`
+                         WHERE t.`assigned_to` = ?
+                           AND t.`status` IN (\'in_progress\',\'paused\')
+                           AND c.`is_demo` = 0');
     $st->execute([$me]);
 
     return ['ok' => true, 'code' => 200, 'error' => null,

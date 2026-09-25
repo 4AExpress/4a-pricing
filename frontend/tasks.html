@@ -40,6 +40,19 @@
   .flag.GR { background: #e3f2fd; color: #0d47a1; }
   .flag.CY { background: #fff8e1; color: #7c6d00; }
 
+  /* ΕΠΙΔΕΙΞΗ: ουδέτερο, σκόπιμα ΟΧΙ κόκκινο — το κόκκινο ανήκει στο
+     needs_attention — και όχι χρώμα κατάστασης, που έρχεται από τη βάση.
+     Διαβάζεται πριν το όνομα του πελάτη, και η ομάδα ολόκληρη παίρνει
+     ρίγες ώστε να ξεχωρίζει με μισό μάτι. */
+  .demo-tag { font-size: 10px; font-weight: 700; letter-spacing: .08em;
+              padding: 2px 8px; border-radius: 4px; border: 1px solid #9e9e9e;
+              background: #fff; color: #555; white-space: nowrap; }
+  .client-group.demo { border-color: #bdbdbd; }
+  .client-group.demo .client-head {
+    background: repeating-linear-gradient(135deg, #fafafa, #fafafa 10px, #f0f0f0 10px, #f0f0f0 20px);
+  }
+  .summary .demo-n { color: #777; }
+
   .task { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
           border-bottom: 1px solid #f4f4f4; }
   .task:last-child { border-bottom: none; }
@@ -242,10 +255,15 @@ async function load(){
 
 // Σύνοψη ανά άνθρωπο — μόνο στην «Όλες», όπου φαίνονται και οι ξένες.
 // «Σταύρος 3 · Εύα 2 · αδιάθετες 4»
+// Οι δοκιμαστικές ΔΕΝ μετριούνται μαζί με τις πραγματικές — αλλά ούτε
+// κρύβονται: πηγαίνουν σε δικό τους στοιχείο, εκτός αθροίσματος. Αν
+// φιλτράρονταν στο ερώτημα, ο διαχειριστής θα έχανε τη λίστα του
+// ακριβώς την ώρα που κάνει την επίδειξη.
 function summaryHtml(tasks){
   const byWho = new Map();
-  let unassigned = 0;
+  let unassigned = 0, demo = 0;
   tasks.forEach(t => {
+    if(Number(t.is_demo)===1){ demo++; return; }
     if(t.assigned_to===null || !t.assigned_name){ unassigned++; return; }
     byWho.set(t.assigned_name, (byWho.get(t.assigned_name)||0) + 1);
   });
@@ -254,6 +272,8 @@ function summaryHtml(tasks){
     .sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]))
     .map(([n,c]) => `<span class="who-n">${escHtml(n)} <b>${c}</b></span>`);
   parts.push(`<span class="who-n unassigned">αδιάθετες <b>${unassigned}</b></span>`);
+  if(demo) parts.push(`<span class="who-n demo-n" title="Demo — Εργασίες πελατών επίδειξης· δεν προσμετρώνται">`+
+                      `επίδειξη <b>${demo}</b></span>`);
   return `<div class="summary"><span class="lbl">ΣΥΝΟΨΗ</span>${parts.join('<span style="color:#ddd;">·</span>')}</div>`;
 }
 
@@ -273,14 +293,16 @@ function render(tasks){
   tasks.forEach(t=>{
     const k = t.client_id;
     if(!groups.has(k)) groups.set(k, { name:t.client_name, country:t.client_country,
-                                       account:t.client_account, offer:t.offer_number, items:[] });
+                                       account:t.client_account, offer:t.offer_number,
+                                       isDemo:Number(t.is_demo)===1, items:[] });
     groups.get(k).items.push(t);
   });
   el.innerHTML =
     (view==='all' ? summaryHtml(tasks) : '') +
     [...groups.values()].map(g => `
-    <div class="client-group">
+    <div class="client-group${g.isDemo?' demo':''}">
       <div class="client-head">
+        ${g.isDemo?'<span class="demo-tag" title="Demo — Πελάτης επίδειξης. Τίποτα εδώ δεν είναι αληθινή δουλειά και δεν μετριέται πουθενά">ΕΠΙΔΕΙΞΗ</span>':''}
         <span class="client-name">${escHtml(g.name)}</span>
         <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>
         <span class="client-meta">${g.account?'AccountNo '+escHtml(g.account):'χωρίς AccountNo'}
