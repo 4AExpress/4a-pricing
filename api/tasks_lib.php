@@ -31,6 +31,8 @@ function tasks_base_sql()
                    c.`name` AS client_name, c.`country` AS client_country,
                    c.`account` AS client_account, c.`is_demo` AS is_demo,
                    tt.`label` AS task_label, tt.`sort_order`, tt.`depends_on`,
+                   tt.`action_url`, tt.`action_label`, tt.`action_module`,
+                   tt.`ready_check`, tt.`ready_hint`,
                    dt.`label` AS blocked_by_label,
                    u.`name` AS assigned_name,
                    CASE WHEN tt.`depends_on` IS NULL THEN 0
@@ -63,7 +65,7 @@ function tasks_is_admin($perms)
 function tasks_statuses($db)
 {
     try {
-        return $db->query('SELECT `code`, `label`, `color`, `sort_order`
+        return $db->query('SELECT `code`, `label`, `color`, `icon`, `sort_order`
                              FROM `4a_task_statuses`
                             WHERE `active` = 1 ORDER BY `sort_order`, `code`')
                   ->fetchAll(PDO::FETCH_ASSOC);
@@ -88,13 +90,193 @@ function tasks_scope_countries($perms)
     return [$scope];
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// ΣΥΝΔΕΣΜΟΣ ΠΡΟΣ ΤΟ ΣΗΜΕΙΟ ΔΡΑΣΗΣ (25/09)
+//
+// Το `action_url` του τύπου εργασίας είναι ΚΕΙΜΕΝΟ ΑΠΟ ΤΗ ΒΑΣΗ που
+// καταλήγει σε `href`. Το escHtml στην οθόνη φράζει τα εισαγωγικά, ΟΧΙ
+// το σχήμα: ένα `javascript:...` θα περνούσε άθικτο. Γι' αυτό η
+// επικύρωση γίνεται ΕΔΩ, πριν φύγει από τον server, και ξανά στην οθόνη.
+//
+// Δεκτό: σχετικό URL προς αρχείο .html της ίδιας εφαρμογής, με
+// προαιρετικό query. ΟΧΙ σχήμα (`:`), ΟΧΙ `//`, ΟΧΙ `..`, ΟΧΙ κάθετες.
+// ─────────────────────────────────────────────────────────────────────
+function tasks_action_url_ok($url)
+{
+    if (!is_string($url) || $url === '') return false;
+    if (strlen($url) > 200)              return false;
+    return (bool)preg_match('/^[a-z0-9][a-z0-9_-]*\.html(\?[A-Za-z0-9_=&%.\-]*)?$/', $url);
+}
+
+/**
+ * Το τελικό URL του κουμπιού, ή null αν δεν πρέπει να εμφανιστεί κουμπί.
+ *
+ * ΑΓΝΩΣΤΟ PLACEHOLDER -> ΚΑΝΕΝΑ ΚΟΥΜΠΙ. Ένα URL που κρατά `{κάτι}` μέσα
+ * του είναι σπασμένος σύνδεσμος· ο χρήστης θα έλεγε «δεν δουλεύει το
+ * κουμπί» χωρίς κανείς να ξέρει γιατί. Καλύτερα να λείπει το κουμπί και
+ * να το δει ο διαχειριστής στο error_log.
+ */
+function tasks_action_link($task)
+{
+    $url   = isset($task['action_url'])   ? trim((string)$task['action_url'])   : '';
+    $label = isset($task['action_label']) ? trim((string)$task['action_label']) : '';
+    if ($url === '' || $label === '') return null;
+
+    // Η επικύρωση ΠΡΙΝ την αντικατάσταση: το πρότυπο πρέπει να είναι
+    // καθαρό από μόνο του, ώστε καμία τιμή δεδομένων να μη μπορεί να
+    // «φτιάξει» ένα κακό URL από ένα καλό πρότυπο.
+    $tpl = str_replace(['{client_id}', '{task_id}', '{offer_number}'], '0', $url);
+    if (!tasks_action_url_ok($tpl)) {
+        error_log('tasks_action_link: άκυρο action_url «' . $url . '»');
+        return null;
+    }
+
+    $final = strtr($url, [
+        '{client_id}'    => rawurlencode((string)$task['client_id']),
+        '{task_id}'      => rawurlencode((string)$task['id']),
+        '{offer_number}' => rawurlencode((string)(isset($task['offer_number']) ? $task['offer_number'] : '')),
+    ]);
+
+    if (strpos($final, '{') !== false || strpos($final, '}') !== false) {
+        error_log('tasks_action_link: άγνωστο placeholder στο «' . $url . '»');
+        return null;
+    }
+    if (!tasks_action_url_ok($final)) {
+        error_log('tasks_action_link: το τελικό URL δεν πέρασε: «' . $final . '»');
+        return null;
+    }
+
+    return ['url'    => $final,
+            'label'  => mb_substr($label, 0, 60),
+            'module' => isset($task['action_module']) && trim((string)$task['action_module']) !== ''
+                        ? trim((string)$task['action_module']) : null];
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// ΕΤΟΙΜΟΤΗΤΑ: «μπορεί να ολοκληρωθεί αυτή η εργασία;» (25/09)
+//
+// ΚΑΘΟΔΗΓΟΥΜΕ, ΔΕΝ ΕΜΠΟΔΙΖΟΥΜΕ. Το `ready = false` ξεθωριάζει το κουμπί
+// και εξηγεί γιατί· ΔΕΝ το απενεργοποιεί και ΔΕΝ απορρίπτει το αίτημα.
+// Ο άνθρωπος ξέρει πράγματα που η βάση δεν ξέρει — π.χ. ότι ο κωδικός
+// καταχωρήθηκε αλλού, ή ότι η εργασία έκλεισε με άλλον τρόπο.
+//
+// Ο ΚΑΝΟΝΑΣ ΤΟΥ ΚΩΔΙΚΟΥ ΣΥΝΕΡΓΑΣΙΑΣ ΖΕΙ ΕΔΩ, ΜΙΑ ΦΟΡΑ. Σήμερα υπάρχει
+// δύο φορές σε JavaScript (pricelist-clients.html, pricelist-table.html)
+// και ΠΟΥΘΕΝΑ στον server — καταγεγραμμένο ανοιχτό θέμα. Όταν έρθει η
+// ώρα να επικυρώνεται και στο clients.php, θα ξαναχρησιμοποιηθεί ΑΥΤΗ η
+// σταθερά· δεν γράφεται τρίτο αντίγραφο.
+// ─────────────────────────────────────────────────────────────────────
+if (!defined('TASKS_ACCOUNT_RE')) define('TASKS_ACCOUNT_RE', '/^[34][0-9]{7}[A-Za-z]*$/');
+
+if (!defined('TASKS_READY_HINT_FALLBACK')) {
+    define('TASKS_READY_HINT_FALLBACK', 'Λείπει μια προϋπόθεση για την ολοκλήρωση');
+}
+
+/**
+ * Έγκυρος κωδικός συνεργασίας;
+ *
+ * Το κενό και το «—» (η προεπιλογή της στήλης) πέφτουν έξω από τον ίδιο
+ * τον κανόνα — δεν χρειάζονται ξεχωριστό έλεγχο, και σκόπιμα ΔΕΝ γίνεται
+ * αναφορά στο TASKS_EM_DASH: ορίζεται στο tasks_create.php, που το
+ * tasks.php δεν φορτώνει ποτέ.
+ *
+ * Η κανονικοποίηση (κενά, κεφαλαία) είναι ίδια με της οθόνης, ώστε ένας
+ * κωδικός γραμμένος «30001515 skg» να μη θεωρηθεί άκυρος από τον server
+ * ενώ ο browser τον δέχεται.
+ */
+function tasks_account_valid($account)
+{
+    $a = strtoupper(preg_replace('/\s+/u', '', (string)$account));
+    return $a !== '' && (bool)preg_match(TASKS_ACCOUNT_RE, $a);
+}
+
+/**
+ * ['ready' => bool, 'hint' => ?string] για μία εργασία.
+ *
+ * Το `hint` επιστρέφεται ΜΟΝΟ όταν ready = false: μια οδηγία που δεν
+ * ισχύει είναι χειρότερη από καμία οδηγία.
+ */
+function tasks_ready($task)
+{
+    $key = isset($task['ready_check']) ? trim((string)$task['ready_check']) : '';
+    if ($key === '') return ['ready' => true, 'hint' => null];   // NULL = πάντα έτοιμη
+
+    $hint = isset($task['ready_hint']) && trim((string)$task['ready_hint']) !== ''
+          ? trim($task['ready_hint'])
+          : TASKS_READY_HINT_FALLBACK;
+
+    switch ($key) {
+        case 'client_account':
+            $ok = tasks_account_valid(isset($task['client_account']) ? $task['client_account'] : '');
+            return ['ready' => $ok, 'hint' => $ok ? null : $hint];
+    }
+
+    // FAIL OPEN. Αντίθετα με το action_url, που αποτυγχάνει ΚΛΕΙΣΤΑ: εκεί
+    // ο κίνδυνος είναι κακόβουλος σύνδεσμος, εδώ ένα ξεθωριασμένο κουμπί.
+    // Κανόνας που δεν υλοποιήθηκε δεν εμποδίζει οπτικά δουλειά που μπορεί
+    // κάλλιστα να είναι έτοιμη.
+    error_log('tasks_ready: άγνωστο ready_check «' . $key . '»');
+    return ['ready' => true, 'hint' => null];
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// ΤΙ ΒΛΕΠΕΙ Ο ΑΝΘΡΩΠΟΣ — display_status (25/09)
+//
+//   status          = τι είναι αποθηκευμένο -> οδηγεί ΚΑΘΕ λογική
+//                     (φίλτρα, ενέργειες, σύνοψη, ουρά)
+//   display_status  = τι δείχνει το badge   -> ΜΟΝΟ όψη
+//
+// Τα `ready` και `locked` είναι υπολογισμοί, όχι αποθηκευμένες τιμές.
+// Έχουν όμως γραμμή στον 4a_task_statuses, οπότε κουβαλούν δική τους
+// ετικέτα και χρώμα σαν όλες τις άλλες — και η οθόνη δεν χρειάζεται να
+// ξέρει τίποτα. Η στήλη 4a_tasks.status είναι ENUM και τα απορρίπτει ως
+// πραγματικές τιμές: η ψευδο-κατάσταση δεν μπορεί να μολύνει τη λογική.
+//
+// Η ΣΕΙΡΑ ΕΧΕΙ ΣΗΜΑΣΙΑ:
+//   1. κλειστή (done/na)  νικά τα πάντα — μια ολοκληρωμένη εργασία της
+//      οποίας η εξάρτηση ξανάνοιξε ΔΕΝ πρέπει να λέει «Περιμένει»
+//   2. κλειδωμένη         πριν από οτιδήποτε άλλο ανοιχτό
+//   3. αδιάθετη           «Χωρίς ανάδοχο»
+//   4. σε εξέλιξη + έτοιμη -> «Έτοιμη για ολοκλήρωση»
+//   5. αλλιώς το ίδιο το status (in_progress, paused)
+// ─────────────────────────────────────────────────────────────────────
+function tasks_display_status($task, $ready)
+{
+    $status = isset($task['status']) ? (string)$task['status'] : '';
+
+    if ($status === 'done' || $status === 'na')          return $status;
+    if (isset($task['locked']) && (int)$task['locked'] === 1) return 'locked';
+    if ($status === 'open' && $task['assigned_to'] === null)  return 'open';
+    if ($status === 'in_progress' && $ready === true)         return 'ready';
+    return $status;
+}
+
+/** Προσθέτει τα παράγωγα πεδία σε μία γραμμή εργασίας. */
+function tasks_with_action($task)
+{
+    if (!is_array($task)) return $task;
+    $task['action'] = tasks_action_link($task);
+
+    $r = tasks_ready($task);
+    $task['ready']      = $r['ready'];
+    $task['ready_hint'] = $r['hint'];
+    $task['display_status'] = tasks_display_status($task, $r['ready']);
+
+    // Τα ωμά πεδία δεν ταξιδεύουν: η οθόνη δεν πρέπει να μπει ποτέ στον
+    // πειρασμό να χτίσει μόνη της URL από πρότυπο, ούτε να κρίνει μόνη
+    // της ετοιμότητα από κλειδί που δεν ξέρει να διαβάσει.
+    unset($task['action_url'], $task['action_label'], $task['action_module'],
+          $task['ready_check']);
+    return $task;
+}
+
 /** Μία εργασία με όλα τα παράγωγα πεδία, ή null. */
 function tasks_fetch_one($db, $taskId)
 {
     $st = $db->prepare(tasks_base_sql() . ' WHERE t.`id` = ?');
     $st->execute([(int)$taskId]);
     $row = $st->fetch(PDO::FETCH_ASSOC);
-    return $row ? $row : null;
+    return $row ? tasks_with_action($row) : null;
 }
 
 /** Έχει ο χρήστης τη δεξιότητα για αυτή την εργασία, σε αυτή τη χώρα; */
@@ -285,13 +467,23 @@ function tasks_unlock_and_assign($db, $clientId, $offerNo, $closedCode, $actorId
           AND t.`status` = \'open\' AND t.`assigned_to` IS NULL');
     $st->execute([(int)$clientId, (string)$offerNo, (string)$closedCode]);
 
+    // ΞΕΚΛΕΙΔΩΣΑΝ και ΑΝΑΤΕΘΗΚΑΝ είναι ΔΙΑΦΟΡΕΤΙΚΑ νούμερα. Μια εργασία
+    // που ξεκλείδωσε αλλά δεν βρήκε δικαιούχο (needs_attention) μετράει
+    // στο πρώτο και όχι στο δεύτερο — και είναι ακριβώς αυτή για την
+    // οποία πρέπει να μάθει κάποιος.
+    $unlocked = 0;
     $assigned = [];
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $t) {
         if ((int)$t['locked'] === 1) continue;
+        $unlocked++;
         $w = tasks_auto_assign($db, $t, $actorId, 'ξεκλείδωσε μετά το ' . $closedCode);
         if ($w !== null) $assigned[(int)$t['id']] = $w;
     }
-    return $assigned;
+
+    $mine = 0;
+    foreach ($assigned as $w) if ((int)$w === (int)$actorId) $mine++;
+
+    return ['unlocked' => $unlocked, 'assigned' => $assigned, 'mine' => $mine];
 }
 
 function tasks_err($code, $msg)
@@ -299,9 +491,21 @@ function tasks_err($code, $msg)
     return ['ok' => false, 'code' => $code, 'error' => $msg, 'task' => null];
 }
 
-function tasks_okres($db, $taskId)
+/**
+ * Επιτυχής απάντηση ενέργειας.
+ *
+ * Το $unlock είναι ΠΡΟΑΙΡΕΤΙΚΟ και μπαίνει μόνο από το done/na, που είναι
+ * οι μόνες ενέργειες που μπορούν να ξεκλειδώσουν αλυσίδα. Έτσι η οθόνη
+ * λέει στον χρήστη τι προκάλεσε η πράξη του, χωρίς δεύτερο αίτημα.
+ */
+function tasks_okres($db, $taskId, $unlock = null)
 {
-    return ['ok' => true, 'code' => 200, 'error' => null, 'task' => tasks_fetch_one($db, $taskId)];
+    $out = ['ok' => true, 'code' => 200, 'error' => null, 'task' => tasks_fetch_one($db, $taskId)];
+    if (is_array($unlock)) {
+        $out['unlocked']      = (int)$unlock['unlocked'];
+        $out['unlocked_mine'] = (int)$unlock['mine'];
+    }
+    return $out;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -356,7 +560,8 @@ function tasks_list($db, $session, $perms, $view)
 
     $st = $db->prepare($sql);
     $st->execute($params);
-    return ['ok' => true, 'code' => 200, 'error' => null, 'tasks' => $st->fetchAll(PDO::FETCH_ASSOC)];
+    return ['ok' => true, 'code' => 200, 'error' => null,
+            'tasks' => array_map('tasks_with_action', $st->fetchAll(PDO::FETCH_ASSOC))];
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -458,9 +663,9 @@ function tasks_done($db, $session, $perms, $taskId, $note = null)
 
     // Το ΜΟΝΟ σημείο που μπορεί να ξεκλειδώσει άλλη εργασία. Τρέχει και για
     // εργασία που είχε ανατεθεί με force — η αλυσίδα όντως προχώρησε.
-    tasks_unlock_and_assign($db, $task['client_id'], $task['offer_number'],
-                            $task['task_code'], (int)$session['id']);
-    return tasks_okres($db, $taskId);
+    $u = tasks_unlock_and_assign($db, $task['client_id'], $task['offer_number'],
+                                 $task['task_code'], (int)$session['id']);
+    return tasks_okres($db, $taskId, $u);
 }
 
 function tasks_na($db, $session, $perms, $taskId, $reason)
@@ -482,9 +687,9 @@ function tasks_na($db, $session, $perms, $taskId, $reason)
 
     // Το 'na' ξεκλειδώνει κι αυτό: αν η προηγούμενη δεν εφαρμόζεται, η
     // εξαρτημένη ΠΡΕΠΕΙ να προχωρήσει, αλλιώς η αλυσίδα κολλάει για πάντα.
-    tasks_unlock_and_assign($db, $task['client_id'], $task['offer_number'],
-                            $task['task_code'], (int)$session['id']);
-    return tasks_okres($db, $taskId);
+    $u = tasks_unlock_and_assign($db, $task['client_id'], $task['offer_number'],
+                                 $task['task_code'], (int)$session['id']);
+    return tasks_okres($db, $taskId, $u);
 }
 
 // ─────────────────────────────────────────────────────────────────────

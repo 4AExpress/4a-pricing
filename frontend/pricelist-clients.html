@@ -132,6 +132,32 @@
   .demo-box-label { font-size: 13px; font-weight: 600; color: #444; }
   .demo-box-sub { font-size: 11px; color: #888; margin-top: 2px; }
 
+  /* Deep link από το σύστημα εργασιών. ΟΧΙ κόκκινο: δεν είναι σφάλμα,
+     είναι οδηγία. Πρέπει να ξεχωρίζει από το κουτί σφάλματος. */
+  .task-hint { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px;
+               background: #e3f2fd; border: 1px solid #90caf9; border-left: 4px solid #1565c0;
+               border-radius: 6px; margin-bottom: 14px; }
+  .task-hint-main { flex: 1; }
+  .task-hint-title { font-size: 13px; font-weight: 700; color: #0d47a1; }
+  .task-hint-sub { font-size: 12px; color: #1565c0; margin-top: 3px; line-height: 1.45; }
+  .task-hint-x { background: none; border: none; font-size: 18px; line-height: 1;
+                 color: #1565c0; cursor: pointer; padding: 0 2px; }
+  /* Η δουλειά έχει ήδη γίνει: πράσινο, ώστε να ξεχωρίζει με τη ματιά
+     πριν καν διαβαστεί το κείμενο. */
+  .task-hint.done { background: #e8f5e9; border-color: #a5d6a7; border-left-color: #2e7d32; }
+  .task-hint.done .task-hint-title { color: #1b5e20; }
+  .task-hint.done .task-hint-sub   { color: #2e7d32; }
+  .task-hint.done .task-hint-sub a { color: #1b5e20; font-weight: 600; }
+  .task-hint.done .task-hint-x     { color: #2e7d32; }
+  .task-hint .acc-val { font-family: ui-monospace, Menlo, Consolas, monospace;
+                        background: rgba(0,0,0,.06); padding: 1px 6px; border-radius: 3px; }
+  /* Το πεδίο-στόχος: έντονο περίγραμμα ώστε να είναι προφανές πού μπαίνει
+     ο κωδικός. Σβήνει μόλις ο χρήστης αρχίσει να γράφει. */
+  .field-target { outline: 3px solid #1565c0; outline-offset: 1px;
+                  border-color: #1565c0 !important; background: #f5fbff; }
+  .acc-note { font-size: 11px; color: #888; margin-top: 3px; min-height: 14px; }
+  .acc-note.bad { color: #c62828; }
+
   .empty { text-align: center; padding: 30px; color: #bbb; font-size: 13px; }
 
   /* Ιστορικό αποστολών */
@@ -307,6 +333,9 @@
   </div>
   <div class="section-body">
 
+    <!-- Μήνυμα deep link από το σύστημα εργασιών· κενό σε κανονική χρήση -->
+    <div id="task-hint" style="display:none;"></div>
+
     <div class="form-caption">Τα πεδία με καφέ γραμματοσειρά είναι προεπιλογές — μπορείτε να τις αλλάξετε.</div>
 
     <!-- Walk-in -->
@@ -375,7 +404,9 @@
     <div class="form-grid2">
       <div class="form-group">
         <label>AccountNo CMS</label>
-        <input type="text" id="cl-account" placeholder="— (αυτόματα μετά αποδοχή)" />
+        <input type="text" id="cl-account" placeholder="— (αυτόματα μετά αποδοχή)"
+               oninput="onAccountInput()" />
+        <div id="acc-note" class="acc-note"></div>
       </div>
       <div class="form-group">
         <label>Κατάσταση</label>
@@ -667,6 +698,9 @@ const STATUS_COLOR = { prospect:'#1565c0', negotiate:'#f57f17', accepted:'#2e7d3
 
 let clients=[], shelf={}, currentUser=null;
 let editingId=null, currentStatus='prospect';
+// Όσο είναι true, η editClient() ΔΕΝ κυλά στην κορυφή: ερχόμαστε από
+// deep link και θέλουμε να κυλήσουμε στο πεδίο-στόχο.
+let deepLinkFocus=false;
 let selectedPls=[], surcharges=[], managers=[];
 let filterStatus='all', filterSearch='';
 let codEnabled=false, codConfig=null, codFee=0, codFeeTimer=null, pendingCodSnapshot=null, codReqSeq=0;
@@ -744,6 +778,8 @@ async function init(){
   obClientOptions();
   loadOutbox(0);
   loadOffersByClient();
+  // ΤΕΛΕΥΤΑΙΟ: χρειάζεται φορτωμένο το `clients` και ζωγραφισμένη τη φόρμα.
+  deepLink();
 }
 
 function updateOfferNum(){
@@ -1333,6 +1369,159 @@ function calculateCodFee(){
   feeEl.innerHTML=`✅ <b>Κανόνας χρέωσης:</b> €${flat_fee.toFixed(2)} έως €${flat_limit.toFixed(0)} · ${percentage.toFixed(2)}% άνω των €${flat_limit.toFixed(0)}`;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// AccountNo CMS — ΟΡΑΤΗ κανονικοποίηση, καθώς πληκτρολογεί (25/09)
+//
+// Μέχρι σήμερα η κανονικοποίηση (αφαίρεση κενών, κεφαλαία) γινόταν
+// ΚΡΥΦΑ μέσα στη saveClient(). Ο χρήστης έγραφε «30001515 skg» και
+// αποθηκευόταν «30001515SKG» χωρίς να του το πει κανείς — αντιφατικό με
+// την οδηγία «αυτούσια, όπως τον έχει δημιουργήσει το Pylon».
+//
+// Η ΣΗΜΑΝΤΙΚΗ ΠΕΡΙΠΤΩΣΗ: ελληνικά ομόγραφα. Το Α Β Ε Ζ Η Ι Κ Μ Ν Ο Ρ Τ Υ Χ
+// είναι ΟΠΤΙΚΑ ίδια με τα λατινικά αλλά άλλοι χαρακτήρες, και το
+// toUpperCase() δεν τα μετατρέπει (ούτε πρέπει). Το `[A-Za-z]` τα κόβει
+// σωστά — αλλά το παλιό μήνυμα έλεγε «Μη έγκυρος κωδικός (π.χ.
+// 30001515SKG)» σε κάποιον που έβλεπε κάτι ΠΑΝΟΜΟΙΟΤΥΠΟ με το
+// παράδειγμα. Τώρα λέγεται ρητά ποιοι χαρακτήρες φταίνε.
+// ─────────────────────────────────────────────────────────────────────
+const ACC_RE = /^[34][0-9]{7}[A-Za-z]*$/;
+
+function accNormalize(v){ return (v||'').trim().replace(/\s+/g,'').toUpperCase(); }
+
+function onAccountInput(){
+  const el = document.getElementById('cl-account');
+  const note = document.getElementById('acc-note');
+  if(!el) return;
+  el.classList.remove('field-target');
+
+  // Κανονικοποίηση επί τόπου, με διατήρηση θέσης δρομέα. Το μήκος μπορεί
+  // να μικρύνει (κενά), γι' αυτό μετράμε πόσα έφυγαν πριν τον δρομέα.
+  const before = el.value, pos = el.selectionStart||0;
+  const removed = (before.slice(0,pos).match(/\s/g)||[]).length;
+  const after = accNormalize(before);
+  if(after !== before){ el.value = after; const p=Math.max(0,pos-removed); el.setSelectionRange(p,p); }
+
+  if(!note) return;
+  const v = el.value;
+  note.className = 'acc-note';
+  if(v === ''){ note.textContent = ''; return; }
+
+  // Ό,τι δεν είναι ψηφίο ή λατινικό γράμμα — με το όνομά του.
+  const xeno = [...v].filter(c => !/[0-9A-Za-z]/.test(c));
+  if(xeno.length){
+    const uniq = [...new Set(xeno)];
+    note.className = 'acc-note bad';
+    note.textContent = 'Μη λατινικοί χαρακτήρες: ' + uniq.map(c=>`«${c}»`).join(' ') +
+      ' — γράψτε τον κωδικό με λατινικό πληκτρολόγιο.';
+    return;
+  }
+  if(!ACC_RE.test(v)){
+    note.className = 'acc-note bad';
+    note.textContent = 'Μορφή: 3 ή 4 + 7 ψηφία + προαιρετικά γράμματα (30001515 / 30001515SKG)';
+    return;
+  }
+  note.textContent = 'Έγκυρη μορφή' + (v.length > 8 ? ' · κατάληξη ' + v.slice(8) : '');
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Deep link από το σύστημα εργασιών:
+//   pricelist-clients.html?client=<id>&focus=account
+//
+// Τρέχει στο ΤΕΛΟΣ της init(), όταν το `clients` έχει φορτώσει.
+// ─────────────────────────────────────────────────────────────────────
+const FOCUS_TARGETS = { account: '#cl-account' };   // λευκή λίστα, όχι ελεύθερος selector
+
+function deepLink(){
+  let q; try{ q = new URLSearchParams(location.search); }catch(e){ return; }
+  const cid = (q.get('client')||'').trim();
+  if(!cid) return;
+  const focus = (q.get('focus')||'').trim();
+
+  // Καθαρίζουμε ΑΜΕΣΩΣ το URL: μια ανανέωση ή μια αποθήκευση δεν πρέπει
+  // να ξαναφέρει το μήνυμα ούτε να ξανακλέψει την εστίαση.
+  try{ history.replaceState(null,'',location.pathname); }catch(e){}
+
+  const c = clients.find(x => String(x.id) === cid);
+  if(!c){
+    // ΟΧΙ σιωπή. Ο πελάτης μπορεί να μη φαίνεται λόγω pricelist_scope
+    // (π.χ. κυπριακός πελάτης σε χρήστη GR) ή να έχει σβηστεί.
+    alert('Ο πελάτης δεν βρέθηκε στη λίστα σας.\n\n' +
+          'Πιθανόν ανήκει σε χώρα εκτός του πεδίου σας, ή διαγράφηκε.');
+    return;
+  }
+
+  deepLinkFocus = true;        // παρακάμπτει το scrollTo(top) της editClient
+  editClient(c.id);
+  deepLinkFocus = false;
+
+  const sel = FOCUS_TARGETS[focus];
+  if(!sel) return;
+  const el = document.querySelector(sel);
+  if(!el) return;
+
+  // ΤΟ ΜΗΝΥΜΑ ΚΟΙΤΑΖΕΙ ΑΝ Η ΔΟΥΛΕΙΑ ΕΧΕΙ ΗΔΗ ΓΙΝΕΙ.
+  // Χωρίς αυτόν τον έλεγχο, ο χρήστης διάβαζε «Καταχωρήστε τον κωδικό»
+  // ενώ ο κωδικός ήταν ήδη μπροστά του — οδηγία που δεν ισχύει κάνει
+  // τον χρήστη να σταματήσει να διαβάζει τις οδηγίες.
+  if(focus === 'account'){
+    const cur = accNormalize(el.value);
+    if(ACC_RE.test(cur)){
+      // Έτοιμο: πράσινο, καμία έμφαση στο πεδίο, καμία εστίαση. Το
+      // επόμενο βήμα του χρήστη δεν είναι εδώ — είναι στις Εργασίες.
+      showTaskHintDone(cur);
+      requestAnimationFrame(()=>window.scrollTo({top:0, behavior:'smooth'}));
+      return;
+    }
+    // Το παλιό placeholder («αυτόματα μετά αποδοχή») λέει το ΑΝΤΙΘΕΤΟ
+    // από αυτό που ζητάμε τώρα. Όσο είμαστε εδώ, δείχνει παράδειγμα.
+    el.placeholder = '30001515  ή  30001515SKG';
+    showTaskHint();
+  }
+  el.classList.add('field-target');
+  // Μετά το layout: αλλιώς το scrollIntoView μετράει λάθος θέση.
+  requestAnimationFrame(()=>{
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+    el.focus({preventScroll:true});
+  });
+}
+
+function showTaskHint(){
+  const host = document.getElementById('task-hint');
+  if(!host) return;
+  host.innerHTML =
+    `<div class="task-hint">
+       <div class="task-hint-main">
+         <div class="task-hint-title">Καταχωρήστε τον κωδικό συνεργασίας — εργασία από το σύστημα εργασιών</div>
+         <div class="task-hint-sub">Καταχωρήστε τον κωδικό συνεργασίας αυτούσια, όπως τον έχει δημιουργήσει το Pylon.</div>
+       </div>
+       <button class="task-hint-x" title="Κλείσιμο" onclick="hideTaskHint()">✕</button>
+     </div>`;
+  host.style.display = '';
+}
+// Η δουλειά έχει ήδη γίνει: πράσινο, με την τιμή μπροστά στα μάτια του
+// ώστε να την επιβεβαιώσει, και ρητή οδηγία για το επόμενο βήμα — που
+// δεν είναι σε αυτή τη σελίδα.
+function showTaskHintDone(value){
+  const host = document.getElementById('task-hint');
+  if(!host) return;
+  host.innerHTML =
+    `<div class="task-hint done">
+       <div class="task-hint-main">
+         <div class="task-hint-title">✓ Ο κωδικός είναι ήδη καταχωρημένος: <span class="acc-val">${escHtml(value)}</span></div>
+         <div class="task-hint-sub">Αν τελειώσατε, γυρίστε στις <a href="tasks.html">Εργασίες</a> και πατήστε Ολοκλήρωση.</div>
+       </div>
+       <button class="task-hint-x" title="Κλείσιμο" onclick="hideTaskHint()">✕</button>
+     </div>`;
+  host.style.display = '';
+}
+
+function hideTaskHint(){
+  const host = document.getElementById('task-hint');
+  if(host){ host.innerHTML=''; host.style.display='none'; }
+  const el = document.getElementById('cl-account');
+  if(el) el.classList.remove('field-target');
+}
+
 async function saveClient(){
   const name=document.getElementById('cl-name').value.trim();
   const afm=document.getElementById('cl-afm').value.trim();
@@ -1348,7 +1537,15 @@ async function saveClient(){
     } else {
       // μορφή: 3/4 + 7 ψηφία + προαιρετικά γράμματα (π.χ. 30001515 ή 30001515SKG)
       if(!/^[34][0-9]{7}[A-Za-z]*$/.test(acc)){
-        alert('Μη έγκυρος κωδικός συνεργασίας (π.χ. 30001515 ή 30001515SKG)');
+        // Αν φταίνε ελληνικά ομόγραφα (Α Β Ε Ζ Η Ι Κ Μ Ν Ο Ρ Τ Υ Χ), λέγεται
+        // ρητά: ο χρήστης βλέπει κάτι ΠΑΝΟΜΟΙΟΤΥΠΟ με το παράδειγμα και
+        // χωρίς αυτό δεν έχει κανέναν τρόπο να καταλάβει τι φταίει.
+        const _xeno = [...new Set([...acc].filter(ch => !/[0-9A-Za-z]/.test(ch)))];
+        alert(_xeno.length
+          ? `Ο κωδικός περιέχει μη λατινικούς χαρακτήρες: ${_xeno.map(c=>'«'+c+'»').join(' ')}\n\n`+
+            `Μοιάζουν με λατινικά αλλά δεν είναι. Γράψτε τον κωδικό με λατινικό\n`+
+            `πληκτρολόγιο, αυτούσιο όπως τον έχει δημιουργήσει το Pylon.`
+          : 'Μη έγκυρος κωδικός συνεργασίας (π.χ. 30001515 ή 30001515SKG)');
         accEl.focus(); return;
       }
       // country cross-check: 1o ψηφίο 3→GR / 4→CY  (mirror του server κανόνα)
@@ -1443,6 +1640,7 @@ async function saveClient(){
     return;
   }
   alert(`✅ "${name}" αποθηκεύτηκε\nΑρ. Προσφοράς: ${offerNum}`);
+  hideTaskHint();          // η εργασία του deep link ολοκληρώθηκε
   resetForm(); renderClients();
 }
 
@@ -1492,7 +1690,7 @@ function editClient(id){
     }
   }
   renderPlTags();
-  window.scrollTo({top:0,behavior:'smooth'});
+  if(!deepLinkFocus) window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function deleteClient(id){

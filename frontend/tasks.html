@@ -30,6 +30,18 @@
   .tab.on { background: #cc0000; border-color: #cc0000; color: white; font-weight: 600; }
   .tab .cnt { font-size: 11px; opacity: .85; margin-left: 5px; }
 
+  /* Υπόμνημα: ΜΟΝΟ σχήμα εδώ. Ετικέτες, χρώματα, εικονίδια και σειρά
+     έρχονται από τον 4a_task_statuses — μια νέα κατάσταση εμφανίζεται
+     μόνη της με ένα INSERT. */
+  .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
+            background: white; border: 1px solid #e0e0e0; border-radius: 8px;
+            padding: 9px 14px; margin-bottom: 12px; }
+  .legend-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .legend-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block;
+                box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+  .legend-ico { font-size: 12px; line-height: 1; width: 13px; text-align: center; }
+  .legend-lbl { font-size: 11.5px; color: #666; }
+
   .client-group { background: white; border: 1px solid #e0e0e0; border-radius: 8px;
                   margin-bottom: 12px; overflow: hidden; }
   .client-head { padding: 10px 14px; background: #fafafa; border-bottom: 1px solid #eee;
@@ -80,15 +92,30 @@
          border: 1px solid; font-family: inherit; }
   .btn-claim { border-color: #90caf9; background: #e3f2fd; color: #1565c0; }
   .btn-done  { border-color: #a5d6a7; background: #e8f5e9; color: #2e7d32; }
+  /* Ετοιμότητα: ΜΟΝΟ η «Ολοκλήρωση» αλλάζει όψη. Καθοδηγούμε, δεν
+     εμποδίζουμε — κανένα disabled, το κουμπί πατιέται και στις δύο
+     καταστάσεις. */
+  .btn-done.ready    { background: #2e7d32; border-color: #2e7d32; color: #fff; font-weight: 700; }
+  .btn-done.ready:hover { background: #1b5e20; }
+  .btn-done.notready { opacity: .45; }
   .btn-na    { border-color: #ce93d8; background: #f3e5f5; color: #6a1b9a; }
   .btn-rel   { border-color: #ddd;    background: #fafafa; color: #666; }
   .btn-asg   { border-color: #ffcc80; background: #fff3e0; color: #e65100; }
   .btn-rej   { border-color: #ef9a9a; background: #ffebee; color: #c62828; }
   .btn-steal { border-color: #b0bec5; background: #eceff1; color: #455a64; }
+  /* Σύνδεσμος προς το σημείο δράσης: πλοήγηση, όχι ενέργεια — γι' αυτό
+     ξεχωρίζει οπτικά από τα κουμπιά που αλλάζουν κατάσταση. */
+  .btn-go    { border-color: #1565c0; background: #1565c0; color: #fff; font-weight: 600;
+               text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+  .btn-go:hover { background: #0d47a1; }
+  .acts { flex-wrap: wrap; }
   .btn-hist  { border-color: transparent; background: none; color: #999; padding: 5px 6px; }
   .btn-hist:hover { color: #333; }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .lockmsg { font-size: 11px; color: #999; white-space: nowrap; }
+  /* Δείχνει ΜΟΝΟ το όνομα της εργασίας που περιμένει — το «Περιμένει»
+     το λέει το badge. Πλάγια, ώστε να διαβάζεται ως αναφορά σε άλλη
+     εργασία και όχι ως κατάσταση αυτής. */
+  .lockmsg { font-size: 11px; color: #999; white-space: nowrap; font-style: italic; }
 
   /* Κόκκινο σήμα: κανένας δικαιούχος δεν έμεινε. Δεν είναι σφάλμα — είναι
      αίτημα προς άνθρωπο. Γι' αυτό μένει ορατό και στη γραμμή και στην ουρά. */
@@ -125,10 +152,28 @@
   .modal .req { color: #cc0000; }
   .modal-acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
   .modal .msg { font-size: 12px; color: #c62828; margin-top: 8px; min-height: 16px; }
+  /* Επιβεβαίωση ολοκλήρωσης: η οδηγία είναι το κύριο μήνυμα, όχι
+     ψιλογράμματα. Πορτοκαλί — προειδοποίηση, όχι σφάλμα. */
+  .cd-hint { background: #fff3e0; border: 1px solid #ffcc80; border-left: 4px solid #e65100;
+             border-radius: 6px; padding: 10px 12px; font-size: 13px; color: #e65100;
+             font-weight: 600; margin-bottom: 12px; }
+  .cd-q { font-size: 14px; color: #333; font-weight: 600; }
 
   .empty { text-align: center; padding: 40px; color: #bbb; font-size: 14px; }
   .err { background: #ffebee; color: #c62828; padding: 10px 14px; border-radius: 6px;
          font-size: 13px; margin-bottom: 12px; }
+  /* Επιτυχία: πράσινο, ίδια οικογένεια με το «Έτοιμη για ολοκλήρωση».
+     ΔΕΝ είναι το κουτί σφάλματος με άλλο χρώμα — λέει τι προκάλεσε η
+     πράξη του χρήστη, κάτι που δεν φαίνεται αλλού στην οθόνη. */
+  .okmsg { background: #e8f5e9; border: 1px solid #a5d6a7; border-left: 4px solid #2e7d32;
+           color: #1b5e20; padding: 10px 14px; border-radius: 6px; font-size: 13px;
+           margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+  .okmsg .okmsg-main { flex: 1; }
+  .okmsg .okmsg-go { background: none; border: none; color: #1b5e20; font-weight: 700;
+                     font-size: 13px; cursor: pointer; white-space: nowrap;
+                     font-family: inherit; text-decoration: underline; }
+  .okmsg .okmsg-x { background: none; border: none; color: #2e7d32; font-size: 17px;
+                    line-height: 1; cursor: pointer; padding: 0 2px; }
   .loading { text-align: center; padding: 30px; color: #aaa; }
 </style>
 </head>
@@ -153,8 +198,10 @@
   <p class="page-sub">Ό,τι προκύπτει όταν ένας πελάτης αποδεχτεί προσφορά</p>
 
   <div id="err" class="err" style="display:none;"></div>
+  <div id="ok" class="okmsg" style="display:none;"></div>
 
   <div class="tabs" id="tabs"></div>
+  <div id="legend"></div>
   <div id="list"><div class="loading">Φόρτωση…</div></div>
 </div>
 
@@ -218,14 +265,45 @@ function textOn(bg){
   const lum = 0.299*((n>>16)&255) + 0.587*((n>>8)&255) + 0.114*(n&255);
   return lum > 150 ? '#333' : '#fff';
 }
-function stBadge(code){
-  const s = STATUSES[code];
-  if(!s) return `<span class="st" title="${escHtml(code)}">${escHtml(code)}</span>`;
+// Δέχεται ΨΕΥΔΟ-κατάσταση (display_status) ή πραγματική. Αν ο κωδικός
+// λείπει από τη βάση — π.χ. το migration δεν έτρεξε ακόμα — πέφτει πίσω
+// στην πραγματική κατάσταση. ΠΟΤΕ ωμός κωδικός στην οθόνη: ο χρήστης δεν
+// πρέπει να δει «ready» ή «paused» στα αγγλικά.
+function stBadge(code, fallback){
+  let c = code;
+  if(!STATUSES[c] && fallback && STATUSES[fallback]) c = fallback;
+  const s = STATUSES[c];
+  if(!s) return '';
   return `<span class="st" style="background:${escHtml(s.color)};color:${textOn(s.color)};">`+
          `${escHtml(s.label)}</span>`;
 }
 
+// ΥΠΟΜΝΗΜΑ: επαναλαμβάνει ΤΟΝ ΠΙΝΑΚΑ, δεν απαριθμεί κωδικούς. Νέα
+// κατάσταση με ένα INSERT εμφανίζεται εδώ μόνη της, με τη σειρά, το
+// χρώμα και το εικονίδιό της — χωρίς καμία αλλαγή κώδικα.
+// Δείχνει ΟΛΕΣ τις ενεργές, όχι μόνο όσες υπάρχουν στη λίστα: είναι
+// υπόμνημα, όχι σύνοψη.
+function renderLegend(){
+  const el = document.getElementById('legend');
+  if(!el) return;
+  const rows = Object.values(STATUSES)
+    .sort((a,b)=>(Number(a.sort_order)||0)-(Number(b.sort_order)||0) || String(a.code).localeCompare(String(b.code)));
+  if(!rows.length){ el.innerHTML=''; return; }
+  el.innerHTML = '<div class="legend">' + rows.map(s =>
+    `<span class="legend-item">`+
+      (s.icon ? `<span class="legend-ico">${escHtml(s.icon)}</span>`
+              : `<span class="legend-dot" style="background:${escHtml(s.color)};"></span>`)+
+      `<span class="legend-lbl">${escHtml(s.label)}</span>`+
+    `</span>`).join('') + '</div>';
+}
+
 function showErr(m){ const e=document.getElementById('err'); if(!m){ e.style.display='none'; return; } e.textContent=m; e.style.display=''; }
+function showOk(html){
+  const e=document.getElementById('ok');
+  if(!html){ e.style.display='none'; e.innerHTML=''; return; }
+  e.innerHTML=html; e.style.display='';
+}
+function hideOk(){ showOk(null); }
 
 function renderTabs(){
   const views = isAdmin ? ['mine','queue','all'] : ['mine','queue'];
@@ -234,7 +312,10 @@ function renderTabs(){
     (counts[v]===null?'':`<span class="cnt">${counts[v]}</span>`) + `</button>`).join('');
 }
 
-function switchView(v){ view=v; load(); }
+// Το μήνυμα αφορά την πράξη σε ΑΥΤΗ την καρτέλα. Με την αλλαγή άλλαξε το
+// συμφραζόμενο, οπότε φεύγει — αλλιώς θα έμενε να λέει «Ξεκλείδωσαν 4»
+// πάνω από μια άσχετη λίστα.
+function switchView(v){ showOk(null); view=v; load(); }
 
 async function load(){
   renderTabs();
@@ -246,6 +327,7 @@ async function load(){
     if(!r.ok || !d || d.ok!==true){ showErr((d&&d.error)||`HTTP ${r.status}`); document.getElementById('list').innerHTML=''; return; }
     STATUSES = {};
     (d.statuses||[]).forEach(s => STATUSES[s.code] = s);
+    renderLegend();
     lastTasks = d.tasks || [];
     counts[view] = d.tasks.length;
     renderTabs();
@@ -379,6 +461,31 @@ function histHtml(id){
     </div>`).join('') + `</div>`;
 }
 
+// Δεύτερη γραμμή άμυνας στο URL. Ο server το έχει ήδη επικυρώσει, αλλά
+// αυτό εδώ καταλήγει σε href: αν κάποτε αλλάξει ο server, δεν θέλουμε η
+// οθόνη να γίνει ο αδύναμος κρίκος. Ίδιος κανόνας, σκόπιμα διπλός.
+const ACTION_URL_OK = /^[a-z0-9][a-z0-9_-]*\.html(\?[A-Za-z0-9_=&%.-]*)?$/;
+
+// Δικαιώματα από το sessionStorage, όπως τα γράφει το permissions.php.
+// Αν λείπουν (δεν έχει γίνει ακόμα το fetch), ΔΕΝ κρύβουμε το κουμπί:
+// καλύτερα ένα κουμπί που οδηγεί σε άρνηση, παρά ένα κουμπί που λείπει
+// χωρίς εξήγηση. Η σελίδα προορισμού έχει δικό της έλεγχο.
+function canOpen(module){
+  if(!module) return true;
+  let p=null; try{ p=JSON.parse(sessionStorage.getItem('4a_perms')||'null'); }catch(e){}
+  if(!p) return true;
+  return !!(p[module] && p[module].view);
+}
+
+function actionBtn(t){
+  const a = t.action;
+  if(!a || !a.url || !a.label) return '';
+  if(!ACTION_URL_OK.test(a.url)) return '';
+  if(!canOpen(a.module)) return '';
+  return `<a class="btn btn-go" href="${escHtml(a.url)}"`+
+         ` title="Go — Ανοίγει το σημείο όπου γίνεται η δουλειά">→ ${escHtml(a.label)}</a>`;
+}
+
 function taskRow(t){
   const locked = Number(t.locked)===1;
   const mine   = currentUser && Number(t.assigned_to)===Number(currentUser.id);
@@ -396,29 +503,44 @@ function taskRow(t){
     `<button class="btn ${cls}" title="${escHtml(TIPS[fn])}" onclick="${fn}(${t.id})">${label}</button>`;
   const asgBtn =
     `<button class="btn btn-asg" title="${escHtml(TIPS.assign)}" onclick="assign(${t.id})">Ανάθεση…</button>`;
+  // Η ετοιμότητα έρχεται υπολογισμένη από τον server (ready/ready_hint),
+  // όπως το locked/blocked_by. Η οθόνη δεν κρίνει από μόνη της.
+  // Όταν είναι έτοιμη: δίγλωσσο tooltip ως συνήθως. Όταν δεν είναι: η
+  // οδηγία μπαίνει στη θέση της εξήγησης, κρατώντας τον αγγλικό όρο.
+  const ready = t.ready !== false;         // απουσία πεδίου = έτοιμη
+  const doneTip = ready ? TIPS.done
+        : 'Complete — ' + (t.ready_hint || 'Λείπει μια προϋπόθεση για την ολοκλήρωση');
   const doneBtn =
-    `<button class="btn btn-done" title="${escHtml(TIPS.done)}" onclick="act(${t.id},'done')">Ολοκλήρωση</button>`;
+    `<button class="btn btn-done ${ready?'ready':'notready'}" title="${escHtml(doneTip)}"`+
+    ` onclick="act(${t.id},'done')">Ολοκλήρωση</button>`;
   const naBtn =
     `<button class="btn btn-na" title="${escHtml(TIPS.na)}" onclick="markNa(${t.id})">Δεν εφαρμόζεται</button>`;
   const relBtn =
     `<button class="btn btn-rel" title="${escHtml(TIPS.rel)}" onclick="act(${t.id},'release')">Αφήνω</button>`;
 
-  let acts = '';
+  // Το κουμπί προορισμού μπαίνει ΠΡΩΤΟ: είναι αυτό που θα πατήσει ο
+  // χρήστης για να κάνει τη δουλειά, τα υπόλοιπα δηλώνουν το αποτέλεσμά
+  // της. Φαίνεται και σε κλειδωμένη εργασία — το άνοιγμα καρτέλας είναι
+  // ανάγνωση, δεν αλλάζει τίποτα.
+  let acts = actionBtn(t);
   if(locked){
-    acts = `<span class="lockmsg" title="Locked — Ξεκλειδώνει μόλις ολοκληρωθεί η εργασία που περιμένει">`+
-           `🔒 Περιμένει: ${escHtml(t.blocked_by_label||t.depends_on||'—')}</span>`;
+    // ΜΟΝΟ το όνομα της εργασίας που περιμένει. Το «Περιμένει» το λέει
+    // ήδη το badge, από τη βάση — εδώ θα ήταν η ίδια λέξη δύο φορές στην
+    // ίδια γραμμή.
+    acts += `<span class="lockmsg" title="Locked — Ξεκλειδώνει μόλις ολοκληρωθεί αυτή η εργασία">`+
+           `${escHtml(t.blocked_by_label||t.depends_on||'—')}</span>`;
   } else if(t.status==='open' && t.assigned_to===null){
-    acts = takeBtn('btn-claim', 'claim', 'Ανάληψη');
+    acts += takeBtn('btn-claim', 'claim', 'Ανάληψη');
     if(isAdmin) acts += asgBtn;
   } else if(t.status==='in_progress' || t.status==='paused'){
     if(mine){
       // Η απόρριψη ανήκει ΜΟΝΟ στον ανάδοχο — ο διαχειριστής δεν απορρίπτει
       // «εκ μέρους» κάποιου, γιατί θα καταγραφόταν λάθος απορρίπτων.
-      acts = doneBtn + naBtn +
+      acts += doneBtn + naBtn +
              `<button class="btn btn-rej" title="${escHtml(TIPS.rej)}" onclick="openReject(${t.id})">Απόρριψη…</button>` +
              relBtn;
     } else {
-      if(isAdmin) acts = doneBtn + naBtn + relBtn;
+      if(isAdmin) acts += doneBtn + naBtn + relBtn;
       // Ελεύθερο steal για όποιον έχει τη δεξιότητα. Η οθόνη δεν ξέρει τις
       // δεξιότητες του χρήστη — κρίνει ο server και απαντά 403.
       acts += takeBtn('btn-steal', 'steal', 'Αναλαμβάνω');
@@ -438,7 +560,7 @@ function taskRow(t){
     </div>
     ${attn?'<span class="attn-tag" title="Απορρίφθηκε από όλους τους δικαιούχους — χρειάζεται ανάθεση">χρειάζεται ανάθεση</span>':''}
     ${whoCell(t)}
-    ${stBadge(t.status)}
+    ${stBadge(t.display_status || t.status, t.status)}
     <div class="acts">${acts}</div>
   </div>${histHtml(t.id)}`;
 }
@@ -538,13 +660,97 @@ async function post(body, quiet){
   }
   showErr(null); return {ok:true, data:d};
 }
-async function act(id, action){ if((await post({action, id})).ok) load(); }
+// ─────────────────────────────────────────────────────────────────────
+// Μήνυμα επιτυχίας μετά από done/na.
+//
+// ΚΑΜΙΑ ΑΥΤΟΜΑΤΗ ΑΛΛΑΓΗ ΚΑΡΤΕΛΑΣ: ο χρήστης μπορεί να έχει άλλες δικές
+// του ανοιχτές και να μη θέλει να φύγει από εκεί που είναι. Ο σύνδεσμος
+// είναι πρόσκληση, όχι αρπαγή.
+//
+// ΠΡΟΟΡΙΣΜΟΣ ΤΟΥ ΣΥΝΔΕΣΜΟΥ: αν κάποιες ανατέθηκαν σε ΕΣΕΝΑ, η ουρά ΔΕΝ
+// τις δείχνει — η ουρά είναι μόνο οι αδιάθετες. Θα ήταν σύνδεσμος που
+// οδηγεί σε άδεια οθόνη. Γι' αυτό πάει στις «δικές μου» όταν υπάρχουν
+// δικές σου, και στην ουρά στις υπόλοιπες περιπτώσεις.
+function closeMsg(action, d){
+  const n = Number(d && d.unlocked) || 0;
+  const m = Number(d && d.unlocked_mine) || 0;
+  const verb = action === 'na' ? '✓ Σημειώθηκε ως «Δεν εφαρμόζεται»' : '✓ Ολοκληρώθηκε';
+  if(!n) return `<div class="okmsg-main">${verb}</div>`+
+                `<button class="okmsg-x" title="Κλείσιμο" onclick="hideOk()">✕</button>`;
+
+  // Ενικός/πληθυντικός: «Ξεκλείδωσαν 1 εργασίες» είναι λάθος ελληνικά και
+  // φαίνεται αμέσως ότι το έγραψε μηχανή.
+  let txt = `${verb}. ` + (n===1 ? 'Ξεκλείδωσε 1 εργασία' : `Ξεκλείδωσαν ${n} εργασίες`);
+  if(m) txt += ' — ' + (m===1 ? '1 ανατέθηκε σε εσάς' : `${m} ανατέθηκαν σε εσάς`);
+
+  const toMine = m > 0;
+  const view   = toMine ? 'mine' : 'queue';
+  const label  = toMine ? 'Δες τις δικές μου →' : 'Δες την ουρά →';
+  return `<div class="okmsg-main">${escHtml(txt)}</div>`+
+         `<button class="okmsg-go" onclick="hideOk(); switchView('${view}')">${label}</button>`+
+         `<button class="okmsg-x" title="Κλείσιμο" onclick="hideOk()">✕</button>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// ΕΠΙΒΕΒΑΙΩΣΗ ΟΛΟΚΛΗΡΩΣΗΣ όταν ready = false.
+//
+// Το ξεθωριασμένο κουμπί είναι νύξη· αυτό εδώ είναι ερώτηση. ΔΕΝ
+// μπλοκάρει: ο άνθρωπος ξέρει πράγματα που η βάση δεν ξέρει, και μια
+// φραγή θα παρήγαγε χειρότερα ψέματα από μια βιαστική ολοκλήρωση.
+//
+// Τρεις έξοδοι, με σειρά προτεραιότητας: πήγαινε να το κάνεις σωστά,
+// προχώρα έτσι κι αλλιώς, ή άφησέ το. Το πρώτο κουμπί εμφανίζεται μόνο
+// αν ο τύπος εργασίας έχει προορισμό στη βάση.
+//
+// Το κείμενο έρχεται από το ready_hint — καμία οδηγία στον κώδικα.
+function confirmDone(t){
+  return new Promise(resolve => {
+    const a = t.action;
+    const go = (a && a.url && ACTION_URL_OK.test(a.url) && canOpen(a.module)) ? a : null;
+    window.__cdResolve = ok => { document.getElementById('modals').innerHTML=''; resolve(ok); };
+    window.__cdGo = () => { if(go) location.href = go.url; };
+    document.getElementById('modals').innerHTML = `
+      <div class="modal-bg" onclick="if(event.target===this)__cdResolve(false)">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="Επιβεβαίωση ολοκλήρωσης">
+          <h3>${escHtml(t.task_label||t.task_code)}</h3>
+          <div class="sub">${escHtml(t.client_name||'')}</div>
+          <div class="cd-hint">${escHtml(t.ready_hint||'Λείπει μια προϋπόθεση για την ολοκλήρωση')}</div>
+          <div class="cd-q">Ολοκλήρωση παρόλα αυτά;</div>
+          <div class="modal-acts">
+            ${go?`<button class="btn btn-go" onclick="__cdResolve(false); __cdGo()">→ ${escHtml(go.label)}</button>`:''}
+            <button class="btn btn-done" onclick="__cdResolve(true)">Ολοκλήρωση</button>
+            <button class="btn btn-rel" onclick="__cdResolve(false)">Άκυρο</button>
+          </div>
+        </div>
+      </div>`;
+    const esc = e => { if(e.key==='Escape'){ document.removeEventListener('keydown', esc); window.__cdResolve(false); } };
+    document.addEventListener('keydown', esc);
+  });
+}
+
+async function act(id, action){
+  showOk(null);                       // το παλιό μήνυμα αφορούσε άλλη πράξη
+  if(action === 'done'){
+    const t = (lastTasks||[]).find(x => Number(x.id) === Number(id));
+    // Μόνο όταν ο server λέει ΡΗΤΑ ότι δεν είναι έτοιμη. Αν το πεδίο
+    // λείπει (παλιός server), καμία ερώτηση — δεν εφευρίσκουμε εμπόδια.
+    if(t && t.ready === false && !(await confirmDone(t))) return;
+  }
+  const r = await post({action, id});
+  if(!r.ok) return;
+  if(action==='done') showOk(closeMsg(action, r.data));
+  load();
+}
 
 async function markNa(id){
   const reason = prompt('Γιατί δεν εφαρμόζεται; (υποχρεωτικό)');
   if(reason===null) return;
   if(!reason.trim()){ showErr('Ο λόγος είναι υποχρεωτικός.'); return; }
-  if((await post({action:'na', id, close_reason:reason.trim()})).ok) load();
+  showOk(null);
+  const r = await post({action:'na', id, close_reason:reason.trim()});
+  if(!r.ok) return;
+  showOk(closeMsg('na', r.data));
+  load();
 }
 
 async function assign(id){
@@ -566,6 +772,13 @@ async function assign(id){
   }
   if(r.ok) load();
 }
+
+// Επιστροφή με το πίσω βέλος: ο browser επαναφέρει τη σελίδα από την
+// bfcache ΧΩΡΙΣ να ξανατρέξει τίποτα. Χωρίς αυτό, ο χρήστης που πάτησε
+// «Άνοιγμα πελάτη», καταχώρησε τον κωδικό και γύρισε πίσω θα έβλεπε
+// ακόμα ξεθωριασμένη «Ολοκλήρωση» — η πιο συνηθισμένη διαδρομή θα
+// έδειχνε σπασμένη.
+window.addEventListener('pageshow', function(e){ if(e.persisted) load(); });
 
 // Esc κλείνει το παράθυρο απόρριψης — ίδια συνάρτηση με το «Άκυρο» και με
 // το κλικ στο φόντο, ποτέ δεύτερη διαδρομή κλεισίματος.

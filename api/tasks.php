@@ -106,7 +106,15 @@ if ($method === 'POST') {
         }
         respond($out, $r['code']);
     }
-    respond(['ok' => true, 'task' => $r['task']]);
+    // Το done/na προσθέτουν τι ξεκλείδωσε η πράξη. Οι άλλες ενέργειες δεν
+    // ξεκλειδώνουν τίποτα, οπότε τα πεδία λείπουν εντελώς — η οθόνη δεν
+    // πρέπει να δείχνει «Ξεκλείδωσαν 0» μετά από μια ανάληψη.
+    $out = ['ok' => true, 'task' => $r['task']];
+    if (isset($r['unlocked'])) {
+        $out['unlocked']      = $r['unlocked'];
+        $out['unlocked_mine'] = $r['unlocked_mine'];
+    }
+    respond($out);
 }
 
 respond(['error' => 'Method not allowed'], 405);
