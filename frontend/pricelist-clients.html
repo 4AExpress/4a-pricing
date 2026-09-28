@@ -118,7 +118,12 @@
   .client-info { flex: 1; min-width: 0; }
   .client-name { font-size: 13px; font-weight: 600; color: #333; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .client-badges { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-  .client-meta { font-size: 11px; color: #aaa; margin-top: 3px; }
+  /* #666 και όχι #aaa: το #aaa έδινε 2.32:1 πάνω στο λευκό — αποτυχία WCAG AA
+     σε ΚΑΘΕ γραμμή της λίστας, όχι μόνο στους πελάτες επίδειξης. Το #666 είναι
+     το μόνο γκρι που περνά ΚΑΙ στα δύο φόντα: 5.74:1 στο λευκό, 4.61:1 στο ροζ
+     ριγέ του πελάτη επίδειξης. Ενδιάμεσες αποχρώσεις (#767676, #6e6e6e) περνούν
+     μόνο στο λευκό και κόβονται στο ροζ. */
+  .client-meta { font-size: 11px; color: #666; margin-top: 3px; }
   .client-pls  { font-size: 11px; color: #666; margin-top: 3px; }
   /* Μία γραμμή ανά τιμοκατάλογο. Ο κωδικός σε monospace ώστε να ξεχωρίζει
      από τα emoji — αλλιώς το «S1010» χάνεται μέσα στις σημαίες. */
