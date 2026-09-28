@@ -107,20 +107,21 @@
   </div>
 
   <div id="error-container"></div>
+  <div id="freshness"></div>
   <div id="content" class="loading">Φόρτωση δεδομένων...</div>
 
 </div>
 
+<script src="fuel-freshness.js?v=2026-09-27"></script>
 <script>
-const JSON_URL = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json';
+// Η διεύθυνση του JSON ζει πλέον στο fuel-freshness.js (FuelFreshness.URL) —
+// μία πηγή, ώστε να μην αποκλίνει ανά σελίδα.
 const VALUABLE_MULTIPLIER = 1.06;
 
-// Αυτόματη ώρα φόρτωσης
-(function() {
-  const now = new Date();
-  const opts = { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-  document.getElementById('last-update').textContent = now.toLocaleString('el-GR', opts);
-})();
+// Το `last-update` έγραφε την ώρα ΦΟΡΤΩΣΗΣ ΤΗΣ ΣΕΛΙΔΑΣ — δηλαδή «τώρα»,
+// ακόμα κι όταν τα δεδομένα ήταν τριών εβδομάδων. Σε σελίδα που ανοίγει
+// κανείς ειδικά για να ελέγξει τη φρεσκάδα, αυτό έλεγε το αντίθετο από
+// την αλήθεια. Γεμίζει πλέον από το `fetched_at`, στη renderDashboard.
 
 function badge(diff) {
   if (diff === null) return '—';
@@ -183,8 +184,13 @@ function renderDashboard(data) {
     </tr>`;
   }).join('');
 
-  document.getElementById('fetched-at').textContent =
-    `Τελευταία ανάκτηση: ${data.fetched_at ? data.fetched_at.substring(8,10)+'-'+data.fetched_at.substring(5,7)+'-'+data.fetched_at.substring(0,4)+' '+data.fetched_at.substring(11,16) : '—'}`;
+  const fetchedLbl = data.fetched_at
+    ? data.fetched_at.substring(8,10)+'-'+data.fetched_at.substring(5,7)+'-'+
+      data.fetched_at.substring(0,4)+' '+data.fetched_at.substring(11,16)
+    : '—';
+  document.getElementById('fetched-at').textContent = `Τελευταία ανάκτηση: ${fetchedLbl}`;
+  // Ίδια πηγή, όχι το ρολόι του browser.
+  document.getElementById('last-update').textContent = fetchedLbl;
 
   document.getElementById('content').innerHTML = `
 
@@ -301,13 +307,18 @@ function showTab(tab, btn) {
   btn.classList.add('active');
 }
 
-// Φόρτωση JSON
-fetch(JSON_URL)
-  .then(r => {
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
+// Φόρτωση JSON — μέσω fuel-freshness.js: ίδια πηγή, ίδιο cache και ίδιο
+// κριτήριο εγκυρότητας με τις υπόλοιπες σελίδες. Η σελίδα εξακολουθεί να
+// ζωγραφίζει ΟΛΟ το αρχείο (res.data), όχι μόνο την τρέχουσα εβδομάδα.
+FuelFreshness.load()
+  .then(res => {
+    if (!res.data) throw new Error(res.reason || 'δεν φορτώθηκαν δεδομένα');
+    renderDashboard(res.data);
+    // Διαγνωστικά του scraper — κενά, τίποτα στην οθόνη.
+    FuelFreshness.warningsBox(res, 'freshness');
+    // Εδώ δεν μπαίνει σύνδεσμος: η σελίδα ΕΙΝΑΙ ο έλεγχος του επίναυλου.
+    FuelFreshness.banner(res, 'freshness', { link: false });
   })
-  .then(data => renderDashboard(data))
   .catch(err => {
     document.getElementById('error-container').innerHTML =
       `<div class="error-box">⚠️ Σφάλμα φόρτωσης δεδομένων: ${err.message}</div>`;

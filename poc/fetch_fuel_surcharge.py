@@ -13,7 +13,8 @@ import json
 import argparse
 import sys
 import re
-from datetime import datetime
+import unicodedata
+from datetime import datetime, date, timedelta
 from pathlib import Path
 
 try:
@@ -137,38 +138,207 @@ def scrape_surcharges():
 
     return results
 
+# ─────────────────────────────────────────────────────────────────────
+#  ΕΤΙΚΕΤΑ ΕΒΔΟΜΑΔΑΣ → ISO ΗΜΕΡΟΜΗΝΙΕΣ
+#
+#  Η ετικέτα («Σεπτέμβριος 28-Οκτώβριος 4, 2026») είναι κείμενο τρίτου:
+#  μορφή που δεν ελέγχουμε, ελληνικοί μήνες σε δύο πτώσεις, και έτος που
+#  σε αλλαγή χρονιάς ΔΕΝ λέει σε ποιο από τα δύο άκρα ανήκει.
+#
+#  Αναλύεται ΕΔΩ, μία φορά, με ημερολόγιο στο χέρι και με αυτοελέγχους —
+#  όχι σε τέσσερα HTML αρχεία που θα αποκλίνουν. Το frontend παίρνει
+#  έτοιμα `week_start`/`week_end` και δεν διαβάζει ποτέ την ετικέτα.
+#
+#  Η ίδια η ετικέτα ΔΕΝ αλλάζει ποτέ: τυπώνεται αυτούσια στο PDF.
+# ─────────────────────────────────────────────────────────────────────
+
+# Αγγλικά ονόματα ως ασφάλεια: το `--lang=el-GR` (get_driver) είναι δική
+# μας επιλογή, όχι εγγύηση της DHL.
+_MONTHS = [
+    ('ιανουαριος',  'january'),
+    ('φεβρουαριος', 'february'),
+    ('μαρτιος',     'march'),
+    ('απριλιος',    'april'),
+    ('μαιος',       'may'),
+    ('ιουνιος',     'june'),
+    ('ιουλιος',     'july'),
+    ('αυγουστος',   'august'),
+    ('σεπτεμβριος', 'september'),
+    ('οκτωβριος',   'october'),
+    ('νοεμβριος',   'november'),
+    ('δεκεμβριος',  'december'),
+]
+
+_WEEK_RE = re.compile(
+    r'^\s*([^\d]+?)\s*(\d{1,2})\s*[-–—]\s*(?:([^\d,]+?)\s*)?(\d{1,2})'
+    r'\s*(?:,\s*(\d{4}))?\s*\.?\s*$'
+)
+
+def _normalize(text):
+    """Χωρίς τόνους, πεζά, τελικό σίγμα → σίγμα, μόνο γράμματα."""
+    t = unicodedata.normalize('NFD', text or '')
+    t = ''.join(c for c in t if not unicodedata.combining(c))
+    t = t.lower().replace('ς', 'σ')
+    return ''.join(c for c in t if c.isalpha())
+
+def _common_prefix_len(a, b):
+    n = 0
+    for x, y in zip(a, b):
+        if x != y:
+            break
+        n += 1
+    return n
+
+def _month_number(token):
+    """Ονομαστική, γενική ή συντομογραφία. Ασάφεια («Ιου») → None."""
+    t = _normalize(token)
+    if len(t) < 3:
+        return None
+    hits = set()
+    for idx, names in enumerate(_MONTHS, start=1):
+        for name in names:
+            if _common_prefix_len(t, name) >= 3:
+                hits.add(idx)
+                break
+    return hits.pop() if len(hits) == 1 else None
+
+def parse_week_label(label, ref):
+    """«Σεπτέμβριος 28-Οκτώβριος 4, 2026» → (date, date, None | αιτία)."""
+    m = _WEEK_RE.match(label or '')
+    if not m:
+        return None, None, 'μη αναγνωρίσιμη μορφή'
+    n1, d1, n2, d2, _year_in_label = m.groups()
+    mon1 = _month_number(n1)
+    mon2 = _month_number(n2) if n2 else mon1
+    if not mon1 or not mon2:
+        bad = n1.strip() + ('/' + n2.strip() if n2 else '')
+        return None, None, f'άγνωστος ή διφορούμενος μήνας ({bad})'
+    d1, d2 = int(d1), int(d2)
+
+    # Το έτος ΔΕΝ διαβάζεται από την ετικέτα. Στο «Δεκέμβριος 28-Ιανουάριος
+    # 3, 2027» το 2027 ανήκει στο τέλος, στο «Σεπτέμβριος 21-27, 2026» και
+    # στα δύο· από την ετικέτα μόνη της δεν ξεχωρίζει. Διαλέγουμε εκείνο
+    # που φέρνει την εβδομάδα πιο κοντά στην ημέρα σάρωσης.
+    best = None
+    for y in (ref.year - 1, ref.year, ref.year + 1):
+        try:
+            cand = date(y, mon1, d1)
+        except ValueError:
+            continue
+        dist = abs((cand - ref).days)
+        if best is None or dist < best[0]:
+            best = (dist, cand)
+    if best is None:
+        return None, None, f'άκυρη ημερομηνία έναρξης ({d1}/{mon1})'
+    start = best[1]
+
+    # Αλλαγή χρονιάς: ο μήνας λήξης μικρότερος του μήνα έναρξης = επόμενο έτος.
+    try:
+        end = date(start.year + 1 if mon2 < mon1 else start.year, mon2, d2)
+    except ValueError:
+        return None, None, f'άκυρη ημερομηνία λήξης ({d2}/{mon2})'
+    return start, end, None
+
+def _attach_week_dates(rows, ref, kind, warnings):
+    """Ανά γραμμή: 7 ημέρες, Δευτέρα→Κυριακή. Αστοχία → null + προειδοποίηση."""
+    for i, row in enumerate(rows):
+        label = row.get('week', '')
+        start, end, reason = parse_week_label(label, ref)
+        if start and (end - start).days != 6:
+            start, end, reason = None, None, f'εβδομάδα {(end - start).days + 1} ημερών, όχι 7'
+        if start and (start.weekday() != 0 or end.weekday() != 6):
+            start, end, reason = None, None, 'δεν ξεκινά Δευτέρα ή δεν τελειώνει Κυριακή'
+        if reason:
+            warnings.append(f'{kind}[{i}] «{label}»: {reason}')
+            row['week_start'] = None
+            row['week_end']   = None
+        else:
+            row['week_start'] = start.isoformat()
+            row['week_end']   = end.isoformat()
+
+def _check_sequence(rows, kind, warnings):
+    """Οι γραμμές πρέπει να είναι διαδοχικές εβδομάδες, φθίνουσες."""
+    dated = [(i, r) for i, r in enumerate(rows) if r.get('week_start')]
+    for (i, a), (j, b) in zip(dated, dated[1:]):
+        gap = (date.fromisoformat(a['week_start']) - date.fromisoformat(b['week_start'])).days
+        if gap != 7:
+            warnings.append(
+                f'{kind}: [{i}] και [{j}] δεν είναι διαδοχικές εβδομάδες '
+                f'(διαφορά {gap} ημερών: «{a["week"]}» → «{b["week"]}»)'
+            )
+
+def _mark_current(rows, ref, kind, warnings):
+    """Τρέχουσα = αυτή που ΠΕΡΙΕΧΕΙ την ημέρα σάρωσης — όχι η θέση i==1.
+
+    Αν δεν προκύψει ακριβώς μία, υποχωρούμε στη θέση και το λέμε. Δεν
+    αφήνουμε το αρχείο χωρίς τρέχουσα τιμή: το frontend που δεν ξέρει
+    ακόμα από `parse_warnings` δεν πρέπει να χειροτερέψει.
+    """
+    for r in rows:
+        r['is_current'] = False
+        r['is_next']    = False
+
+    hits = [i for i, r in enumerate(rows) if r.get('week_start')
+            and date.fromisoformat(r['week_start']) <= ref <= date.fromisoformat(r['week_end'])]
+
+    if len(hits) == 1:
+        cur = hits[0]
+        rows[cur]['is_current'] = True
+        day_after = date.fromisoformat(rows[cur]['week_end']) + timedelta(days=1)
+        for r in rows:
+            if r.get('week_start') and date.fromisoformat(r['week_start']) == day_after:
+                r['is_next'] = True
+        return cur
+
+    if len(hits) > 1:
+        warnings.append(f'{kind}: {len(hits)} εβδομάδες περιέχουν την {ref.isoformat()} '
+                        f'— εφαρμόστηκε η θέση (i==1)')
+    else:
+        warnings.append(f'{kind}: καμία εβδομάδα δεν περιέχει την {ref.isoformat()} '
+                        f'— εφαρμόστηκε η θέση (i==1)')
+
+    cur = 1 if len(rows) > 1 else 0
+    rows[cur]['is_current'] = True
+    if len(rows) > 1:
+        rows[0]['is_next'] = True
+    return cur
+
 def enrich_data(parsed, previous_cache):
-    now  = datetime.now().isoformat()
-    air  = parsed.get('air', [])
-    road = parsed.get('road', [])
+    now   = datetime.now()
+    today = now.date()
+    air   = parsed.get('air', [])
+    road  = parsed.get('road', [])
 
     if not air:
         raise ValueError("Δεν βρέθηκαν δεδομένα AIR")
 
-    current_air  = air[1]['pct'] if len(air) > 1 else air[0]['pct']
-    current_road = road[1]['pct'] if len(road) > 1 else (road[0]['pct'] if road else None)
+    warnings = []
+    _attach_week_dates(air,  today, 'air',  warnings)
+    _attach_week_dates(road, today, 'road', warnings)
+    _check_sequence(air,  'air',  warnings)
+    _check_sequence(road, 'road', warnings)
 
-    for i, row in enumerate(air):
-        row['is_next']    = (i == 0)
-        row['is_current'] = (i == 1)
-    for i, row in enumerate(road):
-        row['is_next']    = (i == 0)
-        row['is_current'] = (i == 1)
+    air_cur  = _mark_current(air,  today, 'air',  warnings)
+    road_cur = _mark_current(road, today, 'road', warnings) if road else None
+
+    current_air  = air[air_cur]['pct']
+    current_road = road[road_cur]['pct'] if road else None
 
     prev_air  = previous_cache.get('current_air')  if previous_cache else None
     prev_road = previous_cache.get('current_road') if previous_cache else None
     changed   = (prev_air != current_air) or (prev_road != current_road)
 
     return {
-        'fetched_at':    now,
-        'source':        DHL_URL,
-        'air':           air,
-        'road':          road,
-        'current_air':   current_air,
-        'current_road':  current_road,
-        'changed':       changed,
-        'previous_air':  prev_air,
-        'previous_road': prev_road,
+        'fetched_at':     now.isoformat(),
+        'source':         DHL_URL,
+        'parse_warnings': warnings,
+        'air':            air,
+        'road':           road,
+        'current_air':    current_air,
+        'current_road':   current_road,
+        'changed':        changed,
+        'previous_air':   prev_air,
+        'previous_road':  prev_road,
     }
 
 def print_summary(data):
@@ -191,6 +361,11 @@ def print_summary(data):
         print(f"\n⚠️  ΑΛΛΑΓΗ: AIR {data['previous_air']} → {data['current_air']}")
     else:
         print("\n✅ Χωρίς αλλαγή")
+    # Ορατές στο log του GitHub Action — εκεί τις βλέπει πρώτος άνθρωπος.
+    if data.get('parse_warnings'):
+        print("\n⚠️  ΑΝΑΛΥΣΗ ΕΒΔΟΜΑΔΑΣ:")
+        for w in data['parse_warnings']:
+            print(f"  · {w}")
     print("=" * 50)
 
 def main():
