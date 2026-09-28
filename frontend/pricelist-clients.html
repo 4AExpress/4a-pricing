@@ -520,6 +520,10 @@
       </div>
     </div>
 
+    <!-- Φρεσκάδα επίναυλου: ΑΚΡΙΒΩΣ πάνω από τα κουμπιά, γιατί αυτό είναι
+         το τελευταίο σημείο πριν φύγει κάτι σε πελάτη. Κενό όταν όλα καλά. -->
+    <div id="fuel-warn"></div>
+
     <div class="btn-row">
       <span id="form-error-msg" class="form-error-msg" style="display:none;">Συμπληρώστε τα υποχρεωτικά πεδία (με *)</span>
       <button class="btn btn-secondary" onclick="resetForm()">Ακύρωση</button>
@@ -602,6 +606,7 @@
 
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="shelf-grouping.js?v=2026-09-22-5"></script>
+<script src="fuel-freshness.js?v=2026-09-27"></script>
 <script>
 ﻿let _sessionExpiry = null;
 let _sessionTimerInterval = null;
@@ -780,6 +785,9 @@ async function init(){
   loadOffersByClient();
   // ΤΕΛΕΥΤΑΙΟ: χρειάζεται φορτωμένο το `clients` και ζωγραφισμένη τη φόρμα.
   deepLink();
+  // Η λωρίδα επίναυλου μπαίνει με το που φορτώσει η σελίδα, ώστε να τη δει
+  // ο χρήστης ΠΡΙΝ αρχίσει να φτιάχνει προσφορά — όχι μόλις πατήσει PDF.
+  refreshFuelWarn();
 }
 
 function updateOfferNum(){
@@ -2091,7 +2099,13 @@ async function buildFinalPDF(offerNum){
       .then(r=>r.json()).then(d=>({[s]:d.entries}))));
     localStorage.setItem('dhl_all',JSON.stringify(Object.assign({},...arr)));
   }
-  const fuel=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json());
+  // Το generate_pdf.php περιμένει ΟΛΟΚΛΗΡΟ το αρχείο επίναυλου και
+  // διαλέγει μόνο του. Περνάμε από fuelState() για να μοιραστεί την ίδια
+  // πηγή και το ίδιο cache με τις άλλες τρεις διαδρομές — το σχήμα που
+  // φτάνει στον server μένει ΑΚΡΙΒΩΣ το ίδιο.
+  const _fs  = await fuelState();
+  const fuel = _fs.data;
+  fuelWarn(_fs);            // ΟΘΟΝΗ μόνο· το PDF δεν μαθαίνει τίποτα
   const office=(currentUser?.stations||'ATH').split(',')[0];
   const name=document.getElementById('cl-name').value.trim();
   console.log('PDF PAYLOAD:', JSON.stringify({offer:{name, afm:document.getElementById('cl-afm').value.trim(), email:document.getElementById('cl-email').value.trim(), contact:document.getElementById('cl-contact').value.trim(), phone:document.getElementById('cl-phone').value.trim(), user:currentUser.name, office_code:office, date:todayFmt(), validity:document.getElementById('cl-validity').value, offer_number:offerNum, pricelists:selectedPls.map(p=>({service_id:p.service_id,markup:p.global_markup??p.markup??0,rows:p.rows||[],fuel_enabled:p.fuel_enabled?1:0}))}, dhl:JSON.parse(localStorage.getItem('dhl_all')), fuel}));
@@ -2204,13 +2218,16 @@ async function previewPDF(returnBytes=false, forcedRef=null){
   const invoiceLbl = invoiceMode==='weekly'?'Εβδομαδιαία':'Μηνιαία';
   const codAmt=codEnabled?(parseFloat(document.getElementById('cod-amount').value)||0):0;
 
+  // ΚΟΙΝΗ διαδρομή και για τις δύο παραγωγές PDF — ήταν δύο πανομοιότυπα
+  // αντίγραφα. Ό,τι μπαίνει στο έγγραφο βγαίνει από την ΙΔΙΑ κλήση, οπότε
+  // η προεπισκόπηση και το τελικό PDF δεν μπορούν να διαφωνήσουν.
   let fuelAir='—', fuelRoad='—', fuelWeek='';
   try {
-    let fd=JSON.parse(localStorage.getItem('4a_fuel_cache')||'null');
-    if(!fd){ fd=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json()); localStorage.setItem('4a_fuel_cache',JSON.stringify(fd)); }
-    const ca=(fd.air||[]).find(x=>x.is_current), cr=(fd.road||[]).find(x=>x.is_current);
-    if(ca){ fuelAir=ca.pct+'%'; fuelWeek=ca.week||''; }
-    if(cr)  fuelRoad=cr.pct+'%';
+    const _f = await fuelState();
+    if(_f.air  !== null) fuelAir  = _f.air  + '%';
+    if(_f.road !== null) fuelRoad = _f.road + '%';
+    fuelWeek = _f.week || '';
+    fuelWarn(_f);          // ΟΘΟΝΗ μόνο — τίποτα από αυτά δεν μπαίνει στο PDF
   } catch(e){}
 
   let zonesData=null;
@@ -2705,13 +2722,16 @@ async function buildJsPDF(offerNum){
   const invoiceLbl = invoiceMode==='weekly'?'Εβδομαδιαία':'Μηνιαία';
   const codAmt=codEnabled?(parseFloat(document.getElementById('cod-amount').value)||0):0;
 
+  // ΚΟΙΝΗ διαδρομή και για τις δύο παραγωγές PDF — ήταν δύο πανομοιότυπα
+  // αντίγραφα. Ό,τι μπαίνει στο έγγραφο βγαίνει από την ΙΔΙΑ κλήση, οπότε
+  // η προεπισκόπηση και το τελικό PDF δεν μπορούν να διαφωνήσουν.
   let fuelAir='—', fuelRoad='—', fuelWeek='';
   try {
-    let fd=JSON.parse(localStorage.getItem('4a_fuel_cache')||'null');
-    if(!fd){ fd=await fetch('https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json').then(r=>r.json()); localStorage.setItem('4a_fuel_cache',JSON.stringify(fd)); }
-    const ca=(fd.air||[]).find(x=>x.is_current), cr=(fd.road||[]).find(x=>x.is_current);
-    if(ca){ fuelAir=ca.pct+'%'; fuelWeek=ca.week||''; }
-    if(cr)  fuelRoad=cr.pct+'%';
+    const _f = await fuelState();
+    if(_f.air  !== null) fuelAir  = _f.air  + '%';
+    if(_f.road !== null) fuelRoad = _f.road + '%';
+    fuelWeek = _f.week || '';
+    fuelWarn(_f);          // ΟΘΟΝΗ μόνο — τίποτα από αυτά δεν μπαίνει στο PDF
   } catch(e){}
 
   let zonesData=null;
@@ -3067,7 +3087,36 @@ async function draftOffer(){
 // ξαναϋπολογιζόταν αργότερα από ΤΡΕΧΟΝΤΑ δεδομένα.
 // ─────────────────────────────────────────────────────────────────────
 
-async function _loadFuelCache(){
+// ─────────────────────────────────────────────────────────────────────
+// ΕΠΙΝΑΥΛΟΣ — ΕΝΑ σημείο αλήθειας για ΟΛΗ τη σελίδα (28/09)
+//
+// Η σελίδα διάβαζε τον επίναυλο από ΤΕΣΣΕΡΑ σημεία, δύο από τα οποία
+// (οι δύο διαδρομές PDF) ήταν πανομοιότυπα αντιγραμμένα μπλοκ. Δύο
+// αντίγραφα του ίδιου κανόνα αποκλίνουν — και εδώ η απόκλιση σημαίνει
+// δύο PDF με διαφορετικό επίναυλο για τον ίδιο πελάτη.
+//
+// Τώρα όλα περνούν από εδώ. Η γραμμή διαλέγεται από ΗΜΕΡΟΜΗΝΙΑ
+// (week_start ≤ σήμερα ≤ week_end), όχι από τη θέση της στο αρχείο.
+//
+// ΚΑΜΙΑ ΦΡΑΓΗ: η προσφορά βγαίνει πάντα. Η προειδοποίηση ζει ΜΟΝΟ στην
+// οθόνη και ΠΟΤΕ στο PDF — το έγγραφο προς τον πελάτη δεν αναφέρει
+// εσωτερικά ζητήματα φρεσκάδας.
+async function fuelState(){
+  if (window.FuelFreshness) {
+    const res = await FuelFreshness.load();
+    return {
+      res:  res,
+      data: res.data || null,
+      air:  (typeof res.air  === 'number') ? res.air  : null,
+      road: (typeof res.road === 'number') ? res.road : null,
+      week: res.week || '',
+      fetched_at: res.fetched_at || null,
+      week_start: res.week_start || null,
+      week_end:   res.week_end   || null,
+      state: res.state
+    };
+  }
+  // Σιωπηλή υποχώρηση: χωρίς το κοινό script, ακριβώς η παλιά διαδρομή.
   let fd=null;
   try{ fd=JSON.parse(localStorage.getItem('4a_fuel_cache')||'null'); }catch(e){}
   if(!fd){
@@ -3076,7 +3125,42 @@ async function _loadFuelCache(){
       localStorage.setItem('4a_fuel_cache',JSON.stringify(fd));
     }catch(e){ fd=null; }
   }
-  return fd;
+  const ca=((fd&&fd.air)||[]).find(x=>x.is_current);
+  const cr=((fd&&fd.road)||[]).find(x=>x.is_current);
+  return {
+    res:null, data:fd,
+    air:  ca ? parseFloat(ca.pct) : null,
+    road: cr ? parseFloat(cr.pct) : null,
+    week: (ca&&ca.week) || '',
+    fetched_at: (fd&&fd.fetched_at) || null,
+    week_start: (ca&&ca.week_start) || null,
+    week_end:   (ca&&ca.week_end)   || null,
+    state: null
+  };
+}
+
+// Η προειδοποίηση στην ΟΘΟΝΗ. Δεν αγγίζει καμία τιμή και δεν εμποδίζει
+// καμία ενέργεια — μόνο λέει τι συμβαίνει.
+function fuelWarn(f){
+  if (!window.FuelFreshness) return;
+  let res = f && f.res;
+  const missing = !f || (f.air === null && f.road === null);
+  if (missing && (!res || res.state === FuelFreshness.OK)) {
+    res = { state: FuelFreshness.FALLBACK, reason: 'δεν βρέθηκαν ποσοστά στα δεδομένα' };
+  }
+  FuelFreshness.banner(res, 'fuel-warn', {
+    effect: 'Στην προσφορά τα ποσοστά εμφανίζονται ως «—».'
+  });
+}
+
+async function refreshFuelWarn(){
+  try { fuelWarn(await fuelState()); } catch(e) {}
+}
+
+// Κρατιέται για συμβατότητα: το snapshot θέλει ΟΛΟ το αρχείο.
+async function _loadFuelCache(){
+  const f = await fuelState();
+  return f.data;
 }
 
 async function _loadZonesCache(){
@@ -3214,11 +3298,14 @@ async function sendOffer(){
     // ήδη δοθεί ο αριθμός, οπότε ένα return εκεί θα έκαιγε αρίθμηση.
     if(!(servicesCache||[]).length) missing.push('υπηρεσίες (services.php)');
 
-    // fuel: ΑΡΙΘΜΟΙ, όχι "35.25%" — η στήλη είναι DECIMAL(6,3)
-    const fAir  = ((fd&&fd.air)||[]).find(x=>x.is_current);
-    const fRoad = ((fd&&fd.road)||[]).find(x=>x.is_current);
-    const airPct  = fAir  ? parseFloat(fAir.pct)  : NaN;
-    const roadPct = fRoad ? parseFloat(fRoad.pct) : NaN;
+    // fuel: ΑΡΙΘΜΟΙ, όχι "35.25%" — η στήλη είναι DECIMAL(6,3).
+    // Η γραμμή διαλέγεται από ΗΜΕΡΟΜΗΝΙΑ μέσω fuelState(), όχι από το
+    // `is_current` του αρχείου: αν το αρχείο είναι μιας εβδομάδας πίσω, η
+    // σημαία του δείχνει περασμένη εβδομάδα ως τρέχουσα.
+    const _fsnap  = await fuelState();
+    const airPct  = _fsnap.air  === null ? NaN : _fsnap.air;
+    const roadPct = _fsnap.road === null ? NaN : _fsnap.road;
+    const fAir    = { week: _fsnap.week || null };   // για τη συμβατότητα παρακάτω
     if(!isFinite(airPct))  missing.push('fuel.air');
     if(!isFinite(roadPct)) missing.push('fuel.road');
 
@@ -3291,7 +3378,15 @@ async function sendOffer(){
         invoice:document.getElementById('cl-invoice').value
       },
       pricelists:plSnap,
+      // ΒΗΜΑ 5: το snapshot κρατά ΠΟΤΕ κατέβηκε ο επίναυλος και ΓΙΑ ΠΟΙΑ
+      // εβδομάδα ίσχυε. Χωρίς αυτά, μια προσφορά του Μαρτίου δεν μπορεί να
+      // εξηγηθεί τον Ιούνιο: ξέραμε το ποσοστό, όχι αν ήταν φρέσκο.
+      // Το `freshness` είναι ΚΑΤΑΓΡΑΦΗ, όχι φραγή — η προσφορά βγήκε.
       fuel:{ air_pct:airPct, road_pct:roadPct, week:(fAir&&fAir.week)||null,
+             fetched_at:_fsnap.fetched_at || null,
+             week_start:_fsnap.week_start || null,
+             week_end:  _fsnap.week_end   || null,
+             freshness: _fsnap.state      || null,
              source:'fuel_surcharge_cache.json' },
       surcharges:surchSnap,
       cod: codEnabled ? {

@@ -108,6 +108,9 @@
   </div>
   <div class="section-body">
 
+    <!-- Λωρίδα φρεσκάδας επίναυλου· κενή όταν όλα είναι εντάξει -->
+    <div id="fuel-warn"></div>
+
     <!-- COMBI INFO -->
     <div class="surcharge-box" id="surcharge-box" style="display:none;"></div>
 
@@ -198,6 +201,10 @@
   </div>
 </div>
 
+<!-- Πρώτο κοινόχρηστο script αυτής της σελίδας. Ίδιο πρότυπο με τα
+     announce.js / shelf-grouping.js / tasks-badge.js: IIFE, φρουρός
+     διπλής φόρτωσης, ?v=<ημερομηνία>, σιωπηλή αποτυχία. -->
+<script src="fuel-freshness.js?v=2026-09-27"></script>
 <script>
 const PARAMS      = new URLSearchParams(window.location.search);
 const SERVICE_ID  = PARAMS.get('service') || 'S1003';
@@ -277,7 +284,14 @@ function todayFormatted() { return formatDate(new Date().toISOString()); }
 const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 
 let dhlData    = null;
-let fuelFc     = SVC_MODE === 'ROAD' ? 35.25 : 47.0;
+// ΠΡΟΚΑΘΟΡΙΣΜΕΝΕΣ, ΟΧΙ ΠΡΑΓΜΑΤΙΚΕΣ. Μέχρι σήμερα αυτές οι δύο τιμές
+// έμπαιναν σιωπηλά όταν το αρχείο επίναυλου δεν φορτωνόταν, και ο
+// πίνακας έβγαινε κανονικός — με νούμερα που δεν ίσχυαν. Τώρα κρατάμε
+// ΑΝ χρησιμοποιήθηκαν, και το λέμε.
+const FC_DEFAULTS = { AIR: 47.0, ROAD: 35.25 };
+let fuelFc        = SVC_MODE === 'ROAD' ? FC_DEFAULTS.ROAD : FC_DEFAULTS.AIR;
+let fuelIsDefault = true;    // γίνεται false μόνο με πραγματική τιμή
+let fuelRes       = null;    // το αποτέλεσμα του FuelFreshness.load()
 let markupData = [];
 let tableVisible = false;
 let globalMarkup = URL_MARKUP;
@@ -290,13 +304,29 @@ async function loadData() {
     if (!r1.ok) throw new Error(`HTTP ${r1.status}`);
     dhlData = await r1.json();
 
+    // Ο επίναυλος περνά πλέον από το fuel-freshness.js: ίδια πηγή, αλλά
+    // η γραμμή διαλέγεται από ΗΜΕΡΟΜΗΝΙΑ (week_start ≤ σήμερα ≤ week_end)
+    // και όχι από τη θέση της στο αρχείο.
+    //
+    // ΚΑΝΟΝΑΣ: παλιά τιμή ΧΡΗΣΙΜΟΠΟΙΕΙΤΑΙ, απλώς σημαδεύεται. Το να
+    // κρύψουμε έναν επίναυλο επειδή είναι μιας εβδομάδας πίσω θα έκανε
+    // τη σελίδα άχρηστη· το να τον δείξουμε σιωπηλά είναι που έφταιγε.
     try {
-      const r2 = await fetch(BASE + 'data/fuel_surcharge_cache.json');
-      const fc = await r2.json();
-      fuelFc = SVC_MODE === 'AIR' ? (fc.current_air||47.0) : (fc.current_road||35.25);
+      if (window.FuelFreshness) {
+        fuelRes = await FuelFreshness.load();
+        const v = SVC_MODE === 'AIR' ? fuelRes.air : fuelRes.road;
+        if (typeof v === 'number') { fuelFc = v; fuelIsDefault = false; }
+      } else {
+        // Το κοινό script δεν φόρτωσε. Σιωπηλή υποχώρηση στην παλιά
+        // διαδρομή — η σελίδα δεν χαλάει επειδή λείπει ένα βοήθημα.
+        const r2 = await fetch(BASE + 'data/fuel_surcharge_cache.json');
+        const fc = await r2.json();
+        const v  = SVC_MODE === 'AIR' ? fc.current_air : fc.current_road;
+        if (typeof v === 'number') { fuelFc = v; fuelIsDefault = false; }
+      }
     } catch(e) {}
 
-    document.getElementById('fc-badge').textContent = `FC ${SVC_MODE}: ${fuelFc}%`;
+    renderFuelState();
     document.getElementById('table-container').innerHTML =
       '<div class="loading">✅ Δεδομένα φορτώθηκαν — Πατήστε "Ανάπτυξη πίνακα"</div>';
 
@@ -304,6 +334,46 @@ async function loadData() {
     document.getElementById('table-container').innerHTML =
       `<div class="loading" style="color:#c62828">❌ Σφάλμα φόρτωσης: ${e.message}</div>`;
   }
+}
+
+// ─── ΦΡΕΣΚΑΔΑ ΕΠΙΝΑΥΛΟΥ ───────────────────────────────────────────────────────
+// Δύο σημεία, όπως λέει το spec: το badge (πάντα ορατό, δίπλα στον τίτλο)
+// και η λωρίδα πάνω από τον πίνακα (μόνο όταν κάτι δεν πάει καλά).
+//
+// Το badge δεν λέει ποτέ σκέτο ποσοστό όταν το ποσοστό δεν είναι
+// πραγματικό: «ενδεικτικό» δίπλα στον αριθμό, γιατί το badge είναι αυτό
+// που κοιτάζει κανείς στα γρήγορα — η λωρίδα μπορεί να προσπεραστεί.
+function renderFuelState() {
+  const badge = document.getElementById('fc-badge');
+  if (badge) {
+    badge.textContent = `FC ${SVC_MODE}: ${fuelFc}%` + (fuelIsDefault ? ' (ενδεικτικό)' : '');
+    const bad = fuelIsDefault ||
+               (fuelRes && window.FuelFreshness && fuelRes.state !== FuelFreshness.OK);
+    badge.style.background = bad ? '#ffebee' : '';
+    badge.style.color      = bad ? '#c62828' : '';
+    badge.title = fuelIsDefault
+      ? 'Προκαθορισμένη τιμή — δεν φορτώθηκαν δεδομένα επίναυλου'
+      : (fuelRes && fuelRes.week ? 'Εβδομάδα: ' + fuelRes.week : '');
+  }
+
+  if (!window.FuelFreshness) return;   // χωρίς το module, καμία λωρίδα
+
+  // Αν οι προκαθορισμένες είναι σε χρήση, η λωρίδα ΠΡΕΠΕΙ να βγει — ακόμα
+  // κι αν το αρχείο φόρτωσε μια χαρά αλλά έλειπε το ποσοστό αυτού του
+  // mode. Αλλιώς το badge θα έλεγε «ενδεικτικό» χωρίς καμία εξήγηση.
+  let res = fuelRes;
+  if (fuelIsDefault && (!res || res.state === FuelFreshness.OK)) {
+    res = { state: FuelFreshness.FALLBACK,
+            reason: `δεν βρέθηκε ποσοστό ${SVC_MODE} στα δεδομένα` };
+  }
+
+  // Το κείμενο πρέπει να πει ΠΟΙΕΣ τιμές βλέπει ο χρήστης και ότι δεν
+  // είναι αληθινές — «ενδεικτικές, ΟΧΙ ο πραγματικός επίναυλος».
+  const opts = fuelIsDefault
+    ? { defaults: `AIR ${FC_DEFAULTS.AIR}% / ROAD ${FC_DEFAULTS.ROAD}%` }
+    : {};
+  // ΙΔ, ΟΧΙ selector: η el() του module κάνει getElementById.
+  FuelFreshness.banner(res, 'fuel-warn', opts);
 }
 
 // ─── BUILD MARKUP DATA ────────────────────────────────────────────────────────

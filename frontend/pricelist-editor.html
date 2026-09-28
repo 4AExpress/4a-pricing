@@ -239,6 +239,8 @@
       <div class="section-header">Προσαύξηση ανά Service</div>
       <div class="section-body">
         <div id="fc-info" class="fc-info">Φόρτωση επίναυλου...</div>
+        <!-- Λωρίδα φρεσκάδας· κενή όταν ο επίναυλος είναι της τρέχουσας εβδομάδας -->
+        <div id="fuel-warn"></div>
 
         <!-- GR Services Grid -->
         <div id="services-grid-gr" class="services-grid">
@@ -347,6 +349,7 @@
 </div>
 
 <script src="shelf-grouping.js?v=2026-09-22-5"></script>
+<script src="fuel-freshness.js?v=2026-09-27"></script>
 <script>
 const BASE = 'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/';
 const API  = 'https://4aexpress.com/api';
@@ -381,6 +384,10 @@ function hasZ9Block(svc) {
 
 let currentUser = null;
 let dhlData = {}, fuelData = null, markups = {}, pendingSvc = null;
+// Φρεσκάδα επίναυλου. ΔΕΝ υπάρχει προκαθορισμένη τιμή σε αυτή τη σελίδα:
+// όταν λείπουν δεδομένα, η getFcPct() επιστρέφει 0 και τα δειγματικά
+// κόστη βγαίνουν ΧΩΡΙΣ επίναυλο — σιωπηλά φθηνότερα. Αυτό σημαδεύεται.
+let fuelRes = null, fuelAir = null, fuelRoad = null;
 let shelf = {};
 let markups_z9 = {};
 let cySettings = { surcharge_gr_cy: 1.50, surcharge_cy_gr: 1.50, cost_gr_cy: 1.05, cost_cy_gr: 1.05 };
@@ -670,20 +677,73 @@ async function loadDHL() {
 
 async function loadFuel() {
   try {
-    const r = await fetch(BASE + 'data/fuel_surcharge_cache.json');
-    fuelData = await r.json();
-    document.getElementById('fc-info').innerHTML =
-      `Επίναυλος τρέχουσας εβδομάδας: <strong>AIR ${fuelData.current_air}%</strong> · <strong>ROAD ${fuelData.current_road}%</strong> ` +
-      `<span style="color:#bbb">(${fuelData.fetched_at?.substring(0,10)})</span>`;
-  } catch(e) {
-    document.getElementById('fc-info').textContent = 'Επίναυλος: μη διαθέσιμος';
+    if (window.FuelFreshness) {
+      // Η γραμμή διαλέγεται από ΗΜΕΡΟΜΗΝΙΑ (week_start ≤ σήμερα ≤ week_end),
+      // όχι από τη θέση της στο αρχείο.
+      fuelRes  = await FuelFreshness.load();
+      fuelData = fuelRes.data || null;          // συμβατότητα με ό,τι άλλο το διαβάζει
+      if (typeof fuelRes.air  === 'number') fuelAir  = fuelRes.air;
+      if (typeof fuelRes.road === 'number') fuelRoad = fuelRes.road;
+    } else {
+      // Σιωπηλή υποχώρηση: χωρίς το κοινό script η σελίδα δουλεύει
+      // ακριβώς όπως πριν.
+      const r  = await fetch(BASE + 'data/fuel_surcharge_cache.json');
+      fuelData = await r.json();
+      if (typeof fuelData.current_air  === 'number') fuelAir  = fuelData.current_air;
+      if (typeof fuelData.current_road === 'number') fuelRoad = fuelData.current_road;
+    }
+  } catch(e) {}
+  renderFuelInfo();
+}
+
+// Η ίδια η γραμμή του επίναυλου κουβαλά την κατάσταση — αριθμοί, εβδομάδα,
+// ημερομηνία λήψης — και κοκκινίζει όταν κάτι δεν πάει καλά.
+function renderFuelInfo() {
+  const box     = document.getElementById('fc-info');
+  const missing = (fuelAir === null && fuelRoad === null);
+  const bad     = missing ||
+                  (fuelRes && window.FuelFreshness && fuelRes.state !== FuelFreshness.OK);
+
+  if (box) {
+    if (missing) {
+      box.textContent = 'Επίναυλος: μη διαθέσιμος — τα δειγματικά κόστη υπολογίζονται με 0%';
+    } else {
+      const wk = (fuelRes && fuelRes.week) ? ` · εβδομάδα ${fuelRes.week}` : '';
+      const dt = (fuelRes && fuelRes.fetched_at) ? fuelRes.fetched_at.substring(0,10)
+               : (fuelData && fuelData.fetched_at ? fuelData.fetched_at.substring(0,10) : '');
+      // «τρέχουσας εβδομάδας» ΜΟΝΟ όταν όντως είναι της τρέχουσας.
+      box.innerHTML =
+        `Επίναυλος${bad ? '' : ' τρέχουσας εβδομάδας'}: ` +
+        `<strong>AIR ${fuelAir === null ? '—' : fuelAir}%</strong> · ` +
+        `<strong>ROAD ${fuelRoad === null ? '—' : fuelRoad}%</strong>` +
+        `<span style="color:#bbb">${wk}${dt ? ` (${dt})` : ''}</span>`;
+    }
+    box.style.background  = bad ? '#fff4f4' : '';
+    box.style.borderColor = bad ? '#ffcdd2' : '';
+    box.style.color       = bad ? '#c62828' : '';
   }
+
+  if (!window.FuelFreshness) return;   // χωρίς module, καμία λωρίδα
+
+  // Αυτή η σελίδα ΔΕΝ έχει προκαθορισμένες τιμές — βάζει 0%. Το `effect`
+  // το λέει ρητά, αλλιώς η λωρίδα θα υποσχόταν παύλες.
+  let res = fuelRes;
+  if (missing && (!res || res.state === FuelFreshness.OK)) {
+    res = { state: FuelFreshness.FALLBACK, reason: 'δεν βρέθηκαν ποσοστά στα δεδομένα' };
+  }
+  FuelFreshness.banner(res, 'fuel-warn', {
+    effect: 'Τα δειγματικά κόστη υπολογίζονται με <strong>0% επίναυλο</strong> — ' +
+            'βγαίνουν φθηνότερα από την πραγματικότητα.'
+  });
 }
 
 function getFcPct(svc) {
-  if (!fuelData) return 0;
-  if (svc.combi) return fuelData.current_road || 0;
-  return svc.mode.includes('AIR') ? (fuelData.current_air||0) : (fuelData.current_road||0);
+  // Ίδια σημασία με πριν: όταν λείπει τιμή, 0. Η διαφορά είναι ότι τώρα
+  // το 0 δηλώνεται στην οθόνη αντί να περνά απαρατήρητο.
+  const air  = (typeof fuelAir  === 'number') ? fuelAir  : 0;
+  const road = (typeof fuelRoad === 'number') ? fuelRoad : 0;
+  if (svc.combi) return road;
+  return svc.mode.includes('AIR') ? air : road;
 }
 
 function getSampleCost(serviceId) {
