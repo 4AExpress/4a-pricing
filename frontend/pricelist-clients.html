@@ -114,6 +114,19 @@
   .client-badges { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
   .client-meta { font-size: 11px; color: #aaa; margin-top: 3px; }
   .client-pls  { font-size: 11px; color: #666; margin-top: 3px; }
+  /* Μία γραμμή ανά τιμοκατάλογο. Ο κωδικός σε monospace ώστε να ξεχωρίζει
+     από τα emoji — αλλιώς το «S1010» χάνεται μέσα στις σημαίες. */
+  .pl-line   { font-size: 11px; color: #666; margin-top: 3px; line-height: 1.5; }
+  .pl-emoji  { letter-spacing: -1px; }
+  .pl-code   { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; color: #444; }
+  /* Η διαφάνεια είναι ΣΥΝΟΔΕΙΑ, όχι η πληροφορία: κάθε εικονίδιο έχει title. */
+  .pl-ico       { cursor: help; }
+  .pl-ico.off   { opacity: .3; filter: grayscale(1); }
+  .pl-unknown   { color: #c62828; font-weight: 700; cursor: help; }
+  /* Δεν φόρτωσε το μητρώο υπηρεσιών: ΟΡΑΤΗ γραμμή, όχι σιωπή. */
+  .svc-warn  { background: #fff4f4; border: 1px solid #ffcdd2; border-left: 4px solid #c62828;
+               color: #c62828; font-size: 12px; padding: 8px 12px; border-radius: 6px;
+               margin-bottom: 10px; }
   .client-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
   .action-btn { padding: 5px 10px; border-radius: 4px; font-size: 11px; border: 1px solid #ddd; background: white; cursor: pointer; color: #555; white-space: nowrap; }
   .action-btn.send { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
@@ -548,6 +561,8 @@
       <button class="filter-btn" onclick="filterByStatus('rejected',this)">🔴 Αρνήθηκαν</button>
       <button class="filter-btn" onclick="filterByStatus('walkin',this)">🚶 Walk-in</button>
     </div>
+    <!-- Ορατό μήνυμα όταν δεν φόρτωσε το μητρώο υπηρεσιών· κενό αλλιώς -->
+    <div id="svc-warn"></div>
     <div id="clients-list"><div class="empty">Δεν υπάρχουν πελάτες ακόμα</div></div>
   </div>
 
@@ -773,7 +788,14 @@ async function init(){
   }
   managers=currentUser.email?[currentUser.email]:[];
   await loadOffices();
-  loadServices().then(()=>{ if(selectedPls.length) renderPlTags(); });
+  // Οι ενδείξεις ⛽/💳 της λίστας χρειάζονται το μητρώο υπηρεσιών, που
+  // έρχεται ΜΕΤΑ την πρώτη ζωγραφιά. Ξαναζωγραφίζουμε — διατηρώντας
+  // φίλτρο, αναζήτηση και θέση κύλισης (βλ. renderClients).
+  loadServices().then(()=>{
+    if(selectedPls.length) renderPlTags();
+    renderClients();
+    renderSvcWarn();
+  });
   // Οι προεπιλογές έμπαιναν μόνο από τη resetForm(), που δεν τρέχει στο load —
   // γι' αυτό ο χρήστης NIC έβλεπε «Ελλάδα» στη χώρα.
   wireFormUx(); applyFormDefaults();
@@ -1252,6 +1274,83 @@ function renderManagers(){
     <span class="manager-tag">${m}<button onclick="managers.splice(${i},1);renderManagers()">✕</button></span>`).join('');
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// ΤΟ COD ΜΙΑΣ ΥΠΗΡΕΣΙΑΣ ΓΙΑ ΕΝΑΝ ΠΕΛΑΤΗ — ΜΟΝΟ ΑΠΟ ΕΔΩ
+//
+// ΣΗΜΕΡΑ το COD είναι ΑΝΑ ΠΕΛΑΤΗ: μία στήλη `4a_clients.cod`, κοινή για
+// όλες τις υπηρεσίες του. Η συνάρτηση επιστρέφει αυτό το ίδιο αντικείμενο
+// για κάθε υπηρεσία που υποστηρίζει COD, και null για τις υπόλοιπες.
+//
+// ΑΥΡΙΟ θα γίνει COD ΑΝΑ ΥΠΗΡΕΣΙΑ. Όταν γίνει, αλλάζει ΜΟΝΟ ΑΥΤΗ Η
+// ΣΥΝΑΡΤΗΣΗ — κανένα σημείο εμφάνισης δεν ξέρει από πού έρχεται ο
+// κανόνας, οπότε κανένα δεν χρειάζεται να πειραχτεί.
+//
+// Επιστρέφει: το αντικείμενο COD, ή null αν η υπηρεσία δεν υποστηρίζει
+// COD ή ο πελάτης δεν έχει ενεργό COD.
+function codForService(client, serviceId){
+  if(!client || !client.cod || !client.cod.cod_enabled) return null;
+  const svc=(servicesCache||[]).find(x=>x.code===serviceId);
+  if(!svc || parseInt(svc.has_cod)!==1) return null;
+  return client.cod;
+}
+
+// Το κείμενο του κανόνα COD — ΙΔΙΑ μορφή με το παλιό badge του πελάτη,
+// ώστε να μη χρειαστεί κανείς να μάθει δεύτερη ανάγνωση.
+function codRuleText(cod){
+  const ff=parseFloat(cod.snapshot?.flat_fee ?? cod.cod_fee ?? 0);
+  const tl=parseFloat(cod.snapshot?.tier_limit ?? 500);
+  const pc=parseFloat(cod.snapshot?.tier_pct ?? 0);
+  return `COD €${ff.toFixed(2)} έως €${tl.toFixed(0)} · ${pc.toFixed(2)}% άνω`;
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// ΜΙΑ ΓΡΑΜΜΗ ΑΝΑ ΤΙΜΟΚΑΤΑΛΟΓΟ
+//
+//   📋 <emoji> <ΚΩΔΙΚΟΣ> · <markup> [⛽] [· 💳 <κανόνας>]
+//
+// Ο ΚΩΔΙΚΟΣ γράφεται ΠΑΝΤΑ. Μέχρι σήμερα το SVC_NAMES έδινε μόνο σημαίες
+// για τις μισές υπηρεσίες, οπότε ο κωδικός εξαφανιζόταν εντελώς.
+//
+// ΤΡΕΙΣ ΚΑΤΑΣΤΑΣΕΙΣ ανά εικονίδιο, και η διάκριση ΔΕΝ γίνεται μόνο με
+// διαφάνεια: κάθε εικονίδιο κουβαλά δίγλωσσο title, γιατί το ξεθωριασμένο
+// από το έντονο δεν ξεχωρίζει σε φωτεινή οθόνη, σε εκτύπωση, ούτε από
+// κάποιον με δυσχρωματοψία.
+function plLineHtml(client, p){
+  const code=String(p.service_id||'—');
+  const svc=(servicesCache||[]).find(x=>x.code===code);
+  const registryLoaded=!!(servicesCache && servicesCache.length);
+
+  const emoji=SVC_NAMES[code] ? `<span class="pl-emoji">${SVC_NAMES[code]}</span> ` : '';
+  const mu=p.global_markup ?? p.markup;
+  const muTxt=(mu!==null && mu!==undefined && mu!=='') ? ` · ${parseFloat(mu).toFixed(2)}%` : '';
+
+  // Άγνωστη υπηρεσία: ΟΡΑΤΗ ένδειξη, ποτέ σιωπηλή απόκρυψη. Μπαίνει μόνο
+  // όταν το μητρώο ΥΠΑΡΧΕΙ και η υπηρεσία λείπει από μέσα — αν το μητρώο
+  // δεν φόρτωσε καθόλου, φταίει το δίκτυο, όχι η υπηρεσία.
+  const unknown=(registryLoaded && !svc);
+  const warn=unknown
+    ? ` <span class="pl-unknown" title="Δεν βρέθηκε στο μητρώο υπηρεσιών / Not found in the service registry">⚠ ;</span>`
+    : '';
+
+  let icons='';
+  if(svc){
+    if(parseInt(svc.has_fuel)===1){
+      const on=!!p.fuel_enabled;
+      icons+=` <span class="pl-ico${on?'':' off'}" title="${on
+        ? 'Επίναυλος καυσίμων: ενεργός / Fuel surcharge: on'
+        : 'Επίναυλος καυσίμων: ανενεργός / Fuel surcharge: off'}">⛽</span>`;
+    }
+    if(parseInt(svc.has_cod)===1){
+      const cod=codForService(client, code);
+      icons+=cod
+        ? ` · <span class="pl-ico" title="Αντικαταβολή: ενεργή / COD: on">💳</span> ${escHtml(codRuleText(cod))}`
+        : ` <span class="pl-ico off" title="Αντικαταβολή: ανενεργή / COD: off">💳</span>`;
+    }
+  }
+
+  return `<div class="pl-line">📋 ${emoji}<span class="pl-code">${escHtml(code)}</span>${warn}${muTxt}${icons}</div>`;
+}
+
 async function fetchCodConfig(serviceCode){
   try{
     // enablement: has_cod απο servicesCache (μια πηγη αληθειας, οχι cod_service_config)
@@ -1711,8 +1810,24 @@ function deleteClient(id){
   renderClients();
 }
 
+// Το μητρώο υπηρεσιών δεν φόρτωσε: ΚΑΜΙΑ σιωπηλή αποτυχία — χωρίς αυτό
+// λείπουν ⛽ και 💳 από κάθε γραμμή, και ο χρήστης θα νόμιζε ότι ο πελάτης
+// δεν έχει επίναυλο ή αντικαταβολή.
+function renderSvcWarn(){
+  const el=document.getElementById('svc-warn');
+  if(!el) return;
+  el.innerHTML=(servicesCache && servicesCache.length) ? '' :
+    '<div class="svc-warn">⚠ Δεν φορτώθηκαν οι υπηρεσίες — οι ενδείξεις ⛽/💳 λείπουν ' +
+    'από τη λίστα. Οι τιμοκατάλογοι και τα ποσοστά είναι σωστά.</div>';
+}
+
 function renderClients(){
   const el=document.getElementById('clients-list');
+  // Η λίστα ξαναχτίζεται με innerHTML και μετά το loadServices(). Το φίλτρο
+  // και η αναζήτηση ζουν σε μεταβλητές (filterStatus/filterSearch) και
+  // επιβιώνουν από μόνα τους· η θέση κύλισης όχι — τη φυλάμε ρητά.
+  const _scrollY = window.scrollY;
+  const _restore = () => requestAnimationFrame(() => window.scrollTo(0, _scrollY));
   // Το φιλτράρισμα ανά χώρα γίνεται server-side στο clients.php (pricelist_scope).
   let list=[...clients];
   document.getElementById('client-count').textContent=list.length;
@@ -1727,9 +1842,12 @@ function renderClients(){
       .some(v=>String(v??'').toLowerCase().includes(q))
       || (qDigits!=='' && String(c.phone??'').replace(/\D/g,'').includes(qDigits)));
   }
-  if(!list.length){ el.innerHTML='<div class="empty">Δεν βρέθηκαν πελάτες</div>'; return; }
+  if(!list.length){ el.innerHTML='<div class="empty">Δεν βρέθηκαν πελάτες</div>'; _restore(); return; }
   el.innerHTML=list.map(c=>{
-    const plStr=(c.pricelists||[]).map(p=>`${SVC_NAMES[p.service_id]||p.service_id}${p.markup?' '+p.markup+'%':''}`).join(' · ')||'—';
+    // ΜΙΑ γραμμή ανά τιμοκατάλογο — όχι όλα μαζί χωρισμένα με «·».
+    const plLines=(c.pricelists||[]).length
+      ? (c.pricelists||[]).map(p=>plLineHtml(c,p)).join('')
+      : '<div class="pl-line">📋 —</div>';
     const isRenewal=c.status==='active'||c.status==='rejected';
     return `<div class="client-item${Number(c.is_demo)===1?' demo':''}">
       <div class="client-avatar" style="background:${c.is_walkin?'#fff8e1':STATUS_BG[c.status]||'#f0f0f0'};color:${c.is_walkin?'#7c6d00':STATUS_COLOR[c.status]||'#555'};">${c.is_walkin?'🚶':initials(c.name)}</div>
@@ -1745,9 +1863,10 @@ function renderClients(){
         </div>
         <div class="client-meta">ΑΦΜ: ${c.afm||'—'} · ${c.contact||'—'} · ${c.email||'—'}${c.phone?' · '+c.phone:''}${c.address?' · 📍'+c.address:''} · ${c.date||'—'} · ${c.user||'—'}</div>
         ${c.notes?`<div style="font-size:11px;color:#888;margin-top:2px;">💬 ${c.notes}</div>`:''}
-        <div class="client-pls">📋 ${plStr}</div>
+        ${plLines}
         ${obMiniList(c.id)}
-        ${c.cod?.cod_enabled?`<div class="client-cod-badge">💳 COD: €${parseFloat(c.cod.snapshot?.flat_fee||c.cod.cod_fee||0).toFixed(2)} έως €${parseFloat(c.cod.snapshot?.tier_limit||500).toFixed(0)} · ${parseFloat(c.cod.snapshot?.tier_pct||0).toFixed(2)}% άνω</div>`:''}
+<!-- Το ενιαίο badge COD του πελάτη αφαιρέθηκε: ο κανόνας εμφανίζεται πλέον
+             στη γραμμή ΚΑΘΕ υπηρεσίας που τον υποστηρίζει, μέσω codForService(). -->
       </div>
       <div class="client-actions">
         ${c.status==='accepted'?`<button class="action-btn cms" onclick="exportCMS(${c.id})">↓ CMS Export</button>`:''}
@@ -1760,6 +1879,7 @@ function renderClients(){
       </div>
     </div>`;
   }).join('');
+  _restore();
 }
 
 function filterByStatus(s,btn){ filterStatus=s; document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderClients(); }
