@@ -62,6 +62,12 @@
   .error-box { background: #ffebee; border: 1px solid #ffcdd2; border-radius: 4px; padding: 12px 16px; color: #c62828; font-size: 13px; margin-bottom: 20px; }
   .source { font-size: 11px; color: #bbb; margin-top: 16px; text-align: center; }
   .fetched-at { font-size: 11px; color: #aaa; margin-top: 4px; }
+  /* Ημερομηνία προβολής: η «τρέχουσα» εβδομάδα κρίνεται από ΑΥΤΗ, όχι από
+     τις σημαίες is_current του αρχείου, που παλιώνουν κάθε Δευτέρα. */
+  .view-date-row { font-size: 11px; color: #888; margin-top: 6px; }
+  .view-date-row input, .view-date-row button { font-size: 11px; padding: 2px 6px; border: 1px solid #ddd; border-radius: 3px; }
+  .view-date-row button { cursor: pointer; background: #f8f8f8; color: #555; }
+  .view-date-row #view-date-note { color: #c62828; font-weight: 600; }
  .nav { background: white; border-bottom: 1px solid #ddd; display: flex; }
 .nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer; color: #666; border-bottom: 2px solid transparent; text-decoration: none; display: flex; align-items: center; }
 .nav-btn.active { color: #cc0000; border-bottom-color: #cc0000; font-weight: 600; }
@@ -103,6 +109,12 @@
       <h1 class="page-title">Επίναυλος Καυσίμων — Διεθνείς Μεταφορές</h1>
       <p class="page-sub">Αυτόματη ενημέρωση καθημερινά 07:00</p>
       <p class="fetched-at" id="fetched-at"></p>
+      <p class="view-date-row">
+        Ημερομηνία προβολής:
+        <input type="date" id="view-date" onchange="onViewDate()">
+        <button type="button" onclick="onViewToday()">σήμερα</button>
+        <span id="view-date-note"></span>
+      </p>
     </div>
   </div>
 
@@ -135,14 +147,36 @@ function calcDiff(arr, idx) {
   return parseFloat((arr[idx].pct - arr[idx+1].pct).toFixed(2));
 }
 
-function renderDashboard(data) {
+// Η εβδομάδα που ΠΕΡΙΕΧΕΙ την ημερομηνία προβολής. Ίδιο κριτήριο με το
+// fuel-freshness.js: week_start <= iso <= week_end.
+function pickByDate(rows, iso) {
+  for (const r of (rows || []))
+    if (r.week_start && r.week_end && r.week_start <= iso && iso <= r.week_end) return r;
+  return null;
+}
+// Η επόμενη είναι η εβδομάδα που ΑΡΧΙΖΕΙ την επομένη του week_end της
+// τρέχουσας — όχι η θέση 1 του πίνακα, που ίσχυε μόνο όσο το αρχείο ήταν
+// φρέσκο.
+function pickNext(rows, curr) {
+  if (!curr || !curr.week_end) return null;
+  const d = new Date(curr.week_end + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + 1);
+  const iso = d.toISOString().slice(0, 10);
+  for (const r of (rows || [])) if (r.week_start === iso) return r;
+  return null;
+}
+
+function renderDashboard(data, viewISO) {
   const air  = data.air  || [];
   const road = data.road || [];
 
-  const currAir  = air.find(r => r.is_current);
-  const nextAir  = air.find(r => r.is_next);
-  const currRoad = road.find(r => r.is_current);
-  const nextRoad = road.find(r => r.is_next);
+  // ΑΠΟ ΗΜΕΡΟΜΗΝΙΑ. Υποχώρηση στη σημαία του αρχείου μόνο αν καμία
+  // εβδομάδα δεν περιέχει την ημερομηνία προβολής — ίδια προτεραιότητα
+  // με το pick() του fuel-freshness.js.
+  const currAir  = pickByDate(air,  viewISO) || air.find(r => r.is_current)  || null;
+  const currRoad = pickByDate(road, viewISO) || road.find(r => r.is_current) || null;
+  const nextAir  = pickNext(air,  currAir);
+  const nextRoad = pickNext(road, currRoad);
 
   const currAirPct  = currAir  ? currAir.pct  : '—';
   const nextAirPct  = nextAir  ? nextAir.pct  : '—';
@@ -153,22 +187,30 @@ function renderDashboard(data) {
   const currValuable = currAir  ? (currAir.pct  * VALUABLE_MULTIPLIER).toFixed(2) : '—';
   const nextValuable = nextAir  ? (nextAir.pct  * VALUABLE_MULTIPLIER).toFixed(2) : '—';
 
-  const diffAir      = currAir && nextAir  ? calcDiff(air,  1) : null;
-  const diffRoad     = currRoad && nextRoad ? calcDiff(road, 1) : null;
-  const diffValuable = diffAir ? parseFloat((diffAir * VALUABLE_MULTIPLIER).toFixed(2)) : null;
+  // ΜΕΤΑΒΟΛΗ = ΕΠΟΜΕΝΗ − ΤΡΕΧΟΥΣΑ, από τις γραμμές που ΕΠΙΛΕΧΘΗΚΑΝ.
+  // Παλιά: calcDiff(arr, 1), που υπέθετε ότι η επόμενη είναι πάντα στη
+  // θέση 1 — και το αποτέλεσμα αντιστρεφόταν στο badge(-diff), δίνοντας
+  // πράσινη μείωση σε αύξηση επίναυλου.
+  const delta = (next, curr) => (next && curr)
+    ? parseFloat((next.pct - curr.pct).toFixed(2)) : null;
+  const diffAir      = delta(nextAir,  currAir);
+  const diffRoad     = delta(nextRoad, currRoad);
+  const diffValuable = diffAir !== null
+    ? parseFloat((diffAir * VALUABLE_MULTIPLIER).toFixed(2)) : null;
 
   // History rows
+  const mark = (r, curr, nxt) => r === curr ? 'current' : r === nxt ? 'next-row' : '';
   const histAir = air.map((r, i) => `
-    <tr class="${r.is_current ? 'current' : r.is_next ? 'next-row' : ''}">
-      <td>${r.week} ${r.is_current ? '<span class="badge curr">τρέχουσα</span>' : r.is_next ? '<span class="badge nxt">επόμενη</span>' : ''}</td>
-      <td>${r.is_current ? '<strong>' : ''}${r.pct.toFixed(2)}%${r.is_current ? '</strong>' : ''}</td>
+    <tr class="${mark(r, currAir, nextAir)}">
+      <td>${r.week} ${r === currAir ? '<span class="badge curr">τρέχουσα</span>' : r === nextAir ? '<span class="badge nxt">επόμενη</span>' : ''}</td>
+      <td>${r === currAir ? '<strong>' : ''}${r.pct.toFixed(2)}%${r === currAir ? '</strong>' : ''}</td>
       <td>${badge(calcDiff(air, i))}</td>
     </tr>`).join('');
 
   const histRoad = road.map((r, i) => `
-    <tr class="${r.is_current ? 'current' : r.is_next ? 'next-row' : ''}">
-      <td>${r.week} ${r.is_current ? '<span class="badge curr">τρέχουσα</span>' : r.is_next ? '<span class="badge nxt">επόμενη</span>' : ''}</td>
-      <td>${r.is_current ? '<strong>' : ''}${r.pct.toFixed(2)}%${r.is_current ? '</strong>' : ''}</td>
+    <tr class="${mark(r, currRoad, nextRoad)}">
+      <td>${r.week} ${r === currRoad ? '<span class="badge curr">τρέχουσα</span>' : r === nextRoad ? '<span class="badge nxt">επόμενη</span>' : ''}</td>
+      <td>${r === currRoad ? '<strong>' : ''}${r.pct.toFixed(2)}%${r === currRoad ? '</strong>' : ''}</td>
       <td>${badge(calcDiff(road, i))}</td>
     </tr>`).join('');
 
@@ -177,9 +219,9 @@ function renderDashboard(data) {
     const d   = calcDiff(air, i);
     const dv  = d !== null ? parseFloat((d * VALUABLE_MULTIPLIER).toFixed(2)) : null;
     return `
-    <tr class="${r.is_current ? 'current' : r.is_next ? 'next-row' : ''}">
-      <td>${r.week} ${r.is_current ? '<span class="badge curr">τρέχουσα</span>' : r.is_next ? '<span class="badge nxt">επόμενη</span>' : ''}</td>
-      <td>${r.is_current ? '<strong>' : ''}${val}%${r.is_current ? '</strong>' : ''}</td>
+    <tr class="${mark(r, currAir, nextAir)}">
+      <td>${r.week} ${r === currAir ? '<span class="badge curr">τρέχουσα</span>' : r === nextAir ? '<span class="badge nxt">επόμενη</span>' : ''}</td>
+      <td>${r === currAir ? '<strong>' : ''}${val}%${r === currAir ? '</strong>' : ''}</td>
       <td>${badge(dv)}</td>
     </tr>`;
   }).join('');
@@ -218,17 +260,17 @@ function renderDashboard(data) {
         <div class="metric next">
           <div class="metric-label">AIR — επόμενη</div>
           <div class="metric-value warn">${typeof nextAirPct === 'number' ? nextAirPct.toFixed(2)+'%' : nextAirPct}</div>
-          <div class="metric-sub">${nextAir ? nextAir.week : '—'} ${diffAir !== null ? badge(-diffAir) : ''}</div>
+          <div class="metric-sub">${nextAir ? nextAir.week : '—'} ${diffAir !== null ? badge(diffAir) : ''}</div>
         </div>
         <div class="metric next">
           <div class="metric-label">ROAD — επόμενη</div>
           <div class="metric-value warn">${typeof nextRoadPct === 'number' ? nextRoadPct.toFixed(2)+'%' : nextRoadPct}</div>
-          <div class="metric-sub">${nextRoad ? nextRoad.week : '—'} ${diffRoad !== null ? badge(-diffRoad) : ''}</div>
+          <div class="metric-sub">${nextRoad ? nextRoad.week : '—'} ${diffRoad !== null ? badge(diffRoad) : ''}</div>
         </div>
         <div class="metric next">
           <div class="metric-label">Valuable — επόμενη</div>
           <div class="metric-value warn">${nextValuable !== '—' ? nextValuable+'%' : '—'}</div>
-          <div class="metric-sub">${nextAir ? nextAir.week : '—'} ${diffValuable !== null ? badge(-diffValuable) : ''}</div>
+          <div class="metric-sub">${nextAir ? nextAir.week : '—'} ${diffValuable !== null ? badge(diffValuable) : ''}</div>
           <div class="metric-note">Valuable goods</div>
         </div>
       </div>
@@ -310,14 +352,43 @@ function showTab(tab, btn) {
 // Φόρτωση JSON — μέσω fuel-freshness.js: ίδια πηγή, ίδιο cache και ίδιο
 // κριτήριο εγκυρότητας με τις υπόλοιπες σελίδες. Η σελίδα εξακολουθεί να
 // ζωγραφίζει ΟΛΟ το αρχείο (res.data), όχι μόνο την τρέχουσα εβδομάδα.
+// Το αρχείο κρατιέται, ώστε η αλλαγή ημερομηνίας προβολής να ξαναζωγραφίζει
+// χωρίς νέο δίκτυο.
+let FUEL_DATA = null;
+
+function viewISO() {
+  const el = document.getElementById('view-date');
+  return (el && el.value) ? el.value : FuelFreshness.todayISO();
+}
+
+function paint() {
+  if (!FUEL_DATA) return;
+  const iso = viewISO();
+  // Η κατάσταση φρεσκάδας κρίνεται ΓΙΑ ΤΗΝ ΙΔΙΑ ημερομηνία που ζωγραφίζουμε.
+  const res = FuelFreshness.check(FUEL_DATA, iso);
+  renderDashboard(FUEL_DATA, iso);
+  FuelFreshness.warningsBox(res, 'freshness');
+  // Εδώ δεν μπαίνει σύνδεσμος: η σελίδα ΕΙΝΑΙ ο έλεγχος του επίναυλου.
+  FuelFreshness.banner(res, 'freshness', { link: false });
+  const note = document.getElementById('view-date-note');
+  if (note) note.textContent = (iso === FuelFreshness.todayISO())
+    ? '' : '— προβολή άλλης ημερομηνίας, όχι σήμερα';
+}
+
+function onViewDate() { paint(); }
+function onViewToday() {
+  const el = document.getElementById('view-date');
+  if (el) el.value = FuelFreshness.todayISO();
+  paint();
+}
+
 FuelFreshness.load()
   .then(res => {
     if (!res.data) throw new Error(res.reason || 'δεν φορτώθηκαν δεδομένα');
-    renderDashboard(res.data);
-    // Διαγνωστικά του scraper — κενά, τίποτα στην οθόνη.
-    FuelFreshness.warningsBox(res, 'freshness');
-    // Εδώ δεν μπαίνει σύνδεσμος: η σελίδα ΕΙΝΑΙ ο έλεγχος του επίναυλου.
-    FuelFreshness.banner(res, 'freshness', { link: false });
+    FUEL_DATA = res.data;
+    const el = document.getElementById('view-date');
+    if (el && !el.value) el.value = FuelFreshness.todayISO();
+    paint();
   })
   .catch(err => {
     document.getElementById('error-container').innerHTML =
