@@ -62,12 +62,13 @@
   .error-box { background: #ffebee; border: 1px solid #ffcdd2; border-radius: 4px; padding: 12px 16px; color: #c62828; font-size: 13px; margin-bottom: 20px; }
   .source { font-size: 11px; color: #bbb; margin-top: 16px; text-align: center; }
   .fetched-at { font-size: 11px; color: #aaa; margin-top: 4px; }
-  /* Ημερομηνία προβολής: η «τρέχουσα» εβδομάδα κρίνεται από ΑΥΤΗ, όχι από
-     τις σημαίες is_current του αρχείου, που παλιώνουν κάθε Δευτέρα. */
+  /* Ημερομηνία προβολής: ΜΟΝΟ ένδειξη. Η «τρέχουσα» εβδομάδα κρίνεται από
+     ΑΥΤΗ την ημερομηνία, όχι από τις σημαίες is_current του αρχείου, που
+     παλιώνουν κάθε Δευτέρα. Δεν είναι πεδίο — δεν αλλάζεται από την οθόνη,
+     ώστε να μην μπορεί να μείνει αλλαγμένη και να τιμολογήσει κανείς με
+     λάθος εβδομάδα. Η παραμετροποίηση ζει μόνο στα harness. */
   .view-date-row { font-size: 11px; color: #888; margin-top: 6px; }
-  .view-date-row input, .view-date-row button { font-size: 11px; padding: 2px 6px; border: 1px solid #ddd; border-radius: 3px; }
-  .view-date-row button { cursor: pointer; background: #f8f8f8; color: #555; }
-  .view-date-row #view-date-note { color: #c62828; font-weight: 600; }
+  .view-date-row #view-date-label { color: #555; font-weight: 600; }
  .nav { background: white; border-bottom: 1px solid #ddd; display: flex; }
 .nav-btn { padding: 10px 18px; font-size: 13px; border: none; background: none; cursor: pointer; color: #666; border-bottom: 2px solid transparent; text-decoration: none; display: flex; align-items: center; }
 .nav-btn.active { color: #cc0000; border-bottom-color: #cc0000; font-weight: 600; }
@@ -109,12 +110,7 @@
       <h1 class="page-title">Επίναυλος Καυσίμων — Διεθνείς Μεταφορές</h1>
       <p class="page-sub">Αυτόματη ενημέρωση καθημερινά 07:00</p>
       <p class="fetched-at" id="fetched-at"></p>
-      <p class="view-date-row">
-        Ημερομηνία προβολής:
-        <input type="date" id="view-date" onchange="onViewDate()">
-        <button type="button" onclick="onViewToday()">σήμερα</button>
-        <span id="view-date-note"></span>
-      </p>
+      <p class="view-date-row">Προβολή για: <span id="view-date-label">—</span></p>
     </div>
   </div>
 
@@ -145,6 +141,18 @@ function badge(diff) {
 function calcDiff(arr, idx) {
   if (idx >= arr.length - 1) return null;
   return parseFloat((arr[idx].pct - arr[idx+1].pct).toFixed(2));
+}
+
+// «Δευτέρα 05/10/2026» από ISO. Μεσημέρι UTC, ώστε η ζώνη του browser να
+// μην μετακινεί την ημέρα.
+const GR_DAYS = ['Κυριακή','Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο'];
+function fmtViewDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso + 'T12:00:00Z');
+  if (isNaN(d.getTime())) return iso;
+  const dd = String(d.getUTCDate()).padStart(2,'0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2,'0');
+  return `${GR_DAYS[d.getUTCDay()]} ${dd}/${mm}/${d.getUTCFullYear()}`;
 }
 
 // Η εβδομάδα που ΠΕΡΙΕΧΕΙ την ημερομηνία προβολής. Ίδιο κριτήριο με το
@@ -234,6 +242,10 @@ function renderDashboard(data, viewISO) {
   document.getElementById('fetched-at').textContent = `Τελευταία ανάκτηση: ${fetchedLbl}`;
   // Ίδια πηγή, όχι το ρολόι του browser.
   document.getElementById('last-update').textContent = fetchedLbl;
+  // Η ένδειξη γράφεται ΕΔΩ, με το ΙΔΙΟ viewISO που έκρινε τις εβδομάδες —
+  // δεν μπορεί να αποκλίνει από την ημερομηνία που πράγματι χρησιμοποιήθηκε.
+  const vlbl = document.getElementById('view-date-label');
+  if (vlbl) vlbl.textContent = fmtViewDate(viewISO);
 
   document.getElementById('content').innerHTML = `
 
@@ -357,38 +369,23 @@ function showTab(tab, btn) {
 // χωρίς νέο δίκτυο.
 let FUEL_DATA = null;
 
-function viewISO() {
-  const el = document.getElementById('view-date');
-  return (el && el.value) ? el.value : FuelFreshness.todayISO();
-}
-
 function paint() {
   if (!FUEL_DATA) return;
-  const iso = viewISO();
+  // ΠΑΝΤΑ σήμερα. Η ημερομηνία δεν αλλάζεται από την οθόνη — το now είναι
+  // παράμετρος ΜΟΝΟ στα harness (tests/frontend/dashboard.test.js).
+  const iso = FuelFreshness.todayISO();
   // Η κατάσταση φρεσκάδας κρίνεται ΓΙΑ ΤΗΝ ΙΔΙΑ ημερομηνία που ζωγραφίζουμε.
   const res = FuelFreshness.check(FUEL_DATA, iso);
   renderDashboard(FUEL_DATA, iso);
   FuelFreshness.warningsBox(res, 'freshness');
   // Εδώ δεν μπαίνει σύνδεσμος: η σελίδα ΕΙΝΑΙ ο έλεγχος του επίναυλου.
   FuelFreshness.banner(res, 'freshness', { link: false });
-  const note = document.getElementById('view-date-note');
-  if (note) note.textContent = (iso === FuelFreshness.todayISO())
-    ? '' : '— προβολή άλλης ημερομηνίας, όχι σήμερα';
-}
-
-function onViewDate() { paint(); }
-function onViewToday() {
-  const el = document.getElementById('view-date');
-  if (el) el.value = FuelFreshness.todayISO();
-  paint();
 }
 
 FuelFreshness.load()
   .then(res => {
     if (!res.data) throw new Error(res.reason || 'δεν φορτώθηκαν δεδομένα');
     FUEL_DATA = res.data;
-    const el = document.getElementById('view-date');
-    if (el && !el.value) el.value = FuelFreshness.todayISO();
     paint();
   })
   .catch(err => {

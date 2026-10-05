@@ -30,11 +30,12 @@ function env(){
   new Function('window','localStorage','fetch','document', mod)(
     win, { getItem: () => null, setItem(){} }, () => Promise.reject(new Error('χωρίς δίκτυο')), doc);
 
-  const fn = new Function('document','VALUABLE_MULTIPLIER','FuelFreshness',
-    grab('badge') + '\n' + grab('calcDiff') + '\n' + grab('pickByDate') + '\n' +
-    grab('pickNext') + '\n' + grab('renderDashboard') + '\n' +
-    'return {badge, calcDiff, pickByDate, pickNext, renderDashboard};');
-  return { api: fn(doc, 1.06, win.FuelFreshness), els, doc, FF: win.FuelFreshness };
+  const GR_DAYS = ['Κυριακή','Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο'];
+  const fn = new Function('document','VALUABLE_MULTIPLIER','FuelFreshness','GR_DAYS',
+    grab('badge') + '\n' + grab('calcDiff') + '\n' + grab('fmtViewDate') + '\n' +
+    grab('pickByDate') + '\n' + grab('pickNext') + '\n' + grab('renderDashboard') + '\n' +
+    'return {badge, calcDiff, fmtViewDate, pickByDate, pickNext, renderDashboard};');
+  return { api: fn(doc, 1.06, win.FuelFreshness, GR_DAYS), els, doc, FF: win.FuelFreshness };
 }
 
 let pass = 0, fail = 0;
@@ -139,7 +140,38 @@ console.log('\n═══ Αρχείο χωρίς γραμμές ═══');
 }
 
 // ── 7. Δομικοί έλεγχοι: δεν επανήλθε το σφάλμα ─────────────────────────────
+// ── 8. Η ένδειξη «Προβολή για» ─────────────────────────────────────────────
+console.log('\n═══ Ένδειξη «Προβολή για» ═══');
+{
+  // Η ένδειξη πρέπει να δείχνει την ημερομηνία που ΠΡΑΓΜΑΤΙ χρησιμοποιήθηκε
+  // για την επιλογή εβδομάδας — γι' αυτό γράφεται μέσα στη renderDashboard,
+  // με το ίδιο viewISO, και δεν μπορεί να αποκλίνει.
+  for (const [iso, want] of [['2026-10-02','Παρασκευή 02/10/2026'],
+                             ['2026-10-03','Σάββατο 03/10/2026'],
+                             ['2026-10-04','Κυριακή 04/10/2026'],
+                             ['2026-10-05','Δευτέρα 05/10/2026'],
+                             ['2026-10-12','Δευτέρα 12/10/2026']]) {
+    const { api, els } = env();
+    api.renderDashboard(FIX, iso);
+    const got = els['view-date-label'].textContent;
+    ck(`${iso} → «${want}»`, got === want, got);
+  }
+  // Η ίδια ημερομηνία που πήγε στην επιλογή εβδομάδας
+  const { api, els } = env();
+  api.renderDashboard(FIX, '2026-10-05');
+  ck('η ένδειξη συμφωνεί με την εβδομάδα που επιλέχθηκε',
+     els['view-date-label'].textContent.includes('05/10/2026') &&
+     els['content'].innerHTML.includes('48.00%'));
+}
+
 console.log('\n═══ Δομικά ═══');
+ck('ΚΑΝΕΝΑ <input> ημερομηνίας στη σελίδα', !/<input[^>]*type="date"/i.test(src),
+   (src.match(/<input[^>]*type="date"[^>]*>/i) || [])[0]);
+ck('κανένα input/button «ημερομηνίας προβολής»',
+   !src.includes('onViewDate') && !src.includes('onViewToday') && !src.includes('id="view-date"'));
+ck('η ένδειξη είναι μόνο ανάγνωσης (span)', src.includes('id="view-date-label"'));
+ck('η σελίδα παίρνει το σήμερα από το module',
+   /const iso = FuelFreshness\.todayISO\(\);/.test(src));
 // Τα σχόλια εξαιρούνται: το αρχείο ΠΕΡΙΓΡΑΦΕΙ το παλιό badge(-diff) σε σχόλιο.
 const code = src.split(/\r?\n/).filter(l => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n');
 ck('κανένα badge(-diff...) σε ΚΩΔΙΚΑ', !/badge\(-\s*diff/.test(code));
