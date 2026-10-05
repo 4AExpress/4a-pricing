@@ -187,10 +187,11 @@ function renderDashboard(data, viewISO) {
   const currValuable = currAir  ? (currAir.pct  * VALUABLE_MULTIPLIER).toFixed(2) : '—';
   const nextValuable = nextAir  ? (nextAir.pct  * VALUABLE_MULTIPLIER).toFixed(2) : '—';
 
-  // ΜΕΤΑΒΟΛΗ = ΕΠΟΜΕΝΗ − ΤΡΕΧΟΥΣΑ, από τις γραμμές που ΕΠΙΛΕΧΘΗΚΑΝ.
-  // Παλιά: calcDiff(arr, 1), που υπέθετε ότι η επόμενη είναι πάντα στη
-  // θέση 1 — και το αποτέλεσμα αντιστρεφόταν στο badge(-diff), δίνοντας
-  // πράσινη μείωση σε αύξηση επίναυλου.
+  // ΜΕΤΑΒΟΛΗ = ΕΠΟΜΕΝΗ − ΤΡΕΧΟΥΣΑ, υπολογισμένη από τις δύο γραμμές που
+  // επιλέχθηκαν με ημερομηνία. Το πρόσημο φτάνει αυτούσιο στο badge():
+  // θετική τιμή σημαίνει αύξηση επίναυλου και χρωματίζεται .badge.up
+  // (κόκκινο), αρνητική μείωση και χρωματίζεται .badge.down (πράσινο).
+  // Καμία αντιστροφή στο σημείο κλήσης, καμία υπόθεση για θέση στον πίνακα.
   const delta = (next, curr) => (next && curr)
     ? parseFloat((next.pct - curr.pct).toFixed(2)) : null;
   const diffAir      = delta(nextAir,  currAir);
