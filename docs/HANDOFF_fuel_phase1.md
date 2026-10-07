@@ -242,9 +242,13 @@ GitHub Action, ISO χωρίς offset) επιστρέφονται **χωρίς δ
 Δεν είναι γνωστό αν είναι UTC ή ώρα Ελλάδας. Πριν χρησιμοποιηθούν για
 σύγκριση ή εμφάνιση, να οριστεί ρητά η ζώνη (π.χ. ISO με `Z`/offset).
 
-**Το `api/fuel_lib.php` δεν έχει ανεβεί στον server.** Κανένα ζωντανό
-endpoint δεν το χρησιμοποιεί ακόμα, και δεν υπάρχει στο webroot. Το SCP
-γίνεται όταν το χρειαστεί το endpoint της §5.
+**Το `api/fuel_lib.php` ανέβηκε στον server στις 07-10-2026**, μαζί με το
+`api/fuel_catalog.php` που το χρησιμοποιεί (deploy της §5, SCP). Το md5
+του server ταυτίζεται με το blob του commit `ce68d96`:
+`fuel_lib.php` `5e323d47…`, `fuel_catalog.php` `5a904cda…`. Στον server τα
+αρχεία έχουν τέλη γραμμών LF. Το τοπικό working copy στα Windows έχει CRLF
+(`core.autocrlf=true`), οπότε το md5 του working copy διαφέρει. Μετά από
+κανονικοποίηση CRLF→LF είναι ίδιο.
 
 **§5 — dashboard από τη βάση.** Νέο endpoint μόνο ανάγνωσης που επιστρέφει
 `4a_fuel_types` + `4a_fuel_cms_services`. Το
