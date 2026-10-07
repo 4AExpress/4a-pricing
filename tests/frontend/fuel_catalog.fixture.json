@@ -1,0 +1,367 @@
+{
+  "_note": "Απάντηση του api/fuel_catalog.php πάνω στο fuel.fixture.099ce2e.json. Τιμές ΓΡΑΜΜΕΝΕΣ, όχι υπολογισμένες σε JS. Το tests/php/fuel_lib.test.php επαληθεύει ότι fuel_week_prices() και fuel_catalog_cards() βγάζουν ακριβώς αυτό.",
+  "ok": true,
+  "types": [
+    {
+      "code": "AIR",
+      "label_el": "Αεροπορικός",
+      "label_en": "Air",
+      "source": "air",
+      "multiplier": "1.0000"
+    },
+    {
+      "code": "ROAD",
+      "label_el": "Οδικός",
+      "label_en": "Road",
+      "source": "road",
+      "multiplier": "1.0000"
+    },
+    {
+      "code": "AIR_CY",
+      "label_el": "Air Cyprus",
+      "label_en": "Air Cyprus",
+      "source": "air",
+      "multiplier": "1.0600"
+    },
+    {
+      "code": "NONE",
+      "label_el": "Χωρίς επίναυλο",
+      "label_en": "No fuel surcharge",
+      "source": null,
+      "multiplier": null
+    }
+  ],
+  "cards": [
+    {
+      "station": "GR",
+      "cms_service": "S1003",
+      "service_name": "Export Express",
+      "fuel_type": "AIR",
+      "fuel_label": "Αεροπορικός",
+      "directions": [
+        "export"
+      ],
+      "zones": [
+        "Z1",
+        "Z2",
+        "Z3",
+        "Z4",
+        "Z5",
+        "Z6",
+        "Z7",
+        "Z9",
+        "Z10"
+      ],
+      "is_combi": 0,
+      "visible_scope": "GR",
+      "sort_order": 10
+    },
+    {
+      "station": "GR",
+      "cms_service": "S1012",
+      "service_name": "IMPORT EXPRESS",
+      "fuel_type": "AIR",
+      "fuel_label": "Αεροπορικός",
+      "directions": [
+        "import"
+      ],
+      "zones": [
+        "Z1",
+        "Z2",
+        "Z3",
+        "Z4",
+        "Z5",
+        "Z6",
+        "Z7"
+      ],
+      "is_combi": 0,
+      "visible_scope": "GR",
+      "sort_order": 100
+    },
+    {
+      "station": "GR",
+      "cms_service": "S1026",
+      "service_name": "CARGO EXPORT",
+      "fuel_type": "AIR",
+      "fuel_label": "Αεροπορικός",
+      "directions": [
+        "export"
+      ],
+      "zones": [
+        "Z1",
+        "Z2",
+        "Z3",
+        "Z4",
+        "Z5",
+        "Z6",
+        "Z7"
+      ],
+      "is_combi": 0,
+      "visible_scope": "GR",
+      "sort_order": 170
+    },
+    {
+      "station": "GR",
+      "cms_service": "S1029",
+      "service_name": "Bio Express",
+      "fuel_type": "AIR",
+      "fuel_label": "Αεροπορικός",
+      "directions": [
+        "export"
+      ],
+      "zones": [
+        "Z1",
+        "Z2",
+        "Z3",
+        "Z4",
+        "Z5",
+        "Z6",
+        "Z7",
+        "Z9",
+        "Z10"
+      ],
+      "is_combi": 0,
+      "visible_scope": "GR",
+      "sort_order": 250
+    },
+    {
+      "station": "GR",
+      "cms_service": "S1032",
+      "service_name": "Airletter 500gr",
+      "fuel_type": "AIR",
+      "fuel_label": "Αεροπορικός",
+      "directions": [
+        "export"
+      ],
+      "zones": [
+        "Z1",
+        "Z2",
+        "Z3",
+        "Z4",
+        "Z5",
+        "Z6",
+        "Z7",
+        "Z9",
+        "Z10"
+      ],
+      "is_combi": 0,
+      "visible_scope": "GR",
+      "sort_order": 340
+    },
+    {
+      "station": "GR",
+      "cms_service": "S1027",
+      "service_name": "Air Cyprus",
+      "fuel_type": "AIR_CY",
+      "fuel_label": "Air Cyprus",
+      "directions": [
+        "export"
+      ],
+      "zones": [
+        "Z9"
+      ],
+      "is_combi": 0,
+      "visible_scope": "GR",
+      "sort_order": 430
+    },
+    {
+      "station": "GR",
+      "cms_service": "S1010",
+      "service_name": "Road 4-8 export",
+      "fuel_type": "ROAD",
+      "fuel_label": "Οδικός",
+      "directions": [
+        "export"
+      ],
+      "zones": [
+        "Z1",
+        "Z2",
+        "Z3"
+      ],
+      "is_combi": 0,
+      "visible_scope": "GR",
+      "sort_order": 440
+    },
+    {
+      "station": "GR",
+      "cms_service": "S1041",
+      "service_name": "IMPORT ROAD",
+      "fuel_type": "ROAD",
+      "fuel_label": "Οδικός",
+      "directions": [
+        "import"
+      ],
+      "zones": [
+        "Z1",
+        "Z2",
+        "Z3"
+      ],
+      "is_combi": 0,
+      "visible_scope": "GR",
+      "sort_order": 470
+    },
+    {
+      "station": "CY",
+      "cms_service": "S1003",
+      "service_name": "Export Express",
+      "fuel_type": "AIR",
+      "fuel_label": "Αεροπορικός",
+      "directions": [
+        "export"
+      ],
+      "zones": [
+        "Z1",
+        "Z2",
+        "Z3",
+        "Z4",
+        "Z5",
+        "Z6",
+        "Z7"
+      ],
+      "is_combi": 0,
+      "visible_scope": "CY",
+      "sort_order": 500
+    },
+    {
+      "station": "CY",
+      "cms_service": "S1012",
+      "service_name": "IMPORT EXPRESS",
+      "fuel_type": "AIR",
+      "fuel_label": "Αεροπορικός",
+      "directions": [
+        "import"
+      ],
+      "zones": [
+        "Z1",
+        "Z2",
+        "Z3",
+        "Z4",
+        "Z5",
+        "Z6",
+        "Z7"
+      ],
+      "is_combi": 0,
+      "visible_scope": "CY",
+      "sort_order": 570
+    },
+    {
+      "station": "CY",
+      "cms_service": "S1050",
+      "service_name": "EXPORTAIRANDROAD",
+      "fuel_type": "ROAD",
+      "fuel_label": "Οδικός",
+      "directions": [
+        "export"
+      ],
+      "zones": [
+        "Z1",
+        "Z2",
+        "Z3"
+      ],
+      "is_combi": 1,
+      "visible_scope": "CY",
+      "sort_order": 640
+    },
+    {
+      "station": "CY",
+      "cms_service": "S1051",
+      "service_name": "IMPORT ROAD AND AIR",
+      "fuel_type": "ROAD",
+      "fuel_label": "Οδικός",
+      "directions": [
+        "import"
+      ],
+      "zones": [
+        "Z1",
+        "Z2",
+        "Z3"
+      ],
+      "is_combi": 1,
+      "visible_scope": "CY",
+      "sort_order": 670
+    }
+  ],
+  "weeks": [
+    {
+      "week_start": "2026-10-12",
+      "week_end": "2026-10-18",
+      "week": "Οκτώβριος 12-18, 2026",
+      "src": {
+        "air": 49,
+        "road": 40.75
+      },
+      "pct": {
+        "AIR": "49.00",
+        "ROAD": "40.75",
+        "AIR_CY": "51.94",
+        "NONE": null
+      }
+    },
+    {
+      "week_start": "2026-10-05",
+      "week_end": "2026-10-11",
+      "week": "Οκτώβριος 5-11, 2026",
+      "src": {
+        "air": 48,
+        "road": 40
+      },
+      "pct": {
+        "AIR": "48.00",
+        "ROAD": "40.00",
+        "AIR_CY": "50.88",
+        "NONE": null
+      }
+    },
+    {
+      "week_start": "2026-09-28",
+      "week_end": "2026-10-04",
+      "week": "Σεπτέμβριος 28-Οκτώβριος 4, 2026",
+      "src": {
+        "air": 46.25,
+        "road": 38.25
+      },
+      "pct": {
+        "AIR": "46.25",
+        "ROAD": "38.25",
+        "AIR_CY": "49.03",
+        "NONE": null
+      }
+    },
+    {
+      "week_start": "2026-09-21",
+      "week_end": "2026-09-27",
+      "week": "Σεπτέμβριος 21-27, 2026",
+      "src": {
+        "air": 45,
+        "road": 37
+      },
+      "pct": {
+        "AIR": "45.00",
+        "ROAD": "37.00",
+        "AIR_CY": "47.70",
+        "NONE": null
+      }
+    },
+    {
+      "week_start": "2026-09-14",
+      "week_end": "2026-09-20",
+      "week": "Σεπτέμβριος 14-20, 2026",
+      "src": {
+        "air": 43.75,
+        "road": 35.5
+      },
+      "pct": {
+        "AIR": "43.75",
+        "ROAD": "35.50",
+        "AIR_CY": "46.38",
+        "NONE": null
+      }
+    }
+  ],
+  "cache": {
+    "ok": true,
+    "stale": false,
+    "fetched_at": "2026-10-04T10:51:21.108453",
+    "read_at": null
+  }
+}

@@ -1,5 +1,5 @@
 <?php
-/* api/fuel_lib.php | v1.0 | 07-10-2026
+/* api/fuel_lib.php | v1.1 | 07-10-2026
  *
  * ΕΝΑ ΣΗΜΕΙΟ ΥΠΟΛΟΓΙΣΜΟΥ ΕΠΙΝΑΥΛΟΥ, ΣΤΟΝ SERVER.
  *
@@ -207,6 +207,197 @@ function fuel_cms_file($rows)
                        fuel_num($r['charge']), $r['we_from']);
     }
     return $out;
+}
+
+/**
+ * ΚΑΡΤΕΣ ΤΟΥ DASHBOARD: ο κατάλογος CMS ανά σταθμό και υπηρεσία, όχι ανά
+ * γραμμή. Μία κάρτα ενώνει export και import της ίδιας υπηρεσίας στον ίδιο
+ * σταθμό. Οι εξαιρέσεις (4a_fuel_cms_extra_rows) δεν φτιάχνουν κάρτα: είναι
+ * γραμμές αρχείου, όχι υπηρεσίες.
+ *
+ * Καθαρή συνάρτηση, χωρίς βάση, ώστε να δοκιμάζεται.
+ *
+ * @param array $catRows  γραμμές του 4a_fuel_cms_services
+ * @param array $types    4a_fuel_types με κλειδί το code
+ * @return array          κάρτες κατά σταθμό και sort_order
+ * @throws RuntimeException αν μία υπηρεσία έχει δύο fuel_type ή άγνωστο τύπο
+ */
+function fuel_catalog_cards(array $catRows, array $types)
+{
+    $cards = array();
+    foreach ($catRows as $c) {
+        $k = $c['station_country'] . '|' . $c['cms_service'];
+        if (!isset($types[$c['fuel_type']])) {
+            throw new RuntimeException("άγνωστος fuel_type '{$c['fuel_type']}' στην {$k}");
+        }
+        if (!isset($cards[$k])) {
+            $cards[$k] = array(
+                'station'       => $c['station_country'],
+                'cms_service'   => $c['cms_service'],
+                'service_name'  => $c['service_name'],
+                'fuel_type'     => $c['fuel_type'],
+                'fuel_label'    => $types[$c['fuel_type']]['label_el'],
+                'directions'    => array(),
+                'zones'         => array(),
+                'is_combi'      => 0,
+                'visible_scope' => $c['visible_scope'],
+                'sort_order'    => (int)$c['sort_order'],
+            );
+        }
+        $card =& $cards[$k];
+        // Καμία σιωπηλή επιλογή: δύο τύποι για την ίδια κάρτα είναι λάθος δεδομένων.
+        if ($card['fuel_type'] !== $c['fuel_type']) {
+            throw new RuntimeException("δύο fuel_type στην {$k}");
+        }
+        if ($card['visible_scope'] !== $c['visible_scope']) {
+            throw new RuntimeException("δύο visible_scope στην {$k}");
+        }
+        $card['directions'][] = $c['direction'];
+        foreach (explode(',', $c['zones']) as $z) {
+            $z = trim($z);
+            if ($z !== '' && !in_array($z, $card['zones'], true)) $card['zones'][] = $z;
+        }
+        if ((int)$c['is_combi']) $card['is_combi'] = 1;
+        $card['sort_order'] = min($card['sort_order'], (int)$c['sort_order']);
+        unset($card);
+    }
+
+    $out = array_values($cards);
+    usort($out, function ($a, $b) {
+        if ($a['station'] !== $b['station']) return strcmp($b['station'], $a['station']); // GR πριν CY
+        return $a['sort_order'] - $b['sort_order'];
+    });
+    return $out;
+}
+
+/**
+ * ΤΙΜΕΣ ΑΝΑ ΤΥΠΟ ΓΙΑ ΚΑΘΕ ΕΒΔΟΜΑΔΑ ΤΟΥ CACHE, με τη fuel_pct() — το ίδιο
+ * σημείο υπολογισμού με το αρχείο CMS. Το frontend μόνο εμφανίζει.
+ *
+ * Το `src` κρατά την τιμή πηγής όπως ήρθε, ώστε η σελίδα να ελέγξει ότι
+ * μιλά για την ίδια εβδομάδα με την ίδια τιμή. Αν ο browser και ο server
+ * έχουν διαφορετική έκδοση του cache, η σελίδα δείχνει «—», δεν υπολογίζει.
+ *
+ * @param array $cache  το fuel_surcharge_cache.json αποκωδικοποιημένο
+ * @param array $types  4a_fuel_types με κλειδί το code
+ * @return array        εβδομάδες με την ίδια σειρά που εμφανίζονται στο cache
+ */
+function fuel_week_prices(array $cache, array $types)
+{
+    $weeks = array();
+    foreach (array('air', 'road') as $src) {
+        $rows = (isset($cache[$src]) && is_array($cache[$src])) ? $cache[$src] : array();
+        foreach ($rows as $r) {
+            if (empty($r['week_start']) || !isset($r['pct']) || !is_numeric($r['pct'])) continue;
+            $ws = $r['week_start'];
+            if (!isset($weeks[$ws])) {
+                $weeks[$ws] = array(
+                    'week_start' => $ws,
+                    'week_end'   => isset($r['week_end']) ? $r['week_end'] : '',
+                    'week'       => isset($r['week']) ? $r['week'] : '',
+                    'src'        => array('air' => null, 'road' => null),
+                    'pct'        => array(),
+                );
+            }
+            $weeks[$ws]['src'][$src] = $r['pct'];
+        }
+    }
+    foreach ($weeks as $ws => $w) {
+        foreach ($types as $code => $t) {
+            $s = $t['source'];
+            $weeks[$ws]['pct'][$code] = ($s !== null && $w['src'][$s] !== null)
+                ? fuel_pct($w['src'][$s], $t['multiplier'])
+                : null;
+        }
+    }
+    return array_values($weeks);
+}
+
+/**
+ * ΕΛΕΓΧΟΣ ΠΕΡΙΕΧΟΜΕΝΟΥ του cache επίναυλου, όχι μόνο έγκυρου JSON.
+ * Ένα αρχείο που πέρασε το json_decode αλλά ήρθε άδειο ή μισό δεν πρέπει
+ * να αντικαταστήσει το προηγούμενο καλό αντίγραφο.
+ *
+ * @param  mixed $j  το αποκωδικοποιημένο JSON
+ * @return string|null  ο λόγος απόρριψης, ή null αν είναι εντάξει
+ */
+function fuel_cache_invalid($j)
+{
+    if (!is_array($j))                                      return 'όχι αντικείμενο JSON';
+    if (!isset($j['fetched_at']) || !is_string($j['fetched_at']) || trim($j['fetched_at']) === '')
+                                                            return 'λείπει fetched_at';
+    foreach (array('air', 'road') as $src) {
+        if (!isset($j[$src]) || !is_array($j[$src]) || !count($j[$src]))
+                                                            return "κενός ή άκυρος πίνακας $src";
+        foreach ($j[$src] as $i => $r) {
+            if (!is_array($r))                              return "{$src}[{$i}] όχι αντικείμενο";
+            foreach (array('week_start', 'week_end') as $k) {
+                if (!isset($r[$k]) || !is_string($r[$k]) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $r[$k]))
+                                                            return "{$src}[{$i}] χωρίς έγκυρο $k";
+            }
+            if (!isset($r['pct']) || !is_numeric($r['pct'])) return "{$src}[{$i}] χωρίς αριθμητικό pct";
+        }
+    }
+    return null;
+}
+
+/**
+ * ΤΟ CACHE ΕΠΙΝΑΥΛΟΥ ΓΙΑ ΤΟ DASHBOARD, με μνήμη στον πίνακα 4a_fuel_cache_mem.
+ *
+ * Οι εξαρτήσεις περνούν ως callables, ώστε η λογική να δοκιμάζεται χωρίς
+ * βάση και χωρίς δίκτυο:
+ *   $readRow()      → ['body','read_at','fresh'] | false. Πετά αν λείπει ο πίνακας.
+ *   $fetch()        → [int $httpCode, string|false $body, string $err]
+ *   $write($body)   αντικαθιστά τη γραμμή id=1, επιστρέφει το read_at που γράφτηκε
+ *   $log($msg)      error_log
+ *
+ * Κανόνες:
+ *   - πίνακας που λείπει ή σφάλμα ανάγνωσης → null, καμία κλήση GitHub
+ *   - φρέσκια γραμμή με έγκυρο περιεχόμενο → αυτή
+ *   - αλλιώς GitHub. Γράφεται ΜΟΝΟ αν περάσει τη fuel_cache_invalid()
+ *   - αποτυχία GitHub ή κακό περιεχόμενο → το προηγούμενο καλό αντίγραφο
+ *     με stale=true, αλλιώς null
+ *
+ * @return array [ array|null $cache, array $meta ]
+ */
+function fuel_cache_load($readRow, $fetch, $write, $log)
+{
+    $meta = function ($j, $stale, $readAt) {
+        return array('ok' => $j !== null, 'stale' => $stale,
+                     'fetched_at' => $j !== null ? $j['fetched_at'] : null, 'read_at' => $readAt);
+    };
+
+    try {
+        $row = $readRow();
+    } catch (Throwable $e) {
+        $log('fuel_catalog: ανάγνωση 4a_fuel_cache_mem απέτυχε (λείπει το migration 2026-10-07d;): ' . $e->getMessage());
+        return array(null, $meta(null, false, null));
+    }
+
+    $old = $row ? json_decode($row['body'], true) : null;
+    if ($old !== null && ($why = fuel_cache_invalid($old)) !== null) {
+        $log("fuel_catalog: το αποθηκευμένο αντίγραφο είναι άκυρο: $why");
+        $old = null;
+    }
+    if ($old !== null && (int)$row['fresh']) return array($old, $meta($old, false, $row['read_at']));
+
+    list($code, $body, $err) = $fetch();
+    $new = ($code === 200 && is_string($body)) ? json_decode($body, true) : null;
+    $why = ($code === 200 && is_string($body)) ? fuel_cache_invalid($new) : "HTTP $code $err";
+
+    if ($why === null) {
+        $readAt = null;
+        try {
+            $readAt = $write($body);
+        } catch (Throwable $e) {
+            $log('fuel_catalog: εγγραφή 4a_fuel_cache_mem απέτυχε: ' . $e->getMessage());
+        }
+        return array($new, $meta($new, false, is_string($readAt) ? $readAt : null));
+    }
+
+    $log("fuel_catalog: το cache του GitHub απορρίφθηκε, δεν αντικαθίσταται: $why");
+    if ($old !== null) return array($old, $meta($old, true, $row['read_at']));
+    return array(null, $meta(null, false, null));
 }
 
 } // function_exists

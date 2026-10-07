@@ -229,6 +229,19 @@ db/migrations/2026-10-07c_fuel_cms_catalog.sql     4 εντολές
 
 ## Τι ΔΕΝ έχει γίνει
 
+**Ανοιχτό — DDL στο `api/auth.php`.** Το `fuel_catalog.php` δεν εκτελεί
+DDL (ο `4a_fuel_cache_mem` έρχεται από το migration `2026-10-07d`). Το
+`auth.php` όμως, που το κάνει `require`, εκτελεί
+`CREATE TABLE IF NOT EXISTS 4a_sessions` σε **κάθε** κλήση. Δεν αγγίχτηκε
+τώρα, με ρητή απόφαση. Να μεταφερθεί σε migration σε ξεχωριστή δουλειά,
+γιατί το `auth.php` το φορτώνουν όλα τα endpoints.
+
+**Ανοιχτό — ζώνη ώρας στο `cache` του `fuel_catalog.php`.** Το `read_at`
+(`NOW()` του server της βάσης, `DATETIME`) και το `fetched_at` (από το
+GitHub Action, ISO χωρίς offset) επιστρέφονται **χωρίς δήλωση ζώνης**.
+Δεν είναι γνωστό αν είναι UTC ή ώρα Ελλάδας. Πριν χρησιμοποιηθούν για
+σύγκριση ή εμφάνιση, να οριστεί ρητά η ζώνη (π.χ. ISO με `Z`/offset).
+
 **Το `api/fuel_lib.php` δεν έχει ανεβεί στον server.** Κανένα ζωντανό
 endpoint δεν το χρησιμοποιεί ακόμα, και δεν υπάρχει στο webroot. Το SCP
 γίνεται όταν το χρειαστεί το endpoint της §5.

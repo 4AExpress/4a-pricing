@@ -1,4 +1,4 @@
-<!-- fuel-surcharge-dashboard.html | v1.1 | 09-05-2026 -->
+<!-- fuel-surcharge-dashboard.html | v1.2 | 07-10-2026 -->
 <!DOCTYPE html>
 <html lang="el">
 <head>
@@ -46,6 +46,10 @@
   .svc-pct  { font-size: 18px; font-weight: 700; }
   .svc-type { font-size: 10px; color: #bbb; margin-top: 2px; }
   .svc-note { font-size: 10px; color: #aaa; font-style: italic; }
+  .svc-zones { font-size: 10px; color: #999; margin-top: 2px; }
+  .station-title { font-size: 11px; font-weight: 700; color: #555; letter-spacing: 0.08em; margin: 4px 0 8px; }
+  .station-title ~ .station-title { margin-top: 16px; }
+  .svc-msg { font-size: 12px; color: #888; padding: 6px 0; }
   .tabs { display: flex; gap: 4px; margin-bottom: 0; }
   .tab { padding: 6px 14px; font-size: 12px; border: 1px solid #ddd; border-bottom: none; border-radius: 4px 4px 0 0; background: #f0f0f0; cursor: pointer; color: #666; }
   .tab.active { background: #00BCD4; color: white; border-color: #00BCD4; }
@@ -124,7 +128,90 @@
 <script>
 // Η διεύθυνση του JSON ζει πλέον στο fuel-freshness.js (FuelFreshness.URL) —
 // μία πηγή, ώστε να μην αποκλίνει ανά σελίδα.
-const VALUABLE_MULTIPLIER = 1.06;
+const API = 'https://4aexpress.com/api';
+
+// Οι τύποι επίναυλου, οι ετικέτες τους και οι κάρτες ανά υπηρεσία έρχονται
+// από το api/fuel_catalog.php. Οι τιμές ανά τύπο έρχονται ΕΤΟΙΜΕΣ, από τη
+// fuel_pct() του server (half-up, bcmath). Η σελίδα ΔΕΝ πολλαπλασιάζει.
+// Μόνο εμφανίζει, και για τη μεταβολή αφαιρεί δύο έτοιμες τιμές.
+const STATION_TITLES = { GR: 'ΕΛΛΑΔΑ', CY: 'ΚΥΠΡΟΣ' };
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g,
+    c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+}
+
+function catType(cat, code) {
+  if (!cat || cat.state !== 'ok') return null;
+  return (cat.data.types || []).find(t => t.code === code) || null;
+}
+
+// Οι τύποι με πολλαπλασιαστή ≠ 1 (σήμερα ο AIR_CY) παίρνουν δικές τους
+// κάρτες και ιστορικό. Ο κανόνας είναι δεδομένο της βάσης, όχι κωδικός.
+function catExtraTypes(cat) {
+  if (!cat || cat.state !== 'ok') return [];
+  return (cat.data.types || []).filter(t => t.source && t.multiplier !== null && Number(t.multiplier) !== 1);
+}
+
+// Η τιμή ενός τύπου για τη γραμμή cache που επέλεξε η σελίδα, ως string
+// του server («50.88»). null όταν ο server δεν έχει την ΙΔΙΑ εβδομάδα με την
+// ΙΔΙΑ τιμή πηγής (π.χ. τη Δευτέρα, με άλλη έκδοση του cache): τότε «—».
+function catPct(cat, type, row) {
+  if (!cat || cat.state !== 'ok' || !type || !type.source || !row) return null;
+  const w = (cat.data.weeks || []).find(x => x.week_start === row.week_start);
+  if (!w || !w.src || w.src[type.source] === null || Number(w.src[type.source]) !== Number(row.pct)) return null;
+  const v = w.pct ? w.pct[type.code] : null;
+  return v === null || v === undefined ? null : v;
+}
+
+// Μεταβολή = διαφορά δύο ΕΤΟΙΜΩΝ τιμών του server, ό,τι βλέπει ο πελάτης.
+function catDelta(next, curr) {
+  return (next !== null && curr !== null)
+    ? parseFloat((Number(next) - Number(curr)).toFixed(2)) : null;
+}
+
+function catMsg(cat) {
+  if (!cat || cat.state === 'loading') return 'Φόρτωση…';
+  if (cat.state === 'nologin') return '🔒 Απαιτείται σύνδεση';
+  return '⚠️ Δεν φορτώθηκαν από τον server';
+}
+
+const MISSING_NOTE = 'Η εβδομάδα που εμφανίζεται δεν υπάρχει ακόμα, ή διαφέρει, στα δεδομένα του server — «—» αντί για τιμή. Ανανεώστε σε λίγα λεπτά.';
+
+// Κάρτες ανά υπηρεσία, σε ενότητες ανά σταθμό. Μία κάρτα ανά υπηρεσία ανά
+// σταθμό: η S1003 εμφανίζεται και στην ΕΛΛΑΔΑ και στην ΚΥΠΡΟ.
+function servicesHtml(cat, currBySrc) {
+  if (!cat || cat.state !== 'ok') return `<div class="svc-msg">${catMsg(cat)} για τις τιμές ανά υπηρεσία.</div>`;
+  let missing = false;
+  const html = Object.keys(STATION_TITLES).map(st => {
+    const cards = (cat.data.cards || []).filter(c => c.station === st)
+      .sort((a, b) => a.sort_order - b.sort_order);
+    if (!cards.length) return '';
+    return `<div class="station-title" data-station="${st}">${STATION_TITLES[st]}</div>
+      <div class="services">${cards.map(c => {
+        const t = catType(cat, c.fuel_type);
+        const special = catExtraTypes(cat).some(x => x.code === c.fuel_type);
+        let val, cls;
+        if (!t || !t.source) { val = esc(t ? t.label_el : '—'); cls = 'warn'; }
+        else {
+          const v = catPct(cat, t, currBySrc[t.source]);
+          if (v === null && currBySrc[t.source]) missing = true;
+          val = v !== null ? v + '%' : '—';
+          cls = special ? 'cy' : t.source;
+        }
+        return `
+        <div class="svc${special ? ' highlight' : ''}" data-station="${st}" data-service="${esc(c.cms_service)}">
+          <div class="svc-name">${esc(c.service_name)}</div>
+          <div class="svc-code">${esc(c.cms_service)}</div>
+          <div class="svc-pct ${cls}">${val}</div>
+          <div class="svc-type">${esc(c.fuel_label)}</div>
+          <div class="svc-zones">${esc((c.zones || []).join(', '))}</div>
+          ${c.is_combi ? '<div class="svc-note">COMBI — επίναυλος στο σκέλος Ελλάδα↔κόσμος</div>' : ''}
+        </div>`;
+      }).join('')}</div>`;
+  }).join('');
+  return html + (missing ? `<div class="metric-note">${MISSING_NOTE}</div>` : '');
+}
 
 // Το `last-update` έγραφε την ώρα ΦΟΡΤΩΣΗΣ ΤΗΣ ΣΕΛΙΔΑΣ — δηλαδή «τώρα»,
 // ακόμα κι όταν τα δεδομένα ήταν τριών εβδομάδων. Σε σελίδα που ανοίγει
@@ -174,7 +261,7 @@ function pickNext(rows, curr) {
   return null;
 }
 
-function renderDashboard(data, viewISO) {
+function renderDashboard(data, viewISO, cat) {
   const air  = data.air  || [];
   const road = data.road || [];
 
@@ -191,9 +278,8 @@ function renderDashboard(data, viewISO) {
   const currRoadPct = currRoad ? currRoad.pct : '—';
   const nextRoadPct = nextRoad ? nextRoad.pct : '—';
 
-  // Valuable = AIR × 1.06
-  const currValuable = currAir  ? (currAir.pct  * VALUABLE_MULTIPLIER).toFixed(2) : '—';
-  const nextValuable = nextAir  ? (nextAir.pct  * VALUABLE_MULTIPLIER).toFixed(2) : '—';
+  const currBySrc = { air: currAir, road: currRoad };
+  const nextBySrc = { air: nextAir, road: nextRoad };
 
   // ΜΕΤΑΒΟΛΗ = ΕΠΟΜΕΝΗ − ΤΡΕΧΟΥΣΑ, υπολογισμένη από τις δύο γραμμές που
   // επιλέχθηκαν με ημερομηνία. Το πρόσημο φτάνει αυτούσιο στο badge():
@@ -204,8 +290,39 @@ function renderDashboard(data, viewISO) {
     ? parseFloat((next.pct - curr.pct).toFixed(2)) : null;
   const diffAir      = delta(nextAir,  currAir);
   const diffRoad     = delta(nextRoad, currRoad);
-  const diffValuable = diffAir !== null
-    ? parseFloat((diffAir * VALUABLE_MULTIPLIER).toFixed(2)) : null;
+
+  // Κάρτες για τους τύπους με πολλαπλασιαστή (Air Cyprus), από τον server.
+  // Χωρίς σύνδεση ή χωρίς απάντηση: μία κάρτα με το μήνυμα, καμία τιμή.
+  const extra = catExtraTypes(cat);
+  let missing = false;
+  const extraCards = (which) => {
+    if (!extra.length) return `
+        <div class="metric${which === 'next' ? ' next' : ''}">
+          <div class="metric-label">Ειδικός επίναυλος — ${which === 'next' ? 'επόμενη' : 'τρέχουσα'}</div>
+          <div class="metric-value warn">—</div>
+          <div class="metric-sub">${catMsg(cat)}</div>
+        </div>`;
+    return extra.map(t => {
+      const cr = currBySrc[t.source], nr = nextBySrc[t.source];
+      const cv = catPct(cat, t, cr), nv = catPct(cat, t, nr);
+      if ((cr && cv === null) || (nr && nv === null)) missing = true;
+      if (which === 'curr') return `
+        <div class="metric">
+          <div class="metric-label">${esc(t.label_el)} — τρέχουσα</div>
+          <div class="metric-value cy">${cv !== null ? cv + '%' : '—'}</div>
+          <div class="metric-sub">${cr ? cr.week : '—'}</div>
+        </div>`;
+      const d = catDelta(nv, cv);
+      return `
+        <div class="metric next">
+          <div class="metric-label">${esc(t.label_el)} — επόμενη</div>
+          <div class="metric-value warn">${nv !== null ? nv + '%' : '—'}</div>
+          <div class="metric-sub">${nr ? nr.week : '—'} ${d !== null ? badge(d) : ''}</div>
+        </div>`;
+    }).join('');
+  };
+  const extraCurr = extraCards('curr');
+  const extraNext = extraCards('next');
 
   // History rows
   const mark = (r, curr, nxt) => r === curr ? 'current' : r === nxt ? 'next-row' : '';
@@ -223,17 +340,24 @@ function renderDashboard(data, viewISO) {
       <td>${badge(calcDiff(road, i))}</td>
     </tr>`).join('');
 
-  const histValuable = air.map((r, i) => {
-    const val = (r.pct * VALUABLE_MULTIPLIER).toFixed(2);
-    const d   = calcDiff(air, i);
-    const dv  = d !== null ? parseFloat((d * VALUABLE_MULTIPLIER).toFixed(2)) : null;
-    return `
-    <tr class="${mark(r, currAir, nextAir)}">
-      <td>${r.week} ${r === currAir ? '<span class="badge curr">τρέχουσα</span>' : r === nextAir ? '<span class="badge nxt">επόμενη</span>' : ''}</td>
-      <td>${r === currAir ? '<strong>' : ''}${val}%${r === currAir ? '</strong>' : ''}</td>
-      <td>${badge(dv)}</td>
+  // Ιστορικό των τύπων με πολλαπλασιαστή: τιμές του server ανά εβδομάδα,
+  // μεταβολή = διαφορά δύο έτοιμων τιμών, όπως στις κάρτες.
+  const histExtra = extra.map(t => {
+    const rows = data[t.source] || [];
+    const cr = currBySrc[t.source], nr = nextBySrc[t.source];
+    const codes = [...new Set((cat.data.cards || []).filter(c => c.fuel_type === t.code).map(c => c.cms_service))];
+    const body = rows.map((r, i) => {
+      const v = catPct(cat, t, r);
+      const d = catDelta(v, i < rows.length - 1 ? catPct(cat, t, rows[i + 1]) : null);
+      return `
+    <tr class="${mark(r, cr, nr)}">
+      <td>${r.week} ${r === cr ? '<span class="badge curr">τρέχουσα</span>' : r === nr ? '<span class="badge nxt">επόμενη</span>' : ''}</td>
+      <td>${r === cr ? '<strong>' : ''}${v !== null ? v + '%' : '—'}${r === cr ? '</strong>' : ''}</td>
+      <td>${badge(d)}</td>
     </tr>`;
-  }).join('');
+    }).join('');
+    return { id: 'tab-t-' + t.code, label: `${esc(t.label_el)}${codes.length ? ' (' + esc(codes.join('/')) + ')' : ''}`, body };
+  });
 
   const fetchedLbl = data.fetched_at
     ? data.fetched_at.substring(8,10)+'-'+data.fetched_at.substring(5,7)+'-'+
@@ -262,12 +386,7 @@ function renderDashboard(data, viewISO) {
           <div class="metric-value road">${typeof currRoadPct === 'number' ? currRoadPct.toFixed(2)+'%' : currRoadPct}</div>
           <div class="metric-sub">${currRoad ? currRoad.week : '—'}</div>
         </div>
-        <div class="metric">
-          <div class="metric-label">Valuable — τρέχουσα</div>
-          <div class="metric-value cy">${currValuable !== '—' ? currValuable+'%' : '—'}</div>
-          <div class="metric-sub">${currAir ? currAir.week : '—'}</div>
-          <div class="metric-note">Valuable goods</div>
-        </div>
+${extraCurr}
       </div>
       <div class="metrics-row next-row">
         <div class="metric next">
@@ -280,59 +399,24 @@ function renderDashboard(data, viewISO) {
           <div class="metric-value warn">${typeof nextRoadPct === 'number' ? nextRoadPct.toFixed(2)+'%' : nextRoadPct}</div>
           <div class="metric-sub">${nextRoad ? nextRoad.week : '—'} ${diffRoad !== null ? badge(diffRoad) : ''}</div>
         </div>
-        <div class="metric next">
-          <div class="metric-label">Valuable — επόμενη</div>
-          <div class="metric-value warn">${nextValuable !== '—' ? nextValuable+'%' : '—'}</div>
-          <div class="metric-sub">${nextAir ? nextAir.week : '—'} ${diffValuable !== null ? badge(diffValuable) : ''}</div>
-          <div class="metric-note">Valuable goods</div>
-        </div>
+${extraNext}
       </div>
+      ${missing ? `<div class="metric-note">${MISSING_NOTE}</div>` : ''}
     </div>
 
     <div class="section-header">Ανά Service — ${currAir ? currAir.week : '—'}</div>
     <div class="section-body">
-      <div class="services">
-        <div class="svc">
-          <div class="svc-name">Express Export</div>
-          <div class="svc-code">S1003</div>
-          <div class="svc-pct air">${typeof currAirPct === 'number' ? currAirPct.toFixed(2)+'%' : '—'}</div>
-          <div class="svc-type">AIR / Διεθνής</div>
-        </div>
-        <div class="svc">
-          <div class="svc-name">Express Import</div>
-          <div class="svc-code">S1012</div>
-          <div class="svc-pct air">${typeof currAirPct === 'number' ? currAirPct.toFixed(2)+'%' : '—'}</div>
-          <div class="svc-type">AIR / Διεθνής</div>
-        </div>
-        <div class="svc highlight">
-          <div class="svc-name">Air Cyprus</div>
-          <div class="svc-code">S1027</div>
-          <div class="svc-pct cy">${currValuable !== '—' ? currValuable+'%' : '—'}</div>
-          <div class="svc-type">AIR / Κύπρος</div>
-          <div class="svc-note">Valuable goods</div>
-        </div>
-        <div class="svc">
-          <div class="svc-name">Economy Export</div>
-          <div class="svc-code">S1010</div>
-          <div class="svc-pct road">${typeof currRoadPct === 'number' ? currRoadPct.toFixed(2)+'%' : '—'}</div>
-          <div class="svc-type">ROAD / Εσωτερικό</div>
-        </div>
-        <div class="svc">
-          <div class="svc-name">Economy Import</div>
-          <div class="svc-code">S1041</div>
-          <div class="svc-pct road">${typeof currRoadPct === 'number' ? currRoadPct.toFixed(2)+'%' : '—'}</div>
-          <div class="svc-type">ROAD / Εσωτερικό</div>
-        </div>
-      </div>
+      ${servicesHtml(cat, currBySrc)}
     </div>
 
     <div class="section-header">Ιστορικό Εβδομάδων</div>
     <div class="section-body" style="padding: 12px 0 0;">
       <div style="padding: 0 16px;">
         <div class="tabs">
-          <button class="tab active" onclick="showTab('air',this)">AIR (S1003/S1012)</button>
-          <button class="tab" onclick="showTab('cy',this)">Valuable (S1027)</button>
-          <button class="tab" onclick="showTab('road',this)">ROAD (S1010/S1041)</button>
+          <button class="tab active" onclick="showTab('tab-air',this)">AIR (S1003/S1012)</button>
+${histExtra.map(h => `
+          <button class="tab" onclick="showTab('${h.id}',this)">${h.label}</button>`).join('')}
+          <button class="tab" onclick="showTab('tab-road',this)">ROAD (S1010/S1041)</button>
         </div>
       </div>
       <div class="table-wrap">
@@ -340,10 +424,11 @@ function renderDashboard(data, viewISO) {
           <thead><tr><th>Εβδομάδα</th><th>Επίναυλος</th><th>Μεταβολή</th></tr></thead>
           <tbody>${histAir}</tbody>
         </table>
-        <table id="tab-cy" style="display:none;">
+${histExtra.map(h => `
+        <table id="${h.id}" style="display:none;">
           <thead><tr><th>Εβδομάδα</th><th>Επίναυλος</th><th>Μεταβολή</th></tr></thead>
-          <tbody>${histValuable}</tbody>
-        </table>
+          <tbody>${h.body}</tbody>
+        </table>`).join('')}
         <table id="tab-road" style="display:none;">
           <thead><tr><th>Εβδομάδα</th><th>Επίναυλος</th><th>Μεταβολή</th></tr></thead>
           <tbody>${histRoad}</tbody>
@@ -355,9 +440,11 @@ function renderDashboard(data, viewISO) {
   `;
 }
 
-function showTab(tab, btn) {
-  ['air','cy','road'].forEach(t => document.getElementById('tab-'+t).style.display = 'none');
-  document.getElementById('tab-'+tab).style.display = '';
+// Οι πίνακες ιστορικού δεν είναι σταθερή λίστα: οι τύποι με πολλαπλασιαστή
+// έρχονται από τη βάση.
+function showTab(id, btn) {
+  document.querySelectorAll('.table-wrap table').forEach(t => t.style.display = 'none');
+  document.getElementById(id).style.display = '';
   document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
@@ -368,6 +455,8 @@ function showTab(tab, btn) {
 // Το αρχείο κρατιέται, ώστε η αλλαγή ημερομηνίας προβολής να ξαναζωγραφίζει
 // χωρίς νέο δίκτυο.
 let FUEL_DATA = null;
+// Κατάσταση του καταλόγου από τον server: loading | nologin | error | ok.
+let CAT = { state: 'loading' };
 
 function paint() {
   if (!FUEL_DATA) return;
@@ -376,7 +465,7 @@ function paint() {
   const iso = FuelFreshness.todayISO();
   // Η κατάσταση φρεσκάδας κρίνεται ΓΙΑ ΤΗΝ ΙΔΙΑ ημερομηνία που ζωγραφίζουμε.
   const res = FuelFreshness.check(FUEL_DATA, iso);
-  renderDashboard(FUEL_DATA, iso);
+  renderDashboard(FUEL_DATA, iso, CAT);
   FuelFreshness.warningsBox(res, 'freshness');
   // Εδώ δεν μπαίνει σύνδεσμος: η σελίδα ΕΙΝΑΙ ο έλεγχος του επίναυλου.
   FuelFreshness.banner(res, 'freshness', { link: false });
@@ -393,6 +482,24 @@ FuelFreshness.load()
       `<div class="error-box">⚠️ Σφάλμα φόρτωσης δεδομένων: ${err.message}</div>`;
     document.getElementById('content').innerHTML = '';
   });
+
+// Ο κατάλογος θέλει συνδεδεμένο χρήστη. Χωρίς σύνδεση οι AIR/ROAD από το
+// cache φαίνονται κανονικά. Οι κάρτες υπηρεσιών και ο ειδικός επίναυλος
+// γράφουν «Απαιτείται σύνδεση».
+(function loadCatalog() {
+  let u = null;
+  try { u = JSON.parse(sessionStorage.getItem('4a_current_user') || 'null'); } catch (e) {}
+  if (!u || !u._token) { CAT = { state: 'nologin' }; paint(); return; }
+  fetch(API + '/fuel_catalog.php', { headers: { 'Authorization': 'Bearer ' + u._token } })
+    .then(r => r.status === 401 ? null : r.json())
+    .then(d => {
+      CAT = d === null ? { state: 'nologin' }
+          : (d && d.ok) ? { state: 'ok', data: d }
+          : { state: 'error' };
+      paint();
+    })
+    .catch(() => { CAT = { state: 'error' }; paint(); });
+})();
 </script>
 <!-- nav-legal gating | RBAC module 'legal' | 19-08-2026 -->
 <script>
