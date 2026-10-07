@@ -16,6 +16,19 @@ pytest tests/test_cod.py::test_case2_calculate_flat_min_fee -v
 
 **Deploy** — `api/` (PHP) deploy = SCP per file ΜΟΝΟ. `git push` ΔΕΝ ενημερώνει το backend (webhook νεκρός, server git παγωμένο, nested `api/.git`). Frontend = `git push` → GitHub Pages.
 
+**Κανόνας deploy backend** (από 07-10-2026). Ανεβαίνει ΜΟΝΟ ό,τι έχει γίνει commit, από το git, ΠΟΤΕ από τον δίσκο:
+
+1. **commit** τοπικά (όχι push ακόμα). Τεστ πράσινα.
+2. **σύγκριση με το ζωντανό πριν**: αν αποκλίνει από το αναμενόμενο, σταμάτα. Τα αρχεία που ανέβηκαν πριν από τις 07-10-2026 μπορεί να είναι CRLF στον server, οπότε η σύγκριση γίνεται μετά από κανονικοποίηση (`tr -d '\r'`).
+3. **αντίγραφο του ζωντανού ΕΚΤΟΣ webroot**, με χρονοσφραγίδα. Ποτέ `.bak` μέσα στο `api/`.
+4. **SCP από το blob**: `git show HEAD:api/<αρχείο> > <tmp>/<αρχείο>` και ανέβασμα του `<tmp>/<αρχείο>`. Το `git show` δίνει τα bytes του repo, άρα LF.
+5. **έλεγχοι**: md5 server = `git show HEAD:api/<αρχείο> | md5sum`, `php -l` στο αρχείο του server, `curl` στο endpoint (με και χωρίς token όπου υπάρχει auth).
+6. **push** μόνο αν όλα περάσουν. Αν κάτι αποτύχει, το commit μένει τοπικό και διορθώνεται πριν φύγει.
+
+Migrations (`db/migrations/`) εφαρμόζονται πριν από το SCP του κώδικα που τα χρειάζεται. Τα endpoints ΔΕΝ εκτελούν DDL. Στοιχεία πρόσβασης στον server (host, χρήστης, θύρα, διαδρομές) ΔΕΝ γράφονται σε κανένα αρχείο του repo.
+
+**Τέλη γραμμών**: `.gitattributes` με `* text=auto eol=lf`. Repo, δίσκος και server είναι όλα LF, άρα το md5 του δίσκου = του blob = του server.
+
 There is no build step, no bundler, no transpiler. Frontend is plain HTML/JS served directly from GitHub Pages at `https://4aexpress.github.io/4a-pricing/frontend/`.
 
 ## Architecture
