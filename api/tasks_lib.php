@@ -1,5 +1,5 @@
 <?php
-// tasks_lib.php | v1.0 | 23-09-2026
+// tasks_lib.php | v1.1 | 07-10-2026
 // Φάση 3 — η λογική της οθόνης εργασιών. Υλοποιεί το
 // docs/tasks_phase3_spec.md.
 //
@@ -28,8 +28,10 @@ function tasks_base_sql()
                    t.`assigned_to`, t.`status`, t.`created_at`, t.`due_at`,
                    t.`closed_at`, t.`closed_by`, t.`close_reason`, t.`payload`,
                    t.`needs_attention`,
-                   c.`name` AS client_name, c.`country` AS client_country,
-                   c.`account` AS client_account, c.`is_demo` AS is_demo,
+                   c.`name` AS client_name,
+                   COALESCE(t.`country`, c.`country`) AS client_country,
+                   c.`account` AS client_account,
+                   COALESCE(c.`is_demo`, 0) AS is_demo,
                    tt.`label` AS task_label, tt.`sort_order`, tt.`depends_on`,
                    tt.`action_url`, tt.`action_label`, tt.`action_module`,
                    tt.`ready_check`, tt.`ready_hint`, tt.`ready_enforced`,
@@ -37,14 +39,13 @@ function tasks_base_sql()
                    u.`name` AS assigned_name,
                    CASE WHEN tt.`depends_on` IS NULL THEN 0
                         WHEN EXISTS (SELECT 1 FROM `4a_tasks` d
-                                      WHERE d.`client_id`    = t.`client_id`
-                                        AND d.`offer_number` = t.`offer_number`
+                                      WHERE d.`dedupe_key`   = t.`dedupe_key`
                                         AND d.`task_code`    = tt.`depends_on`
                                         AND d.`status` IN (\'done\',\'na\'))
                         THEN 0 ELSE 1 END AS `locked`
               FROM `4a_tasks` t
               JOIN `4a_task_types` tt ON tt.`code` = t.`task_code`
-              JOIN `4a_clients`    c  ON c.`id`    = t.`client_id`
+         LEFT JOIN `4a_clients`    c  ON c.`id`    = t.`client_id`
          LEFT JOIN `4a_task_types` dt ON dt.`code` = tt.`depends_on`
          LEFT JOIN `4a_users`      u  ON u.`id`    = t.`assigned_to`';
 }
@@ -88,6 +89,77 @@ function tasks_scope_countries($perms)
     if ($scope === 'BOTH') return null;
     if ($scope === 'NONE') return [];
     return [$scope];
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// ΕΡΓΑΣΙΑ ΧΩΡΑΣ BOTH (κανόνας 07/10/2026, ΑΥΣΤΗΡΗ ερμηνεία)
+//
+// Οι εργασίες συστήματος (χωρίς πελάτη, π.χ. εβδομαδιαίος γενικός
+// επίναυλος) έχουν `4a_tasks.country = 'BOTH'`. Για αυτές:
+//
+//   ΑΠΑΙΤΕΙΤΑΙ δεξιότητα για τον κωδικό εργασίας με country = 'BOTH'.
+//   Δεξιότητα GR ή CY ΔΕΝ αρκεί.
+//   Το pricelist_scope του χρήστη ΔΕΝ ελέγχεται: τη θέση του παίρνει η
+//   δεξιότητα BOTH.
+//
+// Η αυστηρή ερμηνεία ισχύει ΗΔΗ, χωρίς ειδικό κώδικα, σε ό,τι ελέγχει
+// δεξιότητα με `country IN (<χώρα εργασίας>, 'BOTH')`: για εργασία BOTH
+// αυτό γίνεται `country IN ('BOTH','BOTH')`, δηλαδή μόνο δεξιότητα BOTH:
+//   tasks_has_skill()       claim, steal, assign
+//   tasks_candidate_pool()  τυχαία ανάθεση
+//   tasks_list() ουρά       EXISTS δεξιότητας
+//
+// Ειδικός κώδικας χρειάζεται μόνο στον έλεγχο ΠΕΔΙΟΥ ΧΩΡΩΝ, που για
+// εργασίες πελάτη συγκρίνει τη χώρα με το pricelist_scope:
+//   tasks_country_ok()      claim, guard_owner, reject, steal, history
+//   tasks_country_where()   φίλτρο χώρας της λίστας και του σήματος
+// Για εργασία BOTH ο έλεγχος περνά αν ο χρήστης έχει δεξιότητα BOTH για
+// τον κωδικό Ή είναι ήδη ο ανάδοχος. Η δεύτερη περίπτωση καλύπτει την
+// ανάθεση από διαχειριστή χωρίς δεξιότητα (tasks_assign), ώστε ο
+// ανάδοχος να μπορεί να δει και να κλείσει τη δουλειά που του δόθηκε.
+//
+// Ο διαχειριστής και ο χρήστης με pricelist_scope BOTH δεν έχουν φίλτρο
+// χώρας ($countries = null), όπως και πριν.
+//
+// Οι εργασίες πελάτη δεν επηρεάζονται: η χώρα τους έρχεται από τον
+// πελάτη (enum GR, CY, EU, NONEU) και δεν είναι ποτέ BOTH.
+// ─────────────────────────────────────────────────────────────────────
+if (!defined('TASKS_COUNTRY_SQL')) {
+    define('TASKS_COUNTRY_SQL', 'COALESCE(t.`country`, c.`country`)');
+}
+
+/**
+ * Είναι η εργασία μέσα στο πεδίο του χρήστη;
+ * Εργασία πελάτη: η χώρα της στο pricelist_scope.
+ * Εργασία BOTH: δεξιότητα BOTH για τον κωδικό, ή ήδη ανάδοχος.
+ */
+function tasks_country_ok($db, $countries, $task, $userId)
+{
+    if (!is_array($countries)) return true;
+    if ($task['client_country'] === 'BOTH') {
+        return ($task['assigned_to'] !== null && (int)$task['assigned_to'] === (int)$userId)
+            || tasks_has_skill($db, $userId, $task['task_code'], 'BOTH');
+    }
+    return in_array($task['client_country'], $countries, true);
+}
+
+/**
+ * Το ίδιο σε SQL, για WHERE. Επιστρέφει [sql, params] με τη σειρά των ?.
+ */
+function tasks_country_where($countries, $userId)
+{
+    $sql = '(' . TASKS_COUNTRY_SQL . ' = \'BOTH\'
+             AND (t.`assigned_to` = ?
+                  OR EXISTS (SELECT 1 FROM `4a_user_task_skills` sb
+                              WHERE sb.`user_id` = ? AND sb.`task_code` = t.`task_code`
+                                AND sb.`country` = \'BOTH\')))';
+    $params = [(int)$userId, (int)$userId];
+    if ($countries) {
+        $sql .= ' OR ' . TASKS_COUNTRY_SQL . ' IN ('
+              . implode(',', array_fill(0, count($countries), '?')) . ')';
+        foreach ($countries as $c) $params[] = $c;
+    }
+    return ['(' . $sql . ')', $params];
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -308,6 +380,7 @@ function tasks_fetch_one($db, $taskId)
 /** Έχει ο χρήστης τη δεξιότητα για αυτή την εργασία, σε αυτή τη χώρα; */
 function tasks_has_skill($db, $userId, $taskCode, $country)
 {
+    // Εργασία BOTH: ο όρος γίνεται IN ('BOTH','BOTH') — μόνο δεξιότητα BOTH.
     $st = $db->prepare('SELECT COUNT(*) FROM `4a_user_task_skills`
                          WHERE `user_id` = ? AND `task_code` = ?
                            AND `country` IN (?, \'BOTH\')');
@@ -437,6 +510,7 @@ function tasks_candidate_pool($db, $taskId, $taskCode, $country, $isDemo = false
             AND u.`role` <> \'administrator\'
             AND s.`user_id` NOT IN (SELECT `user_id` FROM `4a_task_rejections`
                                      WHERE `task_id` = ?)');
+    // Εργασία BOTH: IN ('BOTH','BOTH') — μόνο δεξιότητα BOTH.
     $st->execute([$taskCode, $country, (int)$taskId]);
     return array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
 }
@@ -567,7 +641,7 @@ function tasks_list($db, $session, $perms, $view)
         if (!$isAdmin) {
             $where[]  = 'EXISTS (SELECT 1 FROM `4a_user_task_skills` s
                                   WHERE s.`user_id` = ? AND s.`task_code` = t.`task_code`
-                                    AND s.`country` IN (c.`country`, \'BOTH\'))';
+                                    AND s.`country` IN (' . TASKS_COUNTRY_SQL . ', \'BOTH\'))';
             $params[] = $me;
         }
     }
@@ -575,9 +649,10 @@ function tasks_list($db, $session, $perms, $view)
     // Φίλτρο χώρας — ισχύει και στις τρεις προβολές.
     $countries = tasks_scope_countries($perms);
     if (is_array($countries)) {
-        if (!$countries) return ['ok' => true, 'code' => 200, 'error' => null, 'tasks' => []];
-        $where[] = 'c.`country` IN (' . implode(',', array_fill(0, count($countries), '?')) . ')';
-        foreach ($countries as $c) $params[] = $c;
+        // Χωρίς πεδίο χωρών (NONE) μένουν μόνο οι εργασίες BOTH με δεξιότητα BOTH.
+        list($w, $p) = tasks_country_where($countries, $me);
+        $where[] = $w;
+        $params  = array_merge($params, $p);
     }
 
     $sql = tasks_base_sql()
@@ -600,7 +675,7 @@ function tasks_claim($db, $session, $perms, $taskId)
     if (!$task) return tasks_err(404, 'η εργασία δεν βρέθηκε');
 
     $countries = tasks_scope_countries($perms);
-    if (is_array($countries) && !in_array($task['client_country'], $countries, true)) {
+    if (!tasks_country_ok($db, $countries, $task, (int)$session['id'])) {
         return tasks_err(403, 'ο πελάτης είναι εκτός του πεδίου σας');
     }
     if ($task['status'] !== 'open')        return tasks_err(409, 'η εργασία δεν είναι ανοιχτή');
@@ -640,7 +715,7 @@ function tasks_guard_owner($db, $session, $perms, $taskId)
     if (!$task) return [null, tasks_err(404, 'η εργασία δεν βρέθηκε')];
 
     $countries = tasks_scope_countries($perms);
-    if (is_array($countries) && !in_array($task['client_country'], $countries, true)) {
+    if (!tasks_country_ok($db, $countries, $task, (int)$session['id'])) {
         return [null, tasks_err(403, 'ο πελάτης είναι εκτός του πεδίου σας')];
     }
     if (in_array($task['status'], ['done', 'na'], true)) {
@@ -755,7 +830,7 @@ function tasks_reject($db, $session, $perms, $taskId, $reasonCode, $note = null)
     if (!$task) return tasks_err(404, 'η εργασία δεν βρέθηκε');
 
     $countries = tasks_scope_countries($perms);
-    if (is_array($countries) && !in_array($task['client_country'], $countries, true)) {
+    if (!tasks_country_ok($db, $countries, $task, (int)$session['id'])) {
         return tasks_err(403, 'ο πελάτης είναι εκτός του πεδίου σας');
     }
     if (in_array($task['status'], ['done', 'na'], true)) {
@@ -838,7 +913,7 @@ function tasks_steal($db, $session, $perms, $taskId)
     if (!$task) return tasks_err(404, 'η εργασία δεν βρέθηκε');
 
     $countries = tasks_scope_countries($perms);
-    if (is_array($countries) && !in_array($task['client_country'], $countries, true)) {
+    if (!tasks_country_ok($db, $countries, $task, (int)$session['id'])) {
         return tasks_err(403, 'ο πελάτης είναι εκτός του πεδίου σας');
     }
     if (in_array($task['status'], ['done', 'na'], true)) {
@@ -907,7 +982,7 @@ function tasks_history($db, $session, $perms, $taskId)
     if (!$task) return tasks_err(404, 'η εργασία δεν βρέθηκε');
 
     $countries = tasks_scope_countries($perms);
-    if (is_array($countries) && !in_array($task['client_country'], $countries, true)) {
+    if (!tasks_country_ok($db, $countries, $task, (int)$session['id'])) {
         return tasks_err(403, 'ο πελάτης είναι εκτός του πεδίου σας');
     }
 
@@ -938,27 +1013,31 @@ function tasks_badge($db, $session, $perms)
     // ΚΑΙ ΟΙ ΔΥΟ μετρητές αγνοούν τους πελάτες επίδειξης. Το σήμα είναι
     // επιχειρησιακό: ό,τι δεν απαιτεί πραγματική δουλειά δεν ανάβει
     // κόκκινο και δεν φουσκώνει το «δικές μου».
-    $where  = ['t.`needs_attention` = 1', 't.`status` = \'open\'', 'c.`is_demo` = 0'];
+    $where  = ['t.`needs_attention` = 1', 't.`status` = \'open\'', 'COALESCE(c.`is_demo`, 0) = 0'];
     $params = [];
     if (is_array($countries)) {
-        if (!$countries) return ['ok' => true, 'code' => 200, 'error' => null,
-                                 'attention' => 0, 'mine' => 0];
-        $where[] = 'c.`country` IN (' . implode(',', array_fill(0, count($countries), '?')) . ')';
-        foreach ($countries as $c) $params[] = $c;
+        // Χωρίς πεδίο χωρών (NONE) μετρούν μόνο οι εργασίες BOTH με δεξιότητα BOTH.
+        list($w, $p) = tasks_country_where($countries, $me);
+        $where[] = $w;
+        $params  = array_merge($params, $p);
     }
     $st = $db->prepare('SELECT COUNT(*) FROM `4a_tasks` t
-                          JOIN `4a_clients` c ON c.`id` = t.`client_id`
+                     LEFT JOIN `4a_clients` c ON c.`id` = t.`client_id`
                          WHERE ' . implode(' AND ', $where));
     $st->execute($params);
     $attention = (int)$st->fetchColumn();
 
     // Το JOIN έλειπε από τον μετρητή «δικές μου» — μπαίνει τώρα ΜΟΝΟ
     // για το φίλτρο is_demo. Καμία άλλη αλλαγή στη σημασία του.
+    // Χρήστης χωρίς πεδίο χωρών (NONE): μέχρι 07/10 το σήμα γύριζε 0/0 χωρίς
+    // να μετρήσει. Τώρα μετρά ΜΟΝΟ τις εργασίες BOTH, ώστε για εργασίες
+    // πελάτη να μένει 0 όπως πριν.
     $st = $db->prepare('SELECT COUNT(*) FROM `4a_tasks` t
-                          JOIN `4a_clients` c ON c.`id` = t.`client_id`
+                     LEFT JOIN `4a_clients` c ON c.`id` = t.`client_id`
                          WHERE t.`assigned_to` = ?
                            AND t.`status` IN (\'in_progress\',\'paused\')
-                           AND c.`is_demo` = 0');
+                           AND COALESCE(c.`is_demo`, 0) = 0'
+                       . ($countries === [] ? ' AND ' . TASKS_COUNTRY_SQL . ' = \'BOTH\'' : ''));
     $st->execute([$me]);
 
     return ['ok' => true, 'code' => 200, 'error' => null,
