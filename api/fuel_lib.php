@@ -78,4 +78,135 @@ function fuel_num($value)
     return $r === '' || $r === '-' ? '0' : $r;
 }
 
+/**
+ * ΟΙ ΓΡΑΜΜΕΣ ΤΟΥ ΑΡΧΕΙΟΥ CMS ΓΙΑ ΤΟΝ ΓΕΝΙΚΟ ΕΠΙΝΑΥΛΟ — Η ΜΟΝΗ ΥΛΟΠΟΙΗΣΗ.
+ *
+ * Ενώνει δύο πηγές:
+ *   4a_fuel_cms_services    κατάλογος, μία εγγραφή ανά υπηρεσία, σταθμό και
+ *                           κατεύθυνση. Η λίστα zones ανοίγει σε μία γραμμή
+ *                           ανά ζώνη, με τον κανόνα export/import.
+ *   4a_fuel_cms_extra_rows  γραμμές που δεν ακολουθούν τον κανόνα, αυτούσιες.
+ *
+ * Ο κανόνας:
+ *   export  Station=station, OriginZone κενό, OriginCountry=station,
+ *           Zone=Zx, Delivery κενό
+ *   import  Station=station, OriginZone=Zx, OriginCountry κενό,
+ *           Zone κενό, Delivery=station
+ *
+ * Η σειρά είναι κατά sort_order, ώστε οι εξαιρέσεις να μπαίνουν στη θέση
+ * τους μέσα στην ομάδα τους και όχι στο τέλος.
+ *
+ * ΤΟ FRONTEND ΔΕΝ ΞΑΝΑΫΠΟΛΟΓΙΖΕΙ. Η χρέωση υπολογίζεται εδώ, μία φορά, με
+ * fuel_pct() και μορφοποιείται με fuel_num().
+ *
+ * @param PDO    $db
+ * @param array  $sourcePct  ['air' => 48, 'road' => 40] από το cache.
+ *                           Κενό σημαίνει χωρίς χρέωση, μόνο οι στήλες
+ *                           ταυτότητας, για έλεγχο και απόδειξη.
+ * @param string $weFrom     EffectiveDate σε μορφή DD-MON-YYYY.
+ * @return array             λίστα associative γραμμών
+ */
+function fuel_cms_rows(PDO $db, array $sourcePct = array(), $weFrom = '')
+{
+    // Το λεξιλόγιο: ποια πηγή και ποιος πολλαπλασιαστής ανά τύπο.
+    $types = array();
+    foreach ($db->query('SELECT `code`, `source`, `multiplier` FROM `4a_fuel_types`
+                          WHERE `active` = 1')->fetchAll(PDO::FETCH_ASSOC) as $t) {
+        $types[$t['code']] = $t;
+    }
+
+    $charge = function ($fuelType) use ($types, $sourcePct) {
+        if (!isset($types[$fuelType])) return null;
+        $src = $types[$fuelType]['source'];
+        if ($src === null) return null;                  // τύπος NONE
+        if (!array_key_exists($src, $sourcePct)) return null;
+        return fuel_pct($sourcePct[$src], $types[$fuelType]['multiplier']);
+    };
+
+    $out = array();
+
+    // 1. Κατάλογος, με τον κανόνα.
+    $cat = $db->query('SELECT `cms_service`, `service_name`, `station_country`,
+                              `direction`, `zones`, `fuel_type`, `is_combi`,
+                              `visible_scope`, `sort_order`
+                         FROM `4a_fuel_cms_services`
+                        WHERE `active` = 1')->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($cat as $c) {
+        $zones = array_values(array_filter(array_map('trim', explode(',', $c['zones'])), 'strlen'));
+        $i = 0;
+        foreach ($zones as $z) {
+            $exp = ($c['direction'] === 'export');
+            $out[] = array(
+                'sort_order'      => (int)$c['sort_order'] + $i,
+                'station'         => $c['station_country'],
+                'origin_zone'     => $exp ? ''                     : $z,
+                'origin_country'  => $exp ? $c['station_country']  : '',
+                'zone'            => $exp ? $z                     : '',
+                'delivery'        => $exp ? ''                     : $c['station_country'],
+                'service'         => $c['cms_service'],
+                'service_name'    => $c['service_name'],
+                'fuel_type'       => $c['fuel_type'],
+                'is_combi'        => (int)$c['is_combi'],
+                'visible_scope'   => $c['visible_scope'],
+                'charge'          => $charge($c['fuel_type']),
+                'we_from'         => $weFrom,
+                'source'          => 'rule',
+            );
+            $i++;
+        }
+    }
+
+    // 2. Εξαιρέσεις, αυτούσιες.
+    $ex = $db->query('SELECT `station_country`, `origin_zone`, `origin_country`,
+                             `zone`, `delivery_country`, `cms_service`,
+                             `service_name`, `fuel_type`, `sort_order`
+                        FROM `4a_fuel_cms_extra_rows`
+                       WHERE `active` = 1')->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($ex as $e) {
+        $out[] = array(
+            'sort_order'     => (int)$e['sort_order'],
+            'station'        => $e['station_country'],
+            'origin_zone'    => $e['origin_zone'],
+            'origin_country' => $e['origin_country'],
+            'zone'           => $e['zone'],
+            'delivery'       => $e['delivery_country'],
+            'service'        => $e['cms_service'],
+            'service_name'   => $e['service_name'],
+            'fuel_type'      => $e['fuel_type'],
+            'is_combi'       => 0,
+            'visible_scope'  => $e['station_country'],
+            'charge'         => $charge($e['fuel_type']),
+            'we_from'        => $weFrom,
+            'source'         => 'extra',
+        );
+    }
+
+    usort($out, function ($a, $b) {
+        if ($a['sort_order'] !== $b['sort_order']) return $a['sort_order'] - $b['sort_order'];
+        return strcmp($a['service'] . $a['zone'] . $a['origin_zone'],
+                      $b['service'] . $b['zone'] . $b['origin_zone']);
+    });
+
+    return $out;
+}
+
+/**
+ * Οι ίδιες γραμμές στις εννέα στήλες του αρχείου CMS, με τη σειρά που
+ * χρησιμοποιεί το FuelChargeImport. Το ClientCode μένει κενό: το αρχείο
+ * γενικού επίναυλου δεν αφορά συγκεκριμένο πελάτη.
+ */
+function fuel_cms_file($rows)
+{
+    $out = array(array('ClientCode', 'StationCountryCode', 'OriginZoneCode',
+                       'OriginCountryCode', 'ZoneCode', 'DeliveryCountryCode',
+                       'ServiceTypeCode', 'FuelCharge', 'EffectiveDate'));
+    foreach ($rows as $r) {
+        if ($r['charge'] === null) continue;        // τύπος NONE, καμία γραμμή
+        $out[] = array('', $r['station'], $r['origin_zone'], $r['origin_country'],
+                       $r['zone'], $r['delivery'], $r['service'],
+                       fuel_num($r['charge']), $r['we_from']);
+    }
+    return $out;
+}
+
 } // function_exists
