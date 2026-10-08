@@ -14,6 +14,8 @@ TEST_BASE_URL=https://4aexpress.com/api TEST_TOKEN=<token> ADMIN_TOKEN=<admin_to
 pytest tests/test_cod.py::test_case2_calculate_flat_min_fee -v
 ```
 
+**Πρόσβαση σε server/βάση** (από 08-10-2026). Καμία σύνδεση σε server ή βάση χωρίς ρητή έγκριση του Απόστολου στην τρέχουσα συνομιλία. Σειρά: δείξε την εντολή/το script → περίμενε έγκριση → τρέξε. Ισχύει και για read-only ελέγχους και για κάθε βήμα του deploy.
+
 **Deploy** — `api/` (PHP) deploy = SCP per file ΜΟΝΟ. `git push` ΔΕΝ ενημερώνει το backend (webhook νεκρός, server git παγωμένο, nested `api/.git`). Frontend = `git push` → GitHub Pages.
 
 **Κανόνας deploy backend** (από 07-10-2026). Ανεβαίνει ΜΟΝΟ ό,τι έχει γίνει commit, από το git, ΠΟΤΕ από τον δίσκο:

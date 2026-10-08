@@ -39,6 +39,9 @@
   .legend-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
   .legend-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block;
                 box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+  /* Η κουκκίδα «Ολοκληρωμένη» = ΑΚΡΙΒΩΣ το φόντο της κλειστής ομάδας: χωρίς
+     περίγραμμα που θα σκούραινε την απόχρωση. */
+  .legend-dot.closed-dot { box-shadow: none; }
   .legend-ico { font-size: 12px; line-height: 1; width: 13px; text-align: center; }
   .legend-lbl { font-size: 11.5px; color: #666; }
 
@@ -61,6 +64,19 @@
   .fuel-facts { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px;
                 font-size: 11.5px; color: #555; }
   .fuel-facts b { color: #222; }
+  /* Κάρτα επίναυλου: η γραμμή αναδιπλώνεται και το μπλοκ τιμών πιάνει ΟΛΟ
+     το πλάτος, κάτω από τον τίτλο. Πίνακας τύπου Excel: μία στήλη ανά τύπο,
+     ίδιο πλάτος (table-layout: fixed), ώστε να χωράει και στο κινητό χωρίς
+     οριζόντια κύλιση. Ετικέτες και σειρά στηλών από τη βάση. */
+  .task.has-fuel { flex-wrap: wrap; }
+  .fuel-block { flex: 0 0 100%; min-width: 0; }
+  .fuel-tbl { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12px; }
+  .fuel-tbl th, .fuel-tbl td { border: 1px solid #d6d6d6; padding: 4px 6px; text-align: center;
+                               overflow-wrap: anywhere; }
+  .fuel-tbl th { background: #f5f5f5; color: #555; font-weight: 600; font-size: 11.5px; }
+  .fuel-tbl td { background: #fff; color: #222; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .fuel-due { font-weight: 700; color: #222; }
+  .fuel-due.late { color: #cc0000; }
 
   /* Ομάδα όπου ΟΛΕΣ οι εργασίες έκλεισαν (done/na): όλη η ομάδα με το
      ΧΡΩΜΑ της κατάστασης «Ολοκληρωμένη» από τη βάση. Το χρώμα και το
@@ -70,7 +86,10 @@
     background: var(--closed-bg); color: var(--closed-fg); }
   .client-group.closed .client-name, .client-group.closed .client-meta,
   .client-group.closed .task-label, .client-group.closed .task-meta,
-  .client-group.closed .fuel-facts, .client-group.closed .fuel-facts b { color: var(--closed-fg); }
+  .client-group.closed .fuel-facts, .client-group.closed .fuel-facts b,
+  .client-group.closed .fuel-due { color: var(--closed-fg); }
+  .client-group.closed .fuel-tbl th, .client-group.closed .fuel-tbl td {
+    background: transparent; color: var(--closed-fg); border-color: var(--closed-fg); }
   .task-icon { margin-right: 4px; }
 
   /* ΕΠΙΔΕΙΞΗ: ουδέτερο, σκόπιμα ΟΧΙ κόκκινο — το κόκκινο ανήκει στο
@@ -322,10 +341,14 @@ function renderLegend(){
   const rows = Object.values(STATUSES)
     .sort((a,b)=>(Number(a.sort_order)||0)-(Number(b.sort_order)||0) || String(a.code).localeCompare(String(b.code)));
   if(!rows.length){ el.innerHTML=''; return; }
+  // Το «done» ΠΑΝΤΑ κουκκίδα, με το χρώμα της closedColor(): το ίδιο που
+  // βάφει την κλειστή ομάδα. Ένα σημείο, δύο χρήσεις.
+  const cc = closedColor();
   el.innerHTML = '<div class="legend">' + rows.map(s =>
     `<span class="legend-item">`+
-      (s.icon ? `<span class="legend-ico">${escHtml(s.icon)}</span>`
-              : `<span class="legend-dot" style="background:${escHtml(s.color)};"></span>`)+
+      (s.code==='done' && cc ? `<span class="legend-dot closed-dot" style="background:${escHtml(cc)};"></span>`
+       : s.icon ? `<span class="legend-ico">${escHtml(s.icon)}</span>`
+                : `<span class="legend-dot" style="background:${escHtml(s.color)};"></span>`)+
       `<span class="legend-lbl">${escHtml(s.label)}</span>`+
     `</span>`).join('') + '</div>';
 }
@@ -584,13 +607,21 @@ function taskTitle(t){
   return (t.task_icon ? `<span class="task-icon">${escHtml(t.task_icon)}</span>` : '') + escHtml(title);
 }
 
+// ΤΟ χρώμα της «Ολοκληρωμένη»: το color του done στον 4a_task_statuses.
+// Το διαβάζουν ΚΑΙ η κουκκίδα του υπομνήματος ΚΑΙ το φόντο της κλειστής
+// ομάδας, ώστε να είναι πάντα ίδια. null αν η βάση δεν το δίνει.
+function closedColor(){
+  const s = STATUSES.done;
+  return s && s.color ? s.color : null;
+}
+
 // Όλες οι εργασίες της ομάδας έκλεισαν (done ή na); Τότε η ομάδα παίρνει το
-// χρώμα της κατάστασης «done» από τη βάση. Χωρίς αυτό το χρώμα: τίποτα.
+// closedColor(). Χωρίς αυτό το χρώμα: τίποτα.
 function closedGroupStyle(items){
   if(!items.length || !items.every(t => t.status==='done' || t.status==='na')) return null;
-  const s = STATUSES.done;
-  if(!s || !s.color) return null;
-  return `--closed-bg:${s.color};--closed-fg:${textOn(s.color)};`;
+  const c = closedColor();
+  if(!c) return null;
+  return `--closed-bg:${c};--closed-fg:${textOn(c)};`;
 }
 
 // Ο υπότιτλος της σελίδας από τη βάση (modules.description, μέσω του
@@ -653,30 +684,73 @@ async function downloadFuelCms(id){
 // «2026-10-09 17:00:00» -> «Παρ 09/10/2026 17:00». Η ώρα είναι ώρα Αθήνας,
 // όπως την έγραψε ο server — καμία μετατροπή ζώνης εδώ.
 const GR_DAY3 = ['Κυρ','Δευ','Τρι','Τετ','Πεμ','Παρ','Σαβ'];
-function fmtDue(s){
+// «Παρ 09/10/2026 17:00», ή χωρίς έτος (short) «Παρ 09/10 17:00».
+function fmtDue(s, short){
   const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(s||'');
   if(!m) return '—';
   const d = new Date(Date.UTC(+m[1], +m[2]-1, +m[3], 12));
-  return `${GR_DAY3[d.getUTCDay()]} ${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}`;
+  return `${GR_DAY3[d.getUTCDay()]} ${m[3]}/${m[2]}${short?'':'/'+m[1]} ${m[4]}:${m[5]}`;
 }
 
-function fuelFactsHtml(t, p){
+// Το due_at είναι ώρα Αθήνας (fuel_weekly_due_at στο api/fuel_lib.php), άρα
+// συγκρίνεται με το «τώρα» της Αθήνας, ως κείμενο «YYYY-MM-DD HH:MM:SS».
+function athensNow(){
+  const p = {};
+  new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Athens', hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    .formatToParts(new Date()).forEach(x => p[x.type] = x.value);
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second}`;
+}
+// Κανονικοποίηση σε «YYYY-MM-DD HH:MM:SS»: δέχεται κενό ή T, και ώρα χωρίς
+// δευτερόλεπτα. Με Z ή offset η ζώνη δεν είναι Αθήνα: null, όχι σύγκριση.
+function normDateTime(s){
+  const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?$/.exec(String(s||'').trim());
+  return m ? `${m[1]} ${m[2]}:${m[3]}:${m[4]||'00'}` : null;
+}
+function isPastDue(due, now){
+  const a = normDateTime(due), b = normDateTime(now);
+  return a !== null && b !== null && b > a;
+}
+
+// Οι στήλες του πίνακα τιμών: ΟΛΟΙ οι τύποι της βάσης που έχουν ετικέτα και
+// τιμή στο payload, με σειρά sort_order (ισοπαλία ή απουσία: η σειρά του
+// fuel_catalog.php, που είναι ήδη ORDER BY sort_order). Νέος τύπος στη βάση
+// με τιμή στο payload = νέα στήλη, χωρίς αλλαγή εδώ.
+function fuelColumns(p){
+  if(!p || !p.prices) return [];
+  const so = t => (t.sort_order===undefined || t.sort_order===null) ? 0 : Number(t.sort_order) || 0;
+  return Object.values(FUEL_TYPES)
+    .filter(t => t && t.label_el && p.prices[t.code]!==undefined && p.prices[t.code]!==null)
+    .sort((a,b) => so(a) - so(b))
+    .map(t => ({ label: t.label_el, value: p.prices[t.code] }));
+}
+
+// Το μπλοκ της κάρτας επίναυλου: πίνακας τιμών σε όλο το πλάτος και από
+// κάτω μία γραμμή «Ισχύς από … · Προθεσμία … · N γραμμές». Η προθεσμία
+// κόκκινη ΜΟΝΟ μετά το due_at, και μόνο όσο η εργασία είναι ανοιχτή.
+function fuelFactsHtml(t, p, now){
   if(!p || p.kind!=='fuel_weekly') return '';
-  const f = [];
-  const wk = fmtWeekRange(p.week_start, p.week_end);
-  if(wk) f.push(`εβδομάδα <b>${escHtml(wk)}</b>`);
-  // Ετικέτα από τη βάση («Air Cyprus»), ΠΟΤΕ ο κωδικός («AIR_CY»). Χωρίς
-  // ετικέτες, οι τιμές δεν εμφανίζονται — η λήψη αρχείου δουλεύει κανονικά.
+  // Ετικέτα από τη βάση (label_el), ΠΟΤΕ ο κωδικός. Χωρίς ετικέτες, οι
+  // τιμές δεν εμφανίζονται — η λήψη αρχείου δουλεύει κανονικά.
+  let tbl = '';
   if(p.prices){
-    const pr = Object.keys(p.prices).filter(k => p.prices[k]!==null && FUEL_TYPES[k] && FUEL_TYPES[k].label_el)
-                 .map(k => `<b>${escHtml(FUEL_TYPES[k].label_el)} ${escHtml(p.prices[k])}%</b>`);
-    f.push(pr.length ? 'τιμές ' + pr.join(' · ') : 'τιμές: οι ετικέτες δεν φορτώθηκαν');
+    const cols = fuelColumns(p);
+    tbl = cols.length
+      ? `<table class="fuel-tbl"><thead><tr>${cols.map(c => `<th>${escHtml(c.label)}</th>`).join('')}</tr></thead>`+
+        `<tbody><tr>${cols.map(c => `<td>${escHtml(c.value)} %</td>`).join('')}</tr></tbody></table>`
+      : `<div class="fuel-facts"><span>τιμές: οι ετικέτες δεν φορτώθηκαν</span></div>`;
   }
-  if(p.effective_date) f.push(`ισχύς <b>${escHtml(p.effective_date)}</b>`);
-  if(t.due_at) f.push(`προθεσμία <b>${escHtml(fmtDue(t.due_at))}</b>`);
-  if(p.rows_count) f.push(`γραμμές <b>${escHtml(p.rows_count)}</b>`);
+  const f = [];
+  if(p.effective_date) f.push(`Ισχύς από <b>${escHtml(p.effective_date)}</b>`);
+  if(t.due_at){
+    const late = t.status!=='done' && t.status!=='na' && isPastDue(t.due_at, now===undefined ? athensNow() : now);
+    f.push(`Προθεσμία <span class="fuel-due${late?' late':''}"${late?' title="Overdue — Η προθεσμία πέρασε"':''}>`+
+           `${escHtml(fmtDue(t.due_at, true))}</span>`);
+  }
+  if(p.rows_count) f.push(`${escHtml(p.rows_count)} γραμμές`);
   if(p.proof) f.push(`απόδειξη <b>${escHtml(p.proof.generated)}/${escHtml(p.proof.expected)}</b>, επιπλέον ${escHtml(p.proof.extra)}, λείπουν ${escHtml(p.proof.missing)}`);
-  return `<div class="fuel-facts">${f.map(x => `<span>${x}</span>`).join('')}</div>`;
+  const line = f.length ? `<div class="fuel-facts"><span>${f.join(' · ')}</span></div>` : '';
+  return `<div class="fuel-block">${tbl}${line}</div>`;
 }
 
 function taskRow(t){
@@ -759,16 +833,20 @@ function taskRow(t){
 
   const attn = Number(t.needs_attention)===1 && t.status==='open';
 
-  return `<div class="task${locked?' locked':''}${attn?' attn':''}">
+  // Το μπλοκ επίναυλου μπαίνει ΤΕΛΕΥΤΑΙΟ μέσα στη γραμμή και, με το
+  // has-fuel, πέφτει σε δική του σειρά σε όλο το πλάτος της κάρτας.
+  const fuel = fuelFactsHtml(t, payload);
+
+  return `<div class="task${locked?' locked':''}${attn?' attn':''}${fuel?' has-fuel':''}">
     <div class="task-main">
       <div class="task-label">${locked?'🔒 ':''}${taskTitle(t)}</div>
       <div class="task-meta">${escHtml(t.task_code)}${meta.length?' · '+meta.join(' · '):''}</div>
-      ${fuelFactsHtml(t, payload)}
     </div>
     ${attn?'<span class="attn-tag" title="Απορρίφθηκε από όλους τους δικαιούχους — χρειάζεται ανάθεση">χρειάζεται ανάθεση</span>':''}
     ${whoCell(t)}
     ${stBadge(t.display_status || t.status, t.status)}
     <div class="acts">${acts}</div>
+    ${fuel}
   </div>${histHtml(t.id)}`;
 }
 
