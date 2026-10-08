@@ -38,7 +38,7 @@ SET @sql := IF((SELECT COUNT(*) FROM information_schema.COLUMNS
                    AND TABLE_NAME   = '4a_fuel_types'
                    AND COLUMN_NAME  = 'icon') = 0,
   'ALTER TABLE `4a_fuel_types`
-     ADD COLUMN `icon` VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL
+     ADD COLUMN `icon` VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL
        COMMENT ''εικονιδιο τυπου, NULL = κανενα''
        AFTER `label_en`',
   'SELECT ''η στηλη 4a_fuel_types.icon υπαρχει ηδη'' AS `ΠΑΡΑΛΕΙΨΗ`');
@@ -56,7 +56,7 @@ SET @sql := IF((SELECT COUNT(*) FROM information_schema.COLUMNS
                    AND TABLE_NAME   = '4a_task_types'
                    AND COLUMN_NAME  = 'due_warn_hours') = 0,
   'ALTER TABLE `4a_task_types`
-     ADD COLUMN `due_warn_hours` INT NULL
+     ADD COLUMN `due_warn_hours` INT NULL DEFAULT NULL
        COMMENT ''προθεσμια: πανω από τοσες ωρες πρασινο, NULL = χωρις χρωμα''',
   'SELECT ''η στηλη due_warn_hours υπαρχει ηδη'' AS `ΠΑΡΑΛΕΙΨΗ`');
 PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
@@ -66,7 +66,7 @@ SET @sql := IF((SELECT COUNT(*) FROM information_schema.COLUMNS
                    AND TABLE_NAME   = '4a_task_types'
                    AND COLUMN_NAME  = 'due_urgent_hours') = 0,
   'ALTER TABLE `4a_task_types`
-     ADD COLUMN `due_urgent_hours` INT NULL
+     ADD COLUMN `due_urgent_hours` INT NULL DEFAULT NULL
        COMMENT ''προθεσμια: κατω από τοσες ωρες κοκκινο + ΕΠΕΙΓΟΝ, NULL = χωρις χρωμα''
        AFTER `due_warn_hours`',
   'SELECT ''η στηλη due_urgent_hours υπαρχει ηδη'' AS `ΠΑΡΑΛΕΙΨΗ`');
@@ -81,6 +81,21 @@ UPDATE `4a_task_types`
  WHERE `code` = 'fuel_weekly_verify';
 
 -- ── 3. Επαληθευση ─────────────────────────────────────────────────────
+-- Charset πινακα και νεων στηλων, από τον καταλογο της ΙΔΙΑΣ βασης.
+SELECT `TABLE_NAME`, `TABLE_COLLATION`
+  FROM information_schema.TABLES
+ WHERE TABLE_SCHEMA = DATABASE()
+   AND TABLE_NAME IN ('4a_fuel_types', '4a_task_types')
+ ORDER BY `TABLE_NAME`;
+
+SELECT `TABLE_NAME`, `COLUMN_NAME`, `COLUMN_TYPE`, `CHARACTER_SET_NAME`, `COLLATION_NAME`,
+       `IS_NULLABLE`, `COLUMN_DEFAULT`
+  FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = DATABASE()
+   AND ((TABLE_NAME = '4a_fuel_types' AND COLUMN_NAME = 'icon')
+     OR (TABLE_NAME = '4a_task_types' AND COLUMN_NAME IN ('due_warn_hours', 'due_urgent_hours')))
+ ORDER BY `TABLE_NAME`, `ORDINAL_POSITION`;
+
 SELECT `code`, `label_el`, `icon`, HEX(`icon`) AS icon_hex, `sort_order`
   FROM `4a_fuel_types` ORDER BY `sort_order`, `code`;
 
