@@ -228,7 +228,7 @@
 
 <div class="wrap">
   <h1 class="page-title">Εργασίες</h1>
-  <p class="page-sub">Ό,τι προκύπτει όταν ένας πελάτης αποδεχτεί προσφορά</p>
+  <p class="page-sub" id="page-sub" style="display:none;"></p>
 
   <div id="err" class="err" style="display:none;"></div>
   <div id="ok" class="okmsg" style="display:none;"></div>
@@ -358,6 +358,7 @@ async function load(){
     const r = await apiFetch(`${API}/tasks.php?view=${view}&v=${Date.now()}`);
     const d = await r.json().catch(()=>null);
     if(!r.ok || !d || d.ok!==true){ showErr((d&&d.error)||`HTTP ${r.status}`); document.getElementById('list').innerHTML=''; return; }
+    renderPageSub(d.description);
     STATUSES = {};
     (d.statuses||[]).forEach(s => STATUSES[s.code] = s);
     renderLegend();
@@ -590,6 +591,16 @@ function closedGroupStyle(items){
   const s = STATUSES.done;
   if(!s || !s.color) return null;
   return `--closed-bg:${s.color};--closed-fg:${textOn(s.color)};`;
+}
+
+// Ο υπότιτλος της σελίδας από τη βάση (modules.description, μέσω του
+// tasks.php). Χωρίς κείμενο: ΚΑΝΕΝΑΣ υπότιτλος — όχι εφεδρικό κείμενο εδώ.
+function renderPageSub(description){
+  const el = document.getElementById('page-sub');
+  if(!el) return;
+  const txt = (typeof description==='string') ? description.trim() : '';
+  el.textContent = txt;
+  el.style.display = txt ? '' : 'none';
 }
 
 function taskPayload(t){

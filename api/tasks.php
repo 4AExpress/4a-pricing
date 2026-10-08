@@ -1,5 +1,5 @@
 <?php
-// tasks.php | v1.0 | 23-09-2026
+// tasks.php | v1.1 | 08-10-2026
 // Endpoint της οθόνης εργασιών. Λεπτό routing — η λογική ζει στο
 // tasks_lib.php ώστε να δοκιμάζεται χωρίς βάση και χωρίς HTTP.
 //
@@ -52,12 +52,22 @@ if ($method === 'GET') {
     if (!$r['ok']) respond(['error' => $r['error']], $r['code']);
     // Οι καταστάσεις ταξιδεύουν μαζί με τη λίστα: ένα round-trip, και η
     // οθόνη δεν χρειάζεται να ξέρει κανένα χρώμα εκ των προτέρων.
+    // Ο υπότιτλος της σελίδας από τη βάση (modules.description). NULL αν
+    // λείπει η στήλη ή το κείμενο: η σελίδα τότε δεν δείχνει υπότιτλο.
+    $description = null;
+    try {
+        $d = $db->query("SELECT `description` FROM `modules` WHERE `id` = 'tasks'")->fetchColumn();
+        if (is_string($d) && trim($d) !== '') $description = $d;
+    } catch (Exception $e) {
+        error_log('tasks.php: modules.description: ' . $e->getMessage());
+    }
     respond([
-        'ok'       => true,
-        'view'     => $view,
-        'tasks'    => $r['tasks'],
-        'statuses' => tasks_statuses($db),
-        'is_admin' => tasks_is_admin($perms),
+        'ok'          => true,
+        'view'        => $view,
+        'tasks'       => $r['tasks'],
+        'statuses'    => tasks_statuses($db),
+        'is_admin'    => tasks_is_admin($perms),
+        'description' => $description,
     ]);
 }
 

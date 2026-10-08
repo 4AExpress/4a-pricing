@@ -232,6 +232,24 @@ console.log('\n═══ Ολοκληρωμένη ομάδα: γκρι με το
   ck('χωρίς χρώμα «done» στη βάση: όχι closed, κανένα εφεδρικό χρώμα', !e2.els.list.innerHTML.includes('closed'));
 }
 
+console.log('\n═══ Υπότιτλος σελίδας από τη βάση (modules.description) ═══');
+{
+  const el = { textContent: 'παλιό', style: { display: '' } };
+  const doc = { getElementById: id => id === 'page-sub' ? el : null };
+  const renderPageSub = new Function('document', grab('renderPageSub') + '\nreturn renderPageSub;')(doc);
+  const TXT = 'Εργασίες πελατών μετά την αποδοχή προσφοράς, και εβδομαδιαίες εργασίες συστήματος';
+  renderPageSub(TXT);
+  ck('κείμενο από τη βάση -> εμφανίζεται αυτούσιο', el.textContent === TXT && el.style.display === '', JSON.stringify(el));
+  renderPageSub(null);
+  ck('NULL -> κανένας υπότιτλος (κενό, κρυμμένο)', el.textContent === '' && el.style.display === 'none', JSON.stringify(el));
+  renderPageSub('   ');
+  ck('κενό κείμενο -> κανένας υπότιτλος', el.textContent === '' && el.style.display === 'none');
+  ck('ο υπότιτλος γράφεται ως textContent (όχι innerHTML)', /el\.textContent = txt/.test(grab('renderPageSub')) && !/innerHTML/.test(grab('renderPageSub')));
+  ck('στο αρχείο: ο υπότιτλος είναι ΑΔΕΙΟΣ, κανένα σταθερό κείμενο',
+     /<p class="page-sub" id="page-sub" style="display:none;"><\/p>/.test(src) && !src.includes('Ό,τι προκύπτει όταν ένας πελάτης αποδεχτεί προσφορά'));
+  ck('η load() καλεί renderPageSub(d.description)', /renderPageSub\(d\.description\)/.test(grab('load')));
+}
+
 console.log('\n═══ Δομικά ═══');
 {
   const fns = ['fuelCmsAoa', 'fuelCmsWorkbook', 'fuelFactsHtml'].map(grab).join('\n');
