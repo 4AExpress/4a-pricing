@@ -29,23 +29,62 @@ function grabConst(name){
   return src.slice(i, j + 1);
 }
 
-function env(){
+// Ό,τι στέλνει η βάση: καταστάσεις (4a_task_statuses) και τύποι επίναυλου
+// (4a_fuel_types μέσω api/fuel_catalog.php). Το χρώμα του done είναι αυτό
+// του migration 2026-09-23f.
+const DB_STATUSES = { done: { code: 'done', label: 'Ολοκληρωμένη', color: '#9e9e9e' },
+                      na:   { code: 'na',   label: 'Δεν εφαρμόζεται', color: '#cfcfcf' } };
+const DB_FUEL_TYPES = { AIR:    { code: 'AIR',    label_el: 'Αεροπορικός' },
+                        ROAD:   { code: 'ROAD',   label_el: 'Οδικός' },
+                        AIR_CY: { code: 'AIR_CY', label_el: 'Air Cyprus' },
+                        NONE:   { code: 'NONE',   label_el: 'Χωρίς επίναυλο' } };
+
+function env(opts){
+  opts = opts || {};
   const els = {};
   const doc = { getElementById: id => (els[id] = els[id] || { innerHTML: '', style: {} }) };
   const store = { getItem: () => null };
   const code = [
-    'let currentUser = { id: 1 }, isAdmin = true, view = "all", lastTasks = [], STATUSES = {};',
+    'let currentUser = { id: 1 }, isAdmin = true, view = "all", lastTasks = [];',
+    'let STATUSES = ' + JSON.stringify(opts.statuses === undefined ? DB_STATUSES : opts.statuses) + ';',
+    'let FUEL_TYPES = ' + JSON.stringify(opts.fuelTypes === undefined ? DB_FUEL_TYPES : opts.fuelTypes) + ';',
     'const histOpen = new Map();',
     grabConst('TIPS'), grabConst('ACTION_URL_OK'), grabConst('FUEL_CMS_HEADER'), grabConst('GR_DAY3'),
     grab('escHtml'), grab('textOn'), grab('stBadge'), grab('whoCell'), grab('histHtml'), grab('histWhat'),
     grab('canOpen'), grab('actionBtn'), grab('summaryHtml'),
+    grab('fmtWeekRange'), grab('taskTitle'), grab('closedGroupStyle'),
     grab('taskPayload'), grab('fuelCmsAoa'), grab('fuelCmsWorkbook'), grab('fmtDue'), grab('fuelFactsHtml'),
     grab('taskRow'), grab('render'),
-    'return { render, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, taskPayload };'
+    'return { render, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, taskPayload, fmtWeekRange, taskTitle };'
   ].join('\n');
   const api = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, store, {});
   return { api, els };
 }
+
+// Γραμμές όπως τις δίνει η tasks_base_sql(): label, icon και title_template
+// από τον 4a_task_types (migration 2026-10-08a).
+const BASE = { assigned_to: null, assigned_name: null, status: 'open', needs_attention: 0, locked: 0,
+               is_demo: 0, close_reason: null, offer_number: '', ready: true, ready_enforced: false };
+const FW  = { task_code: 'fuel_weekly', task_label: 'Γενικός επίναυλος εβδομάδας — αρχείο CMS',
+              task_icon: '⛽', task_title_template: 'Γενικός επίναυλος {week} — αρχείο CMS', depends_on: null };
+const FWV = { task_code: 'fuel_weekly_verify', task_label: 'Έλεγχος γενικού επίναυλου στο CMS',
+              task_icon: '⛽', task_title_template: 'Έλεγχος γενικού επίναυλου {week} στο CMS', depends_on: 'fuel_weekly' };
+const HIST_PAYLOAD = { kind: 'fuel_weekly', week_start: '2026-10-05', week_end: '2026-10-11',
+  effective_date: '01-Oct-2026', retroactive: true, proof: { expected: 69, generated: 69, extra: 0, missing: 0 } };
+const sysTask = (id, type, subject, payload, extra) => Object.assign({}, BASE, type, {
+  id, client_id: null, client_name: null, client_country: 'BOTH', task_country: 'BOTH',
+  subject_key: subject, due_at: '2026-10-09 17:00:00', payload: JSON.stringify(payload) }, extra || {});
+const cliTask = (id, cid, name, extra) => Object.assign({}, BASE, {
+  id, client_id: cid, client_name: name, client_country: 'GR', client_account: 'ACC', task_code: 'open_code',
+  task_label: 'Άνοιγμα κωδικού', task_icon: null, task_title_template: null, depends_on: null,
+  payload: JSON.stringify({ account: 'ACC' }) }, extra || {});
+// Το HTML μιας ομάδας: από το άνοιγμά της μέχρι το επόμενο client-group.
+const groupHtml = (html, marker) => {
+  const m = html.indexOf(marker); if (m < 0) return '';
+  const i = html.lastIndexOf('<div class="client-group', m);
+  const j = html.indexOf('<div class="client-group', m);
+  return html.slice(i, j < 0 ? html.length : j);
+};
 
 let pass = 0, fail = 0;
 const ck = (l, c, extra) => { c ? pass++ : fail++;
@@ -101,34 +140,55 @@ console.log('\n═══ Στοιχεία κάρτας ═══');
   ck('fmtDue 2026-10-09 17:00:00 -> Παρ 09/10/2026 17:00', api.fmtDue('2026-10-09 17:00:00') === 'Παρ 09/10/2026 17:00', api.fmtDue('2026-10-09 17:00:00'));
   ck('fmtDue κενό -> —', api.fmtDue(null) === '—');
   const h = api.fuelFactsHtml({ due_at: '2026-10-09 17:00:00' }, PAYLOAD);
-  ck('εβδομάδα', h.includes(PAYLOAD.week));
-  ck('τιμές AIR 49.00 · ROAD 40.75 · AIR_CY 51.94', h.includes('AIR 49.00%') && h.includes('ROAD 40.75%') && h.includes('AIR_CY 51.94%'), h);
-  ck('ο τύπος NONE (null) δεν εμφανίζεται', !h.includes('NONE'));
+  ck('εβδομάδα 12–18/10', h.includes('εβδομάδα <b>12–18/10</b>'), h);
+  ck('τιμές με ετικέτες από τη βάση: Αεροπορικός 49.00 · Οδικός 40.75 · Air Cyprus 51.94',
+     h.includes('Αεροπορικός 49.00%') && h.includes('Οδικός 40.75%') && h.includes('Air Cyprus 51.94%'), h);
+  ck('κανένας κωδικός τύπου (AIR_CY, AIR, ROAD) στο HTML', !/AIR_CY|\bAIR\b|\bROAD\b/.test(h), h);
+  ck('ο τύπος NONE (null) δεν εμφανίζεται', !h.includes('NONE') && !h.includes('Χωρίς επίναυλο'));
   ck('ισχύς 12-Oct-2026', h.includes('12-Oct-2026'));
   ck('προθεσμία Παρ 09/10/2026 17:00', h.includes('Παρ 09/10/2026 17:00'));
   ck('γραμμές 69', h.includes('γραμμές <b>69</b>'));
-  const hist = api.fuelFactsHtml({}, { kind: 'fuel_weekly', week_start: '2026-10-05', week_end: '2026-10-11',
-    effective_date: '01-Oct-2026', retroactive: true, proof: { expected: 69, generated: 69, extra: 0, missing: 0 } });
+  const hist = api.fuelFactsHtml({}, HIST_PAYLOAD);
   ck('ιστορικό 2026-10-05: ισχύς 01-Oct-2026 και απόδειξη 69/69', hist.includes('01-Oct-2026') && hist.includes('69/69'), hist);
   ck('payload πελάτη: κανένα στοιχείο επίναυλου', api.fuelFactsHtml({}, { account: 'X' }) === '');
+  const noLbl = env({ fuelTypes: {} }).api.fuelFactsHtml({}, PAYLOAD);
+  ck('χωρίς ετικέτες από τη βάση: ΟΥΤΕ κωδικοί, μόνο σημείωση', !/AIR_CY|\bAIR\b|\bROAD\b/.test(noLbl) && noLbl.includes('οι ετικέτες δεν φορτώθηκαν'), noLbl);
+}
+
+console.log('\n═══ Εβδομάδα: ίδιος τρόπος παντού ═══');
+{
+  const { api } = env();
+  ck('12–18/10', api.fmtWeekRange('2026-10-12', '2026-10-18') === '12–18/10');
+  ck('05–11/10', api.fmtWeekRange('2026-10-05', '2026-10-11') === '05–11/10');
+  ck('αλλαγή μήνα: 28/09–04/10', api.fmtWeekRange('2026-09-28', '2026-10-04') === '28/09–04/10');
+  const h12 = api.fuelFactsHtml({}, PAYLOAD), h05 = api.fuelFactsHtml({}, HIST_PAYLOAD);
+  ck('η 12/10 (με ετικέτα DHL στο payload) και η 05/10 (χωρίς) γράφονται ίδια',
+     h12.includes('εβδομάδα <b>12–18/10</b>') && h05.includes('εβδομάδα <b>05–11/10</b>'), h05);
+  ck('η ετικέτα του DHL («Οκτώβριος 12-18, 2026») ΔΕΝ εμφανίζεται', !h12.includes(PAYLOAD.week));
+}
+
+console.log('\n═══ Τίτλος και εικονίδιο από τη βάση ═══');
+{
+  const { api } = env();
+  const t76 = sysTask(76, FW, 'fuel:2026-10-12', PAYLOAD);
+  ck('«⛽ Γενικός επίναυλος 12–18/10 — αρχείο CMS»',
+     api.taskTitle(t76) === '<span class="task-icon">⛽</span>Γενικός επίναυλος 12–18/10 — αρχείο CMS', api.taskTitle(t76));
+  ck('verify: «⛽ Έλεγχος γενικού επίναυλου 12–18/10 στο CMS»',
+     api.taskTitle(sysTask(77, FWV, 'fuel:2026-10-12', PAYLOAD)).endsWith('Έλεγχος γενικού επίναυλου 12–18/10 στο CMS'));
+  const other = Object.assign({}, t76, { task_icon: '🧾' });
+  ck('το εικονίδιο έρχεται από τη γραμμή της βάσης (task_icon), όχι από τον κώδικα', api.taskTitle(other).includes('🧾') && !api.taskTitle(other).includes('⛽'));
+  ck('τύπος χωρίς εικονίδιο (NULL): κανένα εικονίδιο, ο τίτλος = label', api.taskTitle(cliTask(50, 5, 'Π')) === 'Άνοιγμα κωδικού');
+  const noWeek = Object.assign({}, t76, { payload: JSON.stringify({ kind: 'fuel_weekly' }) });
+  ck('χωρίς εβδομάδα στο payload: το label, ποτέ ωμό {week}', !api.taskTitle(noWeek).includes('{week}') && api.taskTitle(noWeek).includes('Γενικός επίναυλος εβδομάδας'));
 }
 
 console.log('\n═══ Λίστα: εργασίες συστήματος στην ΚΟΡΥΦΗ ═══');
 {
   const { api, els } = env();
-  const base = { assigned_to: null, assigned_name: null, status: 'open', needs_attention: 0, locked: 0,
-                 is_demo: 0, close_reason: null, offer_number: '', ready: true, ready_enforced: false };
   const tasks = [
-    Object.assign({}, base, { id: 50, client_id: 5, client_name: 'Πελάτης Α', client_country: 'GR',
-      client_account: 'ACC', task_code: 'open_code', task_label: 'Άνοιγμα κωδικού', depends_on: null,
-      payload: JSON.stringify({ account: 'ACC' }) }),
-    Object.assign({}, base, { id: 90, client_id: null, client_name: null, client_country: 'BOTH', task_country: 'BOTH',
-      subject_key: 'fuel:2026-10-12', task_code: 'fuel_weekly', task_label: 'Γενικός επίναυλος εβδομάδας — αρχείο CMS',
-      depends_on: null, due_at: '2026-10-09 17:00:00', payload: JSON.stringify(PAYLOAD) }),
-    Object.assign({}, base, { id: 91, client_id: null, client_name: null, client_country: 'BOTH', task_country: 'BOTH',
-      subject_key: 'fuel:2026-10-12', task_code: 'fuel_weekly_verify', task_label: 'Έλεγχος γενικού επίναυλου στο CMS',
-      depends_on: 'fuel_weekly', locked: 1, blocked_by_label: 'Γενικός επίναυλος εβδομάδας — αρχείο CMS',
-      due_at: '2026-10-09 17:00:00', payload: JSON.stringify(PAYLOAD) }),
+    cliTask(50, 5, 'Πελάτης Α'),
+    sysTask(90, FW, 'fuel:2026-10-12', PAYLOAD),
+    sysTask(91, FWV, 'fuel:2026-10-12', PAYLOAD, { locked: 1, blocked_by_label: 'Γενικός επίναυλος εβδομάδας — αρχείο CMS' }),
   ];
   api.render(tasks);
   const html = els.list.innerHTML;
@@ -136,12 +196,40 @@ console.log('\n═══ Λίστα: εργασίες συστήματος στ�
   ck('ομάδα συστήματος ΠΡΙΝ από τους πελάτες', iSys >= 0 && iCli > iSys, `${iSys} / ${iCli}`);
   ck('ΜΙΑ ομάδα συστήματος για το fuel:2026-10-12', (html.match(/client-group sys/g) || []).length === 1);
   const head = html.slice(iSys, html.indexOf('</div>', html.indexOf('client-head', iSys)));
-  ck('τίτλος = ετικέτα του τύπου-ρίζας από τη βάση', head.includes('Γενικός επίναυλος εβδομάδας — αρχείο CMS'), head);
+  ck('κεφαλίδα ΣΥΣΤΗΜΑ: «⛽ Γενικός επίναυλος 12–18/10 — αρχείο CMS»', head.includes('⛽') && head.includes('Γενικός επίναυλος 12–18/10 — αρχείο CMS'), head);
   ck('σήμανση ΣΥΣΤΗΜΑ και χώρα BOTH', head.includes('ΣΥΣΤΗΜΑ') && head.includes('flag BOTH'));
   ck('κουμπί «Λήψη αρχείου CMS»', html.includes('⬇ Λήψη αρχείου CMS') && html.includes('downloadFuelCms(90)'));
-  ck('το verify (κλειδωμένο) δείχνει την εργασία που περιμένει', html.includes('🔒') && html.includes('Έλεγχος γενικού επίναυλου στο CMS'));
+  ck('το verify (κλειδωμένο) με εικονίδιο και εβδομάδα', html.includes('🔒') && html.includes('Έλεγχος γενικού επίναυλου 12–18/10 στο CMS'));
   ck('η ομάδα του πελάτη έμεινε όπως ήταν', html.includes('AccountNo ACC') && html.includes('Άνοιγμα κωδικού'));
-  ck('η εργασία πελάτη ΔΕΝ έχει κουμπί λήψης CMS', !html.slice(iCli).includes('downloadFuelCms'));
+  ck('η εργασία πελάτη ΔΕΝ έχει κουμπί λήψης CMS ούτε εικονίδιο', !html.slice(iCli).includes('downloadFuelCms') && !html.slice(iCli).includes('⛽'));
+  ck('κανένα «AIR_CY» σε ΟΛΟ το HTML της λίστας', !html.includes('AIR_CY'));
+}
+
+console.log('\n═══ Ολοκληρωμένη ομάδα: γκρι με το χρώμα του «done» από τη βάση ═══');
+{
+  const { api, els } = env();
+  api.render([
+    sysTask(75, FW, 'fuel:2026-10-05', HIST_PAYLOAD, { status: 'done', assigned_to: 1, assigned_name: 'u1' }),
+    sysTask(76, FW, 'fuel:2026-10-12', PAYLOAD, { status: 'in_progress', assigned_to: 2, assigned_name: 'u2' }),
+    sysTask(77, FWV, 'fuel:2026-10-12', PAYLOAD, { locked: 1 }),
+    cliTask(50, 5, 'Πελάτης Κλειστός', { status: 'done' }),
+    cliTask(51, 5, 'Πελάτης Κλειστός', { status: 'na', task_code: 'cms_cod', task_label: 'COD' }),
+    cliTask(60, 6, 'Πελάτης Ανοιχτός', { status: 'done' }),
+    cliTask(61, 6, 'Πελάτης Ανοιχτός', { status: 'open', task_code: 'cms_rates', task_label: 'Τιμές' }),
+  ]);
+  const html = els.list.innerHTML;
+  const g05 = groupHtml(html, '05–11/10'), g12 = groupHtml(html, 'Γενικός επίναυλος 12–18/10');
+  const gC = groupHtml(html, 'Πελάτης Κλειστός'), gO = groupHtml(html, 'Πελάτης Ανοιχτός');
+  ck('ΣΥΣΤΗΜΑ 05/10 (όλες done): closed, φόντο #9e9e9e από τη βάση',
+     /class="client-group sys closed"/.test(g05) && g05.includes('--closed-bg:#9e9e9e'), g05.slice(0, 160));
+  ck('...με χρώμα κειμένου από την textOn() του ίδιου χρώματος', g05.includes('--closed-fg:#333'));
+  ck('ΣΥΣΤΗΜΑ 12/10 (ενεργή): κανονική', !g12.includes('closed') && !g12.includes('--closed-bg'), g12.slice(0, 120));
+  ck('πελάτης με done + na: closed', /class="client-group closed"/.test(gC) && gC.includes('--closed-bg:#9e9e9e'), gC.slice(0, 120));
+  ck('πελάτης με done + open: κανονικός', !gO.includes('closed'), gO.slice(0, 120));
+  // Χωρίς χρώμα «done» από τη βάση: καμία γκρι ομάδα — ΚΑΝΕΝΑ εφεδρικό χρώμα.
+  const e2 = env({ statuses: {} });
+  e2.api.render([sysTask(75, FW, 'fuel:2026-10-05', HIST_PAYLOAD, { status: 'done' })]);
+  ck('χωρίς χρώμα «done» στη βάση: όχι closed, κανένα εφεδρικό χρώμα', !e2.els.list.innerHTML.includes('closed'));
 }
 
 console.log('\n═══ Δομικά ═══');
@@ -150,6 +238,8 @@ console.log('\n═══ Δομικά ═══');
   ck('καμία μορφοποίηση αριθμών στις συναρτήσεις επίναυλου (toFixed/parseFloat/Number)',
      !/toFixed|parseFloat|Number\(/.test(fns));
   ck('το xlsx γράφεται ΜΟΝΟ από το payload (downloadFuelCms -> fuelCmsAoa)', /fuelCmsAoa\(p\)/.test(grab('downloadFuelCms')));
+  const closedCss = (src.match(/\.client-group\.closed[^}]*}/g) || []).join(' ');
+  ck('οι κανόνες CSS της κλειστής ομάδας ΔΕΝ έχουν σταθερό χρώμα (μόνο var)', closedCss.length > 0 && !/#[0-9a-f]{3,6}/i.test(closedCss), closedCss);
   ck('όνομα αρχείου FuelChargeImport_GR_CY_<ισχύς>.xlsx', /'FuelChargeImport_GR_CY_' \+ p\.effective_date \+ '\.xlsx'/.test(src));
 }
 

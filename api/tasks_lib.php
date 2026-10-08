@@ -1,5 +1,5 @@
 <?php
-// tasks_lib.php | v1.2 | 07-10-2026
+// tasks_lib.php | v1.3 | 08-10-2026
 // Φάση 3 — η λογική της οθόνης εργασιών. Υλοποιεί το
 // docs/tasks_phase3_spec.md.
 //
@@ -44,7 +44,8 @@ function tasks_base_sql()
                                         AND d.`status` IN (\'done\',\'na\'))
                         THEN 0 ELSE 1 END AS `locked`,
                    t.`subject_key`, t.`country` AS task_country, t.`dedupe_key`,
-                   tt.`kind` AS task_kind, tt.`exclude_prev_assignee`
+                   tt.`kind` AS task_kind, tt.`exclude_prev_assignee`,
+                   tt.`icon` AS task_icon, tt.`title_template` AS task_title_template
               FROM `4a_tasks` t
               JOIN `4a_task_types` tt ON tt.`code` = t.`task_code`
          LEFT JOIN `4a_clients`    c  ON c.`id`    = t.`client_id`

@@ -62,6 +62,17 @@
                 font-size: 11.5px; color: #555; }
   .fuel-facts b { color: #222; }
 
+  /* Ομάδα όπου ΟΛΕΣ οι εργασίες έκλεισαν (done/na): όλη η ομάδα με το
+     ΧΡΩΜΑ της κατάστασης «Ολοκληρωμένη» από τη βάση. Το χρώμα και το
+     κείμενο έρχονται ως μεταβλητές από τη render() — κανένα σταθερό
+     χρώμα εδώ. */
+  .client-group.closed, .client-group.closed .client-head, .client-group.closed .task {
+    background: var(--closed-bg); color: var(--closed-fg); }
+  .client-group.closed .client-name, .client-group.closed .client-meta,
+  .client-group.closed .task-label, .client-group.closed .task-meta,
+  .client-group.closed .fuel-facts, .client-group.closed .fuel-facts b { color: var(--closed-fg); }
+  .task-icon { margin-right: 4px; }
+
   /* ΕΠΙΔΕΙΞΗ: ουδέτερο, σκόπιμα ΟΧΙ κόκκινο — το κόκκινο ανήκει στο
      needs_attention — και όχι χρώμα κατάστασης, που έρχεται από τη βάση.
      Διαβάζεται πριν το όνομα του πελάτη, και η ομάδα ολόκληρη παίρνει
@@ -353,6 +364,8 @@ async function load(){
     lastTasks = d.tasks || [];
     counts[view] = d.tasks.length;
     renderTabs();
+    // Οι ετικέτες των τύπων επίναυλου, μία φορά, μόνο αν υπάρχει εργασία επίναυλου.
+    if(!Object.keys(FUEL_TYPES).length && (d.tasks||[]).some(t => (taskPayload(t)||{}).kind==='fuel_weekly')) await loadFuelTypes();
     render(d.tasks);
   }catch(e){ showErr('Δεν έγινε σύνδεση με τον server — '+(e&&e.message?e.message:e)); }
 }
@@ -402,14 +415,15 @@ function render(tasks){
   });
   const sysHtml = [...sysGroups.values()].map(g => {
     const root = g.items.find(t => t.depends_on === null) || g.items[0];
-    const p = taskPayload(root);
+    const cs = closedGroupStyle(g.items);
+    // Τίτλος της ομάδας = ο τίτλος του τύπου-ρίζας, με εικονίδιο και εβδομάδα
+    // από τη βάση (taskTitle). Η εβδομάδα δεν ξαναγράφεται δίπλα.
     return `
-    <div class="client-group sys">
+    <div class="client-group sys${cs?' closed':''}"${cs?` style="${cs}"`:''}>
       <div class="client-head">
         <span class="sys-tag" title="System — Εργασία χωρίς πελάτη, δημιουργείται από το σύστημα">ΣΥΣΤΗΜΑ</span>
-        <span class="client-name">${escHtml(root.task_label || root.task_code)}</span>
+        <span class="client-name">${taskTitle(root)}</span>
         <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>
-        ${p && p.week ? `<span class="client-meta">${escHtml(p.week)}</span>` : ''}
       </div>
       ${g.items.map(taskRow).join('')}
     </div>`;
@@ -426,8 +440,8 @@ function render(tasks){
   });
   el.innerHTML =
     (view==='all' ? summaryHtml(tasks) : '') + sysHtml +
-    [...groups.values()].map(g => `
-    <div class="client-group${g.isDemo?' demo':''}">
+    [...groups.values()].map(g => { const cs = closedGroupStyle(g.items); return `
+    <div class="client-group${g.isDemo?' demo':''}${cs?' closed':''}"${cs?` style="${cs}"`:''}>
       <div class="client-head">
         ${g.isDemo?'<span class="demo-tag" title="Demo — Πελάτης επίδειξης. Τίποτα εδώ δεν είναι αληθινή δουλειά και δεν μετριέται πουθενά">ΕΠΙΔΕΙΞΗ</span>':''}
         <span class="client-name">${escHtml(g.name)}</span>
@@ -436,7 +450,7 @@ function render(tasks){
           ${g.offer?' · προσφορά '+escHtml(g.offer):' · χωρίς προσφορά'}</span>
       </div>
       ${g.items.map(taskRow).join('')}
-    </div>`).join('');
+    </div>`; }).join('');
 }
 
 // Σε ΠΟΙΟΝ έχει ανατεθεί — σε ΟΛΕΣ τις καρτέλες, δίπλα στο badge.
@@ -537,6 +551,47 @@ function actionBtn(t, emphasise){
 // CMS ήδη μορφοποιημένες ως κείμενο. Η οθόνη ΔΕΝ υπολογίζει και ΔΕΝ
 // μορφοποιεί αριθμούς — μόνο εμφανίζει και γράφει το xlsx από αυτό.
 
+// Οι τύποι επίναυλου με τις ετικέτες τους, από τη βάση (api/fuel_catalog.php).
+// Κενό = δεν φορτώθηκαν: τότε οι τιμές ΔΕΝ εμφανίζονται με κωδικούς.
+let FUEL_TYPES = {};
+async function loadFuelTypes(){
+  try{
+    const r = await apiFetch(`${API}/fuel_catalog.php`);
+    const d = await r.json().catch(()=>null);
+    if(r.ok && d && d.ok===true){
+      const m = {}; (d.types||[]).forEach(t => m[t.code] = t); FUEL_TYPES = m;
+    }
+  }catch(e){}
+}
+
+// Η εβδομάδα ΠΑΝΤΑ με τον ίδιο τρόπο, από week_start/week_end:
+// «12–18/10», ή «28/09–04/10» όταν αλλάζει ο μήνας.
+function fmtWeekRange(ws, we){
+  const a = /^\d{4}-(\d{2})-(\d{2})$/.exec(ws||''), b = /^\d{4}-(\d{2})-(\d{2})$/.exec(we||'');
+  if(!a || !b) return '';
+  return a[1]===b[1] ? `${a[2]}–${b[2]}/${b[1]}` : `${a[2]}/${a[1]}–${b[2]}/${b[1]}`;
+}
+
+// Τίτλος εργασίας: εικονίδιο του τύπου και, αν ο τύπος έχει title_template,
+// το πρότυπο με την εβδομάδα του payload. Αλλιώς το label, όπως πριν.
+// Όλα από τη βάση· η οθόνη μόνο συνθέτει.
+function taskTitle(t){
+  const p = taskPayload(t);
+  const wk = p ? fmtWeekRange(p.week_start, p.week_end) : '';
+  let title = t.task_label || t.task_code;
+  if(t.task_title_template && wk) title = t.task_title_template.split('{week}').join(wk);
+  return (t.task_icon ? `<span class="task-icon">${escHtml(t.task_icon)}</span>` : '') + escHtml(title);
+}
+
+// Όλες οι εργασίες της ομάδας έκλεισαν (done ή na); Τότε η ομάδα παίρνει το
+// χρώμα της κατάστασης «done» από τη βάση. Χωρίς αυτό το χρώμα: τίποτα.
+function closedGroupStyle(items){
+  if(!items.length || !items.every(t => t.status==='done' || t.status==='na')) return null;
+  const s = STATUSES.done;
+  if(!s || !s.color) return null;
+  return `--closed-bg:${s.color};--closed-fg:${textOn(s.color)};`;
+}
+
 function taskPayload(t){
   if(!t || t.payload==null) return null;
   try{ return typeof t.payload==='string' ? JSON.parse(t.payload) : t.payload; }catch(e){ return null; }
@@ -597,9 +652,15 @@ function fmtDue(s){
 function fuelFactsHtml(t, p){
   if(!p || p.kind!=='fuel_weekly') return '';
   const f = [];
-  f.push(`εβδομάδα <b>${escHtml(p.week || ((p.week_start||'')+' – '+(p.week_end||'')))}</b>`);
-  if(p.prices) f.push('τιμές ' + Object.keys(p.prices).filter(k => p.prices[k]!==null)
-                       .map(k => `<b>${escHtml(k)} ${escHtml(p.prices[k])}%</b>`).join(' · '));
+  const wk = fmtWeekRange(p.week_start, p.week_end);
+  if(wk) f.push(`εβδομάδα <b>${escHtml(wk)}</b>`);
+  // Ετικέτα από τη βάση («Air Cyprus»), ΠΟΤΕ ο κωδικός («AIR_CY»). Χωρίς
+  // ετικέτες, οι τιμές δεν εμφανίζονται — η λήψη αρχείου δουλεύει κανονικά.
+  if(p.prices){
+    const pr = Object.keys(p.prices).filter(k => p.prices[k]!==null && FUEL_TYPES[k] && FUEL_TYPES[k].label_el)
+                 .map(k => `<b>${escHtml(FUEL_TYPES[k].label_el)} ${escHtml(p.prices[k])}%</b>`);
+    f.push(pr.length ? 'τιμές ' + pr.join(' · ') : 'τιμές: οι ετικέτες δεν φορτώθηκαν');
+  }
   if(p.effective_date) f.push(`ισχύς <b>${escHtml(p.effective_date)}</b>`);
   if(t.due_at) f.push(`προθεσμία <b>${escHtml(fmtDue(t.due_at))}</b>`);
   if(p.rows_count) f.push(`γραμμές <b>${escHtml(p.rows_count)}</b>`);
@@ -689,7 +750,7 @@ function taskRow(t){
 
   return `<div class="task${locked?' locked':''}${attn?' attn':''}">
     <div class="task-main">
-      <div class="task-label">${locked?'🔒 ':''}${escHtml(t.task_label||t.task_code)}</div>
+      <div class="task-label">${locked?'🔒 ':''}${taskTitle(t)}</div>
       <div class="task-meta">${escHtml(t.task_code)}${meta.length?' · '+meta.join(' · '):''}</div>
       ${fuelFactsHtml(t, payload)}
     </div>
@@ -743,7 +804,7 @@ async function openReject(id){
     <div class="modal-bg" onclick="if(event.target===this)closeReject()">
       <div class="modal" role="dialog" aria-modal="true" aria-label="Απόρριψη εργασίας">
         <h3>Απόρριψη εργασίας</h3>
-        <div class="sub">${escHtml(t?(t.task_label||t.task_code):'')}${t&&t.client_name?' · '+escHtml(t.client_name):''}</div>
+        <div class="sub">${t?taskTitle(t):''}${t&&t.client_name?' · '+escHtml(t.client_name):''}</div>
         <label for="rej-code">Λόγος</label>
         <select id="rej-code" onchange="rejNoteHint()">${opts}</select>
         <label for="rej-note">Σχόλιο <span id="rej-req" class="req" style="display:none;">(υποχρεωτικό)</span></label>
@@ -847,7 +908,7 @@ function confirmDone(t){
     document.getElementById('modals').innerHTML = `
       <div class="modal-bg" onclick="if(event.target===this)__cdResolve(false)">
         <div class="modal" role="dialog" aria-modal="true" aria-label="Επιβεβαίωση ολοκλήρωσης">
-          <h3>${escHtml(t.task_label||t.task_code)}</h3>
+          <h3>${taskTitle(t)}</h3>
           <div class="sub">${escHtml(t.client_name||'')}</div>
           <div class="cd-hint">${escHtml(t.ready_hint||'Λείπει μια προϋπόθεση για την ολοκλήρωση')}</div>
           <div class="cd-q">Ολοκλήρωση παρόλα αυτά;</div>

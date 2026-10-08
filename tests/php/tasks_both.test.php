@@ -28,7 +28,7 @@ foreach (array(
     'CREATE TABLE `4a_clients` (`id` INTEGER PRIMARY KEY, `name` TEXT, `country` TEXT, `account` TEXT, `is_demo` INTEGER NOT NULL DEFAULT 0)',
     'CREATE TABLE `4a_users` (`id` INTEGER PRIMARY KEY, `name` TEXT, `role` TEXT, `active` INTEGER)',
     'CREATE TABLE `4a_task_types` (`code` TEXT PRIMARY KEY, `label` TEXT, `sort_order` INTEGER, `depends_on` TEXT,
-        `kind` TEXT NOT NULL DEFAULT \'client\', `exclude_prev_assignee` INTEGER NOT NULL DEFAULT 0,
+        `kind` TEXT NOT NULL DEFAULT \'client\', `icon` TEXT, `title_template` TEXT, `exclude_prev_assignee` INTEGER NOT NULL DEFAULT 0,
         `action_url` TEXT, `action_label` TEXT, `action_module` TEXT, `ready_check` TEXT, `ready_hint` TEXT, `ready_enforced` INTEGER)',
     'CREATE TABLE `4a_tasks` (`id` INTEGER PRIMARY KEY, `client_id` INTEGER, `subject_key` TEXT, `country` TEXT,
         `dedupe_key` TEXT, `task_code` TEXT, `offer_number` TEXT NOT NULL DEFAULT \'\', `assigned_to` INTEGER,

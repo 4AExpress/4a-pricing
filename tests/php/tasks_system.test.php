@@ -48,7 +48,7 @@ function fresh_db()
             `is_demo` INTEGER NOT NULL DEFAULT 0, `offer_number` TEXT, `cod` TEXT, `pricelists` TEXT)',
         'CREATE TABLE `4a_users` (`id` INTEGER PRIMARY KEY, `name` TEXT, `role` TEXT, `active` INTEGER)',
         'CREATE TABLE `4a_task_types` (`code` TEXT PRIMARY KEY, `label` TEXT, `sort_order` INTEGER,
-            `active` INTEGER NOT NULL DEFAULT 1, `kind` TEXT NOT NULL DEFAULT \'client\', `condition_key` TEXT,
+            `active` INTEGER NOT NULL DEFAULT 1, `kind` TEXT NOT NULL DEFAULT \'client\', `icon` TEXT, `title_template` TEXT, `condition_key` TEXT,
             `depends_on` TEXT, `exclude_prev_assignee` INTEGER NOT NULL DEFAULT 0, `sla_hours` INTEGER,
             `action_url` TEXT, `action_label` TEXT, `action_module` TEXT,
             `ready_check` TEXT, `ready_hint` TEXT, `ready_enforced` INTEGER)',
