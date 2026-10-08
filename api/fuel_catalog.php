@@ -1,5 +1,6 @@
 <?php
-// fuel_catalog.php | v1.0 | 07-10-2026
+// fuel_catalog.php | v1.1 | 08-10-2026
+// v1.1: types με icon και sort_order (migration 2026-10-08c).
 // GET → οι κάρτες επίναυλου του dashboard, ανά σταθμό και υπηρεσία, από τον
 //       κατάλογο CMS (4a_fuel_cms_services), με τις τιμές ανά τύπο για κάθε
 //       εβδομάδα του cache. Κάθε συνδεδεμένος χρήστης, όχι μόνο admin.
@@ -31,7 +32,9 @@ try {
     require_user();
 
     $types = array();
-    foreach (db()->query('SELECT `code`, `label_el`, `label_en`, `source`, `multiplier`
+    // icon και sort_order: η κεφαλίδα του πίνακα τιμών στις Εργασίες
+    // («✈️ Αεροπορικός») και η σειρά των στηλών (migration 2026-10-08c).
+    foreach (db()->query('SELECT `code`, `label_el`, `label_en`, `icon`, `source`, `multiplier`, `sort_order`
                             FROM `4a_fuel_types` WHERE `active` = 1
                            ORDER BY `sort_order`, `code`')->fetchAll(PDO::FETCH_ASSOC) as $t) {
         $types[$t['code']] = $t;

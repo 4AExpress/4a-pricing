@@ -70,13 +70,30 @@
      οριζόντια κύλιση. Ετικέτες και σειρά στηλών από τη βάση. */
   .task.has-fuel { flex-wrap: wrap; }
   .fuel-block { flex: 0 0 100%; min-width: 0; }
-  .fuel-tbl { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12px; }
+  /* Στενός σε desktop (έως 480px, αριστερά), 100% όταν η κάρτα είναι πιο
+     στενή: στο κινητό χωράει χωρίς οριζόντια κύλιση. */
+  .fuel-tbl { width: 100%; max-width: 480px; table-layout: fixed; border-collapse: collapse; font-size: 12px; }
   .fuel-tbl th, .fuel-tbl td { border: 1px solid #d6d6d6; padding: 4px 6px; text-align: center;
                                overflow-wrap: anywhere; }
   .fuel-tbl th { background: #f5f5f5; color: #555; font-weight: 600; font-size: 11.5px; }
   .fuel-tbl td { background: #fff; color: #222; font-weight: 600; font-variant-numeric: tabular-nums; }
   .fuel-due { font-weight: 700; color: #222; }
-  .fuel-due.late { color: #cc0000; }
+  /* Προθεσμία ανάλογα με τον χρόνο που μένει. Τα όρια (ώρες) έρχονται από
+     τον τύπο εργασίας στη βάση· εδώ μόνο τα χρώματα, όλα ≥ 4.5:1 σε λευκό. */
+  .fuel-due.d-ok     { color: #2e7d32; }
+  .fuel-due.d-warn   { color: #b45309; }
+  .fuel-due.d-urgent { color: #cc0000; }
+  .fuel-due.d-over   { color: #cc0000; animation: due-blink 1.2s ease-in-out infinite; }
+  @keyframes due-blink { 50% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) { .fuel-due.d-over { animation: none; } }
+  .due-left { font-weight: 400; }
+  .due-tag { font-size: 10px; font-weight: 700; letter-spacing: .06em; padding: 1px 6px; margin-left: 4px;
+             border-radius: 4px; background: #cc0000; color: #fff; white-space: nowrap; }
+  /* Εργασίες ΣΥΣΤΗΜΑ: ο τίτλος σε ΔΙΚΗ του σειρά, σε όλο το πλάτος· από κάτω
+     ανάδοχος, κατάσταση, κουμπιά· μετά ο πίνακας. Οι εργασίες πελάτη δεν
+     παίρνουν αυτή την κλάση και μένουν όπως είναι. */
+  .task.sys-row { flex-wrap: wrap; }
+  .task.sys-row .task-main { flex: 0 0 100%; }
 
   /* Ομάδα όπου ΟΛΕΣ οι εργασίες έκλεισαν (done/na): όλη η ομάδα με το
      ΧΡΩΜΑ της κατάστασης «Ολοκληρωμένη» από τη βάση. Το χρώμα και το
@@ -707,9 +724,56 @@ function normDateTime(s){
   const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?$/.exec(String(s||'').trim());
   return m ? `${m[1]} ${m[2]}:${m[3]}:${m[4]||'00'}` : null;
 }
-function isPastDue(due, now){
+// Χιλιοστά από το now ως το due (αρνητικά = πέρασε), ή null. Και τα δύο είναι
+// ώρα Αθήνας ως ρολόι τοίχου, οπότε μετριούνται σαν να ήταν UTC. Αν ανάμεσά
+// τους πέσει αλλαγή ώρας, η απόκλιση είναι το πολύ 1 ώρα.
+function msLeft(due, now){
   const a = normDateTime(due), b = normDateTime(now);
-  return a !== null && b !== null && b > a;
+  if(a === null || b === null) return null;
+  const ms = s => Date.UTC(+s.slice(0,4), +s.slice(5,7)-1, +s.slice(8,10), +s.slice(11,13), +s.slice(14,16), +s.slice(17,19));
+  return ms(a) - ms(b);
+}
+// «1η 3ω», «2ω 15λ», «40λ». Οι μηδενικές μονάδες παραλείπονται.
+function fmtLeft(mins){
+  const d = Math.floor(mins / 1440), h = Math.floor((mins % 1440) / 60), m = mins % 60;
+  if(d) return `${d}η` + (h ? ` ${h}ω` : '');
+  if(h) return `${h}ω` + (m ? ` ${m}λ` : '');
+  return `${m}λ`;
+}
+// Η κατάσταση της προθεσμίας, ή null = ΚΑΘΟΛΟΥ χρώμα. Τα όρια (ώρες) είναι
+// του τύπου εργασίας στη βάση (due_warn_hours / due_urgent_hours):
+//   > warn: d-ok · warn έως urgent (με τα όρια): d-warn · < urgent: d-urgent
+//   μετά το due_at: d-over
+// Χωρίς χρώμα: done, na, κλειδωμένη (η προθεσμία της δεν τρέχει ακόμα) και
+// τύπος χωρίς όρια.
+function dueState(t, now){
+  if(!t || !t.due_at || t.status==='done' || t.status==='na' || Number(t.locked)===1) return null;
+  if(t.due_warn_hours==null || t.due_urgent_hours==null) return null;
+  const warn = Number(t.due_warn_hours), urg = Number(t.due_urgent_hours);
+  if(!isFinite(warn) || !isFinite(urg) || urg < 0 || warn < urg) return null;
+  const ms = msLeft(t.due_at, now);
+  if(ms === null) return null;
+  if(ms < 0) return { cls: 'd-over', left: 'καθυστέρηση ' + fmtLeft(Math.ceil(-ms / 60000)) };
+  const left = 'σε ' + fmtLeft(Math.floor(ms / 60000));
+  if(ms < urg * 3600000)   return { cls: 'd-urgent', left, urgent: true };
+  if(ms <= warn * 3600000) return { cls: 'd-warn', left };
+  return { cls: 'd-ok', left };
+}
+// Η προθεσμία ως HTML, με id ώστε η refreshDues() να την ξαναγράφει κάθε
+// λεπτό χωρίς να ξαναζωγραφίζει τη λίστα.
+function dueHtml(t, now){
+  const s = dueState(t, now === undefined ? athensNow() : now);
+  const date = escHtml(fmtDue(t.due_at, true));
+  if(!s) return `<span class="fuel-due" id="due-${escHtml(t.id)}">${date}</span>`;
+  return `<span class="fuel-due ${s.cls}" id="due-${escHtml(t.id)}">${date} <span class="due-left">(${escHtml(s.left)})</span>`+
+         `${s.urgent ? '<span class="due-tag">ΕΠΕΙΓΟΝ</span>' : ''}</span>`;
+}
+function refreshDues(){
+  const now = athensNow();
+  (lastTasks || []).forEach(t => {
+    const el = document.getElementById('due-' + t.id);
+    if(el) el.outerHTML = dueHtml(t, now);
+  });
 }
 
 // Οι στήλες του πίνακα τιμών: ΟΛΟΙ οι τύποι της βάσης που έχουν ετικέτα και
@@ -722,12 +786,12 @@ function fuelColumns(p){
   return Object.values(FUEL_TYPES)
     .filter(t => t && t.label_el && p.prices[t.code]!==undefined && p.prices[t.code]!==null)
     .sort((a,b) => so(a) - so(b))
-    .map(t => ({ label: t.label_el, value: p.prices[t.code] }));
+    .map(t => ({ icon: t.icon || '', label: t.label_el, value: p.prices[t.code] }));
 }
 
 // Το μπλοκ της κάρτας επίναυλου: πίνακας τιμών σε όλο το πλάτος και από
-// κάτω μία γραμμή «Ισχύς από … · Προθεσμία … · N γραμμές». Η προθεσμία
-// κόκκινη ΜΟΝΟ μετά το due_at, και μόνο όσο η εργασία είναι ανοιχτή.
+// κάτω μία γραμμή «Ισχύς από … · Προθεσμία … · N γραμμές». Το χρώμα της
+// προθεσμίας το αποφασίζει η dueState().
 function fuelFactsHtml(t, p, now){
   if(!p || p.kind!=='fuel_weekly') return '';
   // Ετικέτα από τη βάση (label_el), ΠΟΤΕ ο κωδικός. Χωρίς ετικέτες, οι
@@ -736,17 +800,13 @@ function fuelFactsHtml(t, p, now){
   if(p.prices){
     const cols = fuelColumns(p);
     tbl = cols.length
-      ? `<table class="fuel-tbl"><thead><tr>${cols.map(c => `<th>${escHtml(c.label)}</th>`).join('')}</tr></thead>`+
+      ? `<table class="fuel-tbl"><thead><tr>${cols.map(c => `<th>${c.icon ? escHtml(c.icon) + ' ' : ''}${escHtml(c.label)}</th>`).join('')}</tr></thead>`+
         `<tbody><tr>${cols.map(c => `<td>${escHtml(c.value)} %</td>`).join('')}</tr></tbody></table>`
       : `<div class="fuel-facts"><span>τιμές: οι ετικέτες δεν φορτώθηκαν</span></div>`;
   }
   const f = [];
   if(p.effective_date) f.push(`Ισχύς από <b>${escHtml(p.effective_date)}</b>`);
-  if(t.due_at){
-    const late = t.status!=='done' && t.status!=='na' && isPastDue(t.due_at, now===undefined ? athensNow() : now);
-    f.push(`Προθεσμία <span class="fuel-due${late?' late':''}"${late?' title="Overdue — Η προθεσμία πέρασε"':''}>`+
-           `${escHtml(fmtDue(t.due_at, true))}</span>`);
-  }
+  if(t.due_at) f.push(`Προθεσμία ${dueHtml(t, now)}`);
   if(p.rows_count) f.push(`${escHtml(p.rows_count)} γραμμές`);
   if(p.proof) f.push(`απόδειξη <b>${escHtml(p.proof.generated)}/${escHtml(p.proof.expected)}</b>, επιπλέον ${escHtml(p.proof.extra)}, λείπουν ${escHtml(p.proof.missing)}`);
   const line = f.length ? `<div class="fuel-facts"><span>${f.join(' · ')}</span></div>` : '';
@@ -837,7 +897,9 @@ function taskRow(t){
   // has-fuel, πέφτει σε δική του σειρά σε όλο το πλάτος της κάρτας.
   const fuel = fuelFactsHtml(t, payload);
 
-  return `<div class="task${locked?' locked':''}${attn?' attn':''}${fuel?' has-fuel':''}">
+  // ΣΥΣΤΗΜΑ: ο τίτλος σε δική του σειρά. Για εργασία πελάτη η έκφραση είναι
+  // κενή και το HTML μένει byte-προς-byte ίδιο.
+  return `<div class="task${locked?' locked':''}${attn?' attn':''}${fuel?' has-fuel':''}${t.client_id===null?' sys-row':''}">
     <div class="task-main">
       <div class="task-label">${locked?'🔒 ':''}${taskTitle(t)}</div>
       <div class="task-meta">${escHtml(t.task_code)}${meta.length?' · '+meta.join(' · '):''}</div>
@@ -1064,6 +1126,10 @@ async function assign(id){
 // ακόμα ξεθωριασμένη «Ολοκλήρωση» — η πιο συνηθισμένη διαδρομή θα
 // έδειχνε σπασμένη.
 window.addEventListener('pageshow', function(e){ if(e.persisted) load(); });
+
+// Ο χρόνος που μένει στις προθεσμίες, κάθε λεπτό, χωρίς reload και χωρίς
+// να ξαναζωγραφίζεται η λίστα: αλλάζουν μόνο τα στοιχεία due-<id>.
+setInterval(refreshDues, 60000);
 
 // Esc κλείνει το παράθυρο απόρριψης — ίδια συνάρτηση με το «Άκυρο» και με
 // το κλικ στο φόντο, ποτέ δεύτερη διαδρομή κλεισίματος.

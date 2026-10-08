@@ -36,10 +36,11 @@ const DB_STATUSES = { done: { code: 'done', label: 'Ολοκληρωμένη', c
                       na:   { code: 'na',   label: 'Δεν εφαρμόζεται', color: '#cfcfcf' } };
 // Σειρά εισαγωγής ΣΚΟΠΙΜΑ διαφορετική από το sort_order (10/20/30/40 του
 // migration 2026-10-07a): οι στήλες πρέπει να ακολουθούν το sort_order.
-const DB_FUEL_TYPES = { AIR_CY: { code: 'AIR_CY', label_el: 'Air Cyprus',     sort_order: 30 },
-                        NONE:   { code: 'NONE',   label_el: 'Χωρίς επίναυλο', sort_order: 40 },
-                        ROAD:   { code: 'ROAD',   label_el: 'Οδικός',         sort_order: 20 },
-                        AIR:    { code: 'AIR',    label_el: 'Αεροπορικός',    sort_order: 10 } };
+// Εικονίδια όπως τα γράφει το migration 2026-10-08c.
+const DB_FUEL_TYPES = { AIR_CY: { code: 'AIR_CY', label_el: 'Air Cyprus',     icon: '✈️', sort_order: 30 },
+                        NONE:   { code: 'NONE',   label_el: 'Χωρίς επίναυλο', icon: null,  sort_order: 40 },
+                        ROAD:   { code: 'ROAD',   label_el: 'Οδικός',         icon: '🚚', sort_order: 20 },
+                        AIR:    { code: 'AIR',    label_el: 'Αεροπορικός',    icon: '✈️', sort_order: 10 } };
 
 function env(opts){
   opts = opts || {};
@@ -58,9 +59,11 @@ function env(opts){
     grab('canOpen'), grab('actionBtn'), grab('summaryHtml'),
     grab('fmtWeekRange'), grab('taskTitle'), grab('closedColor'), grab('closedGroupStyle'), grab('renderLegend'),
     grab('taskPayload'), grab('fuelCmsAoa'), grab('fuelCmsWorkbook'), grab('fmtDue'),
-    'function athensNow(){ return ' + JSON.stringify(NOW) + '; }', grab('normDateTime'), grab('isPastDue'), grab('fuelColumns'), grab('fuelFactsHtml'),
+    'function athensNow(){ return ' + JSON.stringify(NOW) + '; }', grab('normDateTime'), grab('msLeft'), grab('fmtLeft'),
+    grab('dueState'), grab('dueHtml'), grab('refreshDues'), grab('fuelColumns'), grab('fuelFactsHtml'),
     grab('taskRow'), grab('render'),
-    'return { render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns, isPastDue, taskPayload, fmtWeekRange, taskTitle };'
+    'return { render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
+    '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle };'
   ].join('\n');
   const api = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, store, {});
   return { api, els };
@@ -70,10 +73,14 @@ function env(opts){
 // από τον 4a_task_types (migration 2026-10-08a).
 const BASE = { assigned_to: null, assigned_name: null, status: 'open', needs_attention: 0, locked: 0,
                is_demo: 0, close_reason: null, offer_number: '', ready: true, ready_enforced: false };
+// Όρια προθεσμίας του τύπου (migration 2026-10-08c): fuel_weekly 24 / 4,
+// fuel_weekly_verify NULL μέχρι τη Φάση 5 (due_rule).
 const FW  = { task_code: 'fuel_weekly', task_label: 'Γενικός επίναυλος εβδομάδας — αρχείο CMS',
-              task_icon: '⛽', task_title_template: 'Γενικός επίναυλος {week} — αρχείο CMS', depends_on: null };
+              task_icon: '⛽', task_title_template: 'Γενικός επίναυλος {week} — αρχείο CMS', depends_on: null,
+              due_warn_hours: 24, due_urgent_hours: 4 };
 const FWV = { task_code: 'fuel_weekly_verify', task_label: 'Έλεγχος γενικού επίναυλου στο CMS',
-              task_icon: '⛽', task_title_template: 'Έλεγχος γενικού επίναυλου {week} στο CMS', depends_on: 'fuel_weekly' };
+              task_icon: '⛽', task_title_template: 'Έλεγχος γενικού επίναυλου {week} στο CMS', depends_on: 'fuel_weekly',
+              due_warn_hours: null, due_urgent_hours: null };
 const HIST_PAYLOAD = { kind: 'fuel_weekly', week_start: '2026-10-05', week_end: '2026-10-11',
   effective_date: '01-Oct-2026', retroactive: true, proof: { expected: 69, generated: 69, extra: 0, missing: 0 } };
 const sysTask = (id, type, subject, payload, extra) => Object.assign({}, BASE, type, {
@@ -145,12 +152,18 @@ console.log('\n═══ Στοιχεία κάρτας ═══');
   ck('fmtDue 2026-10-09 17:00:00 -> Παρ 09/10/2026 17:00', api.fmtDue('2026-10-09 17:00:00') === 'Παρ 09/10/2026 17:00', api.fmtDue('2026-10-09 17:00:00'));
   ck('fmtDue κενό -> —', api.fmtDue(null) === '—');
   ck('fmtDue short -> Παρ 09/10 17:00', api.fmtDue('2026-10-09 17:00:00', true) === 'Παρ 09/10 17:00', api.fmtDue('2026-10-09 17:00:00', true));
-  const T = { due_at: '2026-10-09 17:00:00', status: 'in_progress' };
+  const T = { id: 76, due_at: '2026-10-09 17:00:00', status: 'in_progress', locked: 0, due_warn_hours: 24, due_urgent_hours: 4 };
   const h = api.fuelFactsHtml(T, PAYLOAD);
   const ths = [...h.matchAll(/<th>([^<]*)<\/th>/g)].map(m => m[1]);
   const tds = [...h.matchAll(/<td>([^<]*)<\/td>/g)].map(m => m[1]);
   ck('πίνακας: μία γραμμή κεφαλίδας, μία γραμμή τιμών', (h.match(/<tr>/g) || []).length === 2 && h.includes('<table class="fuel-tbl">'), h);
-  ck('στήλες με σειρά sort_order: Αεροπορικός · Οδικός · Air Cyprus', JSON.stringify(ths) === JSON.stringify(['Αεροπορικός', 'Οδικός', 'Air Cyprus']), JSON.stringify(ths));
+  ck('στήλες με σειρά sort_order και εικονίδιο από τη βάση: ✈️ Αεροπορικός · 🚚 Οδικός · ✈️ Air Cyprus',
+     JSON.stringify(ths) === JSON.stringify(['✈️ Αεροπορικός', '🚚 Οδικός', '✈️ Air Cyprus']), JSON.stringify(ths));
+  const otherIco = env({ fuelTypes: Object.assign({}, DB_FUEL_TYPES, { ROAD: Object.assign({}, DB_FUEL_TYPES.ROAD, { icon: '🛻' }) }) }).api.fuelFactsHtml(T, PAYLOAD);
+  ck('άλλο icon στη βάση -> άλλο εικονίδιο στην κεφαλίδα', otherIco.includes('<th>🛻 Οδικός</th>') && !otherIco.includes('🚚'), otherIco);
+  const noIco = env({ fuelTypes: Object.assign({}, DB_FUEL_TYPES, { AIR: Object.assign({}, DB_FUEL_TYPES.AIR, { icon: null }) }) }).api.fuelFactsHtml(T, PAYLOAD);
+  ck('icon NULL -> μόνο η ετικέτα, χωρίς κενό μπροστά', noIco.includes('<th>Αεροπορικός</th>'), noIco);
+  ck('στο tasks.html: κανένα εικονίδιο τύπου (✈ / 🚚) γραμμένο σταθερά', !/✈|🚚/.test(src));
   ck('τιμές «49.00 %» · «40.75 %» · «51.94 %», κάτω από τη στήλη τους', JSON.stringify(tds) === JSON.stringify(['49.00 %', '40.75 %', '51.94 %']), JSON.stringify(tds));
   const swapped = env({ fuelTypes: { AIR: { code: 'AIR', label_el: 'Αεροπορικός', sort_order: 30 },
                                      ROAD: { code: 'ROAD', label_el: 'Οδικός', sort_order: 10 },
@@ -159,25 +172,97 @@ console.log('\n═══ Στοιχεία κάρτας ═══');
   const plus = env({ fuelTypes: Object.assign({}, DB_FUEL_TYPES, { SEA: { code: 'SEA', label_el: 'Θαλάσσιος', sort_order: 25 } }) })
                  .api.fuelFactsHtml(T, Object.assign(clone(PAYLOAD), { prices: Object.assign({}, PAYLOAD.prices, { SEA: '12.50' }) }));
   ck('νέος τύπος στη βάση (με τιμή στο payload) -> νέα στήλη στη θέση του, χωρίς αλλαγή κώδικα',
-     [...plus.matchAll(/<th>([^<]*)<\/th>/g)].map(m => m[1]).join('|') === 'Αεροπορικός|Οδικός|Θαλάσσιος|Air Cyprus' && plus.includes('<td>12.50 %</td>'), plus);
+     [...plus.matchAll(/<th>([^<]*)<\/th>/g)].map(m => m[1]).join('|') === '✈️ Αεροπορικός|🚚 Οδικός|Θαλάσσιος|✈️ Air Cyprus' && plus.includes('<td>12.50 %</td>'), plus);
   ck('κανένας κωδικός τύπου (AIR_CY, AIR, ROAD) στο HTML', !/AIR_CY|\bAIR\b|\bROAD\b/.test(h), h);
   ck('ο τύπος NONE (null) δεν εμφανίζεται', !h.includes('NONE') && !h.includes('Χωρίς επίναυλο'));
-  ck('γραμμή: «Ισχύς από 12-Oct-2026 · Προθεσμία Παρ 09/10 17:00 · 69 γραμμές»',
-     h.replace(/<[^>]+>/g, '').includes('Ισχύς από 12-Oct-2026 · Προθεσμία Παρ 09/10 17:00 · 69 γραμμές'), h.replace(/<[^>]+>/g, ''));
-  ck('η προθεσμία έντονη (fuel-due), όχι κόκκινη πριν το due_at', h.includes('<span class="fuel-due">Παρ 09/10 17:00</span>'), h);
-  ck('isPastDue: 16:59 όχι, 17:00 όχι, 17:01 ναι',
-     !api.isPastDue('2026-10-09 17:00:00', '2026-10-09 16:59:59') && !api.isPastDue('2026-10-09 17:00:00', '2026-10-09 17:00:00')
-     && api.isPastDue('2026-10-09 17:00:00', '2026-10-09 17:01:00'));
-  ck('κανονικοποίηση: «T» και χωρίς δευτερόλεπτα -> ίδια σύγκριση (17:00 == 17:00:00, όχι αργά)',
-     !api.isPastDue('2026-10-09T17:00', '2026-10-09 17:00:00') && !api.isPastDue('2026-10-09 17:00:00', '2026-10-09T17:00')
-     && api.isPastDue('2026-10-09T17:00', '2026-10-09 17:00:01'));
-  ck('Z / offset (όχι ώρα Αθήνας) -> ΔΕΝ κρίνεται αργά',
-     !api.isPastDue('2026-10-09T17:00:00Z', '2026-10-20 00:00:00') && !api.isPastDue('2026-10-09 17:00:00', '2026-10-20T00:00:00+03:00'));
-  const late = env({ now: '2026-10-09 17:00:01' }).api.fuelFactsHtml(T, PAYLOAD);
-  ck('μετά το due_at -> κόκκινη (fuel-due late)', late.includes('class="fuel-due late"'), late);
-  ck('ακριβώς στο due_at -> όχι κόκκινη', !env({ now: '2026-10-09 17:00:00' }).api.fuelFactsHtml(T, PAYLOAD).includes('late'));
-  const lateDone = env({ now: '2026-10-20 09:00:00' }).api.fuelFactsHtml(Object.assign({}, T, { status: 'done' }), PAYLOAD);
-  ck('ολοκληρωμένη εργασία: ποτέ κόκκινη, ακόμα κι αν πέρασε η ώρα', !lateDone.includes('late'), lateDone);
+  ck('γραμμή: «Ισχύς από 12-Oct-2026 · Προθεσμία Παρ 09/10 17:00 (σε 1η 7ω) · 69 γραμμές»',
+     h.replace(/<[^>]+>/g, '').includes('Ισχύς από 12-Oct-2026 · Προθεσμία Παρ 09/10 17:00 (σε 1η 7ω) · 69 γραμμές'), h.replace(/<[^>]+>/g, ''));
+}
+
+console.log('\n═══ Προθεσμία: χρώμα από τον χρόνο που μένει (παγωμένο now, ώρα Αθήνας) ═══');
+{
+  const { api } = env();
+  const T = { id: 76, due_at: '2026-10-09 17:00:00', status: 'in_progress', locked: 0, due_warn_hours: 24, due_urgent_hours: 4 };
+  const st = (now, t) => api.dueState(t || T, now);
+  const cls = (now, t) => (st(now, t) || { cls: null }).cls;
+  // Τα όρια: > 24ω πράσινο · 24ω έως 4ω (με τα όρια) πορτοκαλί · < 4ω κόκκινο + ΕΠΕΙΓΟΝ · μετά το due αναβοσβήνει.
+  ck('due − 24ω − 1λ (Πεμ 16:59) -> πράσινο d-ok',         cls('2026-10-08 16:59:00') === 'd-ok', cls('2026-10-08 16:59:00'));
+  ck('due − 24ω ακριβώς (Πεμ 17:00) -> πορτοκαλί d-warn',  cls('2026-10-08 17:00:00') === 'd-warn', cls('2026-10-08 17:00:00'));
+  ck('due − 4ω − 1λ (Παρ 12:59) -> πορτοκαλί d-warn',      cls('2026-10-09 12:59:00') === 'd-warn', cls('2026-10-09 12:59:00'));
+  ck('due − 4ω ακριβώς (Παρ 13:00) -> πορτοκαλί d-warn',   cls('2026-10-09 13:00:00') === 'd-warn', cls('2026-10-09 13:00:00'));
+  ck('due − 4ω + 1λ (Παρ 13:01) -> κόκκινο d-urgent',      cls('2026-10-09 13:01:00') === 'd-urgent', cls('2026-10-09 13:01:00'));
+  ck('due ακριβώς (Παρ 17:00) -> κόκκινο d-urgent, ΟΧΙ ακόμα καθυστέρηση', cls('2026-10-09 17:00:00') === 'd-urgent', cls('2026-10-09 17:00:00'));
+  ck('due + 1λ (Παρ 17:01) -> d-over (αναβοσβήνει)',        cls('2026-10-09 17:01:00') === 'd-over', cls('2026-10-09 17:01:00'));
+  ck('κείμενο: «σε 1η 7ω» / «σε 1η» (24ω) / «σε 4ω» / «σε 3ω 59λ» / «σε 0λ»',
+     st('2026-10-08 10:00:00').left === 'σε 1η 7ω' && st('2026-10-08 17:00:00').left === 'σε 1η' && st('2026-10-09 13:00:00').left === 'σε 4ω'
+     && st('2026-10-09 13:01:00').left === 'σε 3ω 59λ' && st('2026-10-09 17:00:00').left === 'σε 0λ',
+     ['2026-10-08 10:00:00', '2026-10-08 17:00:00', '2026-10-09 13:00:00', '2026-10-09 13:01:00', '2026-10-09 17:00:00'].map(n => st(n).left).join(' | '));
+  ck('κείμενο: «καθυστέρηση 1λ» / «καθυστέρηση 2ω» / «καθυστέρηση 1η 1ω»',
+     st('2026-10-09 17:01:00').left === 'καθυστέρηση 1λ' && st('2026-10-09 19:00:00').left === 'καθυστέρηση 2ω' && st('2026-10-10 18:00:00').left === 'καθυστέρηση 1η 1ω',
+     ['2026-10-09 17:01:00', '2026-10-09 19:00:00', '2026-10-10 18:00:00'].map(n => st(n).left).join(' | '));
+  ck('μισό λεπτό μετά -> ήδη καθυστέρηση «1λ», όχι «0λ»', st('2026-10-09 17:00:30').cls === 'd-over' && st('2026-10-09 17:00:30').left === 'καθυστέρηση 1λ');
+  const hu = api.dueHtml(T, '2026-10-09 15:00:00');
+  ck('< 4ω: ετικέτα «ΕΠΕΙΓΟΝ»', hu.includes('<span class="due-tag">ΕΠΕΙΓΟΝ</span>') && hu.includes('class="fuel-due d-urgent"'), hu);
+  ck('πορτοκαλί / πράσινο / καθυστέρηση: ΧΩΡΙΣ «ΕΠΕΙΓΟΝ»',
+     !api.dueHtml(T, '2026-10-09 10:00:00').includes('ΕΠΕΙΓΟΝ') && !api.dueHtml(T, '2026-10-07 10:00:00').includes('ΕΠΕΙΓΟΝ')
+     && !api.dueHtml(T, '2026-10-09 18:00:00').includes('ΕΠΕΙΓΟΝ'));
+  ck('η ημερομηνία και δίπλα ο χρόνος: «Παρ 09/10 17:00 (σε 2ω)»', api.dueHtml(T, '2026-10-09 15:00:00').replace(/<[^>]+>/g, '') === 'Παρ 09/10 17:00 (σε 2ω)ΕΠΕΙΓΟΝ');
+  // ΚΑΘΟΛΟΥ χρώμα: ολοκληρωμένη, «Δεν εφαρμόζεται», κλειδωμένη, τύπος χωρίς όρια.
+  const late = '2026-10-20 09:00:00';
+  const plain = t => api.dueHtml(t, late) === '<span class="fuel-due" id="due-76">Παρ 09/10 17:00</span>';
+  ck('done, πολύ μετά το due -> ΚΑΘΟΛΟΥ χρώμα, κανένα κείμενο χρόνου', plain(Object.assign({}, T, { status: 'done' })), api.dueHtml(Object.assign({}, T, { status: 'done' }), late));
+  ck('na -> ΚΑΘΟΛΟΥ χρώμα', plain(Object.assign({}, T, { status: 'na' })));
+  ck('κλειδωμένη (η #77 «Περιμένει») -> ΚΑΘΟΛΟΥ χρώμα, δεν αναβοσβήνει', plain(Object.assign({}, T, { locked: 1 })) && plain(Object.assign({}, T, { locked: '1' })));
+  ck('κλειδωμένη 2 λεπτά πριν το due -> επίσης χωρίς χρώμα', api.dueState(Object.assign({}, T, { locked: 1 }), '2026-10-09 16:58:00') === null);
+  ck('τύπος χωρίς όρια στη βάση (NULL) -> ΚΑΘΟΛΟΥ χρώμα', plain(Object.assign({}, T, { due_warn_hours: null, due_urgent_hours: null })));
+  // Η #77 (verify) ΞΕΚΛΕΙΔΩΜΕΝΗ, ανοιχτή, μετά το due: όρια NULL στη βάση -> τίποτα.
+  const v77 = sysTask(77, FWV, 'fuel:2026-10-12', PAYLOAD, { status: 'open', locked: 0 });
+  ck('verify ξεκλείδωτη, 1λ πριν / 1ω μετά το due: ΟΥΤΕ ΕΠΕΙΓΟΝ ΟΥΤΕ αναβοσβήνει (όρια NULL)',
+     api.dueState(v77, '2026-10-09 16:59:00') === null && api.dueState(v77, '2026-10-09 18:00:00') === null
+     && api.dueHtml(v77, '2026-10-09 18:00:00') === '<span class="fuel-due" id="due-77">Παρ 09/10 17:00</span>');
+  ck('άκυρα όρια (warn < urgent) -> ΚΑΘΟΛΟΥ χρώμα', plain(Object.assign({}, T, { due_warn_hours: 2, due_urgent_hours: 4 })));
+  // Όρια από τη βάση: άλλες τιμές -> άλλα σημεία αλλαγής. Από PDO έρχονται ως string.
+  const T2 = Object.assign({}, T, { due_warn_hours: '48', due_urgent_hours: '12' });
+  ck('όρια 48/12 από τη βάση (string): 30ω πριν -> πορτοκαλί, 11ω πριν -> κόκκινο',
+     cls('2026-10-08 11:00:00', T2) === 'd-warn' && cls('2026-10-09 06:00:00', T2) === 'd-urgent' && cls('2026-10-07 16:00:00', T2) === 'd-ok');
+  ck('στον κώδικα: κανένα 24 / 4 ως όριο (μόνο due_warn_hours / due_urgent_hours)',
+     !/\b(24|4)\s*\*\s*3600000|3600000\s*\*\s*(24|4)\b/.test(grab('dueState')) && /due_warn_hours/.test(grab('dueState')) && /due_urgent_hours/.test(grab('dueState')));
+  // Κανονικοποίηση της ώρας (T, χωρίς δευτερόλεπτα), και Z/offset = όχι Αθήνα.
+  ck('«T» και χωρίς δευτερόλεπτα -> ίδιο αποτέλεσμα', cls('2026-10-09T17:00', Object.assign({}, T, { due_at: '2026-10-09T17:00' })) === 'd-urgent'
+     && cls('2026-10-09T17:01', T) === 'd-over');
+  ck('Z / offset -> null, ΚΑΘΟΛΟΥ χρώμα', api.dueState(Object.assign({}, T, { due_at: '2026-10-09T17:00:00Z' }), late) === null
+     && api.dueState(T, '2026-10-20T00:00:00+03:00') === null);
+  // CSS
+  ck('d-over: CSS animation', /\.fuel-due\.d-over +\{[^}]*animation: due-blink/.test(src) && /@keyframes due-blink/.test(src));
+  ck('prefers-reduced-motion -> σταθερό κόκκινο χωρίς αναβόσβημα',
+     /@media \(prefers-reduced-motion: reduce\) \{ \.fuel-due\.d-over \{ animation: none; \} \}/.test(src) && /\.fuel-due\.d-over +\{ color: #cc0000;/.test(src));
+  // Αντίθεση WCAG AA σε λευκό για τα τρία χρώματα.
+  const lum = hx => { const v = [1, 3, 5].map(i => parseInt(hx.slice(i, i + 2), 16) / 255).map(c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+                      return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+  const ratio = hx => 1.05 / (lum(hx) + 0.05);
+  for (const k of ['d-ok', 'd-warn', 'd-urgent']) {
+    const m = new RegExp('\\.fuel-due\\.' + k + ' +\\{ color: (#[0-9a-f]{6}); \\}').exec(src);
+    ck(`${k}: αντίθεση ≥ 4.5:1 σε λευκό`, m && ratio(m[1]) >= 4.5, m ? `${m[1]} ${ratio(m[1]).toFixed(2)}` : 'δεν βρέθηκε');
+  }
+}
+
+console.log('\n═══ Προθεσμία: ανανέωση κάθε λεπτό χωρίς reload ═══');
+{
+  const { api, els } = env({ now: '2026-10-09 16:00:00' });
+  const t76 = sysTask(76, FW, 'fuel:2026-10-12', PAYLOAD, { status: 'in_progress', assigned_to: 1 });
+  api.setTasks([t76, cliTask(50, 5, 'Π')]);
+  els['due-76'] = { outerHTML: 'ΠΑΛΙΟ' };
+  api.refreshDues();
+  ck('refreshDues() ξαναγράφει ΜΟΝΟ το due-76 με το τρέχον now', els['due-76'].outerHTML === api.dueHtml(t76, '2026-10-09 16:00:00') && els['due-76'].outerHTML.includes('σε 1ω'), els['due-76'].outerHTML);
+  ck('δεν ξαναζωγραφίζει τη λίστα', els.list === undefined || els.list.innerHTML === '');
+  ck('setInterval(refreshDues, 60000) στη σελίδα', /setInterval\(refreshDues, 60000\)/.test(src));
+  ck('το στοιχείο της προθεσμίας έχει id due-<id>', api.dueHtml(t76, '2026-10-09 16:00:00').startsWith('<span class="fuel-due d-urgent" id="due-76">'));
+}
+
+console.log('\n═══ Στοιχεία κάρτας: ιστορικό, ετικέτες, κινητό, escape ═══');
+{
+  const { api } = env();
+  const T = { id: 76, due_at: '2026-10-09 17:00:00', status: 'in_progress', locked: 0, due_warn_hours: 24, due_urgent_hours: 4 };
   const hist = api.fuelFactsHtml({}, HIST_PAYLOAD);
   ck('ιστορικό 2026-10-05: ισχύς 01-Oct-2026 και απόδειξη 69/69', hist.includes('01-Oct-2026') && hist.includes('69/69'), hist);
   ck('payload πελάτη: κανένα στοιχείο επίναυλου', api.fuelFactsHtml({}, { account: 'X' }) === '');
@@ -189,6 +274,9 @@ console.log('\n═══ Στοιχεία κάρτας ═══');
   const tblCss = (src.match(/\.fuel-tbl \{[^}]*}/) || [''])[0];
   ck('κινητό: πίνακας width 100% + table-layout fixed (ίσες στήλες, χωρίς οριζόντια κύλιση)',
      /width: 100%/.test(tblCss) && /table-layout: fixed/.test(tblCss), tblCss);
+  ck('desktop: max-width 480px, στοίχιση αριστερά (χωρίς margin auto)',
+     /max-width: 480px/.test(tblCss) && !/margin[^;]*auto/.test(tblCss), tblCss);
+  ck('ίσες στήλες: κανένα width ανά κελί/στήλη', !/<col|<th[^>]*(style|width)|<td[^>]*(style|width)/.test(grab('fuelFactsHtml')));
   ck('κινητό: κελιά με overflow-wrap και μπλοκ με min-width 0',
      /\.fuel-tbl th, \.fuel-tbl td \{[^}]*overflow-wrap: anywhere/.test(src) && /\.fuel-block \{[^}]*min-width: 0/.test(src));
   ck('τιμές στοιχισμένες στο κέντρο', /\.fuel-tbl th, \.fuel-tbl td \{[^}]*text-align: center/.test(src));
@@ -213,6 +301,38 @@ console.log('\n═══ Κάρτα επίναυλου μέσα στη λίστ�
   ck('το μπλοκ είναι ΜΕΤΑ τα κουμπιά (ξεχωριστή σειρά), εκτός task-main', i76 > 0 && iTbl > i76, `${i76} / ${iTbl}`);
   ck('τα κουμπιά μένουν: Λήψη, Ολοκλήρωση', html.includes('⬇ Λήψη αρχείου CMS') && html.includes('>Ολοκλήρωση</button>'));
   ck('εργασία πελάτη: χωρίς has-fuel', !env().api.taskRow(cliTask(50, 5, 'Π')).includes('has-fuel'));
+  // Διάταξη ΣΥΣΤΗΜΑ: τίτλος σε δική του σειρά, μετά ανάδοχος/κατάσταση/κουμπιά, μετά πίνακας.
+  ck('και οι δύο εργασίες ΣΥΣΤΗΜΑ: sys-row', (html.match(/class="task[^"]*sys-row/g) || []).length === 2);
+  const r76 = env({ statuses: Object.assign({ in_progress: { code: 'in_progress', label: 'Σε εξέλιξη', color: '#ef6c00' } }, DB_STATUSES) }).api.taskRow(sysTask(76, FW, 'fuel:2026-10-12', PAYLOAD, { status: 'in_progress', assigned_to: 1, assigned_name: 'u1' }));
+  const pos = ['class="task-main"', 'class="who"', 'class="st"', 'class="acts"', 'class="fuel-block"'].map(s => r76.indexOf(s));
+  ck('σειρά: τίτλος → ανάδοχος → κατάσταση → κουμπιά → πίνακας', pos.every((p, i) => p > 0 && (i === 0 || p > pos[i - 1])), pos.join(' < '));
+  ck('CSS: sys-row αναδιπλώνεται και ο τίτλος (task-main) πιάνει όλο το πλάτος',
+     /\.task\.sys-row \{ flex-wrap: wrap; \}/.test(src) && /\.task\.sys-row \.task-main \{ flex: 0 0 100%; \}/.test(src));
+  ck('εργασία πελάτη: χωρίς sys-row', !env().api.taskRow(cliTask(50, 5, 'Π')).includes('sys-row'));
+}
+
+console.log('\n═══ Εργασίες ΠΕΛΑΤΗ: byte-προς-byte ίδιες με το 20588f5 ═══');
+{
+  // tasks_client_rows.golden.json = η έξοδος του tasks.html στο 20588f5 (το
+  // ζωντανό πριν από αυτή την αλλαγή) πάνω στις εργασίες του tasks_client_cases.js.
+  const cases = require(path.join(HERE, 'tasks_client_cases.js'));
+  const golden = JSON.parse(fs.readFileSync(path.join(HERE, 'tasks_client_rows.golden.json'), 'utf8'));
+  let rows = 0, diff = [];
+  for (const key of Object.keys(golden)) {
+    const [v, who] = key.split(':');
+    const els = {};
+    const doc = { getElementById: id => (els[id] = els[id] || { innerHTML: '', style: {} }) };
+    const code = ['let currentUser = { id: 1 }, isAdmin = ' + (who === 'admin') + ', view = "' + v + '", lastTasks = [];',
+      'let STATUSES = ' + JSON.stringify(cases.STATUSES) + ';', 'let FUEL_TYPES = {};', 'const histOpen = new Map();',
+      grabConst('TIPS'), grabConst('ACTION_URL_OK'), grabConst('FUEL_CMS_HEADER'), grabConst('GR_DAY3'),
+      ...cases.FUNCS.filter(f => src.includes('function ' + f + '(')).map(grab),
+      'return { render, taskRow };'].join('\n');
+    const a = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, { getItem: () => null }, {});
+    cases.TASKS.forEach((t, i) => { rows++; const got = a.taskRow(t); if (got !== golden[key].rows[i]) diff.push(`${key} #${t.id}`); });
+    a.render(cases.TASKS);
+    if (els.list.innerHTML !== golden[key].list) diff.push(`${key} λίστα`);
+  }
+  ck(`${rows} γραμμές πελάτη σε ${Object.keys(golden).length} συνδυασμούς προβολής/ρόλου + οι λίστες: ΙΔΙΑ bytes`, diff.length === 0, diff.join(', '));
 }
 
 console.log('\n═══ Υπόμνημα: κουκκίδα «Ολοκληρωμένη» = φόντο κλειστής ομάδας ═══');
