@@ -51,6 +51,16 @@
   .flag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
   .flag.GR { background: #e3f2fd; color: #0d47a1; }
   .flag.CY { background: #fff8e1; color: #7c6d00; }
+  .flag.BOTH { background: #ede7f6; color: #4527a0; }
+
+  /* Εργασίες συστήματος (χωρίς πελάτη): στην κορυφή, με δική τους ομάδα. */
+  .client-group.sys { border-color: #b39ddb; }
+  .client-group.sys .client-head { background: #f6f3fc; }
+  .sys-tag { font-size: 10px; font-weight: 700; letter-spacing: .08em; padding: 2px 8px;
+             border-radius: 4px; background: #4527a0; color: #fff; white-space: nowrap; }
+  .fuel-facts { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px;
+                font-size: 11.5px; color: #555; }
+  .fuel-facts b { color: #222; }
 
   /* ΕΠΙΔΕΙΞΗ: ουδέτερο, σκόπιμα ΟΧΙ κόκκινο — το κόκκινο ανήκει στο
      needs_attention — και όχι χρώμα κατάστασης, που έρχεται από τη βάση.
@@ -382,9 +392,32 @@ function render(tasks){
     el.innerHTML = `<div class="empty">${msg}</div>`;
     return;
   }
+  // Εργασίες ΧΩΡΙΣ πελάτη (συστήματος): δική τους ομάδα ανά subject_key,
+  // στην ΚΟΡΥΦΗ. Τίτλος από τη βάση: η ετικέτα του τύπου-ρίζας της αλυσίδας.
+  const sysGroups = new Map();
+  tasks.filter(t => t.client_id === null).forEach(t=>{
+    const k = t.subject_key || ('#' + t.id);
+    if(!sysGroups.has(k)) sysGroups.set(k, { country:t.task_country || t.client_country, items:[] });
+    sysGroups.get(k).items.push(t);
+  });
+  const sysHtml = [...sysGroups.values()].map(g => {
+    const root = g.items.find(t => t.depends_on === null) || g.items[0];
+    const p = taskPayload(root);
+    return `
+    <div class="client-group sys">
+      <div class="client-head">
+        <span class="sys-tag" title="System — Εργασία χωρίς πελάτη, δημιουργείται από το σύστημα">ΣΥΣΤΗΜΑ</span>
+        <span class="client-name">${escHtml(root.task_label || root.task_code)}</span>
+        <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>
+        ${p && p.week ? `<span class="client-meta">${escHtml(p.week)}</span>` : ''}
+      </div>
+      ${g.items.map(taskRow).join('')}
+    </div>`;
+  }).join('');
+
   // Ομαδοποίηση ανά πελάτη — η αλυσίδα ενός πελάτη διαβάζεται μαζί.
   const groups = new Map();
-  tasks.forEach(t=>{
+  tasks.filter(t => t.client_id !== null).forEach(t=>{
     const k = t.client_id;
     if(!groups.has(k)) groups.set(k, { name:t.client_name, country:t.client_country,
                                        account:t.client_account, offer:t.offer_number,
@@ -392,7 +425,7 @@ function render(tasks){
     groups.get(k).items.push(t);
   });
   el.innerHTML =
-    (view==='all' ? summaryHtml(tasks) : '') +
+    (view==='all' ? summaryHtml(tasks) : '') + sysHtml +
     [...groups.values()].map(g => `
     <div class="client-group${g.isDemo?' demo':''}">
       <div class="client-head">
@@ -498,6 +531,82 @@ function actionBtn(t, emphasise){
          ` title="Go — Ανοίγει το σημείο όπου γίνεται η δουλειά">→ ${escHtml(a.label)}</a>`;
 }
 
+// ── ΕΡΓΑΣΙΑ ΓΕΝΙΚΟΥ ΕΠΙΝΑΥΛΟΥ (fuel_weekly) ───────────────────────────────
+// Το payload είναι ΣΤΙΓΜΙΟΤΥΠΟ που έφτιαξε ο server (fuel_weekly_payload στο
+// api/fuel_lib.php): τιμές, ημερομηνία ισχύος, και οι γραμμές του αρχείου
+// CMS ήδη μορφοποιημένες ως κείμενο. Η οθόνη ΔΕΝ υπολογίζει και ΔΕΝ
+// μορφοποιεί αριθμούς — μόνο εμφανίζει και γράφει το xlsx από αυτό.
+
+function taskPayload(t){
+  if(!t || t.payload==null) return null;
+  try{ return typeof t.payload==='string' ? JSON.parse(t.payload) : t.payload; }catch(e){ return null; }
+}
+
+// Οι γραμμές του αρχείου, ΑΥΤΟΥΣΙΕΣ από το payload, ή null αν δεν είναι
+// έγκυρες: κεφαλίδα + τουλάχιστον μία γραμμή, 9 στήλες, όλα string.
+const FUEL_CMS_HEADER = ['ClientCode','StationCountryCode','OriginZoneCode','OriginCountryCode',
+                         'ZoneCode','DeliveryCountryCode','ServiceTypeCode','FuelCharge','EffectiveDate'];
+function fuelCmsAoa(p){
+  if(!p || p.kind!=='fuel_weekly' || !p.file || !Array.isArray(p.file.rows)) return null;
+  const rows = p.file.rows;
+  if(rows.length < 2) return null;
+  if(rows[0].length!==9 || rows[0].some((h,i) => h!==FUEL_CMS_HEADER[i])) return null;
+  if(rows.some(r => !Array.isArray(r) || r.length!==9 || r.some(v => typeof v!=='string'))) return null;
+  return rows;
+}
+
+// Βιβλίο εργασίας: ένα φύλλο «Table», ΚΑΘΕ κελί κείμενο (t:'s', z:'@').
+// Τα ΚΕΝΑ κελιά ΔΕΝ γράφονται, όπως στο αρχείο που δέχτηκε το CMS
+// (07/10/2026, 69/69/0/0): 424 κελιά, όχι 630 με κενά strings.
+// Το XLSX περνά ως παράμετρος ώστε να δοκιμάζεται σε Node.
+function fuelCmsWorkbook(XLSX, aoa){
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  Object.keys(ws).forEach(k => {
+    if(k[0]==='!') return;
+    if(ws[k].v == null || String(ws[k].v) === ''){ delete ws[k]; return; }
+    ws[k].t = 's'; ws[k].v = String(ws[k].v); ws[k].z = '@';
+  });
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Table');
+  return wb;
+}
+
+async function downloadFuelCms(id){
+  const t = lastTasks.find(x => Number(x.id)===Number(id));
+  const p = taskPayload(t);
+  const aoa = fuelCmsAoa(p);
+  if(!aoa){ showErr('Η εργασία δεν έχει έγκυρο στιγμιότυπο αρχείου CMS.'); return; }
+  if(typeof XLSX==='undefined'){
+    await new Promise((res,rej)=>{ const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+  }
+  XLSX.writeFile(fuelCmsWorkbook(XLSX, aoa), 'FuelChargeImport_GR_CY_' + p.effective_date + '.xlsx');
+}
+
+// «2026-10-09 17:00:00» -> «Παρ 09/10/2026 17:00». Η ώρα είναι ώρα Αθήνας,
+// όπως την έγραψε ο server — καμία μετατροπή ζώνης εδώ.
+const GR_DAY3 = ['Κυρ','Δευ','Τρι','Τετ','Πεμ','Παρ','Σαβ'];
+function fmtDue(s){
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(s||'');
+  if(!m) return '—';
+  const d = new Date(Date.UTC(+m[1], +m[2]-1, +m[3], 12));
+  return `${GR_DAY3[d.getUTCDay()]} ${m[3]}/${m[2]}/${m[1]} ${m[4]}:${m[5]}`;
+}
+
+function fuelFactsHtml(t, p){
+  if(!p || p.kind!=='fuel_weekly') return '';
+  const f = [];
+  f.push(`εβδομάδα <b>${escHtml(p.week || ((p.week_start||'')+' – '+(p.week_end||'')))}</b>`);
+  if(p.prices) f.push('τιμές ' + Object.keys(p.prices).filter(k => p.prices[k]!==null)
+                       .map(k => `<b>${escHtml(k)} ${escHtml(p.prices[k])}%</b>`).join(' · '));
+  if(p.effective_date) f.push(`ισχύς <b>${escHtml(p.effective_date)}</b>`);
+  if(t.due_at) f.push(`προθεσμία <b>${escHtml(fmtDue(t.due_at))}</b>`);
+  if(p.rows_count) f.push(`γραμμές <b>${escHtml(p.rows_count)}</b>`);
+  if(p.proof) f.push(`απόδειξη <b>${escHtml(p.proof.generated)}/${escHtml(p.proof.expected)}</b>, επιπλέον ${escHtml(p.proof.extra)}, λείπουν ${escHtml(p.proof.missing)}`);
+  return `<div class="fuel-facts">${f.map(x => `<span>${x}</span>`).join('')}</div>`;
+}
+
 function taskRow(t){
   const locked = Number(t.locked)===1;
   const mine   = currentUser && Number(t.assigned_to)===Number(currentUser.id);
@@ -505,7 +614,7 @@ function taskRow(t){
   // Ο ανάδοχος έχει δική του στήλη δίπλα στο badge, σε ΟΛΕΣ τις καρτέλες —
   // μη τον διπλογράφεις στα meta.
   if(t.close_reason)  meta.push('λόγος: '+escHtml(t.close_reason));
-  let payload = null; try{ payload = typeof t.payload==='string'?JSON.parse(t.payload):t.payload; }catch(e){}
+  const payload = taskPayload(t);
   if(payload && payload.services && payload.services.length) meta.push('υπηρεσίες: '+escHtml(payload.services.join(', ')));
 
   // Διαφορετική λέξη για διαφορετική πράξη: «Ανάληψη» παίρνει κάτι από την
@@ -544,6 +653,10 @@ function taskRow(t){
   // σημείο δράσης — οπότε προβάλλεται αντί να στέκει ισότιμο δίπλα σε
   // ένα κουμπί που δεν πατιέται.
   let acts = actionBtn(t, blocked);
+  // Λήψη αρχείου CMS: ανάγνωση, όπως το άνοιγμα καρτέλας — φαίνεται σε
+  // κάθε κατάσταση, και σε κλειδωμένη εργασία.
+  if(fuelCmsAoa(payload)) acts += `<button class="btn btn-go" title="Download — Το αρχείο FuelChargeImport από το στιγμιότυπο της εργασίας"`+
+                                  ` onclick="downloadFuelCms(${t.id})">⬇ Λήψη αρχείου CMS</button>`;
   if(locked){
     // ΜΟΝΟ το όνομα της εργασίας που περιμένει. Το «Περιμένει» το λέει
     // ήδη το badge, από τη βάση — εδώ θα ήταν η ίδια λέξη δύο φορές στην
@@ -578,6 +691,7 @@ function taskRow(t){
     <div class="task-main">
       <div class="task-label">${locked?'🔒 ':''}${escHtml(t.task_label||t.task_code)}</div>
       <div class="task-meta">${escHtml(t.task_code)}${meta.length?' · '+meta.join(' · '):''}</div>
+      ${fuelFactsHtml(t, payload)}
     </div>
     ${attn?'<span class="attn-tag" title="Απορρίφθηκε από όλους τους δικαιούχους — χρειάζεται ανάθεση">χρειάζεται ανάθεση</span>':''}
     ${whoCell(t)}

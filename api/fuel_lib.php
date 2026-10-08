@@ -400,4 +400,76 @@ function fuel_cache_load($readRow, $fetch, $write, $log)
     return array(null, $meta(null, false, null));
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// ΕΒΔΟΜΑΔΙΑΙΑ ΕΡΓΑΣΙΑ ΓΕΝΙΚΟΥ ΕΠΙΝΑΥΛΟΥ
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * EffectiveDate του αρχείου CMS: dd-Mon-yyyy με αγγλικό μήνα, όπως το
+ * δέχτηκε το CMS. 2026-10-12 -> «12-Oct-2026». null αν δεν είναι ημερομηνία.
+ */
+function fuel_effective_date($weekStart)
+{
+    $d = DateTime::createFromFormat('!Y-m-d', (string)$weekStart, new DateTimeZone('UTC'));
+    if (!$d || $d->format('Y-m-d') !== $weekStart) return null;
+    return $d->format('d-M-Y');
+}
+
+/**
+ * Προθεσμία: η Παρασκευή πριν το week_start, 17:00 ώρα Αθήνας.
+ * Επιστρέφεται ως ώρα Αθήνας «Y-m-d H:i:s», έτοιμη για DATETIME.
+ * 2026-10-12 (Δευτέρα) -> «2026-10-09 17:00:00».
+ */
+function fuel_weekly_due_at($weekStart)
+{
+    $tz = new DateTimeZone('Europe/Athens');
+    $d  = DateTime::createFromFormat('!Y-m-d', (string)$weekStart, $tz);
+    if (!$d || $d->format('Y-m-d') !== $weekStart) return null;
+    $d->modify('-1 day');                                   // ποτέ η ίδια μέρα
+    while ($d->format('N') !== '5') $d->modify('-1 day');   // 5 = Παρασκευή
+    $d->setTime(17, 0, 0);
+    return $d->format('Y-m-d H:i:s');
+}
+
+/**
+ * ΤΟ ΣΤΙΓΜΙΟΤΥΠΟ μιας εβδομάδας για την εργασία fuel_weekly. Ό,τι
+ * χρειάζεται η οθόνη και το αρχείο CMS, υπολογισμένο ΕΔΩ, μία φορά. Το
+ * frontend φτιάχνει το xlsx ΜΟΝΟ από αυτό, χωρίς να ξαναϋπολογίζει.
+ *
+ *   week          ετικέτα, έναρξη, λήξη, από το cache
+ *   source        οι τιμές πηγής air/road όπως ήρθαν
+ *   prices        τιμή ανά fuel_type, από τη fuel_week_prices()
+ *   effective_date dd-Mon-yyyy
+ *   file.rows     οι γραμμές του αρχείου: κεφαλίδα + μία ανά γραμμή CMS,
+ *                 9 στήλες, ΟΛΑ string, αριθμοί από τη fuel_num()
+ *
+ * @return array|null  null αν το cache δεν έχει την εβδομάδα
+ */
+function fuel_weekly_payload(PDO $db, array $cache, array $types, $weekStart)
+{
+    $week = null;
+    foreach (fuel_week_prices($cache, $types) as $w) {
+        if ($w['week_start'] === $weekStart) { $week = $w; break; }
+    }
+    if ($week === null || $week['src']['air'] === null || $week['src']['road'] === null) return null;
+
+    $eff  = fuel_effective_date($weekStart);
+    $rows = fuel_cms_rows($db, array('air' => $week['src']['air'], 'road' => $week['src']['road']), $eff);
+    $file = fuel_cms_file($rows);
+    foreach ($file as $i => $r) $file[$i] = array_map('strval', $r);
+
+    return array(
+        'kind'           => 'fuel_weekly',
+        'week_start'     => $week['week_start'],
+        'week_end'       => $week['week_end'],
+        'week'           => $week['week'],
+        'source'         => $week['src'],
+        'prices'         => $week['pct'],
+        'effective_date' => $eff,
+        'fetched_at'     => isset($cache['fetched_at']) ? $cache['fetched_at'] : null,
+        'rows_count'     => count($file) - 1,
+        'file'           => array('sheet' => 'Table', 'rows' => $file),
+    );
+}
+
 } // function_exists

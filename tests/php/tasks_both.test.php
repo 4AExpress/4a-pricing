@@ -28,6 +28,7 @@ foreach (array(
     'CREATE TABLE `4a_clients` (`id` INTEGER PRIMARY KEY, `name` TEXT, `country` TEXT, `account` TEXT, `is_demo` INTEGER NOT NULL DEFAULT 0)',
     'CREATE TABLE `4a_users` (`id` INTEGER PRIMARY KEY, `name` TEXT, `role` TEXT, `active` INTEGER)',
     'CREATE TABLE `4a_task_types` (`code` TEXT PRIMARY KEY, `label` TEXT, `sort_order` INTEGER, `depends_on` TEXT,
+        `kind` TEXT NOT NULL DEFAULT \'client\', `exclude_prev_assignee` INTEGER NOT NULL DEFAULT 0,
         `action_url` TEXT, `action_label` TEXT, `action_module` TEXT, `ready_check` TEXT, `ready_hint` TEXT, `ready_enforced` INTEGER)',
     'CREATE TABLE `4a_tasks` (`id` INTEGER PRIMARY KEY, `client_id` INTEGER, `subject_key` TEXT, `country` TEXT,
         `dedupe_key` TEXT, `task_code` TEXT, `offer_number` TEXT NOT NULL DEFAULT \'\', `assigned_to` INTEGER,
@@ -41,7 +42,7 @@ foreach (array(
 // Χρήστες: 10 δεξιότητα GR · 11 δεξιότητα BOTH, scope GR · 12 δεξιότητα BOTH, scope NONE ·
 //          13 δεξιότητα CY · 99 διαχειριστής χωρίς δεξιότητες.
 $db->exec("INSERT INTO `4a_users` VALUES (10,'u10','user',1),(11,'u11','user',1),(12,'u12','user',1),(13,'u13','user',1),(99,'adm','administrator',1)");
-$db->exec("INSERT INTO `4a_task_types` (`code`,`label`,`sort_order`) VALUES ('fuel_weekly','Επίναυλος εβδομάδας',10),('client_x','Εργασία πελάτη',20)");
+$db->exec("INSERT INTO `4a_task_types` (`code`,`label`,`sort_order`,`kind`) VALUES ('fuel_weekly','Επίναυλος εβδομάδας',10,'system'),('client_x','Εργασία πελάτη',20,'client')");
 $db->exec("INSERT INTO `4a_user_task_skills` VALUES
            (10,'fuel_weekly','GR'),(11,'fuel_weekly','BOTH'),(12,'fuel_weekly','BOTH'),(13,'fuel_weekly','CY'),
            (10,'client_x','GR')");

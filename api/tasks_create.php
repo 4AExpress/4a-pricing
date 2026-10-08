@@ -1,5 +1,5 @@
 <?php
-// tasks_create.php | v1.0 | 23-09-2026
+// tasks_create.php | v1.1 | 07-10-2026
 // Φάση 2 του συστήματος εργασιών — παραγωγή εργασιών όταν ένας πελάτης
 // περνά σε status 'accepted'. Υλοποιεί το docs/tasks_phase2_spec.md.
 //
@@ -122,8 +122,12 @@ function tasks_create_for_client($db, $clientId, $actorId, $oldStatus, $newStatu
 
         // Το depends_on χρειάζεται για να ξεχωρίσουν οι ΡΙΖΕΣ, που είναι οι
         // μόνες που ανατίθενται τη στιγμή της δημιουργίας.
+        // ΜΟΝΟ τύποι πελάτη. Οι τύποι συστήματος (kind = 'system', π.χ. ο
+        // εβδομαδιαίος επίναυλος) δημιουργούνται από το tasks_system.php και
+        // ΠΟΤΕ ανά πελάτη (07/10/2026).
         $types = $db->query('SELECT `code`, `condition_key`, `depends_on` FROM `4a_task_types`
-                              WHERE `active` = 1 ORDER BY `sort_order`, `code`')
+                              WHERE `active` = 1 AND `kind` = \'client\'
+                              ORDER BY `sort_order`, `code`')
                     ->fetchAll(PDO::FETCH_ASSOC);
 
         // account: snapshot τη στιγμή της δημιουργίας, για να μη χρειάζεται

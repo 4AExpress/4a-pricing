@@ -1,5 +1,5 @@
 <?php
-// tasks_lib.php | v1.1 | 07-10-2026
+// tasks_lib.php | v1.2 | 07-10-2026
 // Φάση 3 — η λογική της οθόνης εργασιών. Υλοποιεί το
 // docs/tasks_phase3_spec.md.
 //
@@ -42,7 +42,9 @@ function tasks_base_sql()
                                       WHERE d.`dedupe_key`   = t.`dedupe_key`
                                         AND d.`task_code`    = tt.`depends_on`
                                         AND d.`status` IN (\'done\',\'na\'))
-                        THEN 0 ELSE 1 END AS `locked`
+                        THEN 0 ELSE 1 END AS `locked`,
+                   t.`subject_key`, t.`country` AS task_country, t.`dedupe_key`,
+                   tt.`kind` AS task_kind, tt.`exclude_prev_assignee`
               FROM `4a_tasks` t
               JOIN `4a_task_types` tt ON tt.`code` = t.`task_code`
          LEFT JOIN `4a_clients`    c  ON c.`id`    = t.`client_id`
@@ -475,10 +477,54 @@ function tasks_held_by_steal($db, $taskId, $userId)
 // Δεν υπάρχει τρίτη στιγμή: το `locked` είναι υπολογισμός, όχι γεγονός.
 // ─────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────
+// ΑΛΛΟΣ ΕΛΕΓΧΕΙ (exclude_prev_assignee, 07/10/2026)
+//
+// Τύπος με `exclude_prev_assignee = 1` (π.χ. fuel_weekly_verify) ΔΕΝ
+// πηγαίνει σε όποιον έκανε την προηγούμενη εργασία της αλυσίδας (τον τύπο
+// του depends_on, με το ίδιο dedupe_key): ούτε στον ανάδοχό της ούτε σε
+// όποιον την έκλεισε. Ο έλεγχος γίνεται από άλλον.
+//
+// Ισχύει στη δεξαμενή τυχαίας ανάθεσης, στο claim και στο steal. Ο
+// διαχειριστής μπορεί να αναθέσει παρ' όλα αυτά, και η παράκαμψη
+// καταγράφεται ρητά στο event, όπως η ανάθεση χωρίς δεξιότητα.
+// ─────────────────────────────────────────────────────────────────────
+if (!defined('TASKS_PREV_ASSIGNEES_SQL')) {
+    // Ένα ? : το id της εργασίας. Επιστρέφει user_id.
+    define('TASKS_PREV_ASSIGNEES_SQL',
+        'SELECT p.`assigned_to` FROM `4a_tasks` p
+           JOIN `4a_tasks` me      ON me.`id` = ?
+           JOIN `4a_task_types` mt ON mt.`code` = me.`task_code`
+          WHERE mt.`exclude_prev_assignee` = 1
+            AND p.`dedupe_key` = me.`dedupe_key` AND p.`task_code` = mt.`depends_on`
+            AND p.`assigned_to` IS NOT NULL
+         UNION
+         SELECT p.`closed_by` FROM `4a_tasks` p
+           JOIN `4a_tasks` me      ON me.`id` = ?
+           JOIN `4a_task_types` mt ON mt.`code` = me.`task_code`
+          WHERE mt.`exclude_prev_assignee` = 1
+            AND p.`dedupe_key` = me.`dedupe_key` AND p.`task_code` = mt.`depends_on`
+            AND p.`closed_by` IS NOT NULL');
+}
+
+/** Έκανε ο χρήστης την προηγούμενη εργασία, σε τύπο με exclude_prev_assignee; */
+function tasks_is_prev_assignee($db, $taskId, $userId)
+{
+    $st = $db->prepare('SELECT COUNT(*) FROM (' . TASKS_PREV_ASSIGNEES_SQL . ') x
+                         WHERE x.`assigned_to` = ?');
+    $st->execute([(int)$taskId, (int)$taskId, (int)$userId]);
+    return ((int)$st->fetchColumn()) > 0;
+}
+
 /**
  * Οι δικαιούχοι μιας εργασίας: δεξιότητα για τον κωδικό ΚΑΙ τη χώρα,
  * ενεργοί, ΧΩΡΙΣ τους διαχειριστές, και ΠΟΤΕ όσοι την έχουν ήδη απορρίψει.
  * Το NOT IN διαβάζει τον 4a_task_rejections — εκεί ζει ο κανόνας.
+ *
+ * Η εξαίρεση των διαχειριστών ισχύει ΜΟΝΟ για τύπους kind = 'client'
+ * (απόφαση 08/10/2026). Σε τύπο kind = 'system' μπαίνει όποιος έχει ρητή
+ * δεξιότητα, ανεξάρτητα από ρόλο: εκεί η δεξιότητα δίνεται σκόπιμα και
+ * ονομαστικά, δεν είναι εξ ορισμού.
  */
 function tasks_candidate_pool($db, $taskId, $taskCode, $country, $isDemo = false)
 {
@@ -495,8 +541,9 @@ function tasks_candidate_pool($db, $taskId, $taskCode, $country, $isDemo = false
               WHERE `active` = 1
                 AND `role` = \'administrator\'
                 AND `id` NOT IN (SELECT `user_id` FROM `4a_task_rejections`
-                                  WHERE `task_id` = ?)');
-        $st->execute([(int)$taskId]);
+                                  WHERE `task_id` = ?)
+                AND `id` NOT IN (' . TASKS_PREV_ASSIGNEES_SQL . ')');
+        $st->execute([(int)$taskId, (int)$taskId, (int)$taskId]);
         return array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
     }
 
@@ -507,11 +554,14 @@ function tasks_candidate_pool($db, $taskId, $taskCode, $country, $isDemo = false
           WHERE s.`task_code` = ?
             AND s.`country` IN (?, \'BOTH\')
             AND u.`active` = 1
-            AND u.`role` <> \'administrator\'
+            AND (u.`role` <> \'administrator\'
+                 OR EXISTS (SELECT 1 FROM `4a_task_types` k
+                             WHERE k.`code` = s.`task_code` AND k.`kind` = \'system\'))
             AND s.`user_id` NOT IN (SELECT `user_id` FROM `4a_task_rejections`
-                                     WHERE `task_id` = ?)');
+                                     WHERE `task_id` = ?)
+            AND s.`user_id` NOT IN (' . TASKS_PREV_ASSIGNEES_SQL . ')');
     // Εργασία BOTH: IN ('BOTH','BOTH') — μόνο δεξιότητα BOTH.
-    $st->execute([$taskCode, $country, (int)$taskId]);
+    $st->execute([$taskCode, $country, (int)$taskId, (int)$taskId, (int)$taskId]);
     return array_map('intval', $st->fetchAll(PDO::FETCH_COLUMN));
 }
 
@@ -555,17 +605,19 @@ function tasks_auto_assign($db, $task, $actorId, $why)
 
 /**
  * Μετά το κλείσιμο μιας εργασίας: βρες όσες εξαρτιόνταν από αυτήν, για
- * ΤΟΝ ΙΔΙΟ πελάτη και ΤΗΝ ΙΔΙΑ προσφορά, και ανάθεσε όσες ξεκλείδωσαν.
+ * ΤΟ ΙΔΙΟ dedupe_key, και ανάθεσε όσες ξεκλείδωσαν. Εργασία πελάτη:
+ * c:<πελάτης>:<προσφορά>, δηλαδή ίδιος πελάτης και ίδια προσφορά όπως πριν.
+ * Εργασία συστήματος: το subject_key (07/10/2026).
  *
  * Το `locked` ΞΑΝΑΕΛΕΓΧΕΤΑΙ με τον ίδιο υπολογισμό — δεν υποθέτουμε ότι
  * ξεκλείδωσε: με βαθύτερη αλυσίδα μπορεί να περιμένει και άλλη.
  */
-function tasks_unlock_and_assign($db, $clientId, $offerNo, $closedCode, $actorId)
+function tasks_unlock_and_assign($db, $dedupeKey, $closedCode, $actorId)
 {
     $st = $db->prepare(tasks_base_sql() . '
-        WHERE t.`client_id` = ? AND t.`offer_number` = ? AND tt.`depends_on` = ?
+        WHERE t.`dedupe_key` = ? AND tt.`depends_on` = ?
           AND t.`status` = \'open\' AND t.`assigned_to` IS NULL');
-    $st->execute([(int)$clientId, (string)$offerNo, (string)$closedCode]);
+    $st->execute([(string)$dedupeKey, (string)$closedCode]);
 
     // ΞΕΚΛΕΙΔΩΣΑΝ και ΑΝΑΤΕΘΗΚΑΝ είναι ΔΙΑΦΟΡΕΤΙΚΑ νούμερα. Μια εργασία
     // που ξεκλείδωσε αλλά δεν βρήκε δικαιούχο (needs_attention) μετράει
@@ -692,6 +744,9 @@ function tasks_claim($db, $session, $perms, $taskId)
         && !tasks_has_skill($db, $me, $task['task_code'], $task['client_country'])) {
         return tasks_err(403, 'δεν έχετε τη δεξιότητα για αυτή την εργασία');
     }
+    if (tasks_is_prev_assignee($db, $taskId, $me)) {
+        return tasks_err(403, 'κάνατε την προηγούμενη εργασία — τον έλεγχο τον κάνει άλλος');
+    }
 
     // ΤΟ ΚΛΕΙΔΙ ΤΟΥ ΑΓΩΝΑ ΤΑΧΥΤΗΤΑΣ: το `AND assigned_to IS NULL` μέσα στο
     // UPDATE. Δύο ταυτόχρονα claim -> το ένα γράφει, το άλλο κάνει 0 γραμμές.
@@ -783,8 +838,7 @@ function tasks_done($db, $session, $perms, $taskId, $note = null)
 
     // Το ΜΟΝΟ σημείο που μπορεί να ξεκλειδώσει άλλη εργασία. Τρέχει και για
     // εργασία που είχε ανατεθεί με force — η αλυσίδα όντως προχώρησε.
-    $u = tasks_unlock_and_assign($db, $task['client_id'], $task['offer_number'],
-                                 $task['task_code'], (int)$session['id']);
+    $u = tasks_unlock_and_assign($db, $task['dedupe_key'], $task['task_code'], (int)$session['id']);
     return tasks_okres($db, $taskId, $u);
 }
 
@@ -807,8 +861,7 @@ function tasks_na($db, $session, $perms, $taskId, $reason)
 
     // Το 'na' ξεκλειδώνει κι αυτό: αν η προηγούμενη δεν εφαρμόζεται, η
     // εξαρτημένη ΠΡΕΠΕΙ να προχωρήσει, αλλιώς η αλυσίδα κολλάει για πάντα.
-    $u = tasks_unlock_and_assign($db, $task['client_id'], $task['offer_number'],
-                                 $task['task_code'], (int)$session['id']);
+    $u = tasks_unlock_and_assign($db, $task['dedupe_key'], $task['task_code'], (int)$session['id']);
     return tasks_okres($db, $taskId, $u);
 }
 
@@ -936,6 +989,9 @@ function tasks_steal($db, $session, $perms, $taskId)
     if (!tasks_demo_bypass($perms, $task)
         && !tasks_has_skill($db, $me, $task['task_code'], $task['client_country'])) {
         return tasks_err(403, 'δεν έχετε τη δεξιότητα για αυτή την εργασία');
+    }
+    if (tasks_is_prev_assignee($db, $taskId, $me)) {
+        return tasks_err(403, 'κάνατε την προηγούμενη εργασία — τον έλεγχο τον κάνει άλλος');
     }
 
     $from     = (int)$task['assigned_to'];
@@ -1088,8 +1144,10 @@ function tasks_assign($db, $session, $perms, $taskId, $toUserId, $force = false)
     if ((int)$u['active'] !== 1) return tasks_err(400, 'ο χρήστης είναι ανενεργός');
 
     $hasSkill = tasks_has_skill($db, $toUserId, $task['task_code'], $task['client_country']);
+    $isPrev   = tasks_is_prev_assignee($db, $taskId, $toUserId);
     $note = 'ανάθεση από διαχειριστή σε ' . $u['name']
           . ($hasSkill ? '' : ' — ΧΩΡΙΣ καταχωρημένη δεξιότητα, παράκαμψη')
+          . ($isPrev ? ' — ΙΔΙΟΣ με την προηγούμενη εργασία, παράκαμψη ελέγχου από άλλον' : '')
           . $lockedNote;
 
     $db->prepare('UPDATE `4a_tasks` SET `assigned_to` = ?, `status` = \'in_progress\'
