@@ -1,5 +1,9 @@
 <?php
-// tasks_lib.php | v1.4 | 08-10-2026
+// tasks_lib.php | v1.5 | 12-10-2026
+// v1.5: κάρτα βημάτων (api/tasks_steps.php, Φάση 5 Κ2α). Τύπος με γραμμές
+//       στον 4a_task_steps: η λίστα παίρνει step/timeline/override, το
+//       γενικό done απαντά 409. allow_na ανά τύπο στο na. Σήμα: overrides.
+//       Τύπος ΧΩΡΙΣ γραμμές (όλοι σήμερα): καμία αλλαγή.
 // v1.4: due_warn_hours / due_urgent_hours του τύπου στο κοινό SELECT, για
 //       το χρώμα της προθεσμίας (migration 2026-10-08c).
 // Φάση 3 — η λογική της οθόνης εργασιών. Υλοποιεί το
@@ -12,6 +16,9 @@
 //
 // ΚΑΘΕ ΣΥΝΑΡΤΗΣΗ ΕΝΕΡΓΕΙΑΣ επιστρέφει:
 //   ['ok' => bool, 'code' => int (HTTP), 'error' => ?string, 'task' => ?array]
+
+// Κάρτα βημάτων. Μόνο ορισμοί συναρτήσεων, τίποτα δεν εκτελείται.
+require_once __DIR__ . '/tasks_steps.php';
 
 // ─────────────────────────────────────────────────────────────────────
 // Κοινό SELECT. Το `locked` υπολογίζεται ΕΔΩ, στο SQL — ποτέ στον browser:
@@ -717,8 +724,10 @@ function tasks_list($db, $session, $perms, $view)
 
     $st = $db->prepare($sql);
     $st->execute($params);
+    // Τα βήματα προστίθενται ΜΟΝΟ σε τύπους με γραμμές στον 4a_task_steps·
+    // κάθε άλλη εργασία επιστρέφεται χωρίς κανένα νέο κλειδί.
     return ['ok' => true, 'code' => 200, 'error' => null,
-            'tasks' => array_map('tasks_with_action', $st->fetchAll(PDO::FETCH_ASSOC))];
+            'tasks' => tasks_steps_attach($db, array_map('tasks_with_action', $st->fetchAll(PDO::FETCH_ASSOC)))];
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -815,6 +824,12 @@ function tasks_done($db, $session, $perms, $taskId, $note = null)
     list($task, $err) = tasks_guard_owner($db, $session, $perms, $taskId);
     if ($err) return $err;
 
+    // ΚΑΡΤΑ ΒΗΜΑΤΩΝ: η εργασία κλείνει ΜΟΝΟ από τα βήματά της (upload,
+    // admin_override). Το γενικό «Ολοκλήρωση» δεν υπάρχει ούτε στον server.
+    if (tasks_steps_def($db, $task['task_code']) !== null) {
+        return tasks_err(409, 'η εργασία κλείνει από τα βήματά της, όχι με «Ολοκλήρωση»');
+    }
+
     // ΦΡΑΓΜΑ. Ο έλεγχος είναι ΕΔΩ και όχι μόνο στην οθόνη: ένα
     // απενεργοποιημένο κουμπί δεν είναι έλεγχος — παρακάμπτεται με μια
     // κλήση, με μια παλιά σελίδα στη μνήμη του browser, ή με ένα
@@ -834,22 +849,23 @@ function tasks_done($db, $session, $perms, $taskId, $note = null)
         return tasks_err(409, $hint);
     }
 
-    $db->prepare('UPDATE `4a_tasks` SET `status` = \'done\', `closed_at` = NOW(),
-                         `closed_by` = ? WHERE `id` = ?')
-       ->execute([(int)$session['id'], (int)$taskId]);
-    tasks_event($db, $taskId, 'done', (int)$session['id'],
-                $note !== null && trim($note) !== '' ? trim($note) : 'ολοκληρώθηκε');
-
-    // Το ΜΟΝΟ σημείο που μπορεί να ξεκλειδώσει άλλη εργασία. Τρέχει και για
-    // εργασία που είχε ανατεθεί με force — η αλυσίδα όντως προχώρησε.
-    $u = tasks_unlock_and_assign($db, $task['dedupe_key'], $task['task_code'], (int)$session['id']);
-    return tasks_okres($db, $taskId, $u);
+    // Το κλείσιμο και το ξεκλείδωμα της αλυσίδας ζουν σε ΕΝΑ σημείο, την
+    // tasks_close (api/tasks_steps.php), κοινό με το upload και το
+    // admin_override. Τρέχει και για εργασία που είχε ανατεθεί με force —
+    // η αλυσίδα όντως προχώρησε.
+    return tasks_close($db, $task, (int)$session['id'], 'done',
+                       $note !== null && trim($note) !== '' ? trim($note) : 'ολοκληρώθηκε');
 }
 
 function tasks_na($db, $session, $perms, $taskId, $reason)
 {
     list($task, $err) = tasks_guard_owner($db, $session, $perms, $taskId);
     if ($err) return $err;
+
+    // allow_na ανά τύπο (migration 2026-10-12a). Προεπιλογή 1 = όπως πάντα.
+    if (!tasks_allow_na($db, $task['task_code'])) {
+        return tasks_err(409, 'το «Δεν εφαρμόζεται» δεν επιτρέπεται σε αυτόν τον τύπο εργασίας');
+    }
 
     // Ο λόγος είναι ΥΠΟΧΡΕΩΤΙΚΟΣ: το 'na' υπάρχει ώστε να μη διαγράφεται
     // εργασία που αποδείχθηκε άσχετη. Χωρίς λόγο, η εγγραφή δεν εξηγεί
@@ -1100,8 +1116,13 @@ function tasks_badge($db, $session, $perms)
                        . ($countries === [] ? ' AND ' . TASKS_COUNTRY_SQL . ' = \'BOTH\'' : ''));
     $st->execute([$me]);
 
+    $mine = (int)$st->fetchColumn();
+
+    // Παρακάμψεις που περιμένουν «Το είδα» από ΑΥΤΟΝ τον διαχειριστή
+    // (απόφαση 12/10). 0 για μη-admin και όταν δεν υπάρχει καμία.
     return ['ok' => true, 'code' => 200, 'error' => null,
-            'attention' => $attention, 'mine' => (int)$st->fetchColumn()];
+            'attention' => $attention, 'mine' => $mine,
+            'overrides' => tasks_overrides_pending($db, $session, $perms)];
 }
 
 // ─────────────────────────────────────────────────────────────────────

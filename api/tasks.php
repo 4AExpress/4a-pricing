@@ -1,10 +1,12 @@
 <?php
-// tasks.php | v1.1 | 08-10-2026
+// tasks.php | v1.2 | 12-10-2026
+// v1.2: κάρτα βημάτων (Φάση 5 Κ2α): download, upload, admin_override,
+//       override_ack. Σε τύπο χωρίς βήματα απαντούν 409 (tasks_steps.php).
 // Endpoint της οθόνης εργασιών. Λεπτό routing — η λογική ζει στο
 // tasks_lib.php ώστε να δοκιμάζεται χωρίς βάση και χωρίς HTTP.
 //
 // GET  ?view=mine|queue|all
-// POST {action: claim|release|done|na|assign, id, ...}
+// POST {action: claim|release|done|na|assign|reject|steal|download|upload|admin_override|override_ack, id, ...}
 error_reporting(E_ALL);
 ini_set('log_errors', 1);
 require_once 'config.php';
@@ -29,7 +31,8 @@ if ($method === 'GET') {
     // που έχει τον σύνδεσμο. Κρατιέται φτηνό — δύο COUNT σε ευρετήρια.
     if ($action === 'badge') {
         $r = tasks_badge($db, $session, $perms);
-        respond(['ok' => true, 'attention' => $r['attention'], 'mine' => $r['mine']]);
+        respond(['ok' => true, 'attention' => $r['attention'], 'mine' => $r['mine'],
+                 'overrides' => $r['overrides']]);
     }
 
     if ($action === 'reject_reasons') {
@@ -101,6 +104,21 @@ if ($method === 'POST') {
             $r = tasks_assign($db, $session, $perms, $id,
                               isset($b['to_user_id']) ? $b['to_user_id'] : 0,
                               isset($b['force']) && $b['force'] === true); break;
+        // Κάρτα βημάτων. Σε τύπο ΧΩΡΙΣ γραμμές στον 4a_task_steps: 409.
+        case 'download':
+            $r = tasks_download($db, $session, $perms, $id); break;
+        case 'upload':
+            $r = tasks_upload($db, $session, $perms, $id, [
+                'total'     => isset($b['total'])     ? $b['total']     : null,
+                'merge'     => isset($b['merge'])     ? $b['merge']     : null,
+                'updated'   => isset($b['updated'])   ? $b['updated']   : null,
+                'exception' => isset($b['exception']) ? $b['exception'] : null,
+            ]); break;
+        case 'admin_override':
+            $r = tasks_admin_override($db, $session, $perms, $id,
+                                      isset($b['reason']) ? $b['reason'] : null); break;
+        case 'override_ack':
+            $r = tasks_override_ack($db, $session, $perms, $id); break;
         default:
             respond(['error' => 'άγνωστη ενέργεια'], 400);
     }
@@ -124,6 +142,8 @@ if ($method === 'POST') {
         $out['unlocked']      = $r['unlocked'];
         $out['unlocked_mine'] = $r['unlocked_mine'];
     }
+    // download: ποιο γεγονός γράφτηκε (downloaded = έκλεισε το ①).
+    if (isset($r['event'])) $out['event'] = $r['event'];
     respond($out);
 }
 
