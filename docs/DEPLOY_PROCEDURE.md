@@ -97,6 +97,22 @@ curl -s -o /dev/null -w "%{http_code}\n" https://4aexpress.com/api/<endpoint>
 - Στέλνονται **μέσω stdin**, ένα αρχείο τεστ τη φορά.
 - Τρέχουν σε **SQLite στη μνήμη, όχι σε MySQL**.
 - Αποτέλεσμα: **0 ΛΑΘΟΣ**, κανένα `Fatal` και κανένα `Warning`.
+- Τα bundles φτιάχνονται με το `tools/bundle_php_tests.js`, **πάντα** με
+  `MSYS_NO_PATHCONV=1` στο Git Bash των Windows. Χωρίς αυτό, το Git Bash
+  μετατρέπει τη διαδρομή `/home/...` σε `C:/Program Files/Git/home/...`,
+  κάθε `require` αποτυγχάνει στον server και η PHP βγαίνει με exit 255
+  **χωρίς καμία έξοδο** (12-10-2026). Με το `MSYS_NO_PATHCONV=1` ούτε το
+  `<outdir>` μετατρέπεται, άρα δίνεται σε μορφή Windows (`C:\...`).
+- Πριν σταλούν: κάθε `require` του bundle ξεκινά με `<webroot>/api/` και
+  κανένα δεν περιέχει `C:/` ή `Program Files`.
+- Exit 255 χωρίς έξοδο = fatal πριν από το πρώτο τεστ: **ΣΤΟΠ**, έλεγχος
+  των διαδρομών του bundle.
+
+```
+MSYS_NO_PATHCONV=1 node tools/bundle_php_tests.js <outdir σε μορφή C:\...> <webroot>/api
+grep -ho "require[_once]* *'[^']*'" <outdir>/*.php | sort | uniq -c
+ssh -p <port> <user>@<host> "php" < <outdir>/<αρχείο>.test.php
+```
 
 ### Β9 Τοπικά: push και frontend
 
