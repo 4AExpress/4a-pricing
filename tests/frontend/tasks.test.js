@@ -50,7 +50,7 @@ function env(opts){
   const NOW = opts.now === undefined ? '2026-10-08 10:00:00' : opts.now;
   const store = { getItem: () => null };
   const code = [
-    'let currentUser = { id: 1 }, isAdmin = true, view = "all", lastTasks = [];',
+    'let currentUser = { id: ' + (opts.userId === undefined ? 1 : opts.userId) + ' }, isAdmin = ' + (opts.admin === false ? 'false' : 'true') + ', view = "all", lastTasks = [];',
     'let STATUSES = ' + JSON.stringify(opts.statuses === undefined ? DB_STATUSES : opts.statuses) + ';',
     'let FUEL_TYPES = ' + JSON.stringify(opts.fuelTypes === undefined ? DB_FUEL_TYPES : opts.fuelTypes) + ';',
     'const histOpen = new Map();',
@@ -61,8 +61,10 @@ function env(opts){
     grab('taskPayload'), grab('fuelCmsAoa'), grab('fuelCmsWorkbook'), grab('fmtDue'),
     'function athensNow(){ return ' + JSON.stringify(NOW) + '; }', grab('normDateTime'), grab('msLeft'), grab('fmtLeft'),
     grab('dueState'), grab('dueHtml'), grab('refreshDues'), grab('fuelColumns'), grab('fuelFactsHtml'),
+    grab('stepTimelineHtml'), grab('stepMoreHtml'), grab('stepCardHtml'), grab('uploadCheck'),
     grab('taskRow'), grab('render'),
     'return { render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
+    '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck,',
     '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle };'
   ].join('\n');
   const api = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, store, {});
@@ -450,6 +452,131 @@ console.log('\n═══ Υπότιτλος σελίδας από τη βάση 
   ck('στο αρχείο: ο υπότιτλος είναι ΑΔΕΙΟΣ, κανένα σταθερό κείμενο',
      /<p class="page-sub" id="page-sub" style="display:none;"><\/p>/.test(src) && !src.includes('Ό,τι προκύπτει όταν ένας πελάτης αποδεχτεί προσφορά'));
   ck('η load() καλεί renderPageSub(d.description)', /renderPageSub\(d\.description\)/.test(grab('load')));
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// ΚΑΡΤΑ ΒΗΜΑΤΩΝ (Φάση 5, Κ3α). Τα t.step / t.timeline / t.override είναι ό,τι
+// στέλνει το api/tasks_steps.php. Τα κείμενα εδώ είναι ΔΟΚΙΜΑΣΤΙΚΑ.
+const STEP = {
+  download: { code: 'download', action: 'download', final: false, status_label: 'Αναμονή λήψης αρχείου',
+              hint: 'Κατέβασε το αρχείο', button_label: 'Λήψη αρχείου CMS', button_icon: '⬇' },
+  upload:   { code: 'upload', action: 'upload', final: false, status_label: 'Αναμονή ανεβάσματος',
+              hint: 'Ανέβασε το αρχείο στο CMS (Import → Fuel Charge Import)', button_label: 'Επιβεβαίωση ανεβάσματος', button_icon: '⬆' },
+  uploaded: { code: 'uploaded', action: null, final: true, status_label: 'Ανέβηκε · ισχύει από Δευ 12/10',
+              hint: 'Τίποτα άλλο σήμερα. Η επαλήθευση τιμών γίνεται Δευ 12/10.', button_label: null, button_icon: null },
+};
+const stepTask = (step, extra) => sysTask(76, FW, 'fuel:2026-10-12', PAYLOAD,
+  Object.assign({ status: 'in_progress', assigned_to: 1, assigned_name: 'u1', step, timeline: [], override: null }, extra || {}));
+
+console.log('\n═══ Κάρτα βημάτων: ΕΝΑ κουμπί, μόνο για τον ανάδοχο ═══');
+{
+  const own = env({ userId: 1, admin: false }).api;
+  const h = own.taskRow(stepTask(STEP.download));
+  ck('taskRow με t.step -> κάρτα βημάτων', h.includes('class="task has-steps') && h.includes('ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ') && h.includes('ΚΑΤΑΣΤΑΣΗ'), h);
+  ck('① ανάδοχος: κουμπί λήψης του βήματος, κείμενο από τη βάση', h.includes('onclick="stepDownload(76)">⬇ Λήψη αρχείου CMS</button>'));
+  ck('...ΕΝΑ μόνο κουμπί btn-go στο «ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ»', (h.match(/class="btn btn-go"/g) || []).length === 1);
+  ck('...ετικέτα και οδηγία από τη βάση', h.includes('<div class="step-lbl">Αναμονή λήψης αρχείου</div>') && h.includes('<div class="step-hint">Κατέβασε το αρχείο</div>'));
+  ck('...ΚΑΜΙΑ «Ολοκλήρωση», ΚΑΝΕΝΑ «Δεν εφαρμόζεται»', !h.includes("act(76,'done')") && !h.includes('markNa(') && !h.includes('Ολοκλήρωση'));
+  ck('...κανένα badge κατάστασης (Ρ)', !h.includes('class="st"'));
+  ck('...ο πίνακας τιμών στη δεξιά στήλη (Υ5 α)', h.indexOf('ΚΑΤΑΣΤΑΣΗ') < h.indexOf('fuel-tbl') && h.indexOf('fuel-tbl') > h.indexOf('ΤΙ ΠΡΕΠΕΙ'));
+  ck('...στο «⋯»: Αφήνω και Απόρριψη, όχι Παράκαμψη (μη-admin)', h.includes("act(76,'release')") && h.includes('openReject(76)') && !h.includes('openOverride('));
+  ck('...στο «⋯»: ΟΧΙ «Προβολή αρχείου» (έχει το κουμπί του βήματος)', !h.includes('Προβολή αρχείου'));
+  const u = own.taskRow(stepTask(STEP.upload));
+  ck('② ανάδοχος: κουμπί επιβεβαίωσης -> openUpload', u.includes('onclick="openUpload(76)">⬆ Επιβεβαίωση ανεβάσματος</button>') && !u.includes('stepDownload('));
+  ck('...στο «⋯»: «Προβολή αρχείου» (ξανά-λήψη χωρίς βήμα)', u.includes('Προβολή αρχείου') && u.includes('downloadFuelCms(76)'));
+  const f = own.taskRow(stepTask(STEP.uploaded, { status: 'done' }));
+  ck('③ τελικό: ΚΑΝΕΝΑ κουμπί βήματος, η οδηγία της βάσης', !f.includes('class="btn btn-go"') && f.includes('Τίποτα άλλο σήμερα'));
+  ck('...ετικέτα «Ανέβηκε · ισχύει από Δευ 12/10», όχι «Ολοκληρωμένη»', f.includes('Ανέβηκε · ισχύει από Δευ 12/10') && !f.includes('Ολοκληρωμένη'));
+  ck('...στο «⋯»: ούτε Αφήνω ούτε Απόρριψη σε κλειστή', !f.includes("act(76,'release')") && !f.includes('openReject('));
+
+  const adm = env({ userId: 9, admin: true }).api;
+  const a = adm.taskRow(stepTask(STEP.download));
+  ck('admin που ΔΕΝ είναι ανάδοχος: κανένα κουμπί βήματος, «Το κάνει: u1»', !a.includes('stepDownload(') && a.includes('Το κάνει: u1'));
+  ck('...στο «⋯»: Αναλαμβάνω, Ανάθεση, Παράκαμψη, Προβολή αρχείου', a.includes('steal(76)') && a.includes('assign(76)')
+     && a.includes('openOverride(76)') && a.includes('Προβολή αρχείου'));
+  const am = env({ userId: 1, admin: true }).api.taskRow(stepTask(STEP.download));
+  ck('admin που ΕΙΝΑΙ ανάδοχος: κουμπί βήματος, ΟΧΙ Παράκαμψη', am.includes('stepDownload(76)') && !am.includes('openOverride('));
+  const q = own.taskRow(stepTask(STEP.download, { status: 'open', assigned_to: null, assigned_name: null }));
+  ck('αδιάθετη: το κουμπί είναι η «Ανάληψη»', q.includes('onclick="claim(76)">Ανάληψη</button>') && !q.includes('stepDownload('));
+  const lk = own.taskRow(stepTask(STEP.download, { locked: 1 }));
+  ck('κλειδωμένη: κανένα κουμπί, ούτε στο «⋯» ενέργειες', !lk.includes('class="btn btn-go"') && !lk.includes("act(76,'release')") && lk.includes('🔒'));
+  const other = env({ userId: 3, admin: false }).api.taskRow(stepTask(STEP.upload));
+  ck('συνάδελφος (όχι ανάδοχος, όχι admin): κανένα κουμπί βήματος, μόνο Αναλαμβάνω', !other.includes('openUpload(') && other.includes('steal(76)') && !other.includes('assign(76)'));
+}
+
+console.log('\n═══ Κάρτα βημάτων: χρονολόγιο ═══');
+{
+  const api = env({ userId: 1, admin: false }).api;
+  const tl = [
+    { event: 'downloaded', label: 'Λήψη αρχείου', mark: 'step', alert: false, at: '2026-10-09 10:15:00', late: false, actor: 'u1', note: 'λήψη', meta: null },
+    { event: 'upload_failed', label: 'Ανέβασμα χωρίς επιβεβαίωση', mark: 'event', alert: false, at: '2026-10-09 10:40:00', late: false, actor: 'u1', note: 'x',
+      meta: { total: 68, merge: 0, updated: 68, exception: 0, rows_count: 69 } },
+    { event: 'uploaded', label: 'Ανέβηκε στο CMS', mark: 'step', alert: false, at: '2026-10-09 10:45:00', late: true, actor: 'u1', note: 'x',
+      meta: { total: 69, merge: 69, updated: 0, exception: 0, rows_count: 69, occurred_at: '2026-10-09 10:45:00' } },
+    { event: 'admin_override', label: 'Παράκαμψη από διαχειριστή', mark: 'event', alert: true, at: '2026-10-09 11:00:00', late: false, actor: 'adm',
+      note: '<b>CMS</b> έπεσε', meta: { step: 'upload' } },
+  ];
+  const h = api.stepTimelineHtml({ timeline: tl });
+  const rows = h.split('<div class="tl-row');
+  ck('4 γραμμές, με τη σειρά του server', rows.length === 5, h);
+  ck('βήμα: «✓ Λήψη αρχείου · Παρ 09/10 10:15 · u1»', rows[1].includes('<span class="tl-mark">✓</span>Λήψη αρχείου · Παρ 09/10 10:15 · u1'), rows[1]);
+  ck('αποτυχία: χωρίς ✓, με τα 4 νούμερα του CMS', !rows[2].includes('✓') && rows[2].includes('Total 68 · Merge 0 · Updated 68 · Exception 0'), rows[2]);
+  ck('εκ των υστέρων: σήμανση', rows[3].includes('(εκ των υστέρων)'));
+  ck('παράκαμψη: κόκκινη γραμμή, ο λόγος escaped', rows[4].startsWith(' alert"') && rows[4].includes('&lt;b&gt;CMS&lt;/b&gt; έπεσε') && !rows[4].includes('<b>CMS'), rows[4]);
+  ck('κενό χρονολόγιο -> τίποτα', api.stepTimelineHtml({ timeline: [] }) === '' && api.stepTimelineHtml({}) === '');
+}
+
+console.log('\n═══ Κάρτα βημάτων: παράκαμψη και «Το είδα» ═══');
+{
+  const ov = { event_id: 9, actor_id: 9, actor_name: 'adm', at: '2026-10-09 11:00:00', acked: false, acked_by: null };
+  const t = stepTask(STEP.uploaded, { status: 'done', override: ov });
+  const other = env({ userId: 1, admin: true }).api.taskRow(t);
+  ck('άλλος admin: κόκκινο πλαίσιο με «Το είδα»', other.includes('class="step-ov"') && other.includes('onclick="overrideAck(76)">Το είδα</button>'));
+  const self = env({ userId: 9, admin: true }).api.taskRow(t);
+  ck('ο admin της παράκαμψης: πλαίσιο ΧΩΡΙΣ «Το είδα»', self.includes('class="step-ov"') && !self.includes('overrideAck('));
+  const user = env({ userId: 3, admin: false }).api.taskRow(t);
+  ck('μη-admin: χωρίς «Το είδα»', !user.includes('overrideAck('));
+  const acked = env({ userId: 1, admin: true }).api.taskRow(Object.assign({}, t, { override: Object.assign({}, ov, { acked: true }) }));
+  ck('επιβεβαιωμένη: κανένα πλαίσιο', !acked.includes('class="step-ov"'));
+}
+
+console.log('\n═══ Κάρτα βημάτων: escape κειμένων της βάσης ═══');
+{
+  const x = '<img src=x onerror=alert(1)>';
+  const h = env({ userId: 1, admin: false }).api.taskRow(stepTask({ code: 'download', action: 'download', final: false,
+    status_label: x, hint: x, button_label: x, button_icon: '"><b>' }));
+  ck('ετικέτα, οδηγία, κουμπί, εικονίδιο: κανένα ωμό HTML', !h.includes('<img') && !h.includes('"><b>') && h.includes('&lt;img'));
+}
+
+console.log('\n═══ Merge Result: ίδιος κανόνας με τον server (Π) ═══');
+{
+  const api = env().api;
+  const c = (v) => api.uploadCheck(69, v);
+  ck('69 / 69 / 0 / 0: OK χωρίς προειδοποιήσεις', c({ total: '69', merge: '69', updated: '0', exception: '0' }).ok === true
+     && c({ total: '69', merge: '69', updated: '0', exception: '0' }).warns.length === 0);
+  const u = c({ total: '69', merge: '0', updated: '69', exception: '0' });
+  ck('69 / 0 / 69 / 0: OK, προειδοποίηση Updated > 0 (όχι φραγή)', u.ok === true && u.warns.length === 1 && u.warns[0].startsWith('Updated > 0'), JSON.stringify(u));
+  const s = c({ total: '69', merge: '60', updated: '0', exception: '0' });
+  ck('Merge + Updated ≠ Total: OK με προειδοποίηση', s.ok === true && s.warns[0] === 'Merge + Updated ≠ Total', JSON.stringify(s));
+  const t = c({ total: '68', merge: '68', updated: '0', exception: '0' });
+  ck('Total 68 ≠ 69: ΟΧΙ', t.ok === false && t.errs[0] === 'Total 68 ≠ 69 γραμμές του αρχείου', JSON.stringify(t));
+  const e = c({ total: '69', merge: '68', updated: '0', exception: '1' });
+  ck('Exception 1: ΟΧΙ', e.ok === false && e.errs.includes('Exception 1 ≠ 0'), JSON.stringify(e));
+  ck('κενό / αρνητικό / δεκαδικό: ΟΧΙ', [{ total: '', merge: '0', updated: '0', exception: '0' },
+       { total: '69', merge: '-1', updated: '0', exception: '0' }, { total: '69.5', merge: '0', updated: '0', exception: '0' }]
+       .every(v => c(v).ok === false));
+}
+
+console.log('\n═══ Κάρτα βημάτων: η σημερινή εμπειρία χωρίς t.step ═══');
+{
+  const api = env().api;
+  const plain = sysTask(76, FW, 'fuel:2026-10-12', PAYLOAD, { status: 'in_progress', assigned_to: 1, assigned_name: 'u1' });
+  const h = api.taskRow(plain);
+  ck('χωρίς t.step: η γνωστή κάρτα (Ολοκλήρωση, Δεν εφαρμόζεται, λήψη)', !h.includes('has-steps') && h.includes("act(76,'done')")
+     && h.includes('markNa(76)') && h.includes('downloadFuelCms(76)'));
+  ck('t.step = null (na): η γνωστή κάρτα', !api.taskRow(Object.assign({}, plain, { step: null })).includes('has-steps'));
+  ck('η downloadFuelCms στέλνει download σιωπηλά (quiet) ΜΕΤΑ το writeFile',
+     /XLSX\.writeFile[\s\S]*post\(\{action:'download', id\}, true\)/.test(grab('downloadFuelCms')));
 }
 
 console.log('\n═══ Δομικά ═══');

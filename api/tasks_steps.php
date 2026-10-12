@@ -174,11 +174,11 @@ function tasks_steps_timeline(array $def, array $events)
     $labels = [];
     foreach ($def['steps'] as $s) {
         if ($s['done_event'] !== null && $s['timeline_label'] !== null) {
-            $labels[$s['done_event']] = ['label' => $s['timeline_label'], 'alert' => (int)$s['alert'] === 1];
+            $labels[$s['done_event']] = ['label' => $s['timeline_label'], 'alert' => (int)$s['alert'] === 1, 'mark' => 'step'];
         }
     }
     foreach ($def['events'] as $code => $r) {
-        if ($r['timeline_label'] !== null) $labels[$code] = ['label' => $r['timeline_label'], 'alert' => (int)$r['alert'] === 1];
+        if ($r['timeline_label'] !== null) $labels[$code] = ['label' => $r['timeline_label'], 'alert' => (int)$r['alert'] === 1, 'mark' => 'event'];
     }
 
     $out = [];
@@ -188,6 +188,7 @@ function tasks_steps_timeline(array $def, array $events)
         $out[] = [
             'event'  => $e['event'],
             'label'  => $labels[$e['event']]['label'],
+            'mark'   => $labels[$e['event']]['mark'],   // step = «✓», event = σκέτη γραμμή
             'alert'  => $labels[$e['event']]['alert'],
             'at'     => $late ? $e['meta']['occurred_at'] : $e['created_at'],
             'late'   => $late,

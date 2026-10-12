@@ -192,6 +192,46 @@
   .attn-tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
               background: #cc0000; color: white; white-space: nowrap; }
 
+  /* ΚΑΡΤΑ ΒΗΜΑΤΩΝ (Φάση 5, Κ3α): μόνο για εργασίες με t.step από τον server,
+     δηλαδή τύπους με γραμμές στον 4a_task_steps. Αριστερά το ΕΠΟΜΕΝΟ βήμα με
+     ένα κουμπί, δεξιά η κατάσταση με την προθεσμία, κάτω το χρονολόγιο. Τα
+     κείμενα έρχονται από τη βάση· εδώ μόνο σχήμα. */
+  .task.has-steps { flex-wrap: wrap; align-items: flex-start; }
+  .task.has-steps .task-main { flex: 1 1 auto; }
+  .step-grid { flex: 0 0 100%; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+               gap: 10px; min-width: 0; }
+  @media (max-width: 640px) { .step-grid { grid-template-columns: minmax(0,1fr); } }
+  .step-box { border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px 12px; background: #fff; min-width: 0; }
+  .step-box.do { border-left: 4px solid #1565c0; }
+  .step-h { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; color: #888; margin-bottom: 6px; }
+  .step-hint { font-size: 13px; color: #333; margin-bottom: 8px; overflow-wrap: anywhere; }
+  .step-who { font-size: 12px; color: #777; }
+  .step-lbl { font-size: 14px; font-weight: 700; color: #333; margin-bottom: 6px; overflow-wrap: anywhere; }
+  .step-ov { background: #ffebee; border: 1px solid #ef9a9a; border-left: 4px solid #cc0000; border-radius: 6px;
+             padding: 8px 10px; font-size: 12.5px; color: #b71c1c; margin-top: 8px; }
+  .step-tl { flex: 0 0 100%; font-size: 12px; color: #555; }
+  .tl-row { padding: 3px 0; overflow-wrap: anywhere; }
+  .tl-row .tl-mark { display: inline-block; width: 16px; color: #2e7d32; font-weight: 700; }
+  .tl-row.alert, .tl-row.alert .tl-mark { color: #cc0000; font-weight: 600; }
+  .tl-row .tl-late { font-size: 10.5px; color: #e65100; }
+  .step-more { position: relative; }
+  .step-more > summary { list-style: none; cursor: pointer; padding: 3px 10px; font-size: 16px; line-height: 1;
+                         border: 1px solid #ddd; border-radius: 4px; color: #666; background: #fafafa; }
+  .step-more > summary::-webkit-details-marker { display: none; }
+  .step-more[open] > .step-menu { display: flex; }
+  .step-menu { display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 20; flex-direction: column;
+               gap: 4px; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 6px;
+               box-shadow: 0 4px 14px rgba(0,0,0,.12); min-width: 190px; }
+  .step-menu .btn { text-align: left; }
+  .btn-ov { border-color: #ef9a9a; background: #fff; color: #c62828; }
+  .client-group.closed .step-box { background: transparent; border-color: var(--closed-fg); color: var(--closed-fg); }
+  .client-group.closed .step-h, .client-group.closed .step-lbl, .client-group.closed .step-hint,
+  .client-group.closed .step-tl, .client-group.closed .tl-row .tl-mark { color: var(--closed-fg); }
+  .up-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 4px 12px; }
+  .modal input[type=number] { width: 100%; padding: 8px; font-size: 14px; border: 1px solid #ddd;
+                              border-radius: 6px; font-family: inherit; font-variant-numeric: tabular-nums; }
+  .up-warn { font-size: 12px; color: #b45309; margin-top: 6px; }
+
   .hist { padding: 0 14px 12px 14px; border-bottom: 1px solid #f4f4f4;
           background: #fbfbfb; font-size: 12px; }
   .hist-row { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px dotted #eee;
@@ -696,6 +736,106 @@ async function downloadFuelCms(id){
       s.onload=res; s.onerror=rej; document.head.appendChild(s); });
   }
   XLSX.writeFile(fuelCmsWorkbook(XLSX, aoa), 'FuelChargeImport_GR_CY_' + p.effective_date + '.xlsx');
+  // Καταγραφή ΜΕΤΑ τη λήψη (απόφαση Ο): ο server γράφει downloaded ή
+  // file_viewed. Σιωπηλά: σε τύπο χωρίς βήματα απαντά 409 και αυτό είναι
+  // το αναμενόμενο — η σημερινή εμπειρία δεν αλλάζει σε τίποτα.
+  const r = await post({action:'download', id}, true);
+  return r.ok;
+}
+
+// ① του βήματος: λήψη και ανανέωση, ώστε να φανεί το ②.
+async function stepDownload(id){
+  if(await downloadFuelCms(id)) load();
+}
+
+/* --- ② επιβεβαίωση ανεβάσματος: τα 4 νούμερα του Merge Result --- */
+let uploadId = null;
+function openUpload(id){
+  const t = (lastTasks||[]).find(x => Number(x.id)===Number(id));
+  const p = taskPayload(t) || {};
+  uploadId = id;
+  const f = (k, l) => `<div><label for="up-${k}">${l}</label>`+
+                      `<input type="number" id="up-${k}" min="0" step="1" inputmode="numeric" oninput="uploadLive()"></div>`;
+  document.getElementById('modals').innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeUpload()">
+      <div class="modal" role="dialog" aria-modal="true" aria-label="Επιβεβαίωση ανεβάσματος">
+        <h3>Επιβεβαίωση ανεβάσματος</h3>
+        <div class="sub">${t?taskTitle(t):''}</div>
+        <div class="step-hint">Από το Merge Result του CMS (Import → Fuel Charge Import). Το αρχείο έχει <b>${escHtml(p.rows_count)}</b> γραμμές.</div>
+        <div class="up-grid">${f('total','Total')}${f('merge','Merge')}${f('updated','Updated')}${f('exception','Exception')}</div>
+        <div id="up-warn" class="up-warn"></div>
+        <div id="up-msg" class="msg"></div>
+        <div class="modal-acts">
+          <button class="btn btn-rel" title="Cancel — Κλείνει χωρίς καμία αλλαγή" onclick="closeUpload()">Άκυρο</button>
+          <button class="btn btn-go" id="up-send" disabled onclick="sendUpload()">Επιβεβαίωση</button>
+        </div>
+      </div>
+    </div>`;
+  const el = document.getElementById('up-total'); if(el) el.focus();
+}
+function uploadValues(){
+  const v = {};
+  ['total','merge','updated','exception'].forEach(k => { const el=document.getElementById('up-'+k); v[k] = el ? el.value : ''; });
+  return v;
+}
+function uploadLive(){
+  const t = (lastTasks||[]).find(x => Number(x.id)===Number(uploadId));
+  const c = uploadCheck((taskPayload(t)||{}).rows_count, uploadValues());
+  document.getElementById('up-send').disabled = !c.ok;
+  document.getElementById('up-msg').textContent = c.errs.join(' · ');
+  document.getElementById('up-warn').textContent = c.warns.length ? 'Προσοχή: ' + c.warns.join(' · ') : '';
+}
+// Το Άκυρο ξαναφορτώνει: ένα 409 πριν μπορεί να έγραψε upload_failed, που
+// πρέπει να φανεί στο χρονολόγιο.
+function closeUpload(){ uploadId = null; document.getElementById('modals').innerHTML = ''; load(); }
+async function sendUpload(){
+  const v = uploadValues();
+  const r = await post({action:'upload', id:uploadId, total:v.total, merge:v.merge, updated:v.updated, exception:v.exception}, true);
+  // 409: ο server κατέγραψε upload_failed και η εργασία ΜΕΝΕΙ ανοιχτή. Το
+  // παράθυρο μένει, με το μήνυμά του, για διόρθωση και νέα νούμερα.
+  if(!r.ok){ document.getElementById('up-msg').textContent = (r.data&&r.data.error)||`HTTP ${r.status}`; return; }
+  uploadId = null; document.getElementById('modals').innerHTML = '';
+  showOk(closeMsg('done', r.data));
+  load();
+}
+
+/* --- παράκαμψη admin: υποχρεωτικός λόγος --- */
+let overrideId = null;
+function openOverride(id){
+  const t = (lastTasks||[]).find(x => Number(x.id)===Number(id));
+  overrideId = id;
+  document.getElementById('modals').innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeOverride()">
+      <div class="modal" role="dialog" aria-modal="true" aria-label="Παράκαμψη από διαχειριστή">
+        <h3>Παράκαμψη από διαχειριστή</h3>
+        <div class="sub">${t?taskTitle(t):''}</div>
+        <div class="cd-hint">Η εργασία κλείνει χωρίς τα βήματά της. Καταγράφεται με κόκκινη σήμανση και οι άλλοι διαχειριστές βλέπουν κόκκινο σήμα μέχρι να πατήσουν «Το είδα».</div>
+        <label for="ov-reason">Λόγος <span class="req">(υποχρεωτικός, τουλάχιστον 10 χαρακτήρες)</span></label>
+        <textarea id="ov-reason"></textarea>
+        <div id="ov-msg" class="msg"></div>
+        <div class="modal-acts">
+          <button class="btn btn-rel" title="Cancel — Κλείνει χωρίς καμία αλλαγή" onclick="closeOverride()">Άκυρο</button>
+          <button class="btn btn-ov" onclick="sendOverride()">Παράκαμψη</button>
+        </div>
+      </div>
+    </div>`;
+  const el = document.getElementById('ov-reason'); if(el) el.focus();
+}
+function closeOverride(){ overrideId = null; document.getElementById('modals').innerHTML = ''; }
+async function sendOverride(){
+  const reason = document.getElementById('ov-reason').value.trim();
+  if(reason.length < 10){ document.getElementById('ov-msg').textContent = 'Ο λόγος θέλει τουλάχιστον 10 χαρακτήρες.'; return; }
+  const r = await post({action:'admin_override', id:overrideId, reason}, true);
+  if(!r.ok){ document.getElementById('ov-msg').textContent = (r.data&&r.data.error)||`HTTP ${r.status}`; return; }
+  closeOverride();
+  showOk(closeMsg('done', r.data));
+  load();
+}
+async function overrideAck(id){
+  if((await post({action:'override_ack', id})).ok){
+    if(typeof window.tasksBadgeRefresh === 'function') window.tasksBadgeRefresh();
+    load();
+  }
 }
 
 // «2026-10-09 17:00:00» -> «Παρ 09/10/2026 17:00». Η ώρα είναι ώρα Αθήνας,
@@ -813,7 +953,137 @@ function fuelFactsHtml(t, p, now){
   return `<div class="fuel-block">${tbl}${line}</div>`;
 }
 
+// ── ΚΑΡΤΑ ΒΗΜΑΤΩΝ (Φάση 5, Κ3α) ──────────────────────────────────────────
+// Μόνο όταν ο server στέλνει t.step: τύπος με γραμμές στον 4a_task_steps.
+// Κάθε άλλη εργασία (όλες σήμερα) περνά από την taskRow όπως πριν, byte-
+// προς-byte (tasks_client_rows.golden.json).
+//
+// Όλα τα κείμενα του βήματος (ετικέτα, οδηγία, κουμπί, γραμμές
+// χρονολογίου) έρχονται από τη βάση. Η οθόνη ΔΕΝ αποφασίζει ποιο είναι το
+// επόμενο βήμα· το λέει ο server από τα γεγονότα.
+//
+// ΕΝΑ κουμπί στο «ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ», μόνο για τον ανάδοχο. Τα υπόλοιπα
+// (Αφήνω, Απόρριψη, Αναλαμβάνω, Ανάθεση, Παράκαμψη) στο «⋯». Χωρίς
+// «Ολοκλήρωση» και χωρίς «Δεν εφαρμόζεται»: ο server τα αρνείται (409).
+
+// Οι γραμμές του χρονολογίου: «✓ βήμα · ώρα · χρήστης · στοιχεία».
+function stepTimelineHtml(t){
+  const rows = Array.isArray(t.timeline) ? t.timeline : [];
+  if(!rows.length) return '';
+  return `<div class="step-tl">` + rows.map(r => {
+    const m = r.meta || {};
+    const extra = [];
+    if(m.total !== undefined && m.exception !== undefined)
+      extra.push(`Total ${escHtml(m.total)} · Merge ${escHtml(m.merge)} · Updated ${escHtml(m.updated)} · Exception ${escHtml(m.exception)}`);
+    if(r.event === 'admin_override' && r.note) extra.push(escHtml(r.note));
+    const mark = r.mark === 'step' ? '✓' : (r.alert ? '!' : '•');
+    return `<div class="tl-row${r.alert?' alert':''}"><span class="tl-mark">${mark}</span>`+
+           `${escHtml(r.label)} · ${escHtml(fmtDue(r.at, true))} · ${escHtml(r.actor || 'σύστημα')}`+
+           (extra.length ? ' · ' + extra.join(' · ') : '') +
+           (r.late ? ' <span class="tl-late" title="Late entry — Καταχωρήθηκε αργότερα, η ώρα είναι η πραγματική">(εκ των υστέρων)</span>' : '') +
+           `</div>`;
+  }).join('') + `</div>`;
+}
+
+// Το «⋯»: ό,τι ΔΕΝ είναι το επόμενο βήμα. <details> χωρίς JS.
+function stepMoreHtml(t){
+  const locked = Number(t.locked)===1;
+  const mine   = currentUser && Number(t.assigned_to)===Number(currentUser.id);
+  const open   = t.status==='in_progress' || t.status==='paused';
+  const closed = t.status==='done' || t.status==='na';
+  const items  = [];
+  if(!closed && !locked){
+    if(open && mine){
+      items.push(`<button class="btn btn-rel" title="${escHtml(TIPS.rel)}" onclick="act(${t.id},'release')">Αφήνω</button>`);
+      items.push(`<button class="btn btn-rej" title="${escHtml(TIPS.rej)}" onclick="openReject(${t.id})">Απόρριψη…</button>`);
+    }
+    if(open && !mine) items.push(`<button class="btn btn-steal" title="${escHtml(TIPS.steal)}" onclick="steal(${t.id})">Αναλαμβάνω</button>`);
+    if(isAdmin) items.push(`<button class="btn btn-asg" title="${escHtml(TIPS.assign)}" onclick="assign(${t.id})">Ανάθεση…</button>`);
+    if(isAdmin && !mine) items.push(`<button class="btn btn-ov" title="Override — Κλείνει την εργασία χωρίς τα βήματά της, με υποχρεωτικό λόγο. Καταγράφεται και ειδοποιούνται οι άλλοι διαχειριστές" onclick="openOverride(${t.id})">Παράκαμψη (admin)…</button>`);
+  }
+  // Λήψη χωρίς να κλείνει βήμα (file_viewed): για όποιον δεν έχει το κουμπί λήψης του βήματος.
+  const ownDownload = mine && open && t.step && t.step.action==='download';
+  if(!ownDownload && fuelCmsAoa(taskPayload(t)))
+    items.push(`<button class="btn btn-rel" title="View file — Κατεβάζει το αρχείο. Καταγράφεται, δεν αλλάζει το βήμα" onclick="downloadFuelCms(${t.id})">Προβολή αρχείου</button>`);
+  items.push(`<button class="btn btn-hist" title="${escHtml(TIPS.hist)}" onclick="toggleHist(${t.id})">${histOpen.has(t.id)?'▾':'▸'} ιστορικό</button>`);
+  return `<details class="step-more"><summary title="More — Υπόλοιπες ενέργειες" aria-label="Υπόλοιπες ενέργειες">⋯</summary>`+
+         `<div class="step-menu">${items.join('')}</div></details>`;
+}
+
+function stepCardHtml(t){
+  const s      = t.step;
+  const locked = Number(t.locked)===1;
+  const mine   = currentUser && Number(t.assigned_to)===Number(currentUser.id);
+  const open   = t.status==='in_progress' || t.status==='paused';
+  const p      = taskPayload(t);
+
+  // ΤΟ κουμπί του βήματος. Μόνο για τον ανάδοχο· αδιάθετη -> «Ανάληψη».
+  let btn = '';
+  if(!s.final && !locked){
+    const lbl = `${s.button_icon ? escHtml(s.button_icon) + ' ' : ''}${escHtml(s.button_label || '')}`;
+    if(t.status==='open' && t.assigned_to===null)
+      btn = `<button class="btn btn-claim" title="${escHtml(TIPS.claim)}" onclick="claim(${t.id})">Ανάληψη</button>`;
+    else if(open && mine && s.action==='download' && fuelCmsAoa(p))
+      btn = `<button class="btn btn-go" onclick="stepDownload(${t.id})">${lbl}</button>`;
+    else if(open && mine && s.action==='upload')
+      btn = `<button class="btn btn-go" onclick="openUpload(${t.id})">${lbl}</button>`;
+  }
+  const who = (!s.final && !mine && t.assigned_name)
+    ? `<div class="step-who">Το κάνει: ${escHtml(t.assigned_name)}</div>` : '';
+
+  // Παράκαμψη admin που περιμένει «Το είδα» — ΜΟΝΟ από ΑΛΛΟΝ διαχειριστή.
+  const ov = t.override;
+  const ovPending = ov && !ov.acked;
+  const canAck = ovPending && isAdmin && currentUser && Number(ov.actor_id)!==Number(currentUser.id);
+  const ovHtml = ovPending
+    ? `<div class="step-ov">Παράκαμψη από ${escHtml(ov.actor_name || 'διαχειριστή')} · ${escHtml(fmtDue(ov.at, true))}`+
+      (canAck ? ` <button class="btn btn-ov" title="Acknowledge — Σβήνει το κόκκινο σήμα για όλους τους διαχειριστές. Καταγράφεται" onclick="overrideAck(${t.id})">Το είδα</button>` : '') +
+      `</div>` : '';
+
+  const attn = Number(t.needs_attention)===1 && t.status==='open';
+  return `<div class="task has-steps sys-row${locked?' locked':''}${attn?' attn':''}">
+    <div class="task-main">
+      <div class="task-label">${locked?'🔒 ':''}${taskTitle(t)}</div>
+      <div class="task-meta">${escHtml(t.task_code)}</div>
+    </div>
+    ${whoCell(t)}
+    ${stepMoreHtml(t)}
+    <div class="step-grid">
+      <div class="step-box do">
+        <div class="step-h">ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ</div>
+        ${s.hint ? `<div class="step-hint">${escHtml(s.hint)}</div>` : ''}
+        ${btn}${who}${ovHtml}
+      </div>
+      <div class="step-box">
+        <div class="step-h">ΚΑΤΑΣΤΑΣΗ</div>
+        <div class="step-lbl">${escHtml(s.status_label || '')}</div>
+        ${fuelFactsHtml(t, p)}
+      </div>
+    </div>
+    ${stepTimelineHtml(t)}
+  </div>${histHtml(t.id)}`;
+}
+
+// Ζωντανός έλεγχος του Merge Result, ΙΔΙΟΣ κανόνας με τον server (Π):
+// κλείνει ΜΟΝΟ αν Total = γραμμές ΚΑΙ Exception = 0. Οι προειδοποιήσεις
+// δεν φράζουν. Ο server ξαναελέγχει και απαντά 409· αυτό εδώ καθοδηγεί.
+function uploadCheck(rows, v){
+  const k = ['total','merge','updated','exception'], n = {};
+  for(const x of k){
+    const s = String(v && v[x] != null ? v[x] : '').trim();
+    if(!/^\d{1,7}$/.test(s)) return { ok:false, errs:['Συμπλήρωσε και τα 4 νούμερα (ακέραιοι ≥ 0)'], warns:[] };
+    n[x] = parseInt(s, 10);
+  }
+  const errs = [], warns = [];
+  if(n.total !== Number(rows)) errs.push(`Total ${n.total} ≠ ${rows} γραμμές του αρχείου`);
+  if(n.exception !== 0)        errs.push(`Exception ${n.exception} ≠ 0`);
+  if(n.merge + n.updated !== n.total) warns.push('Merge + Updated ≠ Total');
+  if(n.updated > 0)                   warns.push('Updated > 0: ενημερώθηκαν τιμές που υπήρχαν ήδη');
+  return { ok: errs.length===0, errs, warns, n };
+}
+
 function taskRow(t){
+  if(t.step) return stepCardHtml(t);
   const locked = Number(t.locked)===1;
   const mine   = currentUser && Number(t.assigned_to)===Number(currentUser.id);
   const meta   = [];
@@ -1135,6 +1405,8 @@ setInterval(refreshDues, 60000);
 // το κλικ στο φόντο, ποτέ δεύτερη διαδρομή κλεισίματος.
 document.addEventListener('keydown', function(e){
   if(e.key==='Escape' && rejectId!==null) closeReject();
+  if(e.key==='Escape' && uploadId!==null) closeUpload();
+  if(e.key==='Escape' && overrideId!==null) closeOverride();
 });
 
 /* --- boot (ίδιο pattern με charge-limits.html:311) --- */

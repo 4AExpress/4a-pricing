@@ -1,7 +1,10 @@
-/* tasks-badge.js | v1.0 | 24-09-2026
+/* tasks-badge.js | v1.1 | 12-10-2026
+ * v1.1: το κόκκινο μετρά ΚΑΙ τις παρακάμψεις admin που περιμένουν «Το είδα»
+ *       από αυτόν τον διαχειριστή (overrides, Φάση 5). 0 = όπως πριν.
  *
  * Κρεμάει δύο αριθμούς στον σύνδεσμο «Εργασίες» κάθε σελίδας που τον έχει:
  *   κόκκινο  = εργασίες με needs_attention (κανένας δικαιούχος — χρειάζονται άνθρωπο)
+ *              + παρακάμψεις admin χωρίς «Το είδα»
  *   ουδέτερο = δικές μου σε εξέλιξη
  *
  * ΣΙΩΠΗΛΗ ΑΠΟΤΥΧΙΑ, ΡΗΤΗ ΑΠΟΦΑΣΗ: αν το αίτημα σκάσει, αργήσει, γυρίσει 401
@@ -22,21 +25,26 @@
     catch (e) { return []; }
   }
 
-  function paint(attention, mine) {
+  function paint(attention, mine, overrides) {
+    overrides = overrides || 0;
+    var red = attention + overrides;
     var a = links();
     for (var i = 0; i < a.length; i++) {
       var old = a[i].querySelector('.tasks-badge-wrap');
       if (old) old.remove();
-      if (!attention && !mine) continue;
+      if (!red && !mine) continue;
 
       var w = document.createElement('span');
       w.className = 'tasks-badge-wrap';
       w.style.cssText = 'display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle;';
 
-      if (attention) {
+      if (red) {
         var r = document.createElement('span');
-        r.textContent = attention;
-        r.title = attention + ' εργασίες χωρίς δικαιούχο — χρειάζονται άνθρωπο';
+        r.textContent = red;
+        var why = [];
+        if (attention) why.push(attention + ' εργασίες χωρίς δικαιούχο — χρειάζονται άνθρωπο');
+        if (overrides) why.push(overrides + ' παρακάμψεις διαχειριστή περιμένουν «Το είδα»');
+        r.title = why.join(' · ');
         r.style.cssText = 'background:#cc0000;color:#fff;font-size:10px;font-weight:700;' +
                           'line-height:1;padding:3px 6px;border-radius:9px;';
         w.appendChild(r);
@@ -71,7 +79,7 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         if (!d || d.ok !== true) return;
-        paint(Number(d.attention) || 0, Number(d.mine) || 0);
+        paint(Number(d.attention) || 0, Number(d.mine) || 0, Number(d.overrides) || 0);
       })
       .catch(function () { /* σιωπή, εσκεμμένα */ });
   }

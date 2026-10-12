@@ -340,7 +340,8 @@ ck('...γεγονός admin_override, λόγος στο note, βήμα στο me
    && $last['note'] === 'Το CMS δίνει Exception χωρίς λόγο' && $m['step'] === 'upload', json_encode($last));
 $t = $listOne($db, 1, $A, $w);
 $ov = end($t['timeline']);
-ck('...κόκκινη γραμμή στο χρονολόγιο', $ov['event'] === 'admin_override' && $ov['alert'] === true, json_encode($ov));
+ck('...κόκκινη γραμμή στο χρονολόγιο', $ov['event'] === 'admin_override' && $ov['alert'] === true && $ov['mark'] === 'event', json_encode($ov));
+ck('...η λήψη στο χρονολόγιο είναι βήμα (✓)', $t['timeline'][0]['event'] === 'downloaded' && $t['timeline'][0]['mark'] === 'step', json_encode($t['timeline'][0]));
 ck('...override στη λίστα: ποιος, χωρίς επιβεβαίωση', $t['override']['actor_id'] === 9 && $t['override']['acked'] === false);
 
 echo "\n═══ ΕΝΕΡΓΟ: κόκκινο σήμα στον ΑΛΛΟ admin, σβήνει ΜΟΝΟ με «Το είδα» ═══\n";
