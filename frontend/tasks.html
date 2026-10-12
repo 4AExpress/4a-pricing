@@ -748,26 +748,37 @@ async function stepDownload(id){
   if(await downloadFuelCms(id)) load();
 }
 
+// 409 με σημαία already_closed (μόνο τύποι system): η εργασία έκλεισε στο
+// μεταξύ. ΔΕΝ είναι σφάλμα — ενημέρωση, και ανανέωση της λίστας.
+function showAlreadyClosed(t){
+  showErr(null);
+  showOk(`<div class="okmsg-main">${escHtml(uiText(t && t.ui, 'already_closed'))}</div>`+
+         `<button class="okmsg-x" title="Κλείσιμο" onclick="hideOk()">✕</button>`);
+  load();
+}
+
 /* --- ② επιβεβαίωση ανεβάσματος: τα 4 νούμερα του Merge Result --- */
 let uploadId = null;
+function uploadTask(){ return (lastTasks||[]).find(x => Number(x.id)===Number(uploadId)); }
 function openUpload(id){
-  const t = (lastTasks||[]).find(x => Number(x.id)===Number(id));
-  const p = taskPayload(t) || {};
   uploadId = id;
+  const t = uploadTask();
+  const p = taskPayload(t) || {};
+  const ui = t && t.ui;
   const f = (k, l) => `<div><label for="up-${k}">${l}</label>`+
                       `<input type="number" id="up-${k}" min="0" step="1" inputmode="numeric" oninput="uploadLive()"></div>`;
   document.getElementById('modals').innerHTML = `
     <div class="modal-bg" onclick="if(event.target===this)closeUpload()">
-      <div class="modal" role="dialog" aria-modal="true" aria-label="Επιβεβαίωση ανεβάσματος">
-        <h3>Επιβεβαίωση ανεβάσματος</h3>
+      <div class="modal" role="dialog" aria-modal="true" aria-label="${escHtml(uiText(ui,'up_title'))}">
+        <h3>${escHtml(uiText(ui,'up_title'))}</h3>
         <div class="sub">${t?taskTitle(t):''}</div>
-        <div class="step-hint">Από το Merge Result του CMS (Import → Fuel Charge Import). Το αρχείο έχει <b>${escHtml(p.rows_count)}</b> γραμμές.</div>
+        <div class="step-hint">${escHtml(uiText(ui,'up_hint',{rows:p.rows_count}))}</div>
         <div class="up-grid">${f('total','Total')}${f('merge','Merge')}${f('updated','Updated')}${f('exception','Exception')}</div>
         <div id="up-warn" class="up-warn"></div>
         <div id="up-msg" class="msg"></div>
         <div class="modal-acts">
           <button class="btn btn-rel" title="Cancel — Κλείνει χωρίς καμία αλλαγή" onclick="closeUpload()">Άκυρο</button>
-          <button class="btn btn-go" id="up-send" disabled onclick="sendUpload()">Επιβεβαίωση</button>
+          <button class="btn btn-go" id="up-send" disabled onclick="sendUpload()">${escHtml(uiText(ui,'up_send'))}</button>
         </div>
       </div>
     </div>`;
@@ -779,20 +790,26 @@ function uploadValues(){
   return v;
 }
 function uploadLive(){
-  const t = (lastTasks||[]).find(x => Number(x.id)===Number(uploadId));
-  const c = uploadCheck((taskPayload(t)||{}).rows_count, uploadValues());
+  const t = uploadTask();
+  const c = uploadCheck((taskPayload(t)||{}).rows_count, uploadValues(), t && t.ui);
   document.getElementById('up-send').disabled = !c.ok;
   document.getElementById('up-msg').textContent = c.errs.join(' · ');
-  document.getElementById('up-warn').textContent = c.warns.length ? 'Προσοχή: ' + c.warns.join(' · ') : '';
+  document.getElementById('up-warn').textContent = c.warns.length ? uiText(t && t.ui,'up_warn_prefix') + ' ' + c.warns.join(' · ') : '';
 }
 // Το Άκυρο ξαναφορτώνει: ένα 409 πριν μπορεί να έγραψε upload_failed, που
 // πρέπει να φανεί στο χρονολόγιο.
 function closeUpload(){ uploadId = null; document.getElementById('modals').innerHTML = ''; load(); }
 async function sendUpload(){
+  const t = uploadTask();
   const v = uploadValues();
   const r = await post({action:'upload', id:uploadId, total:v.total, merge:v.merge, updated:v.updated, exception:v.exception}, true);
-  // 409: ο server κατέγραψε upload_failed και η εργασία ΜΕΝΕΙ ανοιχτή. Το
-  // παράθυρο μένει, με το μήνυμά του, για διόρθωση και νέα νούμερα.
+  if(!r.ok && r.data && r.data.already_closed){
+    uploadId = null; document.getElementById('modals').innerHTML = '';
+    showAlreadyClosed(t);
+    return;
+  }
+  // Άλλο 409: ο server κατέγραψε upload_failed και η εργασία ΜΕΝΕΙ ανοιχτή.
+  // Το παράθυρο μένει, με το μήνυμά του, για διόρθωση και νέα νούμερα.
   if(!r.ok){ document.getElementById('up-msg').textContent = (r.data&&r.data.error)||`HTTP ${r.status}`; return; }
   uploadId = null; document.getElementById('modals').innerHTML = '';
   showOk(closeMsg('done', r.data));
@@ -801,21 +818,23 @@ async function sendUpload(){
 
 /* --- παράκαμψη admin: υποχρεωτικός λόγος --- */
 let overrideId = null;
+function overrideTask(){ return (lastTasks||[]).find(x => Number(x.id)===Number(overrideId)); }
 function openOverride(id){
-  const t = (lastTasks||[]).find(x => Number(x.id)===Number(id));
   overrideId = id;
+  const t = overrideTask();
+  const ui = t && t.ui;
   document.getElementById('modals').innerHTML = `
     <div class="modal-bg" onclick="if(event.target===this)closeOverride()">
-      <div class="modal" role="dialog" aria-modal="true" aria-label="Παράκαμψη από διαχειριστή">
-        <h3>Παράκαμψη από διαχειριστή</h3>
+      <div class="modal" role="dialog" aria-modal="true" aria-label="${escHtml(uiText(ui,'ov_title'))}">
+        <h3>${escHtml(uiText(ui,'ov_title'))}</h3>
         <div class="sub">${t?taskTitle(t):''}</div>
-        <div class="cd-hint">Η εργασία κλείνει χωρίς τα βήματά της. Καταγράφεται με κόκκινη σήμανση και οι άλλοι διαχειριστές βλέπουν κόκκινο σήμα μέχρι να πατήσουν «Το είδα».</div>
-        <label for="ov-reason">Λόγος <span class="req">(υποχρεωτικός, τουλάχιστον 10 χαρακτήρες)</span></label>
+        <div class="cd-hint">${escHtml(uiText(ui,'ov_warn'))}</div>
+        <label for="ov-reason">${escHtml(uiText(ui,'ov_reason'))}</label>
         <textarea id="ov-reason"></textarea>
         <div id="ov-msg" class="msg"></div>
         <div class="modal-acts">
           <button class="btn btn-rel" title="Cancel — Κλείνει χωρίς καμία αλλαγή" onclick="closeOverride()">Άκυρο</button>
-          <button class="btn btn-ov" onclick="sendOverride()">Παράκαμψη</button>
+          <button class="btn btn-ov" onclick="sendOverride()">${escHtml(uiText(ui,'ov_send'))}</button>
         </div>
       </div>
     </div>`;
@@ -823,9 +842,11 @@ function openOverride(id){
 }
 function closeOverride(){ overrideId = null; document.getElementById('modals').innerHTML = ''; }
 async function sendOverride(){
+  const t = overrideTask();
   const reason = document.getElementById('ov-reason').value.trim();
-  if(reason.length < 10){ document.getElementById('ov-msg').textContent = 'Ο λόγος θέλει τουλάχιστον 10 χαρακτήρες.'; return; }
+  if(reason.length < 10){ document.getElementById('ov-msg').textContent = uiText(t && t.ui,'ov_short'); return; }
   const r = await post({action:'admin_override', id:overrideId, reason}, true);
+  if(!r.ok && r.data && r.data.already_closed){ closeOverride(); showAlreadyClosed(t); return; }
   if(!r.ok){ document.getElementById('ov-msg').textContent = (r.data&&r.data.error)||`HTTP ${r.status}`; return; }
   closeOverride();
   showOk(closeMsg('done', r.data));
@@ -958,13 +979,31 @@ function fuelFactsHtml(t, p, now){
 // Κάθε άλλη εργασία (όλες σήμερα) περνά από την taskRow όπως πριν, byte-
 // προς-byte (tasks_client_rows.golden.json).
 //
-// Όλα τα κείμενα του βήματος (ετικέτα, οδηγία, κουμπί, γραμμές
-// χρονολογίου) έρχονται από τη βάση. Η οθόνη ΔΕΝ αποφασίζει ποιο είναι το
-// επόμενο βήμα· το λέει ο server από τα γεγονότα.
+// ΟΛΑ τα κείμενα της κάρτας έρχονται από τη βάση (απόφαση 12/10): του
+// βήματος στο t.step, του χρονολογίου στο t.timeline, και τα υπόλοιπα
+// (τίτλοι, μενού, παράθυρα) στο t.ui. ΜΟΝΗ εξαίρεση τα ΓΕΝΙΚΑ κουμπιά της
+// σελίδας (Αφήνω, Απόρριψη…, Αναλαμβάνω, Ανάθεση…, ιστορικό, Άκυρο) που
+// μένουν στον κώδικα (backlog), και οι όροι του CMS Total/Merge/Updated/
+// Exception, που είναι ονόματα πεδίων του CMS, όχι κείμενο.
 //
 // ΕΝΑ κουμπί στο «ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ», μόνο για τον ανάδοχο. Τα υπόλοιπα
-// (Αφήνω, Απόρριψη, Αναλαμβάνω, Ανάθεση, Παράκαμψη) στο «⋯». Χωρίς
-// «Ολοκλήρωση» και χωρίς «Δεν εφαρμόζεται»: ο server τα αρνείται (409).
+// στο «⋯». Χωρίς «Ολοκλήρωση» και χωρίς «Δεν εφαρμόζεται»: ο server τα
+// αρνείται (409).
+
+// Τα κλειδιά των κειμένων της κάρτας (kind = 'ui' στον 4a_task_steps). Το
+// migration ενεργοποίησης πρέπει να τα γράφει ΟΛΑ — το ελέγχει τεστ.
+const STEP_UI_KEYS = ['h_do','h_status','who','menu_override','tip_override','menu_view','tip_view','tip_more',
+  'ov_box','ov_ack','tip_ack','tl_late','tip_late','up_title','up_hint','up_send','up_err_fill','up_err_total',
+  'up_err_exc','up_warn_prefix','up_warn_sum','up_warn_upd','ov_title','ov_warn','ov_reason','ov_short','ov_send',
+  'already_closed'];
+
+// Κείμενο της κάρτας από τη βάση, με {x} -> vars.x. Κλειδί που λείπει
+// φαίνεται ΩΣ ΚΛΕΙΔΙ σε αγκύλες: ελλιπές seed πρέπει να φανεί στη δοκιμή
+// επίδειξης, όχι να γίνει κουμπί χωρίς κείμενο.
+function uiText(ui, key, vars){
+  const raw = ui && typeof ui[key] === 'string' ? ui[key] : `[${key}]`;
+  return raw.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] !== undefined && vars[k] !== null) ? String(vars[k]) : m);
+}
 
 // Οι γραμμές του χρονολογίου: «✓ βήμα · ώρα · χρήστης · στοιχεία».
 function stepTimelineHtml(t){
@@ -980,7 +1019,7 @@ function stepTimelineHtml(t){
     return `<div class="tl-row${r.alert?' alert':''}"><span class="tl-mark">${mark}</span>`+
            `${escHtml(r.label)} · ${escHtml(fmtDue(r.at, true))} · ${escHtml(r.actor || 'σύστημα')}`+
            (extra.length ? ' · ' + extra.join(' · ') : '') +
-           (r.late ? ' <span class="tl-late" title="Late entry — Καταχωρήθηκε αργότερα, η ώρα είναι η πραγματική">(εκ των υστέρων)</span>' : '') +
+           (r.late ? ` <span class="tl-late" title="${escHtml(uiText(t.ui,'tip_late'))}">${escHtml(uiText(t.ui,'tl_late'))}</span>` : '') +
            `</div>`;
   }).join('') + `</div>`;
 }
@@ -999,14 +1038,14 @@ function stepMoreHtml(t){
     }
     if(open && !mine) items.push(`<button class="btn btn-steal" title="${escHtml(TIPS.steal)}" onclick="steal(${t.id})">Αναλαμβάνω</button>`);
     if(isAdmin) items.push(`<button class="btn btn-asg" title="${escHtml(TIPS.assign)}" onclick="assign(${t.id})">Ανάθεση…</button>`);
-    if(isAdmin && !mine) items.push(`<button class="btn btn-ov" title="Override — Κλείνει την εργασία χωρίς τα βήματά της, με υποχρεωτικό λόγο. Καταγράφεται και ειδοποιούνται οι άλλοι διαχειριστές" onclick="openOverride(${t.id})">Παράκαμψη (admin)…</button>`);
+    if(isAdmin && !mine) items.push(`<button class="btn btn-ov" title="${escHtml(uiText(t.ui,'tip_override'))}" onclick="openOverride(${t.id})">${escHtml(uiText(t.ui,'menu_override'))}</button>`);
   }
   // Λήψη χωρίς να κλείνει βήμα (file_viewed): για όποιον δεν έχει το κουμπί λήψης του βήματος.
   const ownDownload = mine && open && t.step && t.step.action==='download';
   if(!ownDownload && fuelCmsAoa(taskPayload(t)))
-    items.push(`<button class="btn btn-rel" title="View file — Κατεβάζει το αρχείο. Καταγράφεται, δεν αλλάζει το βήμα" onclick="downloadFuelCms(${t.id})">Προβολή αρχείου</button>`);
+    items.push(`<button class="btn btn-rel" title="${escHtml(uiText(t.ui,'tip_view'))}" onclick="downloadFuelCms(${t.id})">${escHtml(uiText(t.ui,'menu_view'))}</button>`);
   items.push(`<button class="btn btn-hist" title="${escHtml(TIPS.hist)}" onclick="toggleHist(${t.id})">${histOpen.has(t.id)?'▾':'▸'} ιστορικό</button>`);
-  return `<details class="step-more"><summary title="More — Υπόλοιπες ενέργειες" aria-label="Υπόλοιπες ενέργειες">⋯</summary>`+
+  return `<details class="step-more"><summary title="${escHtml(uiText(t.ui,'tip_more'))}" aria-label="${escHtml(uiText(t.ui,'tip_more'))}">⋯</summary>`+
          `<div class="step-menu">${items.join('')}</div></details>`;
 }
 
@@ -1029,15 +1068,15 @@ function stepCardHtml(t){
       btn = `<button class="btn btn-go" onclick="openUpload(${t.id})">${lbl}</button>`;
   }
   const who = (!s.final && !mine && t.assigned_name)
-    ? `<div class="step-who">Το κάνει: ${escHtml(t.assigned_name)}</div>` : '';
+    ? `<div class="step-who">${escHtml(uiText(t.ui,'who',{name:t.assigned_name}))}</div>` : '';
 
   // Παράκαμψη admin που περιμένει «Το είδα» — ΜΟΝΟ από ΑΛΛΟΝ διαχειριστή.
   const ov = t.override;
   const ovPending = ov && !ov.acked;
   const canAck = ovPending && isAdmin && currentUser && Number(ov.actor_id)!==Number(currentUser.id);
   const ovHtml = ovPending
-    ? `<div class="step-ov">Παράκαμψη από ${escHtml(ov.actor_name || 'διαχειριστή')} · ${escHtml(fmtDue(ov.at, true))}`+
-      (canAck ? ` <button class="btn btn-ov" title="Acknowledge — Σβήνει το κόκκινο σήμα για όλους τους διαχειριστές. Καταγράφεται" onclick="overrideAck(${t.id})">Το είδα</button>` : '') +
+    ? `<div class="step-ov">${escHtml(uiText(t.ui,'ov_box',{name:ov.actor_name||'', at:fmtDue(ov.at, true)}))}`+
+      (canAck ? ` <button class="btn btn-ov" title="${escHtml(uiText(t.ui,'tip_ack'))}" onclick="overrideAck(${t.id})">${escHtml(uiText(t.ui,'ov_ack'))}</button>` : '') +
       `</div>` : '';
 
   const attn = Number(t.needs_attention)===1 && t.status==='open';
@@ -1050,12 +1089,12 @@ function stepCardHtml(t){
     ${stepMoreHtml(t)}
     <div class="step-grid">
       <div class="step-box do">
-        <div class="step-h">ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ</div>
+        <div class="step-h">${escHtml(uiText(t.ui,'h_do'))}</div>
         ${s.hint ? `<div class="step-hint">${escHtml(s.hint)}</div>` : ''}
         ${btn}${who}${ovHtml}
       </div>
       <div class="step-box">
-        <div class="step-h">ΚΑΤΑΣΤΑΣΗ</div>
+        <div class="step-h">${escHtml(uiText(t.ui,'h_status'))}</div>
         <div class="step-lbl">${escHtml(s.status_label || '')}</div>
         ${fuelFactsHtml(t, p)}
       </div>
@@ -1067,18 +1106,19 @@ function stepCardHtml(t){
 // Ζωντανός έλεγχος του Merge Result, ΙΔΙΟΣ κανόνας με τον server (Π):
 // κλείνει ΜΟΝΟ αν Total = γραμμές ΚΑΙ Exception = 0. Οι προειδοποιήσεις
 // δεν φράζουν. Ο server ξαναελέγχει και απαντά 409· αυτό εδώ καθοδηγεί.
-function uploadCheck(rows, v){
+// Τα μηνύματα από τη βάση (ui).
+function uploadCheck(rows, v, ui){
   const k = ['total','merge','updated','exception'], n = {};
   for(const x of k){
     const s = String(v && v[x] != null ? v[x] : '').trim();
-    if(!/^\d{1,7}$/.test(s)) return { ok:false, errs:['Συμπλήρωσε και τα 4 νούμερα (ακέραιοι ≥ 0)'], warns:[] };
+    if(!/^\d{1,7}$/.test(s)) return { ok:false, errs:[uiText(ui,'up_err_fill')], warns:[] };
     n[x] = parseInt(s, 10);
   }
   const errs = [], warns = [];
-  if(n.total !== Number(rows)) errs.push(`Total ${n.total} ≠ ${rows} γραμμές του αρχείου`);
-  if(n.exception !== 0)        errs.push(`Exception ${n.exception} ≠ 0`);
-  if(n.merge + n.updated !== n.total) warns.push('Merge + Updated ≠ Total');
-  if(n.updated > 0)                   warns.push('Updated > 0: ενημερώθηκαν τιμές που υπήρχαν ήδη');
+  if(n.total !== Number(rows)) errs.push(uiText(ui,'up_err_total',{n:n.total, rows}));
+  if(n.exception !== 0)        errs.push(uiText(ui,'up_err_exc',{n:n.exception}));
+  if(n.merge + n.updated !== n.total) warns.push(uiText(ui,'up_warn_sum'));
+  if(n.updated > 0)                   warns.push(uiText(ui,'up_warn_upd'));
   return { ok: errs.length===0, errs, warns, n };
 }
 

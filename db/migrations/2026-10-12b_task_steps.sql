@@ -24,6 +24,13 @@
 --      timeline_label  το κείμενο της γραμμής
 --      alert           1 = κόκκινη σήμανση (admin_override)
 --
+--    kind = 'ui'     κείμενο της ΚΑΡΤΑΣ (τίτλοι στηλών, μενού, παράθυρα
+--                    ανεβάσματος και παράκαμψης), απόφαση 12/10:
+--      step_code       το κλειδί (π.χ. h_do, up_title)
+--      text            το κείμενο, με {n} / {rows} / {name} / {at} όπου χρειάζεται
+--                    Τα ΓΕΝΙΚΑ κουμπιά της σελίδας (Αφήνω, Απόρριψη…) ΔΕΝ
+--                    μπαίνουν εδώ: μένουν στον κώδικα (backlog).
+--
 --  ΧΩΡΙΣ SEED. Ο πίνακας μένει ΑΔΕΙΟΣ, άρα τίποτα δεν αλλάζει στη σημερινή
 --  εμπειρία. Τα κείμενα μπαίνουν με το migration ενεργοποίησης (Κ4α), μετά
 --  από έγκριση του πίνακα κειμένων. Διορθώσεις κειμένων ΜΟΝΟ με migration.
@@ -43,7 +50,7 @@ SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS `4a_task_steps` (
   `id`             INT UNSIGNED  NOT NULL AUTO_INCREMENT,
   `task_code`      VARCHAR(40)   NOT NULL COMMENT '4a_task_types.code',
-  `kind`           ENUM('step','event') NOT NULL DEFAULT 'step',
+  `kind`           ENUM('step','event','ui') NOT NULL DEFAULT 'step',
   `step_code`      VARCHAR(30)   NOT NULL COMMENT 'βήμα, ή όνομα γεγονότος για kind=event',
   `sort_order`     INT           NOT NULL DEFAULT 0,
   `action`         VARCHAR(20)       NULL DEFAULT NULL COMMENT 'download | upload | NULL',
@@ -55,6 +62,7 @@ CREATE TABLE IF NOT EXISTS `4a_task_steps` (
   `button_icon`    VARCHAR(16)       NULL DEFAULT NULL,
   `timeline_label` VARCHAR(160)      NULL DEFAULT NULL,
   `alert`          TINYINT(1)    NOT NULL DEFAULT 0 COMMENT '1 = κόκκινη γραμμή στο χρονολόγιο',
+  `text`           VARCHAR(400)      NULL DEFAULT NULL COMMENT 'kind=ui: κείμενο της κάρτας',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_task_kind_step` (`task_code`, `kind`, `step_code`),
   CONSTRAINT `fk_task_steps_type` FOREIGN KEY (`task_code`) REFERENCES `4a_task_types` (`code`)

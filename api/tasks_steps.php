@@ -37,7 +37,8 @@ if (!defined('TASKS_STEPS_WORK_EVENTS')) {
  * Οι ορισμοί βημάτων για τους τύπους $codes, σε ΕΝΑ ερώτημα.
  *
  * @return array code => ['steps' => [γραμμές kind=step με σειρά],
- *                         'events' => [όνομα γεγονότος => γραμμή kind=event]]
+ *                         'events' => [όνομα γεγονότος => γραμμή kind=event],
+ *                         'ui' => [κλειδί => κείμενο οθόνης, kind=ui]]
  *               Τύπος χωρίς γραμμές ΔΕΝ εμφανίζεται στο αποτέλεσμα.
  */
 function tasks_steps_load($db, array $codes)
@@ -47,7 +48,7 @@ function tasks_steps_load($db, array $codes)
     try {
         $st = $db->prepare('SELECT `task_code`, `kind`, `step_code`, `sort_order`, `action`, `done_event`,
                                    `is_final`, `status_label`, `hint`, `button_label`, `button_icon`,
-                                   `timeline_label`, `alert`
+                                   `timeline_label`, `alert`, `text`
                               FROM `4a_task_steps`
                              WHERE `task_code` IN (' . implode(',', array_fill(0, count($codes), '?')) . ')
                              ORDER BY `task_code`, `sort_order`, `id`');
@@ -62,9 +63,10 @@ function tasks_steps_load($db, array $codes)
     $out = [];
     foreach ($rows as $r) {
         $c = $r['task_code'];
-        if (!isset($out[$c])) $out[$c] = ['steps' => [], 'events' => []];
-        if ($r['kind'] === 'event') $out[$c]['events'][$r['step_code']] = $r;
-        else                        $out[$c]['steps'][] = $r;
+        if (!isset($out[$c])) $out[$c] = ['steps' => [], 'events' => [], 'ui' => []];
+        if ($r['kind'] === 'event')  $out[$c]['events'][$r['step_code']] = $r;
+        elseif ($r['kind'] === 'ui') $out[$c]['ui'][$r['step_code']] = $r['text'];
+        else                         $out[$c]['steps'][] = $r;
     }
     // Ορισμός χωρίς ΚΑΝΕΝΑ βήμα (μόνο ετικέτες γεγονότων) δεν ενεργοποιεί
     // τίποτα: μισή ρύθμιση στη βάση δεν πρέπει να κλειδώνει εργασίες.
@@ -232,6 +234,9 @@ function tasks_steps_attach($db, array $tasks)
         ];
         $tasks[$i]['timeline'] = tasks_steps_timeline($def, $ev);
         $tasks[$i]['override'] = tasks_steps_override($ev);
+        // Τα κείμενα της κάρτας (τίτλοι, μενού, παράθυρα) από τη βάση. Τα
+        // γενικά κουμπιά της σελίδας (Αφήνω, Απόρριψη…) μένουν στον κώδικα.
+        $tasks[$i]['ui'] = (object)$def['ui'];
     }
     return $tasks;
 }
@@ -239,16 +244,40 @@ function tasks_steps_attach($db, array $tasks)
 // ─────────────────────────────────────────────────────────────────────
 // ΚΛΕΙΣΙΜΟ — ΕΝΑ σημείο για done, upload και admin_override (ε5)
 //
-// Το ξεκλείδωμα της αλυσίδας ζει ΜΟΝΟ εδώ (και στο na). Ο όρος status ΜΕΣΑ
-// στο UPDATE: δύο ταυτόχρονα κλεισίματα -> το ένα γράφει, το άλλο 409.
+// Το ξεκλείδωμα της αλυσίδας ζει ΜΟΝΟ εδώ (και στο na).
+//
+// ΔΥΟ ΔΙΑΔΡΟΜΕΣ, ΣΚΟΠΙΜΑ (απόφαση 12/10):
+//   kind = 'system'  ο όρος status ΜΕΣΑ στο UPDATE: δύο ΤΑΥΤΟΧΡΟΝΑ
+//                    κλεισίματα -> το ένα γράφει, το άλλο 409 με σημαία
+//                    already_closed («Η εργασία είναι ήδη ολοκληρωμένη»).
+//   kind = 'client'  ΑΚΡΙΒΩΣ το UPDATE του tasks_done πριν από τη Φάση 5,
+//                    χωρίς όρο status. Το διαδοχικό διπλό κλείσιμο το κόβει
+//                    ήδη η tasks_guard_owner (409)· το ταυτόχρονο συμπεριφέρεται
+//                    όπως πάντα. Καμία αλλαγή για τις εργασίες πελάτη.
 // ─────────────────────────────────────────────────────────────────────
+if (!defined('TASKS_ALREADY_CLOSED')) define('TASKS_ALREADY_CLOSED', 'η εργασία έχει ήδη κλείσει');
+
+/** 409 «ήδη κλειστή», με σημαία ώστε η οθόνη να το δείξει ως πληροφορία, όχι σφάλμα. */
+function tasks_err_closed()
+{
+    $e = tasks_err(409, TASKS_ALREADY_CLOSED);
+    $e['already_closed'] = true;
+    return $e;
+}
+
 function tasks_close($db, $task, $actorId, $event, $note, $meta = null)
 {
     $taskId = (int)$task['id'];
-    $st = $db->prepare('UPDATE `4a_tasks` SET `status` = \'done\', `closed_at` = NOW(), `closed_by` = ?
-                         WHERE `id` = ? AND `status` NOT IN (\'done\', \'na\')');
-    $st->execute([(int)$actorId, $taskId]);
-    if ($st->rowCount() === 0) return tasks_err(409, 'η εργασία έχει ήδη κλείσει');
+    if (isset($task['task_kind']) && $task['task_kind'] === 'system') {
+        $st = $db->prepare('UPDATE `4a_tasks` SET `status` = \'done\', `closed_at` = NOW(), `closed_by` = ?
+                             WHERE `id` = ? AND `status` NOT IN (\'done\', \'na\')');
+        $st->execute([(int)$actorId, $taskId]);
+        if ($st->rowCount() === 0) return tasks_err_closed();
+    } else {
+        $db->prepare('UPDATE `4a_tasks` SET `status` = \'done\', `closed_at` = NOW(),
+                             `closed_by` = ? WHERE `id` = ?')
+           ->execute([(int)$actorId, $taskId]);
+    }
 
     tasks_event($db, $taskId, $event, (int)$actorId, $note, $meta);
     $u = tasks_unlock_and_assign($db, $task['dedupe_key'], $task['task_code'], (int)$actorId);
@@ -336,7 +365,7 @@ function tasks_upload($db, $session, $perms, $taskId, $nums)
     if ($err) return $err;
     $me = (int)$session['id'];
 
-    if (in_array($task['status'], ['done', 'na'], true)) return tasks_err(409, 'η εργασία έχει ήδη κλείσει');
+    if (in_array($task['status'], ['done', 'na'], true)) return tasks_err_closed();
     if ($task['assigned_to'] === null || (int)$task['assigned_to'] !== $me) {
         return tasks_err(403, 'την επιβεβαίωση ανεβάσματος την κάνει μόνο ο ανάδοχος');
     }
@@ -399,7 +428,7 @@ function tasks_admin_override($db, $session, $perms, $taskId, $reason)
     if ($err) return $err;
     $me = (int)$session['id'];
 
-    if (in_array($task['status'], ['done', 'na'], true)) return tasks_err(409, 'η εργασία έχει ήδη κλείσει');
+    if (in_array($task['status'], ['done', 'na'], true)) return tasks_err_closed();
     if ((int)$task['locked'] === 1) {
         $b = $task['blocked_by_label'] !== null ? $task['blocked_by_label'] : $task['depends_on'];
         return tasks_err(409, 'κλειδωμένη — περιμένει: ' . $b);

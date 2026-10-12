@@ -81,7 +81,7 @@ function fresh_db($steps)
         $db->exec('CREATE TABLE `4a_task_steps` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `task_code` TEXT NOT NULL,
             `kind` TEXT NOT NULL DEFAULT \'step\', `step_code` TEXT NOT NULL, `sort_order` INTEGER NOT NULL DEFAULT 0,
             `action` TEXT, `done_event` TEXT, `is_final` INTEGER NOT NULL DEFAULT 0, `status_label` TEXT, `hint` TEXT,
-            `button_label` TEXT, `button_icon` TEXT, `timeline_label` TEXT, `alert` INTEGER NOT NULL DEFAULT 0)');
+            `button_label` TEXT, `button_icon` TEXT, `timeline_label` TEXT, `alert` INTEGER NOT NULL DEFAULT 0, `text` TEXT)');
     }
     if ($steps === 'fuel') {
         // Ίδιο σχήμα με το migration ενεργοποίησης (Κ4α). Τα κείμενα εδώ
@@ -94,6 +94,8 @@ function fresh_db($steps)
             ('fuel_weekly','event','upload_failed',0,NULL,NULL,0,NULL,NULL,NULL,NULL,'Ανέβασμα χωρίς επιβεβαίωση',0),
             ('fuel_weekly','event','admin_override',0,NULL,NULL,0,NULL,NULL,NULL,NULL,'Παράκαμψη από διαχειριστή',1),
             ('fuel_weekly','event','done',0,NULL,NULL,0,NULL,NULL,NULL,NULL,'Ολοκληρώθηκε (παλιά ροή)',0)");
+        $db->exec("INSERT INTO `4a_task_steps` (`task_code`,`kind`,`step_code`,`text`) VALUES
+            ('fuel_weekly','ui','h_do','ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ'), ('fuel_weekly','ui','h_status','ΚΑΤΑΣΤΑΣΗ')");
         $db->exec("UPDATE `4a_task_types` SET `allow_na` = 0 WHERE `code` = 'fuel_weekly'");
     }
 
@@ -199,6 +201,9 @@ $t = $listOne($db, $doer, $PU($doer), $w);
 ck('fuel_weekly: βήμα download', isset($t['step']) && $t['step']['code'] === 'download' && $t['step']['action'] === 'download', json_encode($t['step'] ?? null));
 ck('fuel_weekly: ετικέτα και κουμπί από τη βάση', $t['step']['status_label'] === 'Αναμονή λήψης αρχείου' && $t['step']['button_label'] === 'Λήψη αρχείου CMS');
 ck('fuel_weekly: χρονολόγιο άδειο, καμία παράκαμψη', $t['timeline'] === array() && $t['override'] === null);
+$ui = json_decode(json_encode($t['ui']), true);
+ck('fuel_weekly: κείμενα κάρτας (ui) από τη βάση', $ui === array('h_do' => 'ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ', 'h_status' => 'ΚΑΤΑΣΤΑΣΗ'), json_encode($t['ui']));
+ck('...ΚΑΝΕΝΑ ui ως step ή event', $t['step']['code'] === 'download' && count($t['timeline']) === 0);
 $tv = $listOne($db, 1, $A, $v);
 ck('verify (χωρίς βήματα): κανένα νέο κλειδί', !array_key_exists('step', $tv) && !array_key_exists('timeline', $tv));
 $tc = $listOne($db, 1, $A, $c);
@@ -274,7 +279,7 @@ $labels = array_map(function ($x) { return $x['label']; }, $t['timeline']);
 ck('...χρονολόγιο με τη σειρά: λήψη, 2 αποτυχίες, ανέβασμα',
    $labels === array('Λήψη αρχείου', 'Ανέβασμα χωρίς επιβεβαίωση', 'Ανέβασμα χωρίς επιβεβαίωση', 'Ανέβηκε στο CMS'), json_encode($labels));
 $r = tasks_upload($db, $S($doer), $PU($doer), $w, $NUMS);
-ck('δεύτερο upload σε κλειστή -> 409', $r['code'] === 409);
+ck('δεύτερο upload σε κλειστή -> 409 με σημαία already_closed', $r['code'] === 409 && !empty($r['already_closed']), json_encode($r));
 $db = fresh_db('fuel');
 list($w, $v, $c, $doer, $other) = $chain($db);
 tasks_download($db, $S($doer), $PU($doer), $w);
@@ -363,16 +368,42 @@ $r = tasks_override_ack($db, $S(2), $A, $w);
 ck('δεύτερο «Το είδα» -> 409', $r['code'] === 409);
 ck('...override στη λίστα: acked', $listOne($db, 1, $A, $w)['override']['acked'] === true);
 $r = tasks_admin_override($db, $S(9), $A, $w, 'ξανά σε κλειστή εργασία');
-ck('παράκαμψη σε κλειστή -> 409', $r['code'] === 409);
+ck('παράκαμψη σε κλειστή -> 409 με σημαία already_closed', $r['code'] === 409 && !empty($r['already_closed']));
 
-echo "\n═══ tasks_close: δεν κλείνει δύο φορές ═══\n";
+echo "\n═══ tasks_close: ταυτόχρονο κλείσιμο — system φράζεται, πελάτη ΟΠΩΣ ΠΡΙΝ ═══\n";
+$isDone = function ($e) { return $e['event'] === 'done'; };
 $db = fresh_db('empty');
 list($w, $v, $c, $doer, $other) = $chain($db);
+// «Ταυτόχρονο»: δύο αιτήματα πέρασαν και τα δύο τον έλεγχο με την ΙΔΙΑ εικόνα της εργασίας.
 $t = tasks_fetch_one($db, $w);
 $a = tasks_close($db, $t, $doer, 'done', 'α');
 $b = tasks_close($db, $t, $doer, 'done', 'β');
-ck('πρώτο κλείσιμο OK, δεύτερο 409', $a['ok'] === true && $b['code'] === 409);
-ck('...ένα μόνο γεγονός done', count(array_filter($events($db, $w), function ($e) { return $e['event'] === 'done'; })) === 1);
+ck('system: πρώτο κλείσιμο OK, δεύτερο 409 με already_closed', $a['ok'] === true && $b['code'] === 409 && !empty($b['already_closed']), json_encode($b));
+ck('system: ένα μόνο γεγονός done', count(array_filter($events($db, $w), $isDone)) === 1);
+$db->exec("UPDATE `4a_tasks` SET `assigned_to` = 3, `status` = 'in_progress' WHERE `id` = $c");
+$tc = tasks_fetch_one($db, $c);
+$a = tasks_close($db, $tc, 3, 'done', 'α');
+$b = tasks_close($db, $tc, 3, 'done', 'β');
+ck('πελάτης: και τα δύο «περνούν», όπως το UPDATE πριν από τη Φάση 5', $a['ok'] === true && $b['ok'] === true, json_encode($b));
+ck('πελάτης: χωρίς σημαία already_closed', !isset($b['already_closed']));
+
+echo "\n═══ Εργασία ΠΕΛΑΤΗ: done / na / διπλό done όπως πριν ═══\n";
+foreach (array(null, 'empty', 'fuel') as $mode) {
+    $tag = $mode === null ? 'χωρίς πίνακα' : ($mode === 'empty' ? 'άδειος πίνακας' : 'ενεργό fuel_weekly');
+    $db = fresh_db($mode);
+    list($w, $v, $c, $doer, $other) = $chain($db);
+    $db->exec("UPDATE `4a_tasks` SET `assigned_to` = 3, `status` = 'in_progress' WHERE `id` = $c");
+    $d1 = tasks_done($db, $S(3), $P, $c);
+    $d2 = tasks_done($db, $S(3), $P, $c);
+    ck("$tag: done πελάτη OK, ξεκλειδώνει το cms_rates", $d1['ok'] === true && (int)$d1['unlocked'] === 1, json_encode($d1));
+    ck("$tag: δεύτερο done -> 409 «η εργασία έχει ήδη κλείσει», ΧΩΡΙΣ σημαία",
+       $d2['code'] === 409 && $d2['error'] === 'η εργασία έχει ήδη κλείσει' && !isset($d2['already_closed']), json_encode($d2));
+    ck("$tag: ένα γεγονός done «ολοκληρώθηκε»", count(array_filter($events($db, $c), $isDone)) === 1);
+    $cr = (int)$db->query("SELECT `id` FROM `4a_tasks` WHERE `client_id` = 7 AND `task_code` = 'cms_rates'")->fetchColumn();
+    $db->exec("UPDATE `4a_tasks` SET `assigned_to` = 3, `status` = 'in_progress' WHERE `id` = $cr");
+    $n = tasks_na($db, $S(3), $P, $cr, 'λόγος');
+    ck("$tag: na πελάτη OK (allow_na = 1)", $n['ok'] === true, json_encode($n));
+}
 
 printf("\n═══ ΣΥΝΟΛΟ: %d OK, %d ΛΑΘΟΣ ═══\n\n", $pass, $fail);
 exit($fail ? 1 : 0);

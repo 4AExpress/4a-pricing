@@ -128,6 +128,8 @@ if ($method === 'POST') {
         // ξεχωρίσει «περιμένει άλλη εργασία» από κάθε άλλο 409 και να
         // προτείνει παράκαμψη.
         $out = ['error' => $r['error']];
+        // «ήδη κλειστή» (τύποι system): η οθόνη το δείχνει ως πληροφορία.
+        if (!empty($r['already_closed'])) $out['already_closed'] = true;
         if (!empty($r['locked'])) {
             $out['locked']     = true;
             $out['blocked_by'] = isset($r['blocked_by']) ? $r['blocked_by'] : null;

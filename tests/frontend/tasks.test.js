@@ -61,10 +61,11 @@ function env(opts){
     grab('taskPayload'), grab('fuelCmsAoa'), grab('fuelCmsWorkbook'), grab('fmtDue'),
     'function athensNow(){ return ' + JSON.stringify(NOW) + '; }', grab('normDateTime'), grab('msLeft'), grab('fmtLeft'),
     grab('dueState'), grab('dueHtml'), grab('refreshDues'), grab('fuelColumns'), grab('fuelFactsHtml'),
+    grabConst('STEP_UI_KEYS'), grab('uiText'),
     grab('stepTimelineHtml'), grab('stepMoreHtml'), grab('stepCardHtml'), grab('uploadCheck'),
     grab('taskRow'), grab('render'),
     'return { render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
-    '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck,',
+    '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS,',
     '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle };'
   ].join('\n');
   const api = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, store, {});
@@ -465,8 +466,21 @@ const STEP = {
   uploaded: { code: 'uploaded', action: null, final: true, status_label: 'Ανέβηκε · ισχύει από Δευ 12/10',
               hint: 'Τίποτα άλλο σήμερα. Η επαλήθευση τιμών γίνεται Δευ 12/10.', button_label: null, button_icon: null },
 };
+const UI = {
+  h_do: 'ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ', h_status: 'ΚΑΤΑΣΤΑΣΗ', who: 'Το κάνει: {name}',
+  menu_override: 'Παράκαμψη (admin)…', tip_override: 'Override — Κλείνει την εργασία χωρίς τα βήματά της',
+  menu_view: 'Προβολή αρχείου', tip_view: 'View file — Καταγράφεται, δεν αλλάζει το βήμα', tip_more: 'More — Υπόλοιπες ενέργειες',
+  ov_box: 'Παράκαμψη από {name} · {at}', ov_ack: 'Το είδα', tip_ack: 'Acknowledge — Σβήνει το κόκκινο σήμα',
+  tl_late: '(εκ των υστέρων)', tip_late: 'Late entry — η ώρα είναι η πραγματική',
+  up_title: 'Επιβεβαίωση ανεβάσματος', up_hint: 'Από το Merge Result του CMS (Import → Fuel Charge Import). Το αρχείο έχει {rows} γραμμές.',
+  up_send: 'Επιβεβαίωση', up_err_fill: 'Συμπλήρωσε και τα 4 νούμερα (ακέραιοι ≥ 0)',
+  up_err_total: 'Total {n} ≠ {rows} γραμμές του αρχείου', up_err_exc: 'Exception {n} ≠ 0',
+  up_warn_prefix: 'Προσοχή:', up_warn_sum: 'Merge + Updated ≠ Total', up_warn_upd: 'Updated > 0: ενημερώθηκαν τιμές που υπήρχαν ήδη',
+  ov_title: 'Παράκαμψη από διαχειριστή', ov_warn: 'Η εργασία κλείνει χωρίς τα βήματά της.', ov_reason: 'Λόγος',
+  ov_short: 'Ο λόγος θέλει τουλάχιστον 10 χαρακτήρες.', ov_send: 'Παράκαμψη', already_closed: 'Η εργασία είναι ήδη ολοκληρωμένη',
+};
 const stepTask = (step, extra) => sysTask(76, FW, 'fuel:2026-10-12', PAYLOAD,
-  Object.assign({ status: 'in_progress', assigned_to: 1, assigned_name: 'u1', step, timeline: [], override: null }, extra || {}));
+  Object.assign({ status: 'in_progress', assigned_to: 1, assigned_name: 'u1', step, timeline: [], override: null, ui: UI }, extra || {}));
 
 console.log('\n═══ Κάρτα βημάτων: ΕΝΑ κουμπί, μόνο για τον ανάδοχο ═══');
 {
@@ -516,14 +530,14 @@ console.log('\n═══ Κάρτα βημάτων: χρονολόγιο ══�
     { event: 'admin_override', label: 'Παράκαμψη από διαχειριστή', mark: 'event', alert: true, at: '2026-10-09 11:00:00', late: false, actor: 'adm',
       note: '<b>CMS</b> έπεσε', meta: { step: 'upload' } },
   ];
-  const h = api.stepTimelineHtml({ timeline: tl });
+  const h = api.stepTimelineHtml({ timeline: tl, ui: UI });
   const rows = h.split('<div class="tl-row');
   ck('4 γραμμές, με τη σειρά του server', rows.length === 5, h);
   ck('βήμα: «✓ Λήψη αρχείου · Παρ 09/10 10:15 · u1»', rows[1].includes('<span class="tl-mark">✓</span>Λήψη αρχείου · Παρ 09/10 10:15 · u1'), rows[1]);
   ck('αποτυχία: χωρίς ✓, με τα 4 νούμερα του CMS', !rows[2].includes('✓') && rows[2].includes('Total 68 · Merge 0 · Updated 68 · Exception 0'), rows[2]);
   ck('εκ των υστέρων: σήμανση', rows[3].includes('(εκ των υστέρων)'));
   ck('παράκαμψη: κόκκινη γραμμή, ο λόγος escaped', rows[4].startsWith(' alert"') && rows[4].includes('&lt;b&gt;CMS&lt;/b&gt; έπεσε') && !rows[4].includes('<b>CMS'), rows[4]);
-  ck('κενό χρονολόγιο -> τίποτα', api.stepTimelineHtml({ timeline: [] }) === '' && api.stepTimelineHtml({}) === '');
+  ck('κενό χρονολόγιο -> τίποτα', api.stepTimelineHtml({ timeline: [], ui: UI }) === '' && api.stepTimelineHtml({ ui: UI }) === '');
 }
 
 console.log('\n═══ Κάρτα βημάτων: παράκαμψη και «Το είδα» ═══');
@@ -551,7 +565,7 @@ console.log('\n═══ Κάρτα βημάτων: escape κειμένων τη
 console.log('\n═══ Merge Result: ίδιος κανόνας με τον server (Π) ═══');
 {
   const api = env().api;
-  const c = (v) => api.uploadCheck(69, v);
+  const c = (v) => api.uploadCheck(69, v, UI);
   ck('69 / 69 / 0 / 0: OK χωρίς προειδοποιήσεις', c({ total: '69', merge: '69', updated: '0', exception: '0' }).ok === true
      && c({ total: '69', merge: '69', updated: '0', exception: '0' }).warns.length === 0);
   const u = c({ total: '69', merge: '0', updated: '69', exception: '0' });
@@ -565,6 +579,39 @@ console.log('\n═══ Merge Result: ίδιος κανόνας με τον ser
   ck('κενό / αρνητικό / δεκαδικό: ΟΧΙ', [{ total: '', merge: '0', updated: '0', exception: '0' },
        { total: '69', merge: '-1', updated: '0', exception: '0' }, { total: '69.5', merge: '0', updated: '0', exception: '0' }]
        .every(v => c(v).ok === false));
+}
+
+console.log('\n═══ Κάρτα βημάτων: κείμενα από τη βάση (t.ui) ═══');
+{
+  const api = env({ userId: 9, admin: true }).api;
+  const used = [...new Set([...src.matchAll(/uiText\([^,]+,\s*'(\w+)'/g)].map(m => m[1]))].sort();
+  const keys = [...api.STEP_UI_KEYS].sort();
+  ck('κάθε uiText(…, κλειδί) του κώδικα είναι στο STEP_UI_KEYS, και αντίστροφα', JSON.stringify(used) === JSON.stringify(keys),
+     'κώδικας: ' + used.join(',') + ' | λίστα: ' + keys.join(','));
+  ck('το UI των τεστ καλύπτει ΟΛΑ τα κλειδιά', keys.every(k => typeof UI[k] === 'string'), keys.filter(k => typeof UI[k] !== 'string').join(','));
+  const other = Object.assign({}, UI, { h_do: 'ΑΛΛΟ ΚΕΙΜΕΝΟ', menu_override: 'Άλλη παράκαμψη' });
+  const h = api.taskRow(stepTask(STEP.download, { ui: other }));
+  ck('το κείμενο αλλάζει ΜΟΝΟ από τη βάση', h.includes('ΑΛΛΟ ΚΕΙΜΕΝΟ') && h.includes('Άλλη παράκαμψη') && !h.includes('ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ'));
+  const miss = api.taskRow(stepTask(STEP.download, { ui: {} }));
+  ck('κλειδί που λείπει: φαίνεται ως [κλειδί], όχι κενό', miss.includes('[h_do]') && miss.includes('[menu_override]'));
+  ck('placeholders: {name}', api.uiText(UI, 'who', { name: 'u1' }) === 'Το κάνει: u1');
+  ck('placeholder χωρίς τιμή μένει όπως είναι', api.uiText(UI, 'up_err_total', { n: 68 }) === 'Total 68 ≠ {rows} γραμμές του αρχείου');
+  const xss = api.taskRow(stepTask(STEP.download, { ui: Object.assign({}, UI, { h_do: '<img src=x>', who: '<b>{name}</b>' }), assigned_to: 2 }));
+  ck('κείμενα ui escaped', !xss.includes('<img') && !xss.includes('<b>u1') && xss.includes('&lt;img'));
+  ck('κανένα σταθερό κείμενο της κάρτας στον κώδικα', !/ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ|Το κάνει:|Παράκαμψη \(admin\)|Προβολή αρχείου|Το είδα|ήδη ολοκληρωμένη/.test(
+     ['stepCardHtml','stepMoreHtml','stepTimelineHtml','uploadCheck','openUpload','openOverride','sendOverride','showAlreadyClosed']
+       .map(grab).join('\n').replace(/^\s*\/\/.*$/gm, '')));   // τα σχόλια δεν είναι κείμενο οθόνης
+}
+
+console.log('\n═══ 409 «ήδη κλειστή»: πληροφορία, όχι σφάλμα ═══');
+{
+  ck('sendUpload: already_closed -> showAlreadyClosed, πριν από το μήνυμα σφάλματος',
+     /already_closed\)\{[\s\S]*showAlreadyClosed\(t\)[\s\S]*up-msg/.test(grab('sendUpload')));
+  ck('sendOverride: already_closed -> showAlreadyClosed', /already_closed\)\{[^}]*showAlreadyClosed\(t\)/.test(grab('sendOverride')));
+  const sac = grab('showAlreadyClosed');
+  ck('showAlreadyClosed: πράσινο μήνυμα (showOk), καθαρίζει το σφάλμα, ξαναφορτώνει',
+     /showErr\(null\)/.test(sac) && /showOk\(/.test(sac) && /uiText\(t && t\.ui, 'already_closed'\)/.test(sac) && /load\(\)/.test(sac));
+  ck('το act() (γενικό «Ολοκλήρωση») ΔΕΝ άλλαξε', !/already_closed/.test(grab('act')));
 }
 
 console.log('\n═══ Κάρτα βημάτων: η σημερινή εμπειρία χωρίς t.step ═══');
