@@ -39,6 +39,6 @@ const TASKS = [
 const FUNCS = ['escHtml', 'textOn', 'stBadge', 'whoCell', 'histHtml', 'histWhat', 'canOpen', 'actionBtn', 'summaryHtml',
   'fmtWeekRange', 'taskTitle', 'closedColor', 'closedGroupStyle', 'taskPayload', 'fuelCmsAoa', 'fuelCmsWorkbook',
   'fmtDue', 'athensNow', 'normDateTime', 'isPastDue', 'fmtLeft', 'dueState', 'dueHtml', 'fuelColumns', 'fuelFactsHtml',
-  'msLeft', 'tint', 'groupTone', 'groupHtml',
+  'msLeft', 'tempText', 'tint', 'groupTone', 'grpIsOpen', 'grpTogHtml', 'groupHtml',
   'taskRow', 'render'];
 module.exports = { STATUSES, TASKS, FUNCS };

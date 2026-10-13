@@ -117,13 +117,20 @@
      Χρώματα και κείμενο έρχονται ως μεταβλητές από τη render(), όπως στην
      κλειστή ομάδα. Το δευτερεύον κείμενο (#999 στο λευκό) σκουραίνει, γιατί
      σε απόχρωση δεν περνά τον έλεγχο αντίθεσης. */
-  .client-group.tone, .client-group.tone > .client-head, .client-group.tone > .task {
+  .client-group.tone, .client-group.tone > .client-head, .client-group.tone > .grp-body > .task {
     background: var(--tone-bg); color: var(--tone-fg); }
   .client-group.tone > .client-head { border-bottom-color: var(--tone-line); }
-  .client-group.tone > .task { border-bottom-color: var(--tone-line); }
+  .client-group.tone > .grp-body > .task { border-bottom-color: var(--tone-line); }
   .client-group.tone .client-name, .client-group.tone .task-label { color: var(--tone-fg); }
   .client-group.tone .client-meta, .client-group.tone .task-meta,
   .client-group.tone .btn-hist, .client-group.tone .lockmsg { color: var(--tone-fg2); }
+
+  /* [+]/[−] ανά ομάδα. Κλειστή ομάδα: μαζεμένη αρχικά. */
+  .grp-tog { margin-left: auto; min-width: 26px; height: 22px; padding: 0 6px; font-size: 14px;
+             line-height: 1; font-weight: 700; border: 1px solid currentColor; border-radius: 4px;
+             background: transparent; color: inherit; cursor: pointer; opacity: .75; }
+  .grp-tog:hover, .grp-tog:focus-visible { opacity: 1; }
+  .client-group .client-head:has(+ .grp-body[hidden]) { border-bottom: none; }
 
   /* ΕΠΙΔΕΙΞΗ: ουδέτερο, σκόπιμα ΟΧΙ κόκκινο — το κόκκινο ανήκει στο
      needs_attention — και όχι χρώμα κατάστασης, που έρχεται από τη βάση.
@@ -510,11 +517,11 @@ function render(tasks){
     if(!sysGroups.has(k)) sysGroups.set(k, { country:t.task_country || t.client_country, items:[] });
     sysGroups.get(k).items.push(t);
   });
-  const sysHtml = [...sysGroups.values()].map(g => {
+  const sysHtml = [...sysGroups.entries()].map(([k, g]) => {
     const root = g.items.find(t => t.depends_on === null) || g.items[0];
     // Τίτλος της ομάδας = ο τίτλος του τύπου-ρίζας, με εικονίδιο και εβδομάδα
     // από τη βάση (taskTitle). Η εβδομάδα δεν ξαναγράφεται δίπλα.
-    return groupHtml('client-group sys', g.items, `
+    return groupHtml('sys:' + k, 'client-group sys', g.items, `
         <span class="sys-tag" title="System — Εργασία χωρίς πελάτη, δημιουργείται από το σύστημα">ΣΥΣΤΗΜΑ</span>
         <span class="client-name">${taskTitle(root)}</span>
         <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>`);
@@ -531,7 +538,7 @@ function render(tasks){
   });
   el.innerHTML =
     (view==='all' ? summaryHtml(tasks) : '') + sysHtml +
-    [...groups.values()].map(g => groupHtml('client-group' + (g.isDemo?' demo':''), g.items, `
+    [...groups.entries()].map(([k, g]) => groupHtml('c:' + k, 'client-group' + (g.isDemo?' demo':''), g.items, `
         ${g.isDemo?'<span class="demo-tag" title="Demo — Πελάτης επίδειξης. Τίποτα εδώ δεν είναι αληθινή δουλειά και δεν μετριέται πουθενά">ΕΠΙΔΕΙΞΗ</span>':''}
         <span class="client-name">${escHtml(g.name)}</span>
         <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>
@@ -686,6 +693,22 @@ function closedGroupStyle(items){
   return `--closed-bg:${c};--closed-fg:${textOn(c)};`;
 }
 
+// ═══ TEMP — ΠΡΟΣΩΡΙΝΑ ΚΕΙΜΕΝΑ ΟΘΟΝΗΣ (13-10-2026) ════════════════════════
+// ΟΛΑ τα νέα κείμενα των ομάδων ζουν ΜΟΝΟ εδώ, μέχρι να μπουν στον γενικό
+// πίνακα κειμένων της βάσης με το Κ4α (Πέμπτη 15/10). Το τεστ τα απαριθμεί
+// και ελέγχει ότι κανένα δεν γράφεται αλλού στον κώδικα. ΜΗΝ προσθέτεις
+// κείμενο οθόνης έξω από αυτόν τον πίνακα.
+const UI_TEMP = {
+  grp_tip_collapse:   'Collapse — Μάζεμα της ομάδας',
+  grp_tip_expand:     'Expand — Άνοιγμα της ομάδας',
+};
+function tempText(key, vars){
+  const s = UI_TEMP[key];
+  if(typeof s !== 'string') return '[' + key + ']';
+  return s.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] !== undefined) ? String(vars[k]) : m);
+}
+// ═══ τέλος TEMP ═══════════════════════════════════════════════════════════
+
 // Το κόκκινο της καθυστέρησης: ΙΔΙΟ με το κείμενο «καθυστέρηση» της
 // προθεσμίας (.fuel-due.d-over). Ο 4a_task_statuses δεν έχει κόκκινη
 // κατάσταση, γιατί η καθυστέρηση δεν είναι κατάσταση.
@@ -724,17 +747,38 @@ function groupTone(items, now){
            style: `--tone-bg:${bg};--tone-line:${line};--tone-fg:${fg};--tone-fg2:${fg==='#fff'?'#fff':'#555'};` };
 }
 
-// Η ομάδα ολόκληρη: φόντο (κλειστή, ή tone ανά κατάσταση), κεφαλίδα, γραμμές.
-function groupHtml(baseCls, items, headInner){
+// [+]/[−]: ρητή επιλογή του χρήστη ανά ομάδα (κλειδί -> ανοιχτή;). Χωρίς
+// επιλογή: η κλειστή ομάδα μαζεμένη, οι υπόλοιπες ανοιχτές. Κρατιέται σε
+// κάθε load(), όπως το histOpen.
+const grpOpen = new Map();
+function grpIsOpen(key, closed){ return grpOpen.has(key) ? grpOpen.get(key) : !closed; }
+function grpTogHtml(key, open){
+  return `<button class="grp-tog" data-g="${escHtml(key)}" aria-expanded="${open}"` +
+         ` title="${escHtml(tempText(open ? 'grp_tip_collapse' : 'grp_tip_expand'))}"` +
+         ` onclick="toggleGroup(this.dataset.g)">${open ? '−' : '+'}</button>`;
+}
+function toggleGroup(key){
+  const g = [...document.querySelectorAll('.grp-tog')].find(b => b.dataset.g === key);
+  grpOpen.set(key, !(g && g.getAttribute('aria-expanded') === 'true'));
+  render(lastTasks);
+}
+// Η ομάδα ολόκληρη: φόντο, κεφαλίδα με [+]/[−], γραμμές. Οι γραμμές ΠΑΝΤΑ
+// στο HTML· η μαζεμένη ομάδα τις κρύβει με hidden, χωρίς να αλλάζει τίποτα
+// μέσα τους.
+function groupHtml(key, baseCls, items, headInner){
   const cs = closedGroupStyle(items);
   const tone = cs ? null : groupTone(items);
+  const open = grpIsOpen(key, !!cs);
   const cls = baseCls + (cs ? ' closed' : '') + (tone ? ' tone ' + tone.cls : '');
   const style = cs || (tone && tone.style);
   return `
     <div class="${cls}"${style?` style="${style}"`:''}>
       <div class="client-head">${headInner}
+        ${grpTogHtml(key, open)}
       </div>
+      <div class="grp-body"${open?'':' hidden'}>
       ${items.map(taskRow).join('')}
+      </div>
     </div>`;
 }
 

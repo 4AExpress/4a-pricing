@@ -53,7 +53,7 @@ function env(opts){
     'let currentUser = { id: ' + (opts.userId === undefined ? 1 : opts.userId) + ' }, isAdmin = ' + (opts.admin === false ? 'false' : 'true') + ', view = "all", lastTasks = [];',
     'let STATUSES = ' + JSON.stringify(opts.statuses === undefined ? DB_STATUSES : opts.statuses) + ';',
     'let FUEL_TYPES = ' + JSON.stringify(opts.fuelTypes === undefined ? DB_FUEL_TYPES : opts.fuelTypes) + ';',
-    'const histOpen = new Map();',
+    'const histOpen = new Map(); const grpOpen = new Map();',
     grabConst('TIPS'), grabConst('ACTION_URL_OK'), grabConst('FUEL_CMS_HEADER'), grabConst('GR_DAY3'),
     grab('escHtml'), grab('textOn'), grab('stBadge'), grab('whoCell'), grab('histHtml'), grab('histWhat'),
     grab('canOpen'), grab('actionBtn'), grab('summaryHtml'),
@@ -63,13 +63,14 @@ function env(opts){
     grab('dueState'), grab('dueHtml'), grab('refreshDues'), grab('fuelColumns'), grab('fuelFactsHtml'),
     grabConst('STEP_UI_KEYS'), grab('uiText'),
     grab('stepTimelineHtml'), grab('stepMoreHtml'), grab('stepCardHtml'), grab('uploadCheck'),
-    grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'),
-    grab('tint'), grab('groupTone'), grab('groupHtml'),
+    grabConst('UI_TEMP'), grab('tempText'), grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'),
+    grab('tint'), grab('groupTone'),
+    grab('grpIsOpen'), grab('grpTogHtml'), grab('groupHtml'),
     grab('taskRow'), grab('render'),
     'return { render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
     '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS,',
     '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle,',
-    '         tint, groupTone, groupHtml };'
+    '         tint, groupTone, groupHtml, grpOpen, tempText, UI_TEMP };'
   ].join('\n');
   const api = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, store, {});
   return { api, els };
@@ -317,14 +318,18 @@ console.log('\n═══ Κάρτα επίναυλου μέσα στη λίστ�
   ck('εργασία πελάτη: χωρίς sys-row', !env().api.taskRow(cliTask(50, 5, 'Π')).includes('sys-row'));
 }
 
-// 13-10-2026: το φόντο ομάδας αλλάζει ΜΟΝΟ την εμφάνιση της λίστας.
-// appearanceStrip() αφαιρεί ακριβώς αυτό, και τίποτε άλλο: τις κλάσεις
-// tone open/late και το style με τα --tone-*. Ό,τι μένει πρέπει να είναι
+// 13-10-2026: το φόντο ομάδας και το [+]/[−] αλλάζουν ΜΟΝΟ την εμφάνιση της
+// λίστας. appearanceStrip() αφαιρεί ακριβώς αυτά, και τίποτε άλλο: τις κλάσεις
+// tone open/late, το style με τα --tone-*, το κουμπί grp-tog και το
+// <div class="grp-body"> γύρω από τις γραμμές. Ό,τι μένει πρέπει να είναι
 // ΙΔΙΟ byte προς byte με το golden.
 function appearanceStrip(html) {
   return html
     .replace(/ tone (open|late)"/g, '"')
-    .replace(/ style="--tone-bg:[^"]*"/g, '');
+    .replace(/ style="--tone-bg:[^"]*"/g, '')
+    .replace(/\n {8}<button class="grp-tog"[^>]*>[^<]*<\/button>/g, '')
+    .replace(/\n {6}<div class="grp-body"( hidden)?>/g, '')
+    .replace(/\n {6}<\/div>\n {4}<\/div>/g, '\n    </div>');
 }
 
 console.log('\n═══ Εργασίες ΠΕΛΑΤΗ: byte-προς-byte ίδιες με το 20588f5 (εκτός από την εμφάνιση της ομάδας) ═══');
@@ -339,8 +344,8 @@ console.log('\n═══ Εργασίες ΠΕΛΑΤΗ: byte-προς-byte ίδ�
     const els = {};
     const doc = { getElementById: id => (els[id] = els[id] || { innerHTML: '', style: {} }) };
     const code = ['let currentUser = { id: 1 }, isAdmin = ' + (who === 'admin') + ', view = "' + v + '", lastTasks = [];',
-      'let STATUSES = ' + JSON.stringify(cases.STATUSES) + ';', 'let FUEL_TYPES = {};', 'const histOpen = new Map();',
-      ...['OVERDUE_COLOR', 'TONE_MIX'].filter(c => src.includes('const ' + c + ' =')).map(grabConst),
+      'let STATUSES = ' + JSON.stringify(cases.STATUSES) + ';', 'let FUEL_TYPES = {};', 'const histOpen = new Map(); const grpOpen = new Map();',
+      ...['UI_TEMP', 'OVERDUE_COLOR', 'TONE_MIX'].filter(c => src.includes('const ' + c + ' =')).map(grabConst),
       grabConst('TIPS'), grabConst('ACTION_URL_OK'), grabConst('FUEL_CMS_HEADER'), grabConst('GR_DAY3'),
       ...cases.FUNCS.filter(f => src.includes('function ' + f + '(')).map(grab),
       'return { render, taskRow };'].join('\n');
@@ -715,6 +720,60 @@ console.log('\n═══ Αντίθεση κειμένου σε κάθε φόν�
   }
   const c = vars(api.closedGroupStyle([cliTask(1, 7, 'Α', { status: 'done' })]));
   ck(`γκρι (αμετάβλητο): ${c['closed-fg']} σε ${c['closed-bg']} = ${ratio(c['closed-fg'], c['closed-bg']).toFixed(2)}:1 ≥ 4.5`, ratio(c['closed-fg'], c['closed-bg']) >= 4.5);
+}
+
+console.log('\n═══ [+]/[−] ανά ομάδα, ΚΑΙ για πελάτες ═══');
+{
+  const { api, els } = env({ statuses: ST_DB });
+  const ts = [cliTask(1, 7, 'Ανοιχτός', { status: 'in_progress' }), cliTask(3, 9, 'Κλειστός', { status: 'done' }),
+              sysTask(76, FW, 'fuel:2026-10-12', PAYLOAD, { status: 'done' })];
+  api.render(ts);
+  let L = els.list.innerHTML;
+  ck('ανοιχτή ομάδα πελάτη: [−], aria-expanded=true, γραμμές ορατές',
+     L.includes('data-g="c:7" aria-expanded="true"') && /data-g="c:7"[^>]*>−<\/button>\s*<\/div>\s*<div class="grp-body">/.test(L));
+  ck('κλειστή ομάδα πελάτη: [+], μαζεμένη (hidden)', /data-g="c:9" aria-expanded="false"[^>]*>\+<\/button>\s*<\/div>\s*<div class="grp-body" hidden>/.test(L));
+  ck('κλειστή ομάδα ΣΥΣΤΗΜΑ: [+], μαζεμένη', /data-g="sys:fuel:2026-10-12" aria-expanded="false"[^>]*>\+<\/button>\s*<\/div>\s*<div class="grp-body" hidden>/.test(L));
+  ck('οι γραμμές της μαζεμένης ομάδας ΥΠΑΡΧΟΥΝ στο HTML (κρύβονται, δεν αλλάζουν)', L.includes(api.taskRow(ts[1])));
+  api.grpOpen.set('c:9', true); api.grpOpen.set('c:7', false);
+  api.render(ts); L = els.list.innerHTML;
+  ck('η επιλογή του χρήστη υπερισχύει: κλειστή ανοίγει, ανοιχτή μαζεύει',
+     /data-g="c:9" aria-expanded="true"/.test(L) && /data-g="c:7" aria-expanded="false"/.test(L));
+  ck('το κλειδί περνά από escHtml (subject_key από τη βάση)', /data-g="\$\{escHtml\(key\)\}"/.test(grab('grpTogHtml')));
+  ck('toggleGroup ξαναζωγραφίζει από το lastTasks, χωρίς δίκτυο', /render\(lastTasks\)/.test(grab('toggleGroup')) && !/post\(|fetch\(|load\(/.test(grab('toggleGroup')));
+}
+
+console.log('\n═══ TEMP: τα προσωρινά κείμενα, σε ΕΝΑ σημείο ═══');
+{
+  const { api } = env();
+  const TEMP_KEYS = ['grp_tip_collapse', 'grp_tip_expand'];
+  ck(`UI_TEMP έχει ΑΚΡΙΒΩΣ τα ${TEMP_KEYS.length} κλειδιά: ${TEMP_KEYS.join(', ')}`,
+     JSON.stringify(Object.keys(api.UI_TEMP).sort()) === JSON.stringify([...TEMP_KEYS].sort()), Object.keys(api.UI_TEMP).join(','));
+  const used = [...new Set([...src.matchAll(/tempText\(\s*(?:[^'()]*\?\s*)?'(\w+)'(?:\s*:\s*'(\w+)')?/g)].flatMap(m => [m[1], m[2]]).filter(Boolean))].sort();
+  ck('κάθε tempText(…) του κώδικα έχει κλειδί στο UI_TEMP', used.every(k => k in api.UI_TEMP), used.join(','));
+  const block = src.slice(src.indexOf('// ═══ TEMP'), src.indexOf('// ═══ τέλος TEMP'));
+  // Σχόλια εξαιρούνται: περιγράφουν τα κείμενα, δεν τα εμφανίζουν.
+  const outside = src.replace(block, '').split(/\r?\n/).filter(l => !/^\s*(\/\/|\/\*|\*)/.test(l)).join('\n');
+  const leaked = Object.values(api.UI_TEMP).map(t => t.replace(/\{\w+\}.*$/, '').trim()).filter(t => outside.includes(t));
+  ck('κανένα προσωρινό κείμενο γραμμένο ΕΞΩ από το μπλοκ TEMP', leaked.length === 0, leaked.join(' | '));
+  ck('το μπλοκ σημειώνεται TEMP και λέει πότε φεύγει (Κ4α, 15/10)', /TEMP — ΠΡΟΣΩΡΙΝΑ ΚΕΙΜΕΝΑ/.test(block) && /Κ4α/.test(block));
+  ck('κλειδί που λείπει -> [κλειδί], όχι κενό', api.tempText('δεν_υπάρχει') === '[δεν_υπάρχει]');
+
+  // ΠΡΟΘΕΣΜΙΑ: με το Κ4α (15/10) τα κείμενα πάνε στη βάση. Από 16/10 (Αθήνα)
+  // το UI_TEMP ΔΕΝ πρέπει να υπάρχει, αλλιώς το τεστ ΑΠΟΤΥΓΧΑΝΕΙ. Το «τώρα»
+  // περνά ΡΗΤΑ: TEST_NOW (YYYY-MM-DD[ HH:MM:SS]) ή, χωρίς αυτό, η σημερινή
+  // ημερομηνία Αθήνας.
+  const TEMP_DEADLINE = '2026-10-15';
+  const tempDeadlineOk = (source, now) => !/const UI_TEMP =/.test(source) || String(now).slice(0, 10) <= TEMP_DEADLINE;
+  const athensToday = () => { const p = {};
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Athens', year: 'numeric', month: '2-digit', day: '2-digit' })
+      .formatToParts(new Date()).forEach(x => { p[x.type] = x.value; });
+    return `${p.year}-${p.month}-${p.day}`; };
+  const NOW_TEMP = process.env.TEST_NOW || athensToday();
+  ck(`UI_TEMP επιτρέπεται ως ${TEMP_DEADLINE} (now = ${NOW_TEMP}${process.env.TEST_NOW ? ', από TEST_NOW' : ', Αθήνα'})`,
+     tempDeadlineOk(src, NOW_TEMP), 'το Κ4α έπρεπε να έχει μεταφέρει τα κείμενα στη βάση');
+  ck('ρητό now 2026-10-15 23:59:59 -> επιτρέπεται', tempDeadlineOk(src, '2026-10-15 23:59:59'));
+  ck('ρητό now 2026-10-16 00:00:00 -> ΑΠΟΤΥΓΧΑΝΕΙ', !tempDeadlineOk(src, '2026-10-16 00:00:00'));
+  ck('χωρίς UI_TEMP στον κώδικα -> περνά οποιαδήποτε μέρα', tempDeadlineOk('// καθαρό', '2027-01-01'));
 }
 
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);
