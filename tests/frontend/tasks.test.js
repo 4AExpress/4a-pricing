@@ -875,5 +875,58 @@ console.log('\n═══ TEMP: τα προσωρινά κείμενα, σε ΕΝ
   ck('χωρίς UI_TEMP στον κώδικα -> περνά οποιαδήποτε μέρα', tempDeadlineOk('// καθαρό', '2027-01-01'));
 }
 
+// ── Επίδειξη: ρίγες ΚΑΙ χρώμα κατάστασης (13-10-2026) ──────────────────────
+// Λευκό, όπως στο CSS: rgba(255,255,255,.45) πάνω στο φόντο.
+const blendWhite = (hex, a) => { const h = hex.length === 4 ? hex.slice(1).split('').map(c => c + c).join('') : hex.slice(1);
+  const n = parseInt(h, 16); return '#' + [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    .map(v => Math.round(v * (1 - a) + 255 * a).toString(16).padStart(2, '0')).join(''); };
+console.log('\n═══ Επίδειξη: ρίγες ΚΑΙ χρώμα κατάστασης ═══');
+{
+  const demoCss = (src.match(/\.client-group\.demo > \.client-head \{[^}]*\}/) || [''])[0];
+  ck('οι ρίγες είναι ΜΟΝΟ background-image (δεν σκεπάζουν το background-color)',
+     /background-image:\s*repeating-linear-gradient/.test(demoCss) && !/\bbackground:/.test(demoCss), demoCss);
+  ck('ρίγες = διάφανο λευκό 45% (και διάφανο ανάμεσα)', /transparent 0 10px/.test(demoCss) && /rgba\(255,255,255,\.45\) 10px 20px/.test(demoCss));
+  ck('κανένα άλλο φόντο για την κεφαλίδα επίδειξης', (src.match(/\.client-group\.demo[^{]*\.client-head \{/g) || []).length === 1);
+  const { api, els } = env({ statuses: ST_DB, now: NOW13 });
+  const d = (id, cid, extra) => cliTask(id, cid, 'Επίδειξη ' + cid, Object.assign({ is_demo: 1 }, extra));
+  api.render([d(1, 31, { status: 'done' }), d(2, 32, { status: 'in_progress', due_at: '2026-10-20 17:00:00' }),
+              d(3, 33, { status: 'open', due_at: '2026-10-09 17:00:00' })]);
+  const heads = [...els.list.innerHTML.matchAll(/<div class="(client-group[^"]*)"/g)].map(m => m[1]);
+  ck('επίδειξη + γκρι / + λεμονί / + κόκκινο: η ομάδα κρατά ΚΑΙ demo ΚΑΙ το χρώμα',
+     JSON.stringify(heads) === JSON.stringify(['client-group demo closed', 'client-group demo tone open', 'client-group demo tone late']), heads.join(' | '));
+  for (const [lbl, bg, fg] of [['γκρι', '#9e9e9e', '#333'], ['λεμονί', '#fcff29', '#000'], ['κόκκινο', api.tint('#cc0000', 0.14), '#333']]) {
+    const stripe = blendWhite(bg, 0.45);
+    ck(`επίδειξη ${lbl}: κείμενο ${fg} σε ρίγα ${stripe} = ${ratio(fg, stripe).toFixed(2)}:1 και σε φόντο ${bg} = ${ratio(fg, bg).toFixed(2)}:1, ≥ 4.5`,
+       ratio(fg, stripe) >= 4.5 && ratio(fg, bg) >= 4.5);
+  }
+}
+
+// ── Κλειδωμένη κάρτα: αντίθεση (13-10-2026) ─────────────────────────────────
+console.log('\n═══ Κλειδωμένη κάρτα: αντίθεση ≥ 4.5 σε κάθε φόντο ═══');
+{
+  const lockedRules = [...src.matchAll(/([^{}]*\.task\.locked[^{}]*)\{([^}]*)\}/g)];
+  const op = lockedRules.map(m => /opacity:\s*([\d.]+)/.exec(m[2])).filter(Boolean).map(m => Number(m[1]));
+  const opacity = op.length ? Math.min(...op) : 1;
+  ck(`καμία opacity < 1 στην κλειδωμένη κάρτα (βρέθηκε ${opacity})`, opacity === 1);
+  // Χρώμα κειμένου μετά την opacity: ανάμειξη με το φόντο της ομάδας.
+  const mixOn = (fg, bg, a) => { const p = h => { h = h.length === 4 ? h.slice(1).split('').map(c => c + c).join('') : h.slice(1);
+      const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+    const F = p(fg), B = p(bg); return '#' + F.map((v, i) => Math.round(v * a + B[i] * (1 - a)).toString(16).padStart(2, '0')).join(''); };
+  const { api } = env({ statuses: ST_DB, now: NOW13 });
+  for (const [lbl, items, alert] of [
+      ['λεμονί', [cliTask(1, 7, 'Α', { locked: 1, display_status: 'locked' })]],
+      ['κόκκινο', [cliTask(1, 7, 'Α', { status: 'open', due_at: '2026-10-09 17:00:00' }), cliTask(2, 7, 'Α', { locked: 1 })]],
+      ['πορτοκαλί', [cliTask(1, 7, 'Α', { locked: 1 })], 'orange']]) {
+    const v = vars(api.groupTone(items, NOW13, alert).style);
+    for (const k of ['tone-fg', 'tone-fg2']) {
+      const eff = mixOn(v[k], v['tone-bg'], opacity);
+      ck(`κλειδωμένη σε ${lbl}: ${k === 'tone-fg' ? 'τίτλος' : 'δευτερεύον'} ${eff} σε ${v['tone-bg']} = ${ratio(eff, v['tone-bg']).toFixed(2)}:1 ≥ 4.5`,
+         ratio(eff, v['tone-bg']) >= 4.5);
+    }
+  }
+  ck('η κλειδωμένη ξεχωρίζει χωρίς opacity: πλάγιος τίτλος', /\.task\.locked \.task-label \{ font-style: italic;/.test(src));
+  ck('το «Περιμένει» το λέει το badge locked (ψευδο-κατάσταση από τη βάση)', /display_status/.test(grab('taskRow')));
+}
+
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);
 process.exit(fail ? 1 : 0);
