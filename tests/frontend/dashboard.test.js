@@ -47,8 +47,9 @@ function env(){
     grab('catPct') + '\n' + grab('catDelta') + '\n' + grab('catMsg') + '\n' +
     grab('servicesHtml') + '\n' +
     grab('badge') + '\n' + grab('calcDiff') + '\n' + grab('fmtViewDate') + '\n' +
+    grab('fmtAthens') + '\n' + grab('offlineHtml') + '\n' +
     grab('pickByDate') + '\n' + grab('pickNext') + '\n' + grab('renderDashboard') + '\n' +
-    'return {badge, calcDiff, fmtViewDate, pickByDate, pickNext, renderDashboard, servicesHtml, catPct};');
+    'return {badge, calcDiff, fmtViewDate, pickByDate, pickNext, renderDashboard, servicesHtml, catPct, fmtAthens, offlineHtml};');
   return { api: fn(doc, win.FuelFreshness, GR_DAYS), els, doc, FF: win.FuelFreshness };
 }
 
@@ -317,5 +318,96 @@ ck('KNOWN BUG: ακόμα 2 στοιχεία με id="last-update" (ΡΑΦΙΑ 3
    (src.match(/id="last-update"/g) || []).length === 2,
    (src.match(/id="last-update"/g) || []).length);
 
-console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);
-process.exit(fail ? 1 : 0);
+// ── Ώρα Αθήνας (13-10-2026): το fetched_at είναι UTC χωρίς δήλωση ζώνης ──
+console.log('\n═══ «Τελευταία ανάκτηση» σε ώρα Αθήνας ═══');
+{
+  const { api, els } = env();
+  ck('12/10 12:39 UTC (με μικροδευτερόλεπτα) -> 15:39 Αθήνα (EEST, +3)',
+     api.fmtAthens('2026-10-12T12:39:44.714137') === '12-10-2026 15:39', api.fmtAthens('2026-10-12T12:39:44.714137'));
+  ck('με ρητό Z: ίδιο αποτέλεσμα', api.fmtAthens('2026-10-12T12:39:44Z') === '12-10-2026 15:39');
+  ck('με ρητό offset: σεβαστό', api.fmtAthens('2026-10-12T15:39:00+03:00') === '12-10-2026 15:39');
+  ck('χειμώνας (EET, +2): 02/11 05:00 UTC -> 07:00', api.fmtAthens('2026-11-02T05:00:00') === '02-11-2026 07:00');
+  ck('αλλαγή ημέρας: 11/10 22:30 UTC -> 12/10 01:30', api.fmtAthens('2026-10-11T22:30:00') === '12-10-2026 01:30');
+  ck('χωρίς τιμή -> —', api.fmtAthens(null) === '—' && api.fmtAthens('') === '—');
+  ck('άγνωστη μορφή -> αυτούσια, όχι «Invalid Date»', api.fmtAthens('χθες') === 'χθες');
+  api.renderDashboard(Object.assign({}, FIX, { fetched_at: '2026-10-12T12:39:44.714137' }), '2026-10-05', CAT_OK);
+  ck('«Τελευταία ανάκτηση» στη σελίδα σε ώρα Αθήνας',
+     els['fetched-at'].textContent === 'Τελευταία ανάκτηση: 12-10-2026 15:39', els['fetched-at'].textContent);
+  ck('ώρα πάνω δεξιά (last-update) σε ώρα Αθήνας', els['last-update'].textContent === '12-10-2026 15:39', els['last-update'].textContent);
+  ck('καμία κοπή substring(11,16) του fetched_at (έδειχνε UTC)', !/fetched_at\.substring\(11/.test(src));
+}
+
+console.log('\n═══ Υπότιτλος: καμία ψεύτικη ώρα ═══');
+ck('ούτε «07:00» ούτε άλλη ώρα στον υπότιτλο',
+   /<p class="page-sub">Αυτόματη ενημέρωση μία φορά την ημέρα<\/p>/.test(src) && !src.includes('καθημερινά 07:00'));
+
+console.log('\n═══ Ένδειξη «εκτός σύνδεσης» ═══');
+{
+  const { api } = env();
+  ck('online -> τίποτα', api.offlineHtml(false, '2026-10-04T05:10:00') === '');
+  const h = api.offlineHtml(true, '2026-10-04T05:10:00');
+  ck('offline -> «Εκτός σύνδεσης – δεδομένα της 04-10-2026 08:10»', h.includes('Εκτός σύνδεσης – δεδομένα της 04-10-2026 08:10'), h);
+  ck('offline χωρίς fetched_at -> «—», όχι undefined', api.offlineHtml(true, null).includes('δεδομένα της —'));
+  ck('η σελίδα γράφει την ένδειξη στο #offline σε κάθε paint()',
+     /getElementById\('offline'\)\.innerHTML = offlineHtml\(OFFLINE, FUEL_DATA\.fetched_at\)/.test(src));
+  ck('υπάρχει <div id="offline">', src.includes('<div id="offline"></div>'));
+}
+
+// ── Network-first (13-10-2026) ─────────────────────────────────────────
+// Το fuel-freshness.js φορτώνεται με ελεγχόμενα localStorage και fetch.
+function ffEnv(stored, net) {
+  const store = {}; if (stored) store['4a_fuel_cache'] = JSON.stringify(stored);
+  const calls = { fetch: 0, set: 0 };
+  const win = {};
+  new Function('window','localStorage','fetch','document', mod)(win,
+    { getItem: k => (k in store ? store[k] : null), setItem: (k, v) => { calls.set++; store[k] = v; } },
+    () => { calls.fetch++; return net ? Promise.resolve({ ok: true, json: () => Promise.resolve(net) })
+                                      : Promise.reject(new Error('χωρίς δίκτυο')); },
+    { getElementById: () => null });
+  return { FF: win.FuelFreshness, store, calls };
+}
+// Παλιό cache που ΟΜΩΣ καλύπτει τη σημερινή εβδομάδα: η περίπτωση του κανονικού παραθύρου.
+const wk = pct => [{ week: 'w', week_start: '2000-01-03', week_end: '2099-12-31', pct }];
+const OLDC = { fetched_at: '2026-10-04T05:10:00', air: wk(11), road: wk(22) };
+const NEWC = { fetched_at: '2026-10-12T12:39:44', air: wk(49.75), road: wk(40.75) };
+
+(async () => {
+  console.log('\n═══ loadFresh(): ΠΑΝΤΑ δίκτυο πρώτα ═══');
+  {
+    const e = ffEnv(OLDC, NEWC);
+    const r = await e.FF.loadFresh();
+    ck('έγκυρο cache ΚΑΙ δίκτυο -> ζητά το δίκτυο', e.calls.fetch === 1, e.calls.fetch);
+    ck('δεδομένα από το δίκτυο (49.75/40.75), όχι από το cache',
+       r.air === 49.75 && r.road === 40.75 && r.source === 'network', JSON.stringify([r.air, r.road, r.source]));
+    ck('offline = false', r.offline === false);
+    ck('το cache ενημερώνεται με τα νέα', JSON.parse(e.store['4a_fuel_cache']).fetched_at === NEWC.fetched_at);
+  }
+  {
+    const e = ffEnv(OLDC, null);
+    const r = await e.FF.loadFresh();
+    ck('δίκτυο αποτυγχάνει -> το cache, με offline = true',
+       r.offline === true && r.source === 'cache' && r.air === 11, JSON.stringify([r.offline, r.source, r.air]));
+    ck('το fetched_at του cache περνά για την ένδειξη', r.fetched_at === OLDC.fetched_at);
+    ck('το cache ΔΕΝ σβήνεται ούτε ξαναγράφεται',
+       e.calls.set === 0 && JSON.parse(e.store['4a_fuel_cache']).fetched_at === OLDC.fetched_at);
+  }
+  {
+    const e = ffEnv(null, null);
+    const r = await e.FF.loadFresh();
+    ck('ούτε δίκτυο ούτε cache -> χωρίς δεδομένα (η σελίδα δείχνει σφάλμα)',
+       r.data === null && r.source === 'none' && r.offline === true);
+  }
+  console.log('\n═══ load() των άλλων σελίδων: ΑΜΕΤΑΒΛΗΤΟ ═══');
+  {
+    const e = ffEnv(OLDC, NEWC);
+    const r = await e.FF.load();
+    ck('έγκυρο cache -> load() ΔΕΝ ζητά δίκτυο (όπως πριν)',
+       e.calls.fetch === 0 && r.source === 'cache' && r.air === 11, JSON.stringify([e.calls.fetch, r.source]));
+  }
+  ck('η σελίδα επίναυλου καλεί loadFresh(), όχι load()',
+     /FuelFreshness\.loadFresh\(\)/.test(src) && !/FuelFreshness\.load\(\)/.test(src));
+  ck('νέα έκδοση του script στη σελίδα (όχι παλιό από browser cache)', src.includes('fuel-freshness.js?v=2026-10-13'));
+
+  console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);
+  process.exit(fail ? 1 : 0);
+})();

@@ -112,19 +112,20 @@
   <div class="page-header">
     <div>
       <h1 class="page-title">Επίναυλος Καυσίμων — Διεθνείς Μεταφορές</h1>
-      <p class="page-sub">Αυτόματη ενημέρωση καθημερινά 07:00</p>
+      <p class="page-sub">Αυτόματη ενημέρωση μία φορά την ημέρα</p>
       <p class="fetched-at" id="fetched-at"></p>
       <p class="view-date-row">Προβολή για: <span id="view-date-label">—</span></p>
     </div>
   </div>
 
   <div id="error-container"></div>
+  <div id="offline"></div>
   <div id="freshness"></div>
   <div id="content" class="loading">Φόρτωση δεδομένων...</div>
 
 </div>
 
-<script src="fuel-freshness.js?v=2026-09-27"></script>
+<script src="fuel-freshness.js?v=2026-10-13"></script>
 <script>
 // Η διεύθυνση του JSON ζει πλέον στο fuel-freshness.js (FuelFreshness.URL) —
 // μία πηγή, ώστε να μην αποκλίνει ανά σελίδα.
@@ -228,6 +229,23 @@ function badge(diff) {
 function calcDiff(arr, idx) {
   if (idx >= arr.length - 1) return null;
   return parseFloat((arr[idx].pct - arr[idx+1].pct).toFixed(2));
+}
+
+// Το fetched_at το γράφει το GitHub Action (poc/fetch_fuel_surcharge.py,
+// datetime.now() σε runner UTC) ΧΩΡΙΣ δήλωση ζώνης. Είναι UTC: η ανάκτηση
+// της 12/10 έγραψε 12:39, ενώ στην Αθήνα ήταν 15:39. Εμφανίζεται σε ώρα
+// Αθήνας, «dd-mm-yyyy HH:MM», ό,τι κι αν είναι η ζώνη του browser.
+function fmtAthens(iso) {
+  if (!iso) return '—';
+  const m = String(iso).match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$/);
+  if (!m) return iso;
+  const d = new Date(m[1] + 'T' + m[2] + (m[3] || ':00') + (m[5] || 'Z'));
+  if (isNaN(d.getTime())) return iso;
+  const p = {};
+  new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Athens', year: 'numeric', month: '2-digit',
+    day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(d).forEach(x => { p[x.type] = x.value; });
+  return `${p.day}-${p.month}-${p.year} ${p.hour}:${p.minute}`;
 }
 
 // «Δευτέρα 05/10/2026» από ISO. Μεσημέρι UTC, ώστε η ζώνη του browser να
@@ -359,10 +377,7 @@ function renderDashboard(data, viewISO, cat) {
     return { id: 'tab-t-' + t.code, label: `${esc(t.label_el)}${codes.length ? ' (' + esc(codes.join('/')) + ')' : ''}`, body };
   });
 
-  const fetchedLbl = data.fetched_at
-    ? data.fetched_at.substring(8,10)+'-'+data.fetched_at.substring(5,7)+'-'+
-      data.fetched_at.substring(0,4)+' '+data.fetched_at.substring(11,16)
-    : '—';
+  const fetchedLbl = fmtAthens(data.fetched_at);
   document.getElementById('fetched-at').textContent = `Τελευταία ανάκτηση: ${fetchedLbl}`;
   // Ίδια πηγή, όχι το ρολόι του browser.
   document.getElementById('last-update').textContent = fetchedLbl;
@@ -450,11 +465,19 @@ function showTab(id, btn) {
 }
 
 // Φόρτωση JSON — μέσω fuel-freshness.js: ίδια πηγή, ίδιο cache και ίδιο
-// κριτήριο εγκυρότητας με τις υπόλοιπες σελίδες. Η σελίδα εξακολουθεί να
+// κριτήριο εγκυρότητας με τις υπόλοιπες σελίδες, αλλά με loadFresh(). Η σελίδα εξακολουθεί να
 // ζωγραφίζει ΟΛΟ το αρχείο (res.data), όχι μόνο την τρέχουσα εβδομάδα.
 // Το αρχείο κρατιέται, ώστε η αλλαγή ημερομηνίας προβολής να ξαναζωγραφίζει
 // χωρίς νέο δίκτυο.
 let FUEL_DATA = null;
+// true όταν το δίκτυο δεν απάντησε και τα δεδομένα είναι από το localStorage.
+let OFFLINE = false;
+
+// Εμφανής ένδειξη για δεδομένα από το localStorage. Κενό όταν ήρθαν από το δίκτυο.
+function offlineHtml(offline, fetchedAt) {
+  if (!offline) return '';
+  return `<div class="error-box">⚠️ Εκτός σύνδεσης – δεδομένα της ${esc(fmtAthens(fetchedAt))}</div>`;
+}
 // Κατάσταση του καταλόγου από τον server: loading | nologin | error | ok.
 let CAT = { state: 'loading' };
 
@@ -466,15 +489,18 @@ function paint() {
   // Η κατάσταση φρεσκάδας κρίνεται ΓΙΑ ΤΗΝ ΙΔΙΑ ημερομηνία που ζωγραφίζουμε.
   const res = FuelFreshness.check(FUEL_DATA, iso);
   renderDashboard(FUEL_DATA, iso, CAT);
+  document.getElementById('offline').innerHTML = offlineHtml(OFFLINE, FUEL_DATA.fetched_at);
   FuelFreshness.warningsBox(res, 'freshness');
   // Εδώ δεν μπαίνει σύνδεσμος: η σελίδα ΕΙΝΑΙ ο έλεγχος του επίναυλου.
   FuelFreshness.banner(res, 'freshness', { link: false });
 }
 
-FuelFreshness.load()
+// ΠΑΝΤΑ το δίκτυο πρώτα· το localStorage μόνο αν αποτύχει (13-10-2026).
+FuelFreshness.loadFresh()
   .then(res => {
     if (!res.data) throw new Error(res.reason || 'δεν φορτώθηκαν δεδομένα');
     FUEL_DATA = res.data;
+    OFFLINE = !!res.offline;
     paint();
   })
   .catch(err => {

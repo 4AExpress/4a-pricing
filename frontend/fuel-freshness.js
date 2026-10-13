@@ -1,4 +1,4 @@
-/* fuel-freshness.js | v1.0 | 27-09-2026
+/* fuel-freshness.js | v1.1 | 13-10-2026 (v1.0 27-09-2026)
  *
  * Ένας κανόνας εγκυρότητας για τον επίναυλο καυσίμων, σε ένα αρχείο.
  * Προδιαγραφή: docs/fuel_freshness_spec.md
@@ -184,6 +184,35 @@
     });
   }
 
+  /* ── loadFresh(): ΠΡΩΤΑ το δίκτυο, το cache ΜΟΝΟ αν αποτύχει ──────────
+     Για τη σελίδα του επίναυλου (fuel-surcharge-dashboard.html), που
+     ανοίγει κανείς ειδικά για να δει τα τελευταία δεδομένα. Το load()
+     δίνει το cache όσο η τρέχουσα εβδομάδα είναι έγκυρη, άρα δεν φέρνει
+     ποτέ την «επόμενη» που δημοσιεύτηκε μετά (13-10-2026: ανάκτηση 04/10
+     και κενή «επόμενη» με σωστό αρχείο στο GitHub). Οι σελίδες
+     τιμοκαταλόγου μένουν στο load(): χρειάζονται μόνο την τρέχουσα.
+     offline = true όταν τα δεδομένα είναι από το cache επειδή το δίκτυο
+     δεν απάντησε. */
+  function loadFresh() {
+    return fetchRemote().then(function (fresh) {
+      if (fresh) {
+        writeCache(fresh);
+        var out = check(fresh, todayISO());
+        out.source = 'network';
+        out.offline = false;
+        return out;
+      }
+      var cached = readCache();
+      var res = check(cached, todayISO());
+      res.source = cached ? 'cache' : 'none';
+      res.offline = true;
+      res.reason = res.reason
+        ? res.reason + ' · το δίκτυο δεν απάντησε'
+        : 'το δίκτυο δεν απάντησε';
+      return res;
+    });
+  }
+
   /* ── Οθόνη ────────────────────────────────────────────────────────
      Τα στυλ είναι inline: οι σελίδες δεν μοιράζονται stylesheet και ένα
      <style> εδώ θα έμπαινε σε ξένο έδαφος. */
@@ -274,12 +303,13 @@
   }
 
   window.FuelFreshness = {
-    VERSION: '1.0',
+    VERSION: '1.1',
     OK: OK, STALE: STALE, FALLBACK: FALLBACK,
     URL: URL_JSON,
     todayISO: todayISO,
     check: check,
     load: load,
+    loadFresh: loadFresh,
     banner: banner,
     warningsBox: warningsBox
   };
