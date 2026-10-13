@@ -857,22 +857,26 @@ console.log('\n═══ TEMP: τα προσωρινά κείμενα, σε ΕΝ
   ck('το μπλοκ σημειώνεται TEMP και λέει πότε φεύγει (Κ4α, 15/10)', /TEMP — ΠΡΟΣΩΡΙΝΑ ΚΕΙΜΕΝΑ/.test(block) && /Κ4α/.test(block));
   ck('κλειδί που λείπει -> [κλειδί], όχι κενό', api.tempText('δεν_υπάρχει') === '[δεν_υπάρχει]');
 
-  // ΠΡΟΘΕΣΜΙΑ: με το Κ4α (15/10) τα κείμενα πάνε στη βάση. Από 16/10 (Αθήνα)
-  // το UI_TEMP ΔΕΝ πρέπει να υπάρχει, αλλιώς το τεστ ΑΠΟΤΥΓΧΑΝΕΙ. Το «τώρα»
-  // περνά ΡΗΤΑ: TEST_NOW (YYYY-MM-DD[ HH:MM:SS]) ή, χωρίς αυτό, η σημερινή
-  // ημερομηνία Αθήνας.
-  const TEMP_DEADLINE = '2026-10-15';
-  const tempDeadlineOk = (source, now) => !/const UI_TEMP =/.test(source) || String(now).slice(0, 10) <= TEMP_DEADLINE;
-  const athensToday = () => { const p = {};
-    new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Athens', year: 'numeric', month: '2-digit', day: '2-digit' })
-      .formatToParts(new Date()).forEach(x => { p[x.type] = x.value; });
-    return `${p.year}-${p.month}-${p.day}`; };
-  const NOW_TEMP = process.env.TEST_NOW || athensToday();
-  ck(`UI_TEMP επιτρέπεται ως ${TEMP_DEADLINE} (now = ${NOW_TEMP}${process.env.TEST_NOW ? ', από TEST_NOW' : ', Αθήνα'})`,
-     tempDeadlineOk(src, NOW_TEMP), 'το Κ4α έπρεπε να έχει μεταφέρει τα κείμενα στη βάση');
-  ck('ρητό now 2026-10-15 23:59:59 -> επιτρέπεται', tempDeadlineOk(src, '2026-10-15 23:59:59'));
-  ck('ρητό now 2026-10-16 00:00:00 -> ΑΠΟΤΥΓΧΑΝΕΙ', !tempDeadlineOk(src, '2026-10-16 00:00:00'));
-  ck('χωρίς UI_TEMP στον κώδικα -> περνά οποιαδήποτε μέρα', tempDeadlineOk('// καθαρό', '2027-01-01'));
+  // ΧΩΡΙΣ ΗΜΕΡΟΜΗΝΙΑ (απόφαση 13/10): το τεστ ΑΠΟΤΥΓΧΑΝΕΙ μόνο όταν υπάρχει
+  // ΤΑΥΤΟΧΡΟΝΑ (α) migration που δημιουργεί τον πίνακα κειμένων οθόνης
+  // `4a_ui_texts` στο db/migrations/ ΚΑΙ (β) μη άδειο UI_TEMP στον κώδικα.
+  // Δηλαδή: μόλις μπει ο πίνακας, τα προσωρινά κείμενα πρέπει να φύγουν.
+  const UI_TEXTS_TABLE = '4a_ui_texts';
+  const createsTable = sql => new RegExp('CREATE TABLE IF NOT EXISTS `' + UI_TEXTS_TABLE + '`').test(sql);
+  const tempKeys = source => { const m = /const UI_TEMP = \{([\s\S]*?)\n\};/.exec(source);
+    return m ? (m[1].match(/^\s*\w+\s*:/gm) || []).length : 0; };
+  const tempOk = (migrations, source) => !(migrations.some(createsTable) && tempKeys(source) > 0);
+  const migs = fs.readdirSync('db/migrations').filter(f => f.endsWith('.sql')).map(f => fs.readFileSync(path.join('db/migrations', f), 'utf8'));
+  const hasTable = migs.some(createsTable);
+  ck(`UI_TEMP: ${tempKeys(src)} κλειδιά · migration του ${UI_TEXTS_TABLE}: ${hasTable ? 'ΥΠΑΡΧΕΙ' : 'όχι ακόμα'} -> ` +
+     (hasTable ? 'το UI_TEMP πρέπει να είναι άδειο' : 'επιτρέπεται'),
+     tempOk(migs, src), 'ο πίνακας κειμένων υπάρχει: τα κείμενα του UI_TEMP πρέπει να μεταφερθούν στη βάση');
+  const MIG = 'CREATE TABLE IF NOT EXISTS `4a_ui_texts` (`k` VARCHAR(40))';
+  ck('πίνακας ΚΑΙ μη άδειο UI_TEMP -> ΑΠΟΤΥΓΧΑΝΕΙ', !tempOk([MIG], 'const UI_TEMP = {\n  a: \'x\',\n};'));
+  ck('πίνακας ΚΑΙ άδειο UI_TEMP -> περνά', tempOk([MIG], 'const UI_TEMP = {\n};'));
+  ck('πίνακας ΚΑΙ κανένα UI_TEMP -> περνά', tempOk([MIG], '// καθαρό'));
+  ck('χωρίς πίνακα, με UI_TEMP -> περνά (καμία ημερομηνία)', tempOk(['CREATE TABLE IF NOT EXISTS `άλλος` (x INT)'], 'const UI_TEMP = {\n  a: \'x\',\n};'));
+  ck('κανένας έλεγχος ημερομηνίας στο τεστ', !/TEST_NOW|TEMP_DEADLINE|athensToday/.test(grab('tempText')));
 }
 
 // ── Επίδειξη: ρίγες ΚΑΙ χρώμα κατάστασης (13-10-2026) ──────────────────────
@@ -926,6 +930,29 @@ console.log('\n═══ Κλειδωμένη κάρτα: αντίθεση ≥ 4
   }
   ck('η κλειδωμένη ξεχωρίζει χωρίς opacity: πλάγιος τίτλος', /\.task\.locked \.task-label \{ font-style: italic;/.test(src));
   ck('το «Περιμένει» το λέει το badge locked (ψευδο-κατάσταση από τη βάση)', /display_status/.test(grab('taskRow')));
+}
+
+// ── «Οι εργασίες μου»: αριθμός στην καρτέλα (13-10-2026, έρευνα) ──────────────
+// Αναφέρθηκε ότι «Οι εργασίες μου» έχασε τον αριθμό. ΔΕΝ είναι παλινδρόμηση:
+// από το 76f88b9 (24/09) ο αριθμός μπαίνει ΜΟΝΟ στην καρτέλα που φορτώθηκε στη
+// συνεδρία (counts[view] = d.tasks.length), και η σελίδα ανοίγει στην «Ουρά».
+// Μετά από Ctrl+Shift+R η «Οι εργασίες μου» δεν έχει αριθμό μέχρι να πατηθεί.
+// Το τεστ καρφώνει τη σημερινή συμπεριφορά· αν αλλάξει (απόφαση), αλλάζει κι αυτό.
+console.log('\n═══ Καρτέλες: αριθμός μόνο στην καρτέλα που φορτώθηκε (από 24/09) ═══');
+{
+  ck('η σελίδα ανοίγει στην «Ουρά»', /let view = 'queue';/.test(src));
+  ck('ο αριθμός γράφεται μόνο για την τρέχουσα καρτέλα', /counts\[view\] = d\.tasks\.length;/.test(src));
+  const tabsCode = [grabConst('VIEW_LABELS'), grabConst('VIEW_TIPS'), grab('escHtml'), grab('renderTabs')].join('\n');
+  const tab = (counts, view) => { const els = {};
+    new Function('document', 'counts', 'view', 'isAdmin', tabsCode + '\nrenderTabs();')(
+      { getElementById: id => (els[id] = els[id] || { innerHTML: '' }) }, counts, view, true);
+    return els.tabs.innerHTML; };
+  const fresh = tab({ mine: null, queue: 7, all: null }, 'queue');
+  ck('μετά από φόρτωση στην «Ουρά»: «Οι εργασίες μου» ΧΩΡΙΣ αριθμό, «Ουρά» με 7',
+     !/Οι εργασίες μου<span class="cnt">/.test(fresh) && /Ουρά αδιάθετων<span class="cnt">7<\/span>/.test(fresh), fresh);
+  const visited = tab({ mine: 4, queue: 7, all: null }, 'queue');
+  ck('αφού ανοίξει η «Οι εργασίες μου»: κρατά τον αριθμό της (4)', /Οι εργασίες μου<span class="cnt">4<\/span>/.test(visited), visited);
+  ck('ο αριθμός 0 φαίνεται ως 0, δεν κρύβεται', /<span class="cnt">0<\/span>/.test(tab({ mine: 0, queue: null, all: null }, 'mine')));
 }
 
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);
