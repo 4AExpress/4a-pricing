@@ -63,14 +63,14 @@ function env(opts){
     grab('dueState'), grab('dueHtml'), grab('refreshDues'), grab('fuelColumns'), grab('fuelFactsHtml'),
     grabConst('STEP_UI_KEYS'), grab('uiText'),
     grab('stepTimelineHtml'), grab('stepMoreHtml'), grab('stepCardHtml'), grab('uploadCheck'),
-    grabConst('UI_TEMP'), grab('tempText'), grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'),
-    grab('tint'), grab('groupTone'),
+    grabConst('UI_TEMP'), grab('tempText'), grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'), grabConst('TONE_MIX_STRONG'),
+    grab('tint'), grab('groupTone'), grab('addDaysISO'), grab('fuelWeekInfo'), grab('fuelStateHtml'),
     grab('grpIsOpen'), grab('grpTogHtml'), grab('groupHtml'),
     grab('taskRow'), grab('render'),
     'return { render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
     '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS,',
     '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle,',
-    '         tint, groupTone, groupHtml, grpOpen, tempText, UI_TEMP };'
+    '         tint, groupTone, groupHtml, grpOpen, fuelWeekInfo, fuelStateHtml, tempText, UI_TEMP };'
   ].join('\n');
   const api = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, store, {});
   return { api, els };
@@ -345,7 +345,7 @@ console.log('\n═══ Εργασίες ΠΕΛΑΤΗ: byte-προς-byte ίδ�
     const doc = { getElementById: id => (els[id] = els[id] || { innerHTML: '', style: {} }) };
     const code = ['let currentUser = { id: 1 }, isAdmin = ' + (who === 'admin') + ', view = "' + v + '", lastTasks = [];',
       'let STATUSES = ' + JSON.stringify(cases.STATUSES) + ';', 'let FUEL_TYPES = {};', 'const histOpen = new Map(); const grpOpen = new Map();',
-      ...['UI_TEMP', 'OVERDUE_COLOR', 'TONE_MIX'].filter(c => src.includes('const ' + c + ' =')).map(grabConst),
+      ...['UI_TEMP', 'OVERDUE_COLOR', 'TONE_MIX', 'TONE_MIX_STRONG'].filter(c => src.includes('const ' + c + ' =')).map(grabConst),
       grabConst('TIPS'), grabConst('ACTION_URL_OK'), grabConst('FUEL_CMS_HEADER'), grabConst('GR_DAY3'),
       ...cases.FUNCS.filter(f => src.includes('function ' + f + '(')).map(grab),
       'return { render, taskRow };'].join('\n');
@@ -742,10 +742,99 @@ console.log('\n═══ [+]/[−] ανά ομάδα, ΚΑΙ για πελάτε
   ck('toggleGroup ξαναζωγραφίζει από το lastTasks, χωρίς δίκτυο', /render\(lastTasks\)/.test(grab('toggleGroup')) && !/post\(|fetch\(|load\(/.test(grab('toggleGroup')));
 }
 
+// ── Εβδομάδες επίναυλου: σειρά, ένδειξη, κόκκινο/πορτοκαλί (13-10-2026) ──
+const wkPay = ws => Object.assign({}, PAYLOAD, { week_start: ws, week_end: '' });
+// Μια εβδομάδα: ανέβασμα (ρίζα) + επαλήθευση, με προθεσμία Παρ πριν το week_start 17:00.
+const fuelWeek = (id, ws, up, ver, extra) => {
+  const due = addDays(ws, -3) + ' 17:00:00';
+  return [sysTask(id, FW, 'fuel:' + ws, wkPay(ws), Object.assign({ status: up, due_at: due }, extra && extra.up)),
+          sysTask(id + 1, FWV, 'fuel:' + ws, wkPay(ws), Object.assign({ status: ver, due_at: due }, extra && extra.ver))];
+};
+function addDays(iso, n) { const d = new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10) + n)); return d.toISOString().slice(0, 10); }
+const NOW13 = '2026-10-13 12:00:00';
+
+console.log('\n═══ Εβδομάδα επίναυλου: φάση και ένδειξη ═══');
+{
+  const { api } = env({ statuses: ST_DB, now: NOW13 });
+  const I = (ws, up, ver, now) => api.fuelWeekInfo(fuelWeek(1, ws, up, ver), now || NOW13);
+  let i = I('2026-10-19', 'in_progress', 'open');
+  ck('επόμενη, ανέβασμα ανοιχτό: «◷ ΠΡΟΣ ΕΚΤΕΛΕΣΗ · προθεσμία Παρ 16/10 17:00», χωρίς χρώμα',
+     i.phase === 'next' && i.text === '◷ ΠΡΟΣ ΕΚΤΕΛΕΣΗ · προθεσμία Παρ 16/10 17:00' && i.alert === null, JSON.stringify(i));
+  i = I('2026-10-19', 'done', 'in_progress');
+  ck('επόμενη, ανέβηκε, επαλήθευση ανοιχτή: «Ανέβηκε · εκκρεμεί επαλήθευση», πορτοκαλί',
+     i.text === 'Ανέβηκε · εκκρεμεί επαλήθευση' && i.alert === 'orange', JSON.stringify(i));
+  i = I('2026-10-19', 'done', 'done');
+  ck('επόμενη, όλα έτοιμα: «✓ Έτοιμη · ισχύει από Δευ 19/10»', i.text === '✓ Έτοιμη · ισχύει από Δευ 19/10' && i.alert === null, JSON.stringify(i));
+  i = I('2026-10-12', 'in_progress', 'open');
+  ck('σε ισχύ, ανέβασμα ΟΧΙ done: «⚠ Σε ισχύ · CMS ΜΗ ενημερωμένο», κόκκινο',
+     i.phase === 'now' && i.text === '⚠ Σε ισχύ · CMS ΜΗ ενημερωμένο' && i.alert === 'red', JSON.stringify(i));
+  i = I('2026-10-12', 'done', 'in_progress');
+  ck('σε ισχύ, ανέβηκε, επαλήθευση ανοιχτή: πορτοκαλί, ΟΧΙ κόκκινο', i.text === 'Ανέβηκε · εκκρεμεί επαλήθευση' && i.alert === 'orange');
+  i = I('2026-10-12', 'done', 'done');
+  ck('σε ισχύ, όλα done: «✓ Σε ισχύ · CMS ενημερωμένο»', i.text === '✓ Σε ισχύ · CMS ενημερωμένο' && i.alert === null);
+  ck('«na» στο ανέβασμα ΔΕΝ μετρά ως ενημερωμένο CMS (κόκκινο)', I('2026-10-12', 'na', 'na').alert === 'red');
+  i = I('2026-10-05', 'done', 'done');
+  ck('παλαιότερη: φάση older, καμία ένδειξη', i.phase === 'older' && i.text === null);
+  ck('όριο: Κυρ 18/10 23:59:59 -> η 19/10 είναι ακόμα «επόμενη»', I('2026-10-19', 'done', 'done', '2026-10-18 23:59:59').phase === 'next');
+  ck('όριο: Δευ 19/10 00:00:00 -> η 19/10 «σε ισχύ», η 12/10 «παλαιότερη»',
+     I('2026-10-19', 'done', 'done', '2026-10-19 00:00:00').phase === 'now' && I('2026-10-12', 'done', 'done', '2026-10-19 00:00:00').phase === 'older');
+  ck('ομάδα που δεν είναι επίναυλος -> null', api.fuelWeekInfo([cliTask(1, 7, 'Α')], NOW13) === null);
+}
+
+console.log('\n═══ Εβδομάδα επίναυλου: χρώμα ομάδας ═══');
+{
+  const { api } = env({ statuses: ST_DB, now: NOW13 });
+  const T = (items, now) => { const info = api.fuelWeekInfo(items, now || NOW13); return api.groupTone(items, now || NOW13, info.alert); };
+  ck('σε ισχύ, ανέβασμα ανοιχτό -> κόκκινο', T(fuelWeek(1, '2026-10-12', 'in_progress', 'open')).cls === 'late');
+  const o = T(fuelWeek(1, '2026-10-19', 'done', 'in_progress'));
+  ck('ανέβηκε, επαλήθευση ανοιχτή, σε χρόνο -> πορτοκαλί (warn)', o.cls === 'warn', JSON.stringify(o));
+  ck('πορτοκαλί = ΙΔΙΟ χρώμα in_progress της βάσης, πιο έντονο (35%)', vars(o.style)['tone-bg'] === api.tint('#f0a000', 0.35), o.style);
+  ck('σε ισχύ, ανέβηκε, επαλήθευση ΠΕΡΑΣΕ την προθεσμία της -> κόκκινο (κανόνας καθυστέρησης)',
+     T(fuelWeek(1, '2026-10-12', 'done', 'in_progress')).cls === 'late');
+  ck('επόμενη, ανέβασμα ανοιχτό, προθεσμία ΟΧΙ περασμένη -> κίτρινο', T(fuelWeek(1, '2026-10-19', 'in_progress', 'open')).cls === 'open');
+  ck('επόμενη, ανέβασμα ανοιχτό, προθεσμία ΠΕΡΑΣΜΕΝΗ (Σαβ 17/10) -> κόκκινο',
+     T(fuelWeek(1, '2026-10-19', 'in_progress', 'open'), '2026-10-17 10:00:00').cls === 'late');
+  ck('κανένα νέο χρώμα: μόνο in_progress της βάσης και το κόκκινο της καθυστέρησης',
+     !/#ef6c00/i.test(grab('groupTone') + grab('fuelStateHtml')) && /OVERDUE_COLOR/.test(grab('fuelStateHtml')) && /STATUSES\.in_progress/.test(grab('fuelStateHtml')));
+  const red = api.fuelStateHtml(api.fuelWeekInfo(fuelWeek(1, '2026-10-12', 'open', 'open'), NOW13));
+  const org = api.fuelStateHtml(api.fuelWeekInfo(fuelWeek(1, '2026-10-19', 'done', 'open'), NOW13));
+  ck('ένδειξη κόκκινη: πλακίδιο #cc0000 με λευκό κείμενο', red.includes('background:#cc0000;color:#fff;'), red);
+  ck('ένδειξη πορτοκαλί: πλακίδιο in_progress (#f0a000) με σκούρο κείμενο', org.includes('background:#f0a000;color:#333;'), org);
+  console.log('\n═══ Αντίθεση: πορτοκαλί φόντο και πλακίδια ═══');
+  const v = vars(o.style);
+  ck(`πορτοκαλί: κύριο ${v['tone-fg']} σε ${v['tone-bg']} = ${ratio(v['tone-fg'], v['tone-bg']).toFixed(2)}:1 ≥ 4.5`, ratio(v['tone-fg'], v['tone-bg']) >= 4.5);
+  ck(`πορτοκαλί: δευτερεύον ${v['tone-fg2']} σε ${v['tone-bg']} = ${ratio(v['tone-fg2'], v['tone-bg']).toFixed(2)}:1 ≥ 4.5`, ratio(v['tone-fg2'], v['tone-bg']) >= 4.5);
+  ck(`πλακίδιο κόκκινο: #fff σε #cc0000 = ${ratio('#ffffff', '#cc0000').toFixed(2)}:1 ≥ 4.5`, ratio('#ffffff', '#cc0000') >= 4.5);
+  ck(`πλακίδιο πορτοκαλί: #333 σε #f0a000 = ${ratio('#333', '#f0a000').toFixed(2)}:1 ≥ 4.5`, ratio('#333', '#f0a000') >= 4.5);
+}
+
+console.log('\n═══ Σειρά: επόμενη -> σε ισχύ -> «Παλαιότερες εβδομάδες (N)» ═══');
+{
+  const { api, els } = env({ statuses: ST_DB, now: NOW13 });
+  api.render([...fuelWeek(70, '2026-09-28', 'done', 'done'), ...fuelWeek(75, '2026-10-05', 'done', 'done'),
+              ...fuelWeek(76, '2026-10-12', 'done', 'done'), ...fuelWeek(80, '2026-10-19', 'in_progress', 'open'),
+              cliTask(1, 7, 'Πελάτης', { status: 'in_progress', due_at: '2026-10-20 17:00:00' })]);
+  const L = els.list.innerHTML;
+  const keys = [...L.matchAll(/data-g="([^"]+)"/g)].map(m => m[1]);
+  ck('σειρά: 19/10, 12/10, Παλαιότερες (05/10, 28/09), μετά οι πελάτες',
+     JSON.stringify(keys) === JSON.stringify(['sys:fuel:2026-10-19', 'sys:fuel:2026-10-12', 'sys:older', 'sys:fuel:2026-10-05', 'sys:fuel:2026-09-28', 'c:7']),
+     keys.join(' '));
+  ck('«Παλαιότερες εβδομάδες (2)», μαζεμένη με [+]',
+     L.includes('Παλαιότερες εβδομάδες (2)') && /data-g="sys:older" aria-expanded="false"[^>]*>\+<\/button>\s*<\/div>\s*<div class="grp-body" hidden>/.test(L));
+  ck('οι εβδομάδες 05/10 και 28/09 είναι ΜΕΣΑ στις «Παλαιότερες»',
+     L.indexOf('data-g="sys:older"') < L.indexOf('data-g="sys:fuel:2026-10-05"') && L.indexOf('data-g="sys:fuel:2026-09-28"') < L.indexOf('data-g="c:7"'));
+  ck('ένδειξη στις κεφαλίδες: 19/10 «ΠΡΟΣ ΕΚΤΕΛΕΣΗ», 12/10 «Σε ισχύ · CMS ενημερωμένο»',
+     L.includes('◷ ΠΡΟΣ ΕΚΤΕΛΕΣΗ · προθεσμία Παρ 16/10 17:00') && L.includes('✓ Σε ισχύ · CMS ενημερωμένο'));
+  ck('κανένα «Παλαιότερες» όταν δεν υπάρχουν παλαιότερες', (() => {
+    const e = env({ statuses: ST_DB, now: NOW13 }); e.api.render(fuelWeek(80, '2026-10-19', 'in_progress', 'open'));
+    return !e.els.list.innerHTML.includes('sys:older'); })());
+}
+
 console.log('\n═══ TEMP: τα προσωρινά κείμενα, σε ΕΝΑ σημείο ═══');
 {
   const { api } = env();
-  const TEMP_KEYS = ['grp_tip_collapse', 'grp_tip_expand'];
+  const TEMP_KEYS = ['fuel_next_todo', 'fuel_uploaded', 'fuel_next_ready', 'fuel_now_ok', 'fuel_now_missing', 'fuel_older',
+                     'grp_tip_collapse', 'grp_tip_expand'];
   ck(`UI_TEMP έχει ΑΚΡΙΒΩΣ τα ${TEMP_KEYS.length} κλειδιά: ${TEMP_KEYS.join(', ')}`,
      JSON.stringify(Object.keys(api.UI_TEMP).sort()) === JSON.stringify([...TEMP_KEYS].sort()), Object.keys(api.UI_TEMP).join(','));
   const used = [...new Set([...src.matchAll(/tempText\(\s*(?:[^'()]*\?\s*)?'(\w+)'(?:\s*:\s*'(\w+)')?/g)].flatMap(m => [m[1], m[2]]).filter(Boolean))].sort();

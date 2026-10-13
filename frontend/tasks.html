@@ -117,6 +117,7 @@
      Χρώματα και κείμενο έρχονται ως μεταβλητές από τη render(), όπως στην
      κλειστή ομάδα. Το δευτερεύον κείμενο (#999 στο λευκό) σκουραίνει, γιατί
      σε απόχρωση δεν περνά τον έλεγχο αντίθεσης. */
+  /* Παιδιά ΜΟΝΟ (>): μια ομάδα μέσα στις «Παλαιότερες» κρατά το δικό της φόντο. */
   .client-group.tone, .client-group.tone > .client-head, .client-group.tone > .grp-body > .task {
     background: var(--tone-bg); color: var(--tone-fg); }
   .client-group.tone > .client-head { border-bottom-color: var(--tone-line); }
@@ -131,6 +132,13 @@
              background: transparent; color: inherit; cursor: pointer; opacity: .75; }
   .grp-tog:hover, .grp-tog:focus-visible { opacity: 1; }
   .client-group .client-head:has(+ .grp-body[hidden]) { border-bottom: none; }
+
+  /* Ένδειξη της εβδομάδας επίναυλου στην κεφαλίδα. Το χρώμα (κόκκινο /
+     πορτοκαλί) μπαίνει inline από τη render(). */
+  .grp-state { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 10px; white-space: nowrap; }
+  .grp-state.plain { padding: 3px 0; }
+  /* «Παλαιότερες εβδομάδες»: οι ομάδες μέσα της, με περιθώριο. */
+  .client-group.older > .grp-body { padding: 10px 10px 0; }
 
   /* ΕΠΙΔΕΙΞΗ: ουδέτερο, σκόπιμα ΟΧΙ κόκκινο — το κόκκινο ανήκει στο
      needs_attention — και όχι χρώμα κατάστασης, που έρχεται από τη βάση.
@@ -517,15 +525,27 @@ function render(tasks){
     if(!sysGroups.has(k)) sysGroups.set(k, { country:t.task_country || t.client_country, items:[] });
     sysGroups.get(k).items.push(t);
   });
-  const sysHtml = [...sysGroups.entries()].map(([k, g]) => {
+  // Εβδομάδες επίναυλου: επόμενη -> σε ισχύ -> παλαιότερες (week_start
+  // φθίνουσα). Οι παλαιότερες μαζί σε μία ομάδα «Παλαιότερες εβδομάδες (N)».
+  // Ό,τι δεν είναι εβδομάδα επίναυλου μένει μετά, με τη σειρά του.
+  const sysList = [...sysGroups.entries()].map(([k, g]) => ({ k, g, info: fuelWeekInfo(g.items) }));
+  sysList.sort((a, b) => (b.info ? b.info.ws : '').localeCompare(a.info ? a.info.ws : ''));
+  const sysOne = ({ k, g, info }) => {
     const root = g.items.find(t => t.depends_on === null) || g.items[0];
     // Τίτλος της ομάδας = ο τίτλος του τύπου-ρίζας, με εικονίδιο και εβδομάδα
     // από τη βάση (taskTitle). Η εβδομάδα δεν ξαναγράφεται δίπλα.
     return groupHtml('sys:' + k, 'client-group sys', g.items, `
         <span class="sys-tag" title="System — Εργασία χωρίς πελάτη, δημιουργείται από το σύστημα">ΣΥΣΤΗΜΑ</span>
         <span class="client-name">${taskTitle(root)}</span>
-        <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>`);
-  }).join('');
+        <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>${info && info.text ? `
+        ${fuelStateHtml(info)}` : ''}`, info ? info.alert : null);
+  };
+  const older = sysList.filter(x => x.info && x.info.phase === 'older');
+  const sysHtml = sysList.filter(x => !older.includes(x)).map(sysOne).join('') +
+    (older.length ? groupHtml('sys:older', 'client-group sys older', older.flatMap(x => x.g.items), `
+        <span class="sys-tag" title="System — Εργασία χωρίς πελάτη, δημιουργείται από το σύστημα">ΣΥΣΤΗΜΑ</span>
+        <span class="client-name">${escHtml(tempText('fuel_older', { n: older.length }))}</span>`, null, true,
+        older.map(sysOne).join('')) : '');
 
   // Ομαδοποίηση ανά πελάτη — η αλυσίδα ενός πελάτη διαβάζεται μαζί.
   const groups = new Map();
@@ -699,6 +719,12 @@ function closedGroupStyle(items){
 // και ελέγχει ότι κανένα δεν γράφεται αλλού στον κώδικα. ΜΗΝ προσθέτεις
 // κείμενο οθόνης έξω από αυτόν τον πίνακα.
 const UI_TEMP = {
+  fuel_next_todo:     '◷ ΠΡΟΣ ΕΚΤΕΛΕΣΗ · προθεσμία {due}',
+  fuel_uploaded:      'Ανέβηκε · εκκρεμεί επαλήθευση',
+  fuel_next_ready:    '✓ Έτοιμη · ισχύει από {day}',
+  fuel_now_ok:        '✓ Σε ισχύ · CMS ενημερωμένο',
+  fuel_now_missing:   '⚠ Σε ισχύ · CMS ΜΗ ενημερωμένο',
+  fuel_older:         'Παλαιότερες εβδομάδες ({n})',
   grp_tip_collapse:   'Collapse — Μάζεμα της ομάδας',
   grp_tip_expand:     'Expand — Άνοιγμα της ομάδας',
 };
@@ -716,6 +742,8 @@ const OVERDUE_COLOR = '#cc0000';
 // Πόσο από το χρώμα μπαίνει στο φόντο (το υπόλοιπο είναι λευκό). Ανοιχτό,
 // ώστε το κείμενο της ομάδας να διαβάζεται όπως στο λευκό.
 const TONE_MIX = 0.14;
+// «Ανέβηκε · εκκρεμεί επαλήθευση»: πορτοκαλί, ΙΔΙΑ πηγή με το κίτρινο, πιο έντονο.
+const TONE_MIX_STRONG = 0.35;
 
 // Απόχρωση ενός #rrggbb προς το λευκό: a = 1 το ίδιο χρώμα, a = 0 λευκό.
 // null αν το χρώμα δεν είναι #rrggbb.
@@ -733,18 +761,62 @@ function tint(hex, a){
 //         μέσω της dueState(): εκείνη χρωματίζει μόνο τύπους με όρια
 //         προθεσμίας, ενώ εδώ μετρά κάθε εργασία, και πελάτη.
 //   open: οτιδήποτε άλλο με ανοιχτή εργασία, χρώμα της «in_progress».
-function groupTone(items, now){
+//   alert (προαιρετικό, από την fuelWeekInfo): 'red' ή 'orange' υπερισχύει.
+//   orange: το ΙΔΙΟ χρώμα «in_progress», πιο έντονο (TONE_MIX_STRONG).
+function groupTone(items, now, alert){
   if(!items.length || closedGroupStyle(items)) return null;
   if(now === undefined) now = athensNow();
-  const late = items.some(t => t.status!=='done' && t.status!=='na' && Number(t.locked)!==1 &&
+  const late = alert === 'red' || items.some(t => t.status!=='done' && t.status!=='na' && Number(t.locked)!==1 &&
                                t.due_at && (msLeft(t.due_at, now) ?? 0) < 0);
+  const orange = !late && alert === 'orange';
   const base = late ? OVERDUE_COLOR : (STATUSES.in_progress && STATUSES.in_progress.color);
-  const bg = tint(base, TONE_MIX);
+  const mix = orange ? TONE_MIX_STRONG : TONE_MIX;
+  const bg = tint(base, mix);
   if(!bg) return null;
-  const line = tint(base, TONE_MIX * 2.5);
+  const line = tint(base, Math.min(1, mix * 2.5));
   const fg = textOn(bg);
-  return { cls: late ? 'late' : 'open',
+  return { cls: late ? 'late' : orange ? 'warn' : 'open',
            style: `--tone-bg:${bg};--tone-line:${line};--tone-fg:${fg};--tone-fg2:${fg==='#fff'?'#fff':'#555'};` };
+}
+
+// ── Εβδομάδα επίναυλου: φάση και ένδειξη κεφαλίδας ─────────────────────
+// «Σε ισχύ» = σήμερα (Αθήνα) ≥ week_start ΚΑΙ < week_start + 7.
+// Ρίζα (depends_on = null) = η εργασία ανεβάσματος· οι υπόλοιπες = επαλήθευση.
+function addDaysISO(iso, n){
+  const d = new Date(Date.UTC(+iso.slice(0,4), +iso.slice(5,7)-1, +iso.slice(8,10) + n));
+  return d.toISOString().slice(0, 10);
+}
+// null αν η ομάδα δεν είναι εβδομάδα επίναυλου. Αλλιώς:
+//   ws, phase: next | now | older, text (ή null), alert: red | orange | null
+function fuelWeekInfo(items, now){
+  const root = items.find(t => t.depends_on === null) || items[0];
+  const p = root ? taskPayload(root) : null;
+  if(!p || p.kind !== 'fuel_weekly' || !/^\d{4}-\d{2}-\d{2}$/.test(String(p.week_start||''))) return null;
+  if(now === undefined) now = athensNow();
+  const ws = p.week_start, today = String(now).slice(0, 10);
+  const phase = today < ws ? 'next' : today < addDaysISO(ws, 7) ? 'now' : 'older';
+  const upDone = root.status === 'done';
+  const verifyOpen = items.some(t => t !== root && t.status !== 'done' && t.status !== 'na');
+  let key = null, alert = null, vars = {};
+  if(phase === 'next'){
+    if(!upDone){ key = 'fuel_next_todo'; vars.due = fmtDue(root.due_at, true); }
+    else if(verifyOpen){ key = 'fuel_uploaded'; alert = 'orange'; }
+    else { key = 'fuel_next_ready'; vars.day = fmtDue(ws + ' 00:00', true).slice(0, 9); }
+  } else if(phase === 'now'){
+    if(!upDone){ key = 'fuel_now_missing'; alert = 'red'; }
+    else if(verifyOpen){ key = 'fuel_uploaded'; alert = 'orange'; }
+    else key = 'fuel_now_ok';
+  }
+  return { ws, phase, alert, key, text: key ? tempText(key, vars) : null };
+}
+// Η ένδειξη ως HTML. Κόκκινη/πορτοκαλί: πλακίδιο με το ΓΕΜΑΤΟ χρώμα (το
+// κείμενο σε απόχρωση δεν περνά τον έλεγχο αντίθεσης). Οι υπόλοιπες: κείμενο.
+function fuelStateHtml(info){
+  if(!info || !info.text) return '';
+  const bg = info.alert === 'red' ? OVERDUE_COLOR
+           : info.alert === 'orange' ? (STATUSES.in_progress && STATUSES.in_progress.color) : null;
+  return bg ? `<span class="grp-state" style="background:${bg};color:${textOn(bg)};">${escHtml(info.text)}</span>`
+            : `<span class="grp-state plain">${escHtml(info.text)}</span>`;
 }
 
 // [+]/[−]: ρητή επιλογή του χρήστη ανά ομάδα (κλειδί -> ανοιχτή;). Χωρίς
@@ -765,10 +837,13 @@ function toggleGroup(key){
 // Η ομάδα ολόκληρη: φόντο, κεφαλίδα με [+]/[−], γραμμές. Οι γραμμές ΠΑΝΤΑ
 // στο HTML· η μαζεμένη ομάδα τις κρύβει με hidden, χωρίς να αλλάζει τίποτα
 // μέσα τους.
-function groupHtml(key, baseCls, items, headInner){
+// alert: από την fuelWeekInfo (red | orange), αλλιώς ό,τι λέει η groupTone.
+// startClosed: αρχικά μαζεμένη ακόμα κι αν δεν είναι κλειστή («Παλαιότερες»).
+// bodyHtml: περιεχόμενο αντί για τις γραμμές (οι ομάδες μέσα στις «Παλαιότερες»).
+function groupHtml(key, baseCls, items, headInner, alert, startClosed, bodyHtml){
   const cs = closedGroupStyle(items);
-  const tone = cs ? null : groupTone(items);
-  const open = grpIsOpen(key, !!cs);
+  const tone = cs ? null : groupTone(items, undefined, alert);
+  const open = grpIsOpen(key, !!cs || !!startClosed);
   const cls = baseCls + (cs ? ' closed' : '') + (tone ? ' tone ' + tone.cls : '');
   const style = cs || (tone && tone.style);
   return `
@@ -777,7 +852,7 @@ function groupHtml(key, baseCls, items, headInner){
         ${grpTogHtml(key, open)}
       </div>
       <div class="grp-body"${open?'':' hidden'}>
-      ${items.map(taskRow).join('')}
+      ${bodyHtml === undefined ? items.map(taskRow).join('') : bodyHtml}
       </div>
     </div>`;
 }
