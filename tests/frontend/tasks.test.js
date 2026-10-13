@@ -63,10 +63,13 @@ function env(opts){
     grab('dueState'), grab('dueHtml'), grab('refreshDues'), grab('fuelColumns'), grab('fuelFactsHtml'),
     grabConst('STEP_UI_KEYS'), grab('uiText'),
     grab('stepTimelineHtml'), grab('stepMoreHtml'), grab('stepCardHtml'), grab('uploadCheck'),
+    grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'),
+    grab('tint'), grab('groupTone'), grab('groupHtml'),
     grab('taskRow'), grab('render'),
     'return { render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
     '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS,',
-    '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle };'
+    '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle,',
+    '         tint, groupTone, groupHtml };'
   ].join('\n');
   const api = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, store, {});
   return { api, els };
@@ -314,28 +317,43 @@ console.log('\n═══ Κάρτα επίναυλου μέσα στη λίστ�
   ck('εργασία πελάτη: χωρίς sys-row', !env().api.taskRow(cliTask(50, 5, 'Π')).includes('sys-row'));
 }
 
-console.log('\n═══ Εργασίες ΠΕΛΑΤΗ: byte-προς-byte ίδιες με το 20588f5 ═══');
+// 13-10-2026: το φόντο ομάδας αλλάζει ΜΟΝΟ την εμφάνιση της λίστας.
+// appearanceStrip() αφαιρεί ακριβώς αυτό, και τίποτε άλλο: τις κλάσεις
+// tone open/late και το style με τα --tone-*. Ό,τι μένει πρέπει να είναι
+// ΙΔΙΟ byte προς byte με το golden.
+function appearanceStrip(html) {
+  return html
+    .replace(/ tone (open|late)"/g, '"')
+    .replace(/ style="--tone-bg:[^"]*"/g, '');
+}
+
+console.log('\n═══ Εργασίες ΠΕΛΑΤΗ: byte-προς-byte ίδιες με το 20588f5 (εκτός από την εμφάνιση της ομάδας) ═══');
 {
   // tasks_client_rows.golden.json = η έξοδος του tasks.html στο 20588f5 (το
   // ζωντανό πριν από αυτή την αλλαγή) πάνω στις εργασίες του tasks_client_cases.js.
   const cases = require(path.join(HERE, 'tasks_client_cases.js'));
   const golden = JSON.parse(fs.readFileSync(path.join(HERE, 'tasks_client_rows.golden.json'), 'utf8'));
-  let rows = 0, diff = [];
+  let rows = 0, diff = [], lists = 0, toned = 0;
   for (const key of Object.keys(golden)) {
     const [v, who] = key.split(':');
     const els = {};
     const doc = { getElementById: id => (els[id] = els[id] || { innerHTML: '', style: {} }) };
     const code = ['let currentUser = { id: 1 }, isAdmin = ' + (who === 'admin') + ', view = "' + v + '", lastTasks = [];',
       'let STATUSES = ' + JSON.stringify(cases.STATUSES) + ';', 'let FUEL_TYPES = {};', 'const histOpen = new Map();',
+      ...['OVERDUE_COLOR', 'TONE_MIX'].filter(c => src.includes('const ' + c + ' =')).map(grabConst),
       grabConst('TIPS'), grabConst('ACTION_URL_OK'), grabConst('FUEL_CMS_HEADER'), grabConst('GR_DAY3'),
       ...cases.FUNCS.filter(f => src.includes('function ' + f + '(')).map(grab),
       'return { render, taskRow };'].join('\n');
     const a = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, { getItem: () => null }, {});
     cases.TASKS.forEach((t, i) => { rows++; const got = a.taskRow(t); if (got !== golden[key].rows[i]) diff.push(`${key} #${t.id}`); });
     a.render(cases.TASKS);
-    if (els.list.innerHTML !== golden[key].list) diff.push(`${key} λίστα`);
+    lists++;
+    if (els.list.innerHTML !== golden[key].list) toned++;
+    if (appearanceStrip(els.list.innerHTML) !== golden[key].list) diff.push(`${key} λίστα`);
   }
-  ck(`${rows} γραμμές πελάτη σε ${Object.keys(golden).length} συνδυασμούς προβολής/ρόλου + οι λίστες: ΙΔΙΑ bytes`, diff.length === 0, diff.join(', '));
+  ck(`${rows} γραμμές πελάτη σε ${Object.keys(golden).length} συνδυασμούς προβολής/ρόλου: ΙΔΙΑ bytes, και οι ${lists} λίστες ΙΔΙΕΣ μετά το appearanceStrip()`,
+     diff.length === 0, diff.join(', '));
+  ck('η εμφάνιση ΟΝΤΩΣ άλλαξε (αλλιώς ο έλεγχος θα ήταν κενός)', toned === lists, `${toned}/${lists}`);
 }
 
 console.log('\n═══ Υπόμνημα: κουκκίδα «Ολοκληρωμένη» = φόντο κλειστής ομάδας ═══');
@@ -635,6 +653,68 @@ console.log('\n═══ Δομικά ═══');
   const closedCss = (src.match(/\.client-group\.closed[^}]*}/g) || []).join(' ');
   ck('οι κανόνες CSS της κλειστής ομάδας ΔΕΝ έχουν σταθερό χρώμα (μόνο var)', closedCss.length > 0 && !/#[0-9a-f]{3,6}/i.test(closedCss), closedCss);
   ck('όνομα αρχείου FuelChargeImport_GR_CY_<ισχύς>.xlsx', /'FuelChargeImport_GR_CY_' \+ p\.effective_date \+ '\.xlsx'/.test(src));
+}
+
+// ── Φόντο ομάδας ανά κατάσταση και [+]/[−] (13-10-2026) ─────────────────
+// Χρώματα όπως στη βάση (migration 2026-09-23f): in_progress #f0a000, done #9e9e9e.
+const ST_DB = Object.assign({}, DB_STATUSES, { in_progress: { code: 'in_progress', label: 'Σε εξέλιξη', color: '#f0a000' } });
+// WCAG 2.x: σχετική φωτεινότητα και λόγος αντίθεσης.
+const lumOf = hex => { const h = hex.length === 4 ? hex.slice(1).split('').map(c => c + c).join('') : hex.slice(1);
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); })
+    .reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0); };
+const ratio = (a, b) => { const x = lumOf(a), y = lumOf(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+const vars = style => Object.fromEntries([...String(style).matchAll(/--([\w-]+):(#(?:[0-9a-f]{6}|[0-9a-f]{3}))(?=;)/gi)].map(m => [m[1], m[2]]));
+
+console.log('\n═══ Φόντο ομάδας: κίτρινο / κόκκινο / γκρι ═══');
+{
+  // «Τώρα» 08/10 10:00 (Αθήνα): προθεσμία 09/10 = σε χρόνο, 07/10 = καθυστέρηση.
+  const { api, els } = env({ statuses: ST_DB });
+  const open = api.groupTone([cliTask(1, 7, 'Α', { status: 'in_progress', due_at: '2026-10-09 17:00:00' })]);
+  ck('ανοιχτή, σε χρόνο -> tone open', open && open.cls === 'open', JSON.stringify(open));
+  ck('κίτρινο = απόχρωση του in_progress της βάσης (#f0a000 στο 14%)',
+     open && vars(open.style)['tone-bg'] === api.tint('#f0a000', 0.14), open && open.style);
+  const late = api.groupTone([cliTask(1, 7, 'Α', { status: 'open', due_at: '2026-10-07 17:00:00' }),
+                              cliTask(2, 7, 'Α', { status: 'done' })]);
+  ck('έστω μία ανοιχτή σε καθυστέρηση -> tone late (και για πελάτη, χωρίς όρια προθεσμίας)', late && late.cls === 'late', JSON.stringify(late));
+  ck('κόκκινο = απόχρωση του κόκκινου της καθυστέρησης (#cc0000)', late && vars(late.style)['tone-bg'] === api.tint('#cc0000', 0.14));
+  ck('κλειδωμένη με περασμένη προθεσμία -> ΟΧΙ καθυστέρηση (δεν τρέχει ακόμα)',
+     api.groupTone([cliTask(1, 7, 'Α', { status: 'open', locked: 1, due_at: '2026-10-07 17:00:00' })]).cls === 'open');
+  ck('ολοκληρωμένη με περασμένη προθεσμία -> ΟΧΙ καθυστέρηση',
+     api.groupTone([cliTask(1, 7, 'Α', { status: 'done', due_at: '2026-10-07 17:00:00' }), cliTask(2, 7, 'Α', { status: 'in_progress' })]).cls === 'open');
+  ck('κλειστή ομάδα -> κανένα tone (μένει το σημερινό γκρι)',
+     api.groupTone([cliTask(1, 7, 'Α', { status: 'done' }), cliTask(2, 7, 'Α', { status: 'na' })]) === null);
+  ck('χωρίς χρώμα in_progress στη βάση -> κανένα tone, όχι επινοημένο χρώμα',
+     env({ statuses: DB_STATUSES }).api.groupTone([cliTask(1, 7, 'Α', { status: 'in_progress' })]) === null);
+
+  api.render([
+    sysTask(76, FW, 'fuel:2026-10-12', PAYLOAD, { status: 'done' }), sysTask(77, FWV, 'fuel:2026-10-12', PAYLOAD, { status: 'done' }),
+    sysTask(80, FW, 'fuel:2026-10-19', PAYLOAD, { status: 'in_progress', due_at: '2026-10-16 17:00:00' }),
+    cliTask(1, 7, 'Κίτρινος', { status: 'in_progress', due_at: '2026-10-09 17:00:00' }),
+    cliTask(2, 8, 'Κόκκινος', { status: 'open', due_at: '2026-10-07 17:00:00' }),
+    cliTask(3, 9, 'Γκρι', { status: 'done' }),
+  ]);
+  const L = els.list.innerHTML;
+  const heads = [...L.matchAll(/<div class="(client-group[^"]*)"( style="[^"]*")?>/g)].map(m => m[1]);
+  ck('ΚΑΜΙΑ λευκή ομάδα: κάθε ομάδα είναι tone ή closed', heads.length === 5 && heads.every(c => / tone (open|late)$| closed$/.test(c)), heads.join(' | '));
+  ck('ΣΥΣΤΗΜΑ κλειστή = γκρι · ΣΥΣΤΗΜΑ ανοιχτή = κίτρινο',
+     heads[0] === 'client-group sys closed' && heads[1] === 'client-group sys tone open', heads.slice(0, 2).join(' | '));
+  ck('πελάτες: κίτρινο / κόκκινο / γκρι', heads[2] === 'client-group tone open' && heads[3] === 'client-group tone late' && heads[4] === 'client-group closed',
+     heads.slice(2).join(' | '));
+  ck('το γκρι της κλειστής ΔΕΝ άλλαξε (closedGroupStyle όπως πριν)', L.includes('style="--closed-bg:#9e9e9e;--closed-fg:#333;"'));
+}
+
+console.log('\n═══ Αντίθεση κειμένου σε κάθε φόντο (WCAG, όριο 4.5:1) ═══');
+{
+  const { api } = env({ statuses: ST_DB });
+  for (const [lbl, items] of [['κίτρινο', [cliTask(1, 7, 'Α', { status: 'in_progress', due_at: '2026-10-09 17:00:00' })]],
+                              ['κόκκινο', [cliTask(1, 7, 'Α', { status: 'open', due_at: '2026-10-07 17:00:00' })]]]) {
+    const v = vars(api.groupTone(items).style);
+    ck(`${lbl}: κύριο κείμενο ${v['tone-fg']} σε ${v['tone-bg']} = ${ratio(v['tone-fg'], v['tone-bg']).toFixed(2)}:1 ≥ 4.5`, ratio(v['tone-fg'], v['tone-bg']) >= 4.5);
+    ck(`${lbl}: δευτερεύον ${v['tone-fg2']} σε ${v['tone-bg']} = ${ratio(v['tone-fg2'], v['tone-bg']).toFixed(2)}:1 ≥ 4.5`, ratio(v['tone-fg2'], v['tone-bg']) >= 4.5);
+  }
+  const c = vars(api.closedGroupStyle([cliTask(1, 7, 'Α', { status: 'done' })]));
+  ck(`γκρι (αμετάβλητο): ${c['closed-fg']} σε ${c['closed-bg']} = ${ratio(c['closed-fg'], c['closed-bg']).toFixed(2)}:1 ≥ 4.5`, ratio(c['closed-fg'], c['closed-bg']) >= 4.5);
 }
 
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);

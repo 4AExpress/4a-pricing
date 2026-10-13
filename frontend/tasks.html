@@ -109,6 +109,22 @@
     background: transparent; color: var(--closed-fg); border-color: var(--closed-fg); }
   .task-icon { margin-right: 4px; }
 
+  /* Ομάδα ΜΕ ανοιχτές εργασίες: φόντο ανά κατάσταση, για ΟΛΕΣ τις ομάδες
+     (13-10-2026). Λευκό φόντο ομάδας δεν υπάρχει πια.
+       tone open  ανοιχτό κίτρινο: απόχρωση του χρώματος της «in_progress»
+                  από τη βάση
+       tone late  ανοιχτό κόκκινο: έστω μία εργασία σε καθυστέρηση
+     Χρώματα και κείμενο έρχονται ως μεταβλητές από τη render(), όπως στην
+     κλειστή ομάδα. Το δευτερεύον κείμενο (#999 στο λευκό) σκουραίνει, γιατί
+     σε απόχρωση δεν περνά τον έλεγχο αντίθεσης. */
+  .client-group.tone, .client-group.tone > .client-head, .client-group.tone > .task {
+    background: var(--tone-bg); color: var(--tone-fg); }
+  .client-group.tone > .client-head { border-bottom-color: var(--tone-line); }
+  .client-group.tone > .task { border-bottom-color: var(--tone-line); }
+  .client-group.tone .client-name, .client-group.tone .task-label { color: var(--tone-fg); }
+  .client-group.tone .client-meta, .client-group.tone .task-meta,
+  .client-group.tone .btn-hist, .client-group.tone .lockmsg { color: var(--tone-fg2); }
+
   /* ΕΠΙΔΕΙΞΗ: ουδέτερο, σκόπιμα ΟΧΙ κόκκινο — το κόκκινο ανήκει στο
      needs_attention — και όχι χρώμα κατάστασης, που έρχεται από τη βάση.
      Διαβάζεται πριν το όνομα του πελάτη, και η ομάδα ολόκληρη παίρνει
@@ -496,18 +512,12 @@ function render(tasks){
   });
   const sysHtml = [...sysGroups.values()].map(g => {
     const root = g.items.find(t => t.depends_on === null) || g.items[0];
-    const cs = closedGroupStyle(g.items);
     // Τίτλος της ομάδας = ο τίτλος του τύπου-ρίζας, με εικονίδιο και εβδομάδα
     // από τη βάση (taskTitle). Η εβδομάδα δεν ξαναγράφεται δίπλα.
-    return `
-    <div class="client-group sys${cs?' closed':''}"${cs?` style="${cs}"`:''}>
-      <div class="client-head">
+    return groupHtml('client-group sys', g.items, `
         <span class="sys-tag" title="System — Εργασία χωρίς πελάτη, δημιουργείται από το σύστημα">ΣΥΣΤΗΜΑ</span>
         <span class="client-name">${taskTitle(root)}</span>
-        <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>
-      </div>
-      ${g.items.map(taskRow).join('')}
-    </div>`;
+        <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>`);
   }).join('');
 
   // Ομαδοποίηση ανά πελάτη — η αλυσίδα ενός πελάτη διαβάζεται μαζί.
@@ -521,17 +531,12 @@ function render(tasks){
   });
   el.innerHTML =
     (view==='all' ? summaryHtml(tasks) : '') + sysHtml +
-    [...groups.values()].map(g => { const cs = closedGroupStyle(g.items); return `
-    <div class="client-group${g.isDemo?' demo':''}${cs?' closed':''}"${cs?` style="${cs}"`:''}>
-      <div class="client-head">
+    [...groups.values()].map(g => groupHtml('client-group' + (g.isDemo?' demo':''), g.items, `
         ${g.isDemo?'<span class="demo-tag" title="Demo — Πελάτης επίδειξης. Τίποτα εδώ δεν είναι αληθινή δουλειά και δεν μετριέται πουθενά">ΕΠΙΔΕΙΞΗ</span>':''}
         <span class="client-name">${escHtml(g.name)}</span>
         <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>
         <span class="client-meta">${g.account?'AccountNo '+escHtml(g.account):'χωρίς AccountNo'}
-          ${g.offer?' · προσφορά '+escHtml(g.offer):' · χωρίς προσφορά'}</span>
-      </div>
-      ${g.items.map(taskRow).join('')}
-    </div>`; }).join('');
+          ${g.offer?' · προσφορά '+escHtml(g.offer):' · χωρίς προσφορά'}</span>`)).join('');
 }
 
 // Σε ΠΟΙΟΝ έχει ανατεθεί — σε ΟΛΕΣ τις καρτέλες, δίπλα στο badge.
@@ -679,6 +684,58 @@ function closedGroupStyle(items){
   const c = closedColor();
   if(!c) return null;
   return `--closed-bg:${c};--closed-fg:${textOn(c)};`;
+}
+
+// Το κόκκινο της καθυστέρησης: ΙΔΙΟ με το κείμενο «καθυστέρηση» της
+// προθεσμίας (.fuel-due.d-over). Ο 4a_task_statuses δεν έχει κόκκινη
+// κατάσταση, γιατί η καθυστέρηση δεν είναι κατάσταση.
+const OVERDUE_COLOR = '#cc0000';
+// Πόσο από το χρώμα μπαίνει στο φόντο (το υπόλοιπο είναι λευκό). Ανοιχτό,
+// ώστε το κείμενο της ομάδας να διαβάζεται όπως στο λευκό.
+const TONE_MIX = 0.14;
+
+// Απόχρωση ενός #rrggbb προς το λευκό: a = 1 το ίδιο χρώμα, a = 0 λευκό.
+// null αν το χρώμα δεν είναι #rrggbb.
+function tint(hex, a){
+  const m = /^#([0-9a-f]{6})$/i.exec(String(hex||''));
+  if(!m) return null;
+  const n = parseInt(m[1],16);
+  const mix = v => Math.round(v*a + 255*(1-a)).toString(16).padStart(2,'0');
+  return '#' + mix((n>>16)&255) + mix((n>>8)&255) + mix(n&255);
+}
+
+// Το φόντο ομάδας με ανοιχτές εργασίες, ή null (κλειστή ομάδα ή χρώμα που
+// λείπει από τη βάση: τότε ό,τι ίσχυε πριν).
+//   late: έστω μία ανοιχτή, ΞΕΚΛΕΙΔΩΤΗ εργασία με due_at που πέρασε. ΟΧΙ
+//         μέσω της dueState(): εκείνη χρωματίζει μόνο τύπους με όρια
+//         προθεσμίας, ενώ εδώ μετρά κάθε εργασία, και πελάτη.
+//   open: οτιδήποτε άλλο με ανοιχτή εργασία, χρώμα της «in_progress».
+function groupTone(items, now){
+  if(!items.length || closedGroupStyle(items)) return null;
+  if(now === undefined) now = athensNow();
+  const late = items.some(t => t.status!=='done' && t.status!=='na' && Number(t.locked)!==1 &&
+                               t.due_at && (msLeft(t.due_at, now) ?? 0) < 0);
+  const base = late ? OVERDUE_COLOR : (STATUSES.in_progress && STATUSES.in_progress.color);
+  const bg = tint(base, TONE_MIX);
+  if(!bg) return null;
+  const line = tint(base, TONE_MIX * 2.5);
+  const fg = textOn(bg);
+  return { cls: late ? 'late' : 'open',
+           style: `--tone-bg:${bg};--tone-line:${line};--tone-fg:${fg};--tone-fg2:${fg==='#fff'?'#fff':'#555'};` };
+}
+
+// Η ομάδα ολόκληρη: φόντο (κλειστή, ή tone ανά κατάσταση), κεφαλίδα, γραμμές.
+function groupHtml(baseCls, items, headInner){
+  const cs = closedGroupStyle(items);
+  const tone = cs ? null : groupTone(items);
+  const cls = baseCls + (cs ? ' closed' : '') + (tone ? ' tone ' + tone.cls : '');
+  const style = cs || (tone && tone.style);
+  return `
+    <div class="${cls}"${style?` style="${style}"`:''}>
+      <div class="client-head">${headInner}
+      </div>
+      ${items.map(taskRow).join('')}
+    </div>`;
 }
 
 // Ο υπότιτλος της σελίδας από τη βάση (modules.description, μέσω του
