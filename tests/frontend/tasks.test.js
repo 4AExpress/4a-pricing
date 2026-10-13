@@ -313,8 +313,11 @@ console.log('\n═══ Κάρτα επίναυλου μέσα στη λίστ�
   const r76 = env({ statuses: Object.assign({ in_progress: { code: 'in_progress', label: 'Σε εξέλιξη', color: '#ef6c00' } }, DB_STATUSES) }).api.taskRow(sysTask(76, FW, 'fuel:2026-10-12', PAYLOAD, { status: 'in_progress', assigned_to: 1, assigned_name: 'u1' }));
   const pos = ['class="task-main"', 'class="who"', 'class="st"', 'class="acts"', 'class="fuel-block"'].map(s => r76.indexOf(s));
   ck('σειρά: τίτλος → ανάδοχος → κατάσταση → κουμπιά → πίνακας', pos.every((p, i) => p > 0 && (i === 0 || p > pos[i - 1])), pos.join(' < '));
-  ck('CSS: sys-row αναδιπλώνεται και ο τίτλος (task-main) πιάνει όλο το πλάτος',
-     /\.task\.sys-row \{ flex-wrap: wrap; \}/.test(src) && /\.task\.sys-row \.task-main \{ flex: 0 0 100%; \}/.test(src));
+  // 13-10-2026: ο κανόνας ισχύει πλέον για ΟΛΕΣ τις γραμμές (και πελάτη).
+  ck('CSS: κάθε γραμμή αναδιπλώνεται και ο τίτλος (task-main) πιάνει όλο το πλάτος',
+     /\n  \.task \{ flex-wrap: wrap; \}/.test(src) && /\n  \.task \.task-main \{ flex: 0 0 100%; \}/.test(src));
+  ck('CSS: η κάρτα βημάτων κρατά τη δική της διάταξη (πιο ειδικός κανόνας)',
+     /\.task\.has-steps \.task-main \{ flex: 1 1 auto; \}/.test(src));
   ck('εργασία πελάτη: χωρίς sys-row', !env().api.taskRow(cliTask(50, 5, 'Π')).includes('sys-row'));
 }
 
@@ -677,8 +680,13 @@ console.log('\n═══ Φόντο ομάδας: κίτρινο / κόκκιν�
   const { api, els } = env({ statuses: ST_DB });
   const open = api.groupTone([cliTask(1, 7, 'Α', { status: 'in_progress', due_at: '2026-10-09 17:00:00' })]);
   ck('ανοιχτή, σε χρόνο -> tone open', open && open.cls === 'open', JSON.stringify(open));
-  ck('κίτρινο = απόχρωση του in_progress της βάσης (#f0a000 στο 14%)',
-     open && vars(open.style)['tone-bg'] === api.tint('#f0a000', 0.14), open && open.style);
+  const ov = vars(open.style);
+  ck('κίτρινο: ΟΛΗ η ομάδα (κεφαλίδα και σώμα) γεμάτο λεμονί του CMS #FCFF29, μαύρα γράμματα',
+     ov['tone-bg'] === '#fcff29' && ov['tone-fg'] === '#000' && ov['tone-fg2'] === '#000', open.style);
+  ck('CSS: κεφαλίδα και γραμμές της ομάδας παίρνουν το ΙΔΙΟ --tone-bg',
+     /\.client-group\.tone, \.client-group\.tone > \.client-head, \.client-group\.tone > \.grp-body > \.task \{\s*background: var\(--tone-bg\)/.test(src));
+  ck('το λεμονί έρχεται από το UI_TEMP (color_open_head), όχι γραμμένο στη groupTone',
+     /tempText\('color_open_head'\)/.test(grab('groupTone')) && !/FCFF29/i.test(grab('groupTone')));
   const late = api.groupTone([cliTask(1, 7, 'Α', { status: 'open', due_at: '2026-10-07 17:00:00' }),
                               cliTask(2, 7, 'Α', { status: 'done' })]);
   ck('έστω μία ανοιχτή σε καθυστέρηση -> tone late (και για πελάτη, χωρίς όρια προθεσμίας)', late && late.cls === 'late', JSON.stringify(late));
@@ -689,8 +697,10 @@ console.log('\n═══ Φόντο ομάδας: κίτρινο / κόκκιν�
      api.groupTone([cliTask(1, 7, 'Α', { status: 'done', due_at: '2026-10-07 17:00:00' }), cliTask(2, 7, 'Α', { status: 'in_progress' })]).cls === 'open');
   ck('κλειστή ομάδα -> κανένα tone (μένει το σημερινό γκρι)',
      api.groupTone([cliTask(1, 7, 'Α', { status: 'done' }), cliTask(2, 7, 'Α', { status: 'na' })]) === null);
-  ck('χωρίς χρώμα in_progress στη βάση -> κανένα tone, όχι επινοημένο χρώμα',
-     env({ statuses: DB_STATUSES }).api.groupTone([cliTask(1, 7, 'Α', { status: 'in_progress' })]) === null);
+  ck('κίτρινο: ΔΕΝ εξαρτάται από τη βάση (UI_TEMP), ούτε χωρίς in_progress',
+     env({ statuses: DB_STATUSES }).api.groupTone([cliTask(1, 7, 'Α', { status: 'in_progress' })]).cls === 'open');
+  ck('πορτοκαλί χωρίς χρώμα in_progress στη βάση -> κανένα tone, όχι επινοημένο χρώμα',
+     env({ statuses: DB_STATUSES }).api.groupTone([cliTask(1, 7, 'Α', { status: 'in_progress' })], undefined, 'orange') === null);
 
   api.render([
     sysTask(76, FW, 'fuel:2026-10-12', PAYLOAD, { status: 'done' }), sysTask(77, FWV, 'fuel:2026-10-12', PAYLOAD, { status: 'done' }),
@@ -834,7 +844,7 @@ console.log('\n═══ TEMP: τα προσωρινά κείμενα, σε ΕΝ
 {
   const { api } = env();
   const TEMP_KEYS = ['fuel_next_todo', 'fuel_uploaded', 'fuel_next_ready', 'fuel_now_ok', 'fuel_now_missing', 'fuel_older',
-                     'grp_tip_collapse', 'grp_tip_expand'];
+                     'grp_tip_collapse', 'grp_tip_expand', 'color_open_head'];
   ck(`UI_TEMP έχει ΑΚΡΙΒΩΣ τα ${TEMP_KEYS.length} κλειδιά: ${TEMP_KEYS.join(', ')}`,
      JSON.stringify(Object.keys(api.UI_TEMP).sort()) === JSON.stringify([...TEMP_KEYS].sort()), Object.keys(api.UI_TEMP).join(','));
   const used = [...new Set([...src.matchAll(/tempText\(\s*(?:[^'()]*\?\s*)?'(\w+)'(?:\s*:\s*'(\w+)')?/g)].flatMap(m => [m[1], m[2]]).filter(Boolean))].sort();

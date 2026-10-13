@@ -89,11 +89,13 @@
   .due-left { font-weight: 400; }
   .due-tag { font-size: 10px; font-weight: 700; letter-spacing: .06em; padding: 1px 6px; margin-left: 4px;
              border-radius: 4px; background: #cc0000; color: #fff; white-space: nowrap; }
-  /* Εργασίες ΣΥΣΤΗΜΑ: ο τίτλος σε ΔΙΚΗ του σειρά, σε όλο το πλάτος· από κάτω
-     ανάδοχος, κατάσταση, κουμπιά· μετά ο πίνακας. Οι εργασίες πελάτη δεν
-     παίρνουν αυτή την κλάση και μένουν όπως είναι. */
-  .task.sys-row { flex-wrap: wrap; }
-  .task.sys-row .task-main { flex: 0 0 100%; }
+  /* ΟΛΕΣ οι εργασίες (ΣΥΣΤΗΜΑ και πελάτη, 13-10-2026): ο τίτλος και ο
+     υπότιτλος σε ΔΙΚΗ τους σειρά, σε όλο το πλάτος· από κάτω ανάδοχος,
+     κατάσταση, κουμπιά. Πριν, στις εργασίες πελάτη τα κουμπιά έπαιρναν το
+     πλάτος και ο τίτλος («Τιμές CMS») έσπαγε σε 6 γραμμές. Μόνο CSS: το HTML
+     της γραμμής δεν αλλάζει. Η κάρτα βημάτων (.has-steps) έχει δικό της. */
+  .task { flex-wrap: wrap; }
+  .task .task-main { flex: 0 0 100%; }
 
   /* Ομάδα όπου ΟΛΕΣ οι εργασίες έκλεισαν (done/na): όλη η ομάδα με το
      ΧΡΩΜΑ της κατάστασης «Ολοκληρωμένη» από τη βάση. Το χρώμα και το
@@ -727,6 +729,9 @@ const UI_TEMP = {
   fuel_older:         'Παλαιότερες εβδομάδες ({n})',
   grp_tip_collapse:   'Collapse — Μάζεμα της ομάδας',
   grp_tip_expand:     'Expand — Άνοιγμα της ομάδας',
+  // Χρώμα «προς εκτέλεση / σε εξέλιξη»: λεμονί κίτρινο του CMS (μετρημένο
+  // από στιγμιότυπο). Κεφαλίδα γεμάτο, σώμα απόχρωση. Στη βάση με το Κ4α.
+  color_open_head:    '#FCFF29',
 };
 function tempText(key, vars){
   const s = UI_TEMP[key];
@@ -760,23 +765,27 @@ function tint(hex, a){
 //   late: έστω μία ανοιχτή, ΞΕΚΛΕΙΔΩΤΗ εργασία με due_at που πέρασε. ΟΧΙ
 //         μέσω της dueState(): εκείνη χρωματίζει μόνο τύπους με όρια
 //         προθεσμίας, ενώ εδώ μετρά κάθε εργασία, και πελάτη.
-//   open: οτιδήποτε άλλο με ανοιχτή εργασία, χρώμα της «in_progress».
+//   open: οτιδήποτε άλλο με ανοιχτή εργασία: ΟΛΗ η ομάδα (κεφαλίδα και
+//         σώμα) στο λεμονί κίτρινο του CMS (UI_TEMP color_open_head), με
+//         μαύρα γράμματα. Οι γραμμές ανάμεσα στις εργασίες: διάφανο μαύρο.
 //   alert (προαιρετικό, από την fuelWeekInfo): 'red' ή 'orange' υπερισχύει.
-//   orange: το ΙΔΙΟ χρώμα «in_progress», πιο έντονο (TONE_MIX_STRONG).
+//   orange: το χρώμα «in_progress» της βάσης, στο TONE_MIX_STRONG.
 function groupTone(items, now, alert){
   if(!items.length || closedGroupStyle(items)) return null;
   if(now === undefined) now = athensNow();
   const late = alert === 'red' || items.some(t => t.status!=='done' && t.status!=='na' && Number(t.locked)!==1 &&
                                t.due_at && (msLeft(t.due_at, now) ?? 0) < 0);
   const orange = !late && alert === 'orange';
-  const base = late ? OVERDUE_COLOR : (STATUSES.in_progress && STATUSES.in_progress.color);
-  const mix = orange ? TONE_MIX_STRONG : TONE_MIX;
+  const open = !late && !orange;
+  const base = late ? OVERDUE_COLOR : orange ? (STATUSES.in_progress && STATUSES.in_progress.color)
+                                             : tempText('color_open_head');
+  const mix = late ? TONE_MIX : orange ? TONE_MIX_STRONG : 1;
   const bg = tint(base, mix);
   if(!bg) return null;
-  const line = tint(base, Math.min(1, mix * 2.5));
-  const fg = textOn(bg);
+  const line = open ? 'rgba(0,0,0,.18)' : tint(base, Math.min(1, mix * 2.5));
+  const fg = open ? '#000' : textOn(bg), fg2 = open ? '#000' : fg==='#fff' ? '#fff' : '#555';
   return { cls: late ? 'late' : orange ? 'warn' : 'open',
-           style: `--tone-bg:${bg};--tone-line:${line};--tone-fg:${fg};--tone-fg2:${fg==='#fff'?'#fff':'#555'};` };
+           style: `--tone-bg:${bg};--tone-line:${line};--tone-fg:${fg};--tone-fg2:${fg2};` };
 }
 
 // ── Εβδομάδα επίναυλου: φάση και ένδειξη κεφαλίδας ─────────────────────
