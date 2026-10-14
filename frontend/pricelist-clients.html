@@ -163,9 +163,11 @@
                background: #e3f2fd; border: 1px solid #90caf9; border-left: 4px solid #1565c0;
                border-radius: 6px; margin-bottom: 14px; }
   .task-hint-main { flex: 1; }
-  .tasks-back { display: inline-block; margin-bottom: 10px; font-size: 13px; font-weight: 600;
-                color: #1565c0; text-decoration: none; }
-  .tasks-back:hover { text-decoration: underline; }
+  /* Chip συνδέσμου (nav-chip.js): ίδια μορφή με το chip χώρας του tasks.html */
+  #tasks-back { margin-bottom: 10px; }
+  .nav-chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
+              border: 1px solid #b0bec5; background: #fff; color: #37474f; text-decoration: none; cursor: pointer; }
+  .nav-chip:hover { border-color: #37474f; }
   .task-hint-title { font-size: 13px; font-weight: 700; color: #0d47a1; }
   .task-hint-sub { font-size: 12px; color: #1565c0; margin-top: 3px; line-height: 1.45; }
   .task-hint-x { background: none; border: none; font-size: 18px; line-height: 1;
@@ -361,7 +363,7 @@
   </div>
   <div class="section-body">
 
-    <!-- «← Πίσω στις εργασίες»: ΜΟΝΟ όταν ήρθαμε από το tasks.html (from=tasks) -->
+    <!-- Chip «🔗✅ Εργασίες»: ΜΟΝΟ όταν ήρθαμε από το tasks.html (from=tasks) -->
     <div id="tasks-back" style="display:none;"></div>
     <!-- Μήνυμα deep link από το σύστημα εργασιών· κενό σε κανονική χρήση -->
     <div id="task-hint" style="display:none;"></div>
@@ -639,7 +641,17 @@
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="shelf-grouping.js?v=2026-09-22-5"></script>
 <script src="fuel-freshness.js?v=2026-09-27"></script>
+<script src="nav-chip.js?v=2026-10-14"></script>
 <script>
+// ═══ ΣΤΑΘΕΡΕΣ ΚΕΙΜΕΝΩΝ (προσωρινά εδώ -> 4a_ui_texts με το Κ4α) ═══════════
+// Το chip επιστροφής στις εργασίες (nav-chip.js). Το εικονίδιο ✅ ΔΕΝ
+// γράφεται εδώ: διαβάζεται από το link «Εργασίες» του μενού.
+const NAV_TEMP = {
+  link_icon:                    '🔗',
+  clients_back_to_tasks:        'Εργασίες',
+  clients_back_to_tasks_title:  'Πίσω στις εργασίες',
+};
+// ═══ τέλος σταθερών κειμένων ═════════════════════════════════════════════
 ﻿let _sessionExpiry = null;
 let _sessionTimerInterval = null;
 function startSessionTimer(expiresAtStr){
@@ -1555,7 +1567,7 @@ function onAccountInput(){
 // ─────────────────────────────────────────────────────────────────────
 const FOCUS_TARGETS = { account: '#cl-account' };   // λευκή λίστα, όχι ελεύθερος selector
 
-// «← Πίσω στις εργασίες» (14/10). ΜΟΝΟ με from=tasks — λευκή λίστα, όχι
+// Επιστροφή στις εργασίες (14/10). ΜΟΝΟ με from=tasks — λευκή λίστα, όχι
 // ελεύθερο URL επιστροφής. Η καρτέλα από λευκή λίστα (αλλιώς mine· το
 // tasks.html ξαναελέγχει το «all» για μη-διαχειριστή), και #client-<id>
 // μόνο για αριθμητικό id. Επιστρέφει null αν δεν ήρθαμε από τις εργασίες.
@@ -1566,10 +1578,13 @@ function tasksBackHref(q){
   const cid = (q.get('client')||'').trim();
   return 'tasks.html?tab=' + t + (/^\d+$/.test(cid) ? '#client-' + cid : '');
 }
+// Το chip «🔗✅ Εργασίες» (nav-chip.js). Χωρίς nav-chip.js: τίποτα.
 function showTasksBack(href){
   const el = document.getElementById('tasks-back');
-  if(!el || !href) return;
-  el.innerHTML = `<a class="tasks-back" href="${escHtml(href)}">← Πίσω στις εργασίες</a>`;
+  if(!el || !href || typeof NavChip === 'undefined') return;
+  el.innerHTML = NavChip.html({ doc: document, target: 'tasks.html', href,
+                                link: NAV_TEMP.link_icon, word: NAV_TEMP.clients_back_to_tasks,
+                                title: NAV_TEMP.clients_back_to_tasks_title });
   el.style.display = '';
 }
 

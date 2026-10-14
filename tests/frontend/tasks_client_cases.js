@@ -40,5 +40,5 @@ const FUNCS = ['escHtml', 'textOn', 'stBadge', 'whoCell', 'histHtml', 'histWhat'
   'fmtWeekRange', 'taskTitle', 'closedColor', 'closedGroupStyle', 'taskPayload', 'fuelCmsAoa', 'fuelCmsWorkbook',
   'fmtDue', 'athensNow', 'normDateTime', 'isPastDue', 'fmtLeft', 'dueState', 'dueHtml', 'fuelColumns', 'fuelFactsHtml',
   'msLeft', 'tempText', 'tint', 'groupTone', 'addDaysISO', 'fuelWeekInfo', 'fuelStateHtml', 'grpIsOpen', 'grpTogHtml', 'groupHtml',
-  'taskRow', 'clientNameHtml', 'render'];
+  'taskRow', 'clientChipHtml', 'render'];
 module.exports = { STATUSES, TASKS, FUNCS };

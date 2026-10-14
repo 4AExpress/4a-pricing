@@ -149,13 +149,23 @@ ck('road null', f.road === null);
 ck('λωρίδα λέει «—» στην προσφορά', e.warn.innerHTML.includes('«—»'));
 ck('η fuelState ΔΕΝ πετάει — η προσφορά βγαίνει', true);
 
-// 14-10-2026: «← Πίσω στις εργασίες», ΜΟΝΟ με from=tasks (λευκή λίστα).
-console.log('\n═══ 9. «← Πίσω στις εργασίες» (from=tasks) ═══');
+// 14-10-2026: επιστροφή στις εργασίες ως chip «🔗✅ Εργασίες» (nav-chip.js),
+// ΜΟΝΟ με from=tasks (λευκή λίστα).
+console.log('\n═══ 9. Chip «🔗✅ Εργασίες» (from=tasks) ═══');
 {
-  const code = grab(pageSrc, 'escHtml') + '\n' + grab(pageSrc, 'tasksBackHref') + '\n' + grab(pageSrc, 'showTasksBack') +
-               '\nreturn { tasksBackHref, showTasksBack };';
+  // Το ΠΡΑΓΜΑΤΙΚΟ nav-chip.js και το ΠΡΑΓΜΑΤΙΚΟ μπλοκ σταθερών (NAV_TEMP).
+  const navSrc = fs.readFileSync('frontend/nav-chip.js', 'utf8');
+  const constsSrc = pageSrc.slice(pageSrc.indexOf('const NAV_TEMP = {'), pageSrc.indexOf('};', pageSrc.indexOf('const NAV_TEMP = {')) + 2);
+  const code = navSrc + '\n' + constsSrc + '\n' + grab(pageSrc, 'escHtml') + '\n' + grab(pageSrc, 'tasksBackHref') + '\n' +
+               grab(pageSrc, 'showTasksBack') + '\nreturn { tasksBackHref, showTasksBack, NAV_TEMP };';
   const box = { innerHTML: '', style: { display: 'none' } };
-  const api = new Function('document', code)({ getElementById: id => id === 'tasks-back' ? box : null });
+  // Το μενού της σελίδας: link «✅ Εργασίες», με τα <span> του tasks-badge.js μετά το κείμενο.
+  const tasksLink = { getAttribute: () => 'tasks.html',
+                      firstChild: { nodeType: 3, nodeValue: '✅ Εργασίες', nextSibling: { nodeType: 1, nextSibling: null } } };
+  let menu = [tasksLink];
+  const api = new Function('document', code)({ getElementById: id => id === 'tasks-back' ? box : null,
+                                                baseURI: 'https://4aexpress.github.io/4a-pricing/frontend/pricelist-clients.html',
+                                                querySelectorAll: () => menu });
   const H = s => api.tasksBackHref(new URLSearchParams(s));
   ck('χωρίς from -> κανένας σύνδεσμος', H('client=7') === null && H('client=7&focus=account') === null);
   ck('from άλλο από tasks -> κανένας', H('client=7&from=evil') === null && H('client=7&from=https://x.y') === null);
@@ -168,8 +178,22 @@ console.log('\n═══ 9. «← Πίσω στις εργασίες» (from=tas
   api.showTasksBack(null);
   ck('null -> το κουτί μένει κρυφό', box.style.display === 'none' && box.innerHTML === '');
   api.showTasksBack('tasks.html?tab=queue#client-7');
-  ck('εμφανίζεται με το κείμενο και το href', box.style.display === '' &&
-     box.innerHTML === '<a class="tasks-back" href="tasks.html?tab=queue#client-7">← Πίσω στις εργασίες</a>', box.innerHTML);
+  ck('chip «🔗✅ Εργασίες», εικονίδιο από το μενού, title «Πίσω στις εργασίες»', box.style.display === '' &&
+     box.innerHTML === '<a class="nav-chip" href="tasks.html?tab=queue#client-7" title="Πίσω στις εργασίες">🔗✅ Εργασίες</a>', box.innerHTML);
+  menu = [];
+  api.showTasksBack('tasks.html?tab=mine');
+  ck('χωρίς link στο μενού: «🔗 Εργασίες», χωρίς σφάλμα', box.innerHTML.endsWith('>🔗 Εργασίες</a>'), box.innerHTML);
+  ck('κείμενα από ΕΝΑ σημείο σταθερών (NAV_TEMP), όχι στη showTasksBack',
+     api.NAV_TEMP.link_icon === '🔗' && api.NAV_TEMP.clients_back_to_tasks === 'Εργασίες' &&
+     api.NAV_TEMP.clients_back_to_tasks_title === 'Πίσω στις εργασίες' && !/Εργασίες|🔗|✅/.test(grab(pageSrc, 'showTasksBack').replace(/\/\/.*$/gm, '')));
+  const top = pageSrc.indexOf('<script>\n// ═══ ΣΤΑΘΕΡΕΣ ΚΕΙΜΕΝΩΝ');
+  ck('το NAV_TEMP στην ΚΟΡΥΦΗ του script, πριν από την πρώτη εντολή του',
+     top > 0 && top < pageSrc.indexOf('const NAV_TEMP = {') &&
+     pageSrc.indexOf('const NAV_TEMP = {') < pageSrc.indexOf('let _sessionExpiry = null;'));
+  ck('η σελίδα φορτώνει το nav-chip.js?v=2026-10-14 πριν από το script της',
+     pageSrc.indexOf('<script src="nav-chip.js?v=2026-10-14"></script>') > 0 &&
+     pageSrc.indexOf('<script src="nav-chip.js?v=2026-10-14"></script>') < pageSrc.indexOf('const NAV_TEMP = {'));
+  ck('κανένα «← Πίσω στις εργασίες» πια στη σελίδα', !pageSrc.includes('← Πίσω στις εργασίες'));
   const dl = grab(pageSrc, 'deepLink');
   ck('το deepLink το καλεί ΠΡΙΝ το replaceState και ΠΡΙΝ την αναζήτηση πελάτη',
      dl.indexOf('showTasksBack(tasksBackHref(q))') > 0 &&

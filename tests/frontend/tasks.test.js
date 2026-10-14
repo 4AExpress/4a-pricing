@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const HERE = __dirname;
 const src = fs.readFileSync('frontend/tasks.html', 'utf8');
+const NAVCHIP_SRC = fs.readFileSync('frontend/nav-chip.js', 'utf8');
 const PAYLOAD = JSON.parse(fs.readFileSync(path.join(HERE, 'fuel_weekly_payload.fixture.json'), 'utf8'));
 
 function grab(name){
@@ -45,11 +46,14 @@ const DB_FUEL_TYPES = { AIR_CY: { code: 'AIR_CY', label_el: 'Air Cyprus',     ic
 function env(opts){
   opts = opts || {};
   const els = {};
-  const doc = { getElementById: id => (els[id] = els[id] || { innerHTML: '', style: {} }) };
+  const doc = { getElementById: id => (els[id] = els[id] || { innerHTML: '', style: {} }),
+                baseURI: 'https://4aexpress.github.io/4a-pricing/frontend/tasks.html',
+                querySelectorAll: () => opts.nav || [] };
   // Η πραγματική athensNow() δεν τρέχει στα τεστ: σταθερό «τώρα» Αθήνας.
   const NOW = opts.now === undefined ? '2026-10-08 10:00:00' : opts.now;
   const store = opts.perms ? { getItem: k => k === '4a_perms' ? JSON.stringify(opts.perms) : null } : { getItem: () => null };
   const code = [
+    NAVCHIP_SRC,
     'let currentUser = { id: ' + (opts.userId === undefined ? 1 : opts.userId) + ' }, isAdmin = ' + (opts.admin === false ? 'false' : 'true') + ', view = ' + JSON.stringify(opts.view || 'all') + ', lastTasks = [];',
     'let STATUSES = ' + JSON.stringify(opts.statuses === undefined ? DB_STATUSES : opts.statuses) + ';',
     'let FUEL_TYPES = ' + JSON.stringify(opts.fuelTypes === undefined ? DB_FUEL_TYPES : opts.fuelTypes) + ';',
@@ -66,8 +70,8 @@ function env(opts){
     grabConst('UI_TEMP'), grab('tempText'), grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'), grabConst('TONE_MIX_STRONG'),
     grab('tint'), grab('groupTone'), grab('addDaysISO'), grab('fuelWeekInfo'), grab('fuelStateHtml'),
     grab('grpIsOpen'), grab('grpTogHtml'), grab('groupHtml'),
-    grab('taskRow'), grab('clientNameHtml'), grab('tabFromQuery'), grab('anchorFromHash'), grab('render'),
-    'return { clientNameHtml, tabFromQuery, anchorFromHash, render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
+    grab('taskRow'), grab('clientChipHtml'), grab('tabFromQuery'), grab('anchorFromHash'), grab('render'),
+    'return { clientChipHtml, NavChip, tabFromQuery, anchorFromHash, render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
     '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS,',
     '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle,',
     '         tint, groupTone, groupHtml, grpOpen, fuelWeekInfo, fuelStateHtml, tempText, UI_TEMP };'
@@ -333,9 +337,9 @@ function appearanceStrip(html) {
     .replace(/\n {8}<button class="grp-tog"[^>]*>[^<]*<\/button>/g, '')
     .replace(/\n {6}<div class="grp-body"( hidden)?>/g, '')
     .replace(/\n {6}<\/div>\n {4}<\/div>/g, '\n    </div>')
-    // 14-10-2026: το όνομα πελάτη έγινε σύνδεσμος, και η ομάδα πήρε id
-    // (στόχος του «← Πίσω στις εργασίες»). Τίποτε άλλο.
-    .replace(/<a class="client-name client-link" href="[^"]*" title="[^"]*">([^<]*)<\/a>/g, '<span class="client-name">$1</span>')
+    // 14-10-2026: μετά το όνομα πελάτη μπήκε το chip «🔗👥 Πελάτης», και η
+    // ομάδα πήρε id (στόχος της επιστροφής). Τίποτε άλλο.
+    .replace(/ <a class="nav-chip" href="[^"]*" title="[^"]*">[^<]*<\/a>/g, '')
     .replace(/ id="client-\d+"/g, '');
 }
 
@@ -350,7 +354,7 @@ console.log('\n═══ Εργασίες ΠΕΛΑΤΗ: byte-προς-byte ίδ�
     const [v, who] = key.split(':');
     const els = {};
     const doc = { getElementById: id => (els[id] = els[id] || { innerHTML: '', style: {} }) };
-    const code = ['let currentUser = { id: 1 }, isAdmin = ' + (who === 'admin') + ', view = "' + v + '", lastTasks = [];',
+    const code = [NAVCHIP_SRC, 'let currentUser = { id: 1 }, isAdmin = ' + (who === 'admin') + ', view = "' + v + '", lastTasks = [];',
       'let STATUSES = ' + JSON.stringify(cases.STATUSES) + ';', 'let FUEL_TYPES = {};', 'const histOpen = new Map(); const grpOpen = new Map();',
       ...['UI_TEMP', 'OVERDUE_COLOR', 'TONE_MIX', 'TONE_MIX_STRONG'].filter(c => src.includes('const ' + c + ' =')).map(grabConst),
       grabConst('TIPS'), grabConst('ACTION_URL_OK'), grabConst('FUEL_CMS_HEADER'), grabConst('GR_DAY3'),
@@ -849,7 +853,8 @@ console.log('\n═══ TEMP: τα προσωρινά κείμενα, σε ΕΝ
   const { api } = env();
   const TEMP_KEYS = ['fuel_next_todo', 'fuel_uploaded', 'fuel_next_ready', 'fuel_now_ok', 'fuel_now_missing', 'fuel_older',
                      'grp_tip_collapse', 'grp_tip_expand', 'color_open_head',
-                     'client_no_account', 'client_no_offer', 'client_open_tip', 'mine_empty_queue'];
+                     'client_no_account', 'client_no_offer', 'mine_empty_queue',
+                     'link_icon', 'task_group_client_link', 'task_group_client_link_title'];
   ck(`UI_TEMP έχει ΑΚΡΙΒΩΣ τα ${TEMP_KEYS.length} κλειδιά: ${TEMP_KEYS.join(', ')}`,
      JSON.stringify(Object.keys(api.UI_TEMP).sort()) === JSON.stringify([...TEMP_KEYS].sort()), Object.keys(api.UI_TEMP).join(','));
   const used = [...new Set([...src.matchAll(/tempText\(\s*(?:[^'()]*\?\s*)?'(\w+)'(?:\s*:\s*'(\w+)')?/g)].flatMap(m => [m[1], m[2]]).filter(Boolean))].sort();
@@ -857,7 +862,11 @@ console.log('\n═══ TEMP: τα προσωρινά κείμενα, σε ΕΝ
   const block = src.slice(src.indexOf('// ═══ TEMP'), src.indexOf('// ═══ τέλος TEMP'));
   // Σχόλια εξαιρούνται: περιγράφουν τα κείμενα, δεν τα εμφανίζουν.
   const outside = src.replace(block, '').split(/\r?\n/).filter(l => !/^\s*(\/\/|\/\*|\*)/.test(l)).join('\n');
-  const leaked = Object.values(api.UI_TEMP).map(t => t.replace(/\{\w+\}.*$/, '').trim()).filter(t => outside.includes(t));
+  // Τιμή μίας λέξης (π.χ. «Πελάτης», 14/10): διαρροή μόνο ως ΟΛΟΚΛΗΡΗ
+  // συμβολοσειρά ('…', `…`, >…<), αλλιώς θα έπιανε το «Πελάτης επίδειξης».
+  const isLeak = t => /\s/.test(t) ? outside.includes(t)
+                                   : ["'" + t + "'", '`' + t + '`', '>' + t + '<'].some(q => outside.includes(q));
+  const leaked = Object.values(api.UI_TEMP).map(t => t.replace(/\{\w+\}.*$/, '').trim()).filter(isLeak);
   ck('κανένα προσωρινό κείμενο γραμμένο ΕΞΩ από το μπλοκ TEMP', leaked.length === 0, leaked.join(' | '));
   ck('το μπλοκ σημειώνεται TEMP και λέει πότε φεύγει (Κ4α, 15/10)', /TEMP — ΠΡΟΣΩΡΙΝΑ ΚΕΙΜΕΝΑ/.test(block) && /Κ4α/.test(block));
   ck('κλειδί που λείπει -> [κλειδί], όχι κενό', api.tempText('δεν_υπάρχει') === '[δεν_υπάρχει]');
@@ -984,20 +993,46 @@ console.log('\n═══ (Α) ?tab=mine|queue, προεπιλογή «Οι ερ�
   ck('άδεια «Όλες»: ΧΩΡΙΣ σύνδεσμο', !empty('all').includes('to-queue'));
 }
 
-console.log('\n═══ (Β) όνομα πελάτη -> pricelist-clients.html?client=…&from=tasks · #client-<id> ═══');
+// Ψεύτικο link μενού: πρώτος κόμβος κειμένου, και προαιρετικά <span> μετά
+// (όπως τα βάζει το tasks-badge.js).
+const navLink = (href, text, lead) => {
+  const t = { nodeType: 3, nodeValue: text, nextSibling: { nodeType: 1, nextSibling: null } };
+  return { getAttribute: () => href, firstChild: lead ? { nodeType: 1, nextSibling: t } : t };
+};
+const MENU = [navLink('pricelist-editor.html', '+ Νέος Τιμοκατάλογος'), navLink('pricelist-clients.html', '👥 Πελάτες'),
+              navLink('tasks.html', '✅ Εργασίες'), navLink('users.html', '⚙️ Χρήστες')];
+
+console.log('\n═══ (Β) chip «🔗👥 Πελάτης» -> pricelist-clients.html?client=…&from=tasks · #client-<id> ═══');
 {
-  const { api } = env({ view: 'queue' });
-  const a = api.clientNameHtml(1791540547308, 'Α&Β <ΑΕ>');
-  ck('σύνδεσμος ίδιου μοτίβου με το open_code, με from=tasks και την καρτέλα',
-     a.includes('href="pricelist-clients.html?client=1791540547308&amp;from=tasks&amp;tab=queue"'), a);
+  const { api } = env({ view: 'queue', nav: MENU });
+  const a = api.clientChipHtml(1791540547308);
+  ck('chip με το εικονίδιο του μενού: « <a class="nav-chip" …>🔗👥 Πελάτης</a>»',
+     a === ' <a class="nav-chip" href="pricelist-clients.html?client=1791540547308&amp;from=tasks&amp;tab=queue"' +
+           ' title="Άνοιγμα πελάτη">🔗👥 Πελάτης</a>', a);
   ck('το URL περνά το ACTION_URL_OK', /^[a-z0-9][a-z0-9_-]*\.html(\?[A-Za-z0-9_=&%.-]*)?$/.test('pricelist-clients.html?client=1791540547308&from=tasks&tab=queue'));
-  ck('το όνομα escaped', a.includes('>Α&amp;Β &lt;ΑΕ&gt;</a>'), a);
-  ck('κρατά την κλάση client-name (χρώματα tone/closed)', a.startsWith('<a class="client-name client-link"'));
-  ck('tooltip από το UI_TEMP', a.includes('title="Open client — Άνοιγμα της καρτέλας του πελάτη"'));
-  const no = env({ view: 'mine', perms: { 'pricelist-clients': { view: 0 } } }).api.clientNameHtml(5, 'Π');
-  ck('χωρίς δικαίωμα στο pricelist-clients: σκέτο όνομα, κανένας σύνδεσμος', no === '<span class="client-name">Π</span>', no);
-  const yes = env({ view: 'mine', perms: { 'pricelist-clients': { view: 1 } } }).api.clientNameHtml(5, 'Π');
-  ck('με δικαίωμα: σύνδεσμος', yes.includes('<a class="client-name client-link"'));
+  const no = env({ view: 'mine', nav: MENU, perms: { 'pricelist-clients': { view: 0 } } }).api.clientChipHtml(5);
+  ck('χωρίς δικαίωμα στο pricelist-clients: ΚΑΝΕΝΑ chip', no === '', no);
+  const yes = env({ view: 'mine', nav: MENU, perms: { 'pricelist-clients': { view: 1 } } }).api.clientChipHtml(5);
+  ck('με δικαίωμα: chip', yes.includes('<a class="nav-chip"'));
+  const bare = env({ view: 'mine' }).api.clientChipHtml(5);
+  ck('χωρίς μενού: «🔗 Πελάτης», χωρίς σφάλμα', bare.endsWith('>🔗 Πελάτης</a>'), bare);
+
+  // Το όνομα: ΞΑΝΑ σκέτο <span>, πριν από το chip και πριν από τη χώρα.
+  const eN = env({ view: 'mine', nav: MENU });
+  eN.api.render([cliTask(1, 7, 'Α&Β <ΑΕ>'), sysTask(80, FW, 'fuel:2026-10-19', PAYLOAD, { status: 'in_progress' })]);
+  const LN = eN.els.list.innerHTML;
+  ck('το όνομα είναι <span class="client-name">, escaped, χωρίς σύνδεσμο',
+     LN.includes('<span class="client-name">Α&amp;Β &lt;ΑΕ&gt;</span> <a class="nav-chip"') && !LN.includes('client-link'), LN);
+  ck('σειρά: όνομα -> chip -> χώρα', LN.indexOf('class="client-name"') < LN.indexOf('class="nav-chip"') &&
+     LN.indexOf('class="nav-chip"') < LN.indexOf('<span class="flag GR">'));
+  ck('η διακεκομμένη υπογράμμιση του ονόματος έφυγε από το CSS', !/client-link/.test(src));
+  ck('το chip έχει hover (πιο σκούρο περίγραμμα) και cursor pointer',
+     /\.nav-chip \{[^}]*cursor: pointer;/.test(src) && /\.nav-chip:hover \{ border-color: #37474f; \}/.test(src));
+  ck('chip ίδιου μεγέθους με το .flag (11px, 700, border-radius 10px)',
+     /\.flag \{ font-size: 11px; font-weight: 700;[^}]*border-radius: 10px; \}/.test(src) &&
+     /\.nav-chip \{ font-size: 11px; font-weight: 700;[^}]*border-radius: 10px;/.test(src));
+  ck('το tasks.html φορτώνει το nav-chip.js?v=2026-10-14 πριν από το script του', src.indexOf('<script src="nav-chip.js?v=2026-10-14"></script>') > 0 &&
+     src.indexOf('<script src="nav-chip.js?v=2026-10-14"></script>') < src.indexOf("const API = 'https://4aexpress.com/api';"));
 
   const e = env({ view: 'mine' });
   e.api.render([cliTask(1, 7, 'Πελάτης'), sysTask(80, FW, 'fuel:2026-10-19', PAYLOAD, { status: 'in_progress' })]);

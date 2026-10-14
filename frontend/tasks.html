@@ -50,8 +50,6 @@
   .client-head { padding: 10px 14px; background: #fafafa; border-bottom: 1px solid #eee;
                  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .client-name { font-size: 14px; font-weight: 600; color: #333; }
-  a.client-name.client-link { text-decoration: underline dotted; text-underline-offset: 3px; }
-  a.client-name.client-link:hover { text-decoration-style: solid; }
   .empty .to-queue { display: inline-block; margin-top: 8px; color: #1565c0; font-weight: 600; text-decoration: none; }
   .empty .to-queue:hover { text-decoration: underline; }
   .client-meta { font-size: 11px; color: #999; }
@@ -59,6 +57,10 @@
   .flag.GR { background: #e3f2fd; color: #0d47a1; }
   .flag.CY { background: #fff8e1; color: #7c6d00; }
   .flag.BOTH { background: #ede7f6; color: #4527a0; }
+  /* Chip συνδέσμου (nav-chip.js): ίδιο μέγεθος με το .flag */
+  .nav-chip { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 10px;
+              border: 1px solid #b0bec5; background: #fff; color: #37474f; text-decoration: none; cursor: pointer; }
+  .nav-chip:hover { border-color: #37474f; }
 
   /* Εργασίες συστήματος (χωρίς πελάτη): στην κορυφή, με δική τους ομάδα. */
   .client-group.sys { border-color: #b39ddb; }
@@ -359,6 +361,7 @@
 
 <div id="modals"></div>
 
+<script src="nav-chip.js?v=2026-10-14"></script>
 <script>
 const API = 'https://4aexpress.com/api';
 
@@ -379,7 +382,7 @@ let currentUser = null, isAdmin = false;
 // Προεπιλογή «Οι εργασίες μου» (14/10). Το ?tab= την αλλάζει, μέσω
 // tabFromQuery(): λευκή λίστα, και το «all» μόνο για διαχειριστή.
 let view = 'mine';
-// '#client-<id>' από το «← Πίσω στις εργασίες»: η ομάδα του πελάτη
+// '#client-<id>' από το chip «🔗✅ Εργασίες»: η ομάδα του πελάτη
 // ανοίγει και έρχεται στην οθόνη ΜΙΑ φορά, μετά την πρώτη φόρτωση.
 let pendingAnchor = null;
 // Η τελευταία λίστα που ήρθε από τον server. Την κρατάμε για να
@@ -508,16 +511,18 @@ function revealAnchor(){
   const el = document.getElementById(id);
   if(el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
 }
-// Όνομα πελάτη στην κεφαλίδα: σύνδεσμος στην καρτέλα του, ίδιο μοτίβο με
-// το open_code (pricelist-clients.html?client=…), με from=tasks και την
-// τρέχουσα καρτέλα για το «← Πίσω». Χωρίς δικαίωμα στο pricelist-clients:
-// σκέτο όνομα, όπως πριν.
-function clientNameHtml(clientId, name){
-  const n = escHtml(name);
+// Chip «🔗👥 Πελάτης» στην κεφαλίδα, μετά το όνομα (απόφαση 14/10: το όνομα
+// μένει σκέτο κείμενο). Ίδιο μοτίβο με το open_code
+// (pricelist-clients.html?client=…), με from=tasks και την τρέχουσα καρτέλα
+// για την επιστροφή. Χωρίς δικαίωμα στο pricelist-clients, ή αν δεν
+// φορτώθηκε το nav-chip.js: τίποτα, όπως πριν.
+function clientChipHtml(clientId){
   const href = 'pricelist-clients.html?client=' + encodeURIComponent(String(clientId)) +
                '&from=tasks&tab=' + encodeURIComponent(view);
-  if(!canOpen('pricelist-clients') || !ACTION_URL_OK.test(href)) return `<span class="client-name">${n}</span>`;
-  return `<a class="client-name client-link" href="${escHtml(href)}" title="${escHtml(tempText('client_open_tip'))}">${n}</a>`;
+  if(typeof NavChip === 'undefined' || !canOpen('pricelist-clients') || !ACTION_URL_OK.test(href)) return '';
+  return ' ' + NavChip.html({ doc: document, target: 'pricelist-clients.html', href,
+                              link: tempText('link_icon'), word: tempText('task_group_client_link'),
+                              title: tempText('task_group_client_link_title') });
 }
 
 async function load(){
@@ -624,7 +629,7 @@ function render(tasks){
     (view==='all' ? summaryHtml(tasks) : '') + sysHtml +
     [...groups.entries()].map(([k, g]) => groupHtml('c:' + k, 'client-group' + (g.isDemo?' demo':''), g.items, `
         ${g.isDemo?'<span class="demo-tag" title="Demo — Πελάτης επίδειξης. Τίποτα εδώ δεν είναι αληθινή δουλειά και δεν μετριέται πουθενά">ΕΠΙΔΕΙΞΗ</span>':''}
-        ${clientNameHtml(k, g.name)}
+        <span class="client-name">${escHtml(g.name)}</span>${clientChipHtml(k)}
         <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>
         <span class="client-meta">${g.account?'AccountNo '+escHtml(g.account):escHtml(tempText('client_no_account'))}
           ${g.offer?' · προσφορά '+escHtml(g.offer):' · '+escHtml(tempText('client_no_offer'))}</span>`)).join('');
@@ -797,7 +802,10 @@ const UI_TEMP = {
   // Κεφαλίδα ομάδας πελάτη (ίδια κείμενα με πριν, 14/10)
   client_no_account:  'χωρίς AccountNo',
   client_no_offer:    'χωρίς προσφορά',
-  client_open_tip:    'Open client — Άνοιγμα της καρτέλας του πελάτη',
+  // Chip συνδέσμου (nav-chip.js). Το εικονίδιο του προορισμού από το μενού.
+  link_icon:                     '🔗',
+  task_group_client_link:        'Πελάτης',
+  task_group_client_link_title:  'Άνοιγμα πελάτη',
   mine_empty_queue:   '→ Δείτε την Ουρά αδιάθετων',
 };
 function tempText(key, vars){
@@ -922,7 +930,7 @@ function groupHtml(key, baseCls, items, headInner, alert, startClosed, bodyHtml)
   const open = grpIsOpen(key, !!cs || !!startClosed);
   const cls = baseCls + (cs ? ' closed' : '') + (tone ? ' tone ' + tone.cls : '');
   const style = cs || (tone && tone.style);
-  // Ομάδα πελάτη: id="client-<id>", στόχος του «← Πίσω στις εργασίες».
+  // Ομάδα πελάτη: id="client-<id>", στόχος του chip «🔗✅ Εργασίες».
   const anchor = /^c:\d+$/.test(key) ? ` id="client-${key.slice(2)}"` : '';
   return `
     <div class="${cls}"${anchor}${style?` style="${style}"`:''}>
