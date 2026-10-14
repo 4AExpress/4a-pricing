@@ -173,6 +173,26 @@ ck('rollback: όρια verify πίσω σε NULL, και DROP των δύο στ
    && strpos($rb, 'DROP COLUMN `due_time`') !== false && strpos($rb, 'DROP COLUMN `due_offset_days`') !== false);
 ck('migration: κανένα UPDATE/INSERT/DELETE στο 4a_tasks', !preg_match('/(UPDATE|INSERT\s+INTO|DELETE\s+FROM)\s+`?4a_tasks`?\s/i', $mig));
 
+echo "\n═══ 2026-10-14c: ΜΟΝΟ η #88, προθεσμία = ο κανόνας verify του 14b ═══\n";
+$m14c = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-14c_fuel_verify_88_due.sql');
+$r14c = file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-14c_fuel_verify_88_due.rollback.sql');
+$upd  = "UPDATE `4a_tasks` SET `due_at` = '2026-10-19 12:00:00' WHERE `id` = 88 AND `task_code` = 'fuel_weekly_verify' AND `due_at` = '2026-10-16 17:00:00';";
+ck('14c: UPDATE με id, τύπο ΚΑΙ τρέχουσα τιμή', strpos($m14c, $upd) !== false);
+ck('14c: νέα προθεσμία = fuel_weekly_due_at(2026-10-19, 0, 12:00) (Αθήνα)', fuel_weekly_due_at('2026-10-19', '0', '12:00:00') === '2026-10-19 12:00:00');
+ck('14c: παλιά προθεσμία = ό,τι έγραφε ο κώδικας πριν (Παρ 17:00)', fuel_weekly_due_at('2026-10-19', '-3', '17:00:00') === '2026-10-16 17:00:00');
+ck('14c: ΕΝΑ μόνο UPDATE/DELETE στο 4a_tasks, η #87 δεν αγγίζεται',
+   preg_match_all('/(UPDATE|DELETE\s+FROM)\s+`4a_tasks`/i', $m14c) === 1 && !preg_match('/`id`\s*=\s*87\b/', $m14c));
+ck('14c: γεγονός μόνο αν άλλαξε γραμμή, και μία φορά',
+   strpos($m14c, 'SET @c14 := ROW_COUNT();') !== false && strpos($m14c, 'WHERE @c14 = 1') !== false
+   && strpos($m14c, "JSON_EXTRACT(e.`meta`, '$.migration')) = '2026-10-14c'") !== false);
+ck('14c: γεγονός συστήματος με το κείμενο που εγκρίθηκε',
+   strpos($m14c, "SELECT t.`id`, 'note', NULL,\n       'διόρθωση προθεσμίας verify σε Δευ 12:00 — Π3',") !== false);
+ck('14c rollback: πίσω σε 17:00 μόνο από 12:00, και σβήσιμο μόνο του γεγονότος του 14c',
+   strpos($r14c, "UPDATE `4a_tasks` SET `due_at` = '2026-10-16 17:00:00' WHERE `id` = 88 AND `task_code` = 'fuel_weekly_verify' AND `due_at` = '2026-10-19 12:00:00';") !== false
+   && preg_match("/DELETE FROM `4a_task_events`\s+WHERE `task_id` = 88 AND `event` = 'note'\s+AND JSON_UNQUOTE\(JSON_EXTRACT\(`meta`, '\\$\.migration'\)\) = '2026-10-14c';/", $r14c) === 1);
+ck('14c και rollback: κανένα ; μέσα σε σχόλιο (ο διαχωρισμός του Β4 είναι ανά ;)',
+   !preg_match('/^\s*--[^\n]*;/m', $m14c . "\n" . $r14c));
+
 echo "\n═══ Προθεσμία από τη ΒΑΣΗ: χωρίς κανόνα καμία εργασία, άλλος κανόνας άλλη ώρα ═══\n";
 $db = fresh_db();
 $db->exec("UPDATE `4a_task_types` SET `due_offset_days` = NULL WHERE `code` = 'fuel_weekly_verify'");
