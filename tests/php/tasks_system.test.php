@@ -98,7 +98,7 @@ $ev = function ($db, $taskId, $event) {
 
 echo "\n═══ tasks_create_system: δημιουργία, διπλότυπο, σύστημα ως actor ═══\n";
 $db  = fresh_db();
-$due = fuel_weekly_due_at('2026-10-12');
+$due = fuel_weekly_due_at('2026-10-12', -3, '17:00:00');   // ο κανόνας του fuel_weekly (2026-10-14b)
 $r1  = tasks_create_system($db, 'fuel_weekly', 'fuel:2026-10-12', array('kind' => 'fuel_weekly', 'week_start' => '2026-10-12'), 'BOTH', $due);
 ck('δημιουργήθηκε', $r1['created'] === true && $r1['error'] === null, json_encode($r1));
 $t1 = tasks_fetch_one($db, $r1['task_id']);

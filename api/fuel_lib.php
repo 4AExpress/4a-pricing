@@ -416,19 +416,42 @@ function fuel_effective_date($weekStart)
 }
 
 /**
- * Προθεσμία: η Παρασκευή πριν το week_start, 17:00 ώρα Αθήνας.
- * Επιστρέφεται ως ώρα Αθήνας «Y-m-d H:i:s», έτοιμη για DATETIME.
- * 2026-10-12 (Δευτέρα) -> «2026-10-09 17:00:00».
+ * Προθεσμία από τον κανόνα του τύπου (4a_task_types.due_offset_days /
+ * due_time, migration 2026-10-14b): week_start + offset μέρες, στην ώρα
+ * του κανόνα, ώρα Αθήνας «Y-m-d H:i:s», έτοιμη για DATETIME.
+ *   2026-10-12, -3, 17:00:00 -> «2026-10-09 17:00:00» (fuel_weekly)
+ *   2026-10-12,  0, 12:00:00 -> «2026-10-12 12:00:00» (fuel_weekly_verify)
+ * null αν η ημερομηνία ή ο κανόνας είναι άκυρος ή λείπει. ΚΑΜΙΑ προεπιλογή
+ * στον κώδικα: χωρίς κανόνα, χωρίς προθεσμία.
  */
-function fuel_weekly_due_at($weekStart)
+function fuel_weekly_due_at($weekStart, $offsetDays, $time)
 {
     $tz = new DateTimeZone('Europe/Athens');
     $d  = DateTime::createFromFormat('!Y-m-d', (string)$weekStart, $tz);
     if (!$d || $d->format('Y-m-d') !== $weekStart) return null;
-    $d->modify('-1 day');                                   // ποτέ η ίδια μέρα
-    while ($d->format('N') !== '5') $d->modify('-1 day');   // 5 = Παρασκευή
-    $d->setTime(17, 0, 0);
+    if ($offsetDays === null || !preg_match('/^-?\d{1,3}$/', trim((string)$offsetDays))) return null;
+    if ($time === null || !preg_match('/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/', trim((string)$time), $m)) return null;
+    $d->modify(((int)$offsetDays >= 0 ? '+' : '') . (int)$offsetDays . ' days');
+    $d->setTime((int)$m[1], (int)$m[2], isset($m[3]) ? (int)$m[3] : 0);
     return $d->format('Y-m-d H:i:s');
+}
+
+/**
+ * Οι κανόνες προθεσμίας των τύπων $codes, σε ΕΝΑ ερώτημα.
+ * @return array code => ['offset' => ?string, 'time' => ?string]
+ *               Τύπος που λείπει από τη βάση δεν εμφανίζεται.
+ */
+function fuel_weekly_due_rules(PDO $db, array $codes)
+{
+    if (!$codes) return array();
+    $st = $db->prepare('SELECT `code`, `due_offset_days`, `due_time` FROM `4a_task_types`
+                         WHERE `code` IN (' . implode(',', array_fill(0, count($codes), '?')) . ')');
+    $st->execute(array_values($codes));
+    $out = array();
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $out[$r['code']] = array('offset' => $r['due_offset_days'], 'time' => $r['due_time']);
+    }
+    return $out;
 }
 
 /**

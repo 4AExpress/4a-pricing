@@ -42,7 +42,7 @@ function fresh_db()
         'CREATE TABLE `4a_clients` (`id` INTEGER PRIMARY KEY, `name` TEXT, `country` TEXT, `account` TEXT, `is_demo` INTEGER NOT NULL DEFAULT 0)',
         'CREATE TABLE `4a_users` (`id` INTEGER PRIMARY KEY, `name` TEXT, `role` TEXT, `active` INTEGER)',
         'CREATE TABLE `4a_task_types` (`code` TEXT PRIMARY KEY, `label` TEXT, `sort_order` INTEGER,
-            `active` INTEGER NOT NULL DEFAULT 1, `kind` TEXT NOT NULL DEFAULT \'client\', `icon` TEXT, `title_template` TEXT, `due_warn_hours` INTEGER, `due_urgent_hours` INTEGER, `condition_key` TEXT,
+            `active` INTEGER NOT NULL DEFAULT 1, `kind` TEXT NOT NULL DEFAULT \'client\', `icon` TEXT, `title_template` TEXT, `due_warn_hours` INTEGER, `due_urgent_hours` INTEGER, `due_offset_days` INTEGER, `due_time` TEXT, `condition_key` TEXT,
             `depends_on` TEXT, `exclude_prev_assignee` INTEGER NOT NULL DEFAULT 0, `sla_hours` INTEGER,
             `action_url` TEXT, `action_label` TEXT, `action_module` TEXT, `ready_check` TEXT, `ready_hint` TEXT, `ready_enforced` INTEGER)',
         'CREATE TABLE `4a_tasks` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `client_id` INTEGER, `subject_key` TEXT,
@@ -67,9 +67,10 @@ function fresh_db()
             `fuel_type` TEXT, `note` TEXT, `sort_order` INTEGER, `active` INTEGER)',
     ) as $ddl) $db->exec($ddl);
 
-    $db->exec("INSERT INTO `4a_task_types` (`code`,`label`,`sort_order`,`kind`,`depends_on`,`exclude_prev_assignee`) VALUES
-        ('fuel_weekly','Γενικός επίναυλος εβδομάδας — αρχείο CMS',900,'system',NULL,0),
-        ('fuel_weekly_verify','Έλεγχος γενικού επίναυλου στο CMS',910,'system','fuel_weekly',1)");
+    // Κανόνες προθεσμίας ΟΠΩΣ στο migration 2026-10-14b.
+    $db->exec("INSERT INTO `4a_task_types` (`code`,`label`,`sort_order`,`kind`,`depends_on`,`exclude_prev_assignee`,`due_offset_days`,`due_time`) VALUES
+        ('fuel_weekly','Γενικός επίναυλος εβδομάδας — αρχείο CMS',900,'system',NULL,0,-3,'17:00:00'),
+        ('fuel_weekly_verify','Έλεγχος γενικού επίναυλου στο CMS',910,'system','fuel_weekly',1,0,'12:00:00')");
     $db->exec("INSERT INTO `4a_users` VALUES (1,'u1','administrator',1),(2,'u2','administrator',1)");
     $db->exec("INSERT INTO `4a_user_task_skills` VALUES (1,'fuel_weekly','BOTH'),(1,'fuel_weekly_verify','BOTH'),
                                                         (2,'fuel_weekly','BOTH'),(2,'fuel_weekly_verify','BOTH')");
@@ -131,6 +132,7 @@ $d = fuel_weekly_ensure($db, $cache, $types, '2026-10-08', true);
 ck('δοκιμή: δύο «θα δημιουργούνταν»', array_column($d['actions'], 'status') === array('would_create', 'would_create'), json_encode(array_column($d['actions'], 'status')));
 ck('δοκιμή: ΚΑΜΙΑ εγγραφή', $count($db) === 0);
 ck('δοκιμή: προθεσμία 2026-10-09 17:00:00, 69 γραμμές', $d['actions'][0]['due_at'] === '2026-10-09 17:00:00' && $d['actions'][0]['rows'] === 69);
+ck('δοκιμή: verify με ΔΙΚΗ του προθεσμία, Δευ 2026-10-12 12:00:00', $d['actions'][1]['code'] === 'fuel_weekly_verify' && $d['actions'][1]['due_at'] === '2026-10-12 12:00:00', json_encode($d['actions'][1]['due_at']));
 
 $r = fuel_weekly_ensure($db, $cache, $types, '2026-10-08');
 ck('πραγματική: created, created', array_column($r['actions'], 'status') === array('created', 'created'), json_encode(array_column($r['actions'], 'status')));
@@ -140,6 +142,7 @@ $v = tasks_fetch_one($db, $r['actions'][1]['task_id']);
 ck('fuel_weekly: subject fuel:2026-10-12, BOTH, προθεσμία Παρ 17:00', $w['subject_key'] === 'fuel:2026-10-12' && $w['task_country'] === 'BOTH' && $w['due_at'] === '2026-10-09 17:00:00');
 ck('fuel_weekly: ανατέθηκε σε 1 ή 2', in_array((int)$w['assigned_to'], array(1, 2), true), $w['assigned_to']);
 ck('verify: κλειδωμένο, χωρίς ανάδοχο', (int)$v['locked'] === 1 && $v['assigned_to'] === null);
+ck('verify: προθεσμία Δευ 12:00 της εβδομάδας ισχύος (2026-10-12 12:00:00)', $v['due_at'] === '2026-10-12 12:00:00', $v['due_at']);
 $p = json_decode($w['payload'], true);
 ck('payload: ισχύς 12-Oct-2026, 70 γραμμές αρχείου, AIR_CY 51.94', $p['effective_date'] === '12-Oct-2026' && count($p['file']['rows']) === 70 && $p['prices']['AIR_CY'] === '51.94');
 
@@ -155,6 +158,21 @@ $x = fuel_weekly_ensure($db, $bad, $types, '2026-10-08');
 ck('άκυρο cache (κενό air): λόγος, καμία ενέργεια', $x['invalid'] !== null && $x['actions'] === array() && $count($db) === 0, json_encode($x['invalid']));
 $x = fuel_weekly_ensure($db, $cache, $types, '2026-10-12');
 ck('καμία μελλοντική εβδομάδα: καμία ενέργεια', $x['targets'] === array() && $count($db) === 0);
+
+echo "\n═══ Προθεσμία από τη ΒΑΣΗ: χωρίς κανόνα καμία εργασία, άλλος κανόνας άλλη ώρα ═══\n";
+$db = fresh_db();
+$db->exec("UPDATE `4a_task_types` SET `due_offset_days` = NULL WHERE `code` = 'fuel_weekly_verify'");
+$x = fuel_weekly_ensure($db, $cache, $types, '2026-10-08');
+ck('verify χωρίς κανόνα: fuel_weekly created, verify error', array_column($x['actions'], 'status') === array('created', 'error'), json_encode(array_column($x['actions'], 'status')));
+ck('verify χωρίς κανόνα: το σφάλμα λέει ποιος κανόνας λείπει', strpos((string)$x['actions'][1]['error'], 'κανόνα προθεσμίας') !== false, $x['actions'][1]['error']);
+ck('verify χωρίς κανόνα: ΜΟΝΟ 1 εργασία, καμία με μαντεμένη προθεσμία', $count($db) === 1);
+$db->exec("UPDATE `4a_task_types` SET `due_offset_days` = 0 WHERE `code` = 'fuel_weekly_verify'");
+$x = fuel_weekly_ensure($db, $cache, $types, '2026-10-08');
+ck('μετά τη διόρθωση του κανόνα: exists, created (ιδεμποτεντικό)', array_column($x['actions'], 'status') === array('exists', 'created'), json_encode(array_column($x['actions'], 'status')));
+$db = fresh_db();
+$db->exec("UPDATE `4a_task_types` SET `due_offset_days` = -2, `due_time` = '19:00:00' WHERE `code` = 'fuel_weekly'");
+$x = fuel_weekly_ensure($db, $cache, $types, '2026-10-08', true);
+ck('άλλος κανόνας στη βάση (-2, 19:00) -> Σάβ 2026-10-10 19:00:00, χωρίς αλλαγή κώδικα', $x['actions'][0]['due_at'] === '2026-10-10 19:00:00', $x['actions'][0]['due_at']);
 
 echo "\n═══ Γραμμή log: ώρα, εβδομάδες, νέες ή «καμία νέα», τίποτα άλλο ═══\n";
 $db = fresh_db();

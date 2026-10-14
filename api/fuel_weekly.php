@@ -13,8 +13,9 @@
 //
 // Ο DHL δημοσιεύει την τιμή της επόμενης εβδομάδας το ΣΑΒΒΑΤΟ, και το
 // GitHub Action την πιάνει περίπου 10:00–11:30 UTC. Η πρώτη εκτέλεση του
-// cron μετά από αυτό δημιουργεί την εργασία, με προθεσμία την Παρασκευή
-// 17:00 Αθήνας που ακολουθεί.
+// cron μετά από αυτό δημιουργεί τις εργασίες, με προθεσμία ΑΝΑ ΤΥΠΟ από
+// τη βάση (4a_task_types.due_offset_days / due_time, migration 2026-10-14b):
+// fuel_weekly Παρασκευή 17:00 πριν, fuel_weekly_verify Δευτέρα 12:00.
 require_once __DIR__ . '/fuel_lib.php';
 require_once __DIR__ . '/tasks_system.php';
 
@@ -90,11 +91,18 @@ function fuel_weekly_ensure(PDO $db, $cache, array $types, $todayAthens, $dryRun
     $out['all'] = $t['all'];
     $out['targets'] = $t['targets'];
 
+    $codes = array('fuel_weekly', 'fuel_weekly_verify');
+    $rules = $t['targets'] ? fuel_weekly_due_rules($db, $codes) : array();
+
     foreach ($t['targets'] as $ws) {
         $subject = 'fuel:' . $ws;
         $payload = fuel_weekly_payload($db, $cache, $types, $ws);
-        $due     = fuel_weekly_due_at($ws);
-        foreach (array('fuel_weekly', 'fuel_weekly_verify') as $code) {
+        foreach ($codes as $code) {
+            // Προθεσμία ΑΝΑ ΤΥΠΟ, από τη βάση (2026-10-14b). Χωρίς κανόνα η
+            // εργασία ΔΕΝ δημιουργείται: καλύτερα σφάλμα στο log παρά λάθος
+            // προθεσμία που δεν διορθώνεται (κανένα UPDATE σε εργασίες).
+            $rule = isset($rules[$code]) ? $rules[$code] : array('offset' => null, 'time' => null);
+            $due  = fuel_weekly_due_at($ws, $rule['offset'], $rule['time']);
             $a = array('week' => $ws, 'code' => $code, 'status' => null, 'task_id' => null,
                        'due_at' => $due, 'prices' => $payload ? $payload['prices'] : null,
                        'rows' => $payload ? $payload['rows_count'] : null, 'error' => null);
@@ -103,6 +111,8 @@ function fuel_weekly_ensure(PDO $db, $cache, array $types, $todayAthens, $dryRun
                 $a['status'] = 'exists'; $a['task_id'] = $existing;
             } elseif ($payload === null) {
                 $a['status'] = 'error'; $a['error'] = 'χωρίς payload';
+            } elseif ($due === null) {
+                $a['status'] = 'error'; $a['error'] = 'χωρίς κανόνα προθεσμίας (4a_task_types.due_offset_days / due_time)';
             } elseif ($dryRun) {
                 $a['status'] = 'would_create';
             } else {
