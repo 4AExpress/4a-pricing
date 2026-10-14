@@ -98,14 +98,14 @@ $ev = function ($db, $taskId, $event) {
 
 echo "\n═══ tasks_create_system: δημιουργία, διπλότυπο, σύστημα ως actor ═══\n";
 $db  = fresh_db();
-$due = fuel_weekly_due_at('2026-10-12', -3, '17:00:00');   // ο κανόνας του fuel_weekly (2026-10-14b)
+$due = fuel_weekly_due_at('2026-10-12', -3, '19:00:00');   // ο κανόνας του fuel_weekly (2026-10-14b)
 $r1  = tasks_create_system($db, 'fuel_weekly', 'fuel:2026-10-12', array('kind' => 'fuel_weekly', 'week_start' => '2026-10-12'), 'BOTH', $due);
 ck('δημιουργήθηκε', $r1['created'] === true && $r1['error'] === null, json_encode($r1));
 $t1 = tasks_fetch_one($db, $r1['task_id']);
 ck('client_id NULL, subject_key fuel:2026-10-12', $t1['client_id'] === null && $t1['subject_key'] === 'fuel:2026-10-12');
 ck('country BOTH', $t1['task_country'] === 'BOTH' && $t1['client_country'] === 'BOTH');
 ck('dedupe_key = subject_key', $t1['dedupe_key'] === 'fuel:2026-10-12', $t1['dedupe_key']);
-ck('due_at Παρασκευή 17:00 Αθήνας', $t1['due_at'] === '2026-10-09 17:00:00', $t1['due_at']);
+ck('due_at Παρασκευή 19:00 Αθήνας', $t1['due_at'] === '2026-10-09 19:00:00', $t1['due_at']);
 $c = $ev($db, $r1['task_id'], 'created');
 ck('event created με actor NULL (σύστημα)', count($c) === 1 && $c[0]['actor_id'] === null, json_encode($c));
 ck('ρίζα: ανατέθηκε τυχαία σε 1 ή 2', in_array((int)$t1['assigned_to'], [1, 2], true), $t1['assigned_to']);

@@ -69,7 +69,7 @@ function fresh_db()
 
     // Κανόνες προθεσμίας ΟΠΩΣ στο migration 2026-10-14b.
     $db->exec("INSERT INTO `4a_task_types` (`code`,`label`,`sort_order`,`kind`,`depends_on`,`exclude_prev_assignee`,`due_offset_days`,`due_time`) VALUES
-        ('fuel_weekly','Γενικός επίναυλος εβδομάδας — αρχείο CMS',900,'system',NULL,0,-3,'17:00:00'),
+        ('fuel_weekly','Γενικός επίναυλος εβδομάδας — αρχείο CMS',900,'system',NULL,0,-3,'19:00:00'),
         ('fuel_weekly_verify','Έλεγχος γενικού επίναυλου στο CMS',910,'system','fuel_weekly',1,0,'12:00:00')");
     $db->exec("INSERT INTO `4a_users` VALUES (1,'u1','administrator',1),(2,'u2','administrator',1)");
     $db->exec("INSERT INTO `4a_user_task_skills` VALUES (1,'fuel_weekly','BOTH'),(1,'fuel_weekly_verify','BOTH'),
@@ -131,7 +131,7 @@ $count = function ($db) { return (int)$db->query('SELECT COUNT(*) FROM `4a_tasks
 $d = fuel_weekly_ensure($db, $cache, $types, '2026-10-08', true);
 ck('δοκιμή: δύο «θα δημιουργούνταν»', array_column($d['actions'], 'status') === array('would_create', 'would_create'), json_encode(array_column($d['actions'], 'status')));
 ck('δοκιμή: ΚΑΜΙΑ εγγραφή', $count($db) === 0);
-ck('δοκιμή: προθεσμία 2026-10-09 17:00:00, 69 γραμμές', $d['actions'][0]['due_at'] === '2026-10-09 17:00:00' && $d['actions'][0]['rows'] === 69);
+ck('δοκιμή: προθεσμία 2026-10-09 19:00:00, 69 γραμμές', $d['actions'][0]['due_at'] === '2026-10-09 19:00:00' && $d['actions'][0]['rows'] === 69);
 ck('δοκιμή: verify με ΔΙΚΗ του προθεσμία, Δευ 2026-10-12 12:00:00', $d['actions'][1]['code'] === 'fuel_weekly_verify' && $d['actions'][1]['due_at'] === '2026-10-12 12:00:00', json_encode($d['actions'][1]['due_at']));
 
 $r = fuel_weekly_ensure($db, $cache, $types, '2026-10-08');
@@ -139,7 +139,7 @@ ck('πραγματική: created, created', array_column($r['actions'], 'status
 ck('δύο εργασίες', $count($db) === 2);
 $w = tasks_fetch_one($db, $r['actions'][0]['task_id']);
 $v = tasks_fetch_one($db, $r['actions'][1]['task_id']);
-ck('fuel_weekly: subject fuel:2026-10-12, BOTH, προθεσμία Παρ 17:00', $w['subject_key'] === 'fuel:2026-10-12' && $w['task_country'] === 'BOTH' && $w['due_at'] === '2026-10-09 17:00:00');
+ck('fuel_weekly: subject fuel:2026-10-12, BOTH, προθεσμία Παρ 19:00', $w['subject_key'] === 'fuel:2026-10-12' && $w['task_country'] === 'BOTH' && $w['due_at'] === '2026-10-09 19:00:00');
 ck('fuel_weekly: ανατέθηκε σε 1 ή 2', in_array((int)$w['assigned_to'], array(1, 2), true), $w['assigned_to']);
 ck('verify: κλειδωμένο, χωρίς ανάδοχο', (int)$v['locked'] === 1 && $v['assigned_to'] === null);
 ck('verify: προθεσμία Δευ 12:00 της εβδομάδας ισχύος (2026-10-12 12:00:00)', $v['due_at'] === '2026-10-12 12:00:00', $v['due_at']);
@@ -158,6 +158,20 @@ $x = fuel_weekly_ensure($db, $bad, $types, '2026-10-08');
 ck('άκυρο cache (κενό air): λόγος, καμία ενέργεια', $x['invalid'] !== null && $x['actions'] === array() && $count($db) === 0, json_encode($x['invalid']));
 $x = fuel_weekly_ensure($db, $cache, $types, '2026-10-12');
 ck('καμία μελλοντική εβδομάδα: καμία ενέργεια', $x['targets'] === array() && $count($db) === 0);
+
+echo "\n═══ Οι κανόνες του τεστ = οι κανόνες του migration 2026-10-14b ═══\n";
+$mig = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-14b_task_types_due_rule.sql');
+ck('migration: fuel_weekly -3 / 19:00:00 (απόφαση 09/10)',
+   strpos($mig, "SET `due_offset_days` = -3, `due_time` = '19:00:00' WHERE `code` = 'fuel_weekly';") !== false);
+ck('migration: fuel_weekly_verify 0 / 12:00:00',
+   strpos($mig, "SET `due_offset_days` =  0, `due_time` = '12:00:00' WHERE `code` = 'fuel_weekly_verify';") !== false);
+ck('migration: όρια χρώματος verify 12 / 3',
+   strpos($mig, "SET `due_warn_hours` = 12, `due_urgent_hours` = 3 WHERE `code` = 'fuel_weekly_verify';") !== false);
+$rb = file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-14b_task_types_due_rule.rollback.sql');
+ck('rollback: όρια verify πίσω σε NULL, και DROP των δύο στηλών',
+   strpos($rb, "SET `due_warn_hours` = NULL, `due_urgent_hours` = NULL WHERE `code` = 'fuel_weekly_verify';") !== false
+   && strpos($rb, 'DROP COLUMN `due_time`') !== false && strpos($rb, 'DROP COLUMN `due_offset_days`') !== false);
+ck('migration: κανένα UPDATE/INSERT/DELETE στο 4a_tasks', !preg_match('/(UPDATE|INSERT\s+INTO|DELETE\s+FROM)\s+`?4a_tasks`?\s/i', $mig));
 
 echo "\n═══ Προθεσμία από τη ΒΑΣΗ: χωρίς κανόνα καμία εργασία, άλλος κανόνας άλλη ώρα ═══\n";
 $db = fresh_db();

@@ -15,7 +15,7 @@
 // GitHub Action την πιάνει περίπου 10:00–11:30 UTC. Η πρώτη εκτέλεση του
 // cron μετά από αυτό δημιουργεί τις εργασίες, με προθεσμία ΑΝΑ ΤΥΠΟ από
 // τη βάση (4a_task_types.due_offset_days / due_time, migration 2026-10-14b):
-// fuel_weekly Παρασκευή 17:00 πριν, fuel_weekly_verify Δευτέρα 12:00.
+// fuel_weekly Παρασκευή 19:00 πριν, fuel_weekly_verify Δευτέρα 12:00.
 require_once __DIR__ . '/fuel_lib.php';
 require_once __DIR__ . '/tasks_system.php';
 

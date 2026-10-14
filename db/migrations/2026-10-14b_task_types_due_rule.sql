@@ -16,8 +16,14 @@
 --                                  (σφάλμα στο log του cron), αντί να
 --                                  μαντέψει προθεσμία.
 --
---  fuel_weekly         -3 / 17:00   ίδια με σήμερα (απόφαση Ο1, 17:00)
+--  fuel_weekly         -3 / 19:00   απόφαση 09/10 (Ε4): Παρασκευή 19:00.
+--                                   Οι #76 / #87 κρατούν τις 17:00 (Ο1).
 --  fuel_weekly_verify   0 / 12:00   νέα
+--
+--  Και όρια χρώματος του verify (4a_task_types.due_warn_hours /
+--  due_urgent_hours, από το 08c), απόφαση 14/10: 12 / 3. Πορτοκαλί από
+--  Δευ 00:00 (τότε ανοίγει η επαλήθευση), ΕΠΕΙΓΟΝ από Δευ 09:00. Ως τώρα
+--  NULL, γιατί η προθεσμία του δεν ήταν δική του.
 --
 --  Ισχύει ΜΟΝΟ για εργασίες που δημιουργούνται μετά το deploy. ΚΑΜΙΑ
 --  εργασία (4a_tasks) δεν αγγίζεται: η εβδομάδα 19/10 κρατά ό,τι πήρε.
@@ -56,10 +62,13 @@ SET @sql := IF((SELECT COUNT(*) FROM information_schema.COLUMNS
 PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 
 -- ── 3. Κανόνες ────────────────────────────────────────────────────────
-UPDATE `4a_task_types` SET `due_offset_days` = -3, `due_time` = '17:00:00' WHERE `code` = 'fuel_weekly';
+UPDATE `4a_task_types` SET `due_offset_days` = -3, `due_time` = '19:00:00' WHERE `code` = 'fuel_weekly';
 UPDATE `4a_task_types` SET `due_offset_days` =  0, `due_time` = '12:00:00' WHERE `code` = 'fuel_weekly_verify';
 
--- ── 4. Επαλήθευση ─────────────────────────────────────────────────────
+-- ── 4. Όρια χρώματος του verify (στήλες του 08c, υπάρχουν ήδη) ────────
+UPDATE `4a_task_types` SET `due_warn_hours` = 12, `due_urgent_hours` = 3 WHERE `code` = 'fuel_weekly_verify';
+
+-- ── 5. Επαλήθευση ─────────────────────────────────────────────────────
 SELECT `COLUMN_NAME`, `COLUMN_TYPE`, `IS_NULLABLE`, `COLUMN_DEFAULT`
   FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = DATABASE()
@@ -67,7 +76,7 @@ SELECT `COLUMN_NAME`, `COLUMN_TYPE`, `IS_NULLABLE`, `COLUMN_DEFAULT`
    AND COLUMN_NAME IN ('due_offset_days', 'due_time')
  ORDER BY `ORDINAL_POSITION`;
 
--- Αναμενόμενο: fuel_weekly -3 17:00:00 · fuel_weekly_verify 0 12:00:00 ·
--- όλοι οι άλλοι τύποι NULL NULL.
-SELECT `code`, `due_offset_days`, `due_time`
+-- Αναμενόμενο: fuel_weekly -3 19:00:00 24 4 · fuel_weekly_verify 0 12:00:00 12 3 ·
+-- όλοι οι άλλοι τύποι NULL NULL NULL NULL.
+SELECT `code`, `due_offset_days`, `due_time`, `due_warn_hours`, `due_urgent_hours`
   FROM `4a_task_types` ORDER BY `sort_order`, `code`;

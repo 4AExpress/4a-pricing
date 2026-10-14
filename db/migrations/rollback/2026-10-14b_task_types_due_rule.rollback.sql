@@ -14,6 +14,9 @@
 
 SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- Όρια χρώματος του verify: πίσω στο NULL του 08c (οι στήλες ΜΕΝΟΥΝ).
+UPDATE `4a_task_types` SET `due_warn_hours` = NULL, `due_urgent_hours` = NULL WHERE `code` = 'fuel_weekly_verify';
+
 SET @sql := IF((SELECT COUNT(*) FROM information_schema.COLUMNS
                  WHERE TABLE_SCHEMA = DATABASE()
                    AND TABLE_NAME   = '4a_task_types'
@@ -30,9 +33,12 @@ SET @sql := IF((SELECT COUNT(*) FROM information_schema.COLUMNS
   'SELECT ''η στηλη 4a_task_types.due_offset_days δεν υπαρχει'' AS `ΠΑΡΑΛΕΙΨΗ`');
 PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 
--- Αναμενόμενο: 0.
+-- Αναμενόμενο: 0, και fuel_weekly_verify με due_warn_hours / due_urgent_hours NULL.
 SELECT COUNT(*) AS `στήλες_που_μένουν`
   FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = DATABASE()
    AND TABLE_NAME   = '4a_task_types'
    AND COLUMN_NAME IN ('due_offset_days', 'due_time');
+
+SELECT `code`, `due_warn_hours`, `due_urgent_hours`
+  FROM `4a_task_types` WHERE `code` = 'fuel_weekly_verify';
