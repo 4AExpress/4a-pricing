@@ -54,6 +54,24 @@ ck('= <api>/../../4a_logs/api_errors.log', $f === dirname($apiDir, 2) . '/4a_log
 ck('όχι μέσα στο api/', strpos($f, $apiDir . '/') !== 0, $f);
 ck('όχι μέσα στο webroot', strpos($f, $web . '/') !== 0, $f);
 
+echo "\n═══ όριο μεγέθους: κρατά το τελευταίο κομμάτι, από αρχή γραμμής ═══\n";
+ck('όριο 5 MB, κρατά 1 MB', API_ERRORS_MAX === 5242880 && API_ERRORS_KEEP === 1048576);
+ck('μικρό κείμενο αυτούσιο', api_errors_tail("a\nb\n", 100) === "a\nb\n");
+$big = '';
+for ($i = 1; $i <= 100; $i++) $big .= sprintf("γραμμή %03d xxxxxxxxxx\n", $i);
+$t = api_errors_tail($big, 200);
+$lines = explode("\n", rtrim($t, "\n"));
+ck('πρώτη γραμμή = σημείωση κοπής', strpos($lines[0], 'κόπηκε') !== false, $lines[0]);
+ck('ξεκινά από ολόκληρη γραμμή', strpos($lines[1], 'γραμμή ') === 0, $lines[1]);
+ck('κρατά την τελευταία γραμμή', end($lines) === 'γραμμή 100 xxxxxxxxxx', end($lines));
+ck('μέγεθος ≤ keep + σημείωση', strlen($t) <= 200 + 200, (string)strlen($t));
+
+echo "\n═══ δικαιώματα 700/600 στον κώδικα ═══\n";
+$esrc = file_get_contents(__DIR__ . '/../../api/api_errors.php');
+ck('mkdir 0700', strpos($esrc, 'mkdir($d, 0700, true)') !== false);
+ck('chmod φακέλου 0700', strpos($esrc, 'chmod($d, 0700)') !== false);
+ck('chmod αρχείου 0600', strpos($esrc, 'chmod($f, 0600)') !== false);
+
 echo "\n═══ tasks.php: ο χειριστής ΠΡΙΝ από auth.php και tasks_lib.php ═══\n";
 $src = file_get_contents(__DIR__ . '/../../api/tasks.php');
 $iCfg  = strpos($src, "_once 'config.php';");

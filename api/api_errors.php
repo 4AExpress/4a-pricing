@@ -59,14 +59,38 @@ function api_errors_payload($ref)
     ];
 }
 
+// Όριο μεγέθους: πάνω από MAX το αρχείο ξαναγράφεται με τα τελευταία KEEP
+// bytes (από αρχή γραμμής). Φάκελος 700, αρχείο 600.
+if (!defined('API_ERRORS_MAX'))  define('API_ERRORS_MAX', 5 * 1024 * 1024);
+if (!defined('API_ERRORS_KEEP')) define('API_ERRORS_KEEP', 1024 * 1024);
+
+/**
+ * Το τελευταίο κομμάτι ενός log, από αρχή γραμμής. Καθαρή συνάρτηση.
+ * Αν χωρά ολόκληρο, επιστρέφεται αυτούσιο.
+ */
+function api_errors_tail($text, $keep)
+{
+    if (strlen($text) <= $keep) return $text;
+    $t  = substr($text, -$keep);
+    $nl = strpos($t, "\n");
+    $t  = $nl === false ? '' : substr($t, $nl + 1);
+    return gmdate('Y-m-d H:i:s') . " UTC [api_errors] -- κόπηκε, κρατήθηκαν τα τελευταία " . strlen($t) . " bytes --\n" . $t;
+}
+
 function api_errors_write($line)
 {
     $f = api_errors_log_file();
     $d = dirname($f);
     if (!is_dir($d)) @mkdir($d, 0700, true);
-    if (@file_put_contents($f, $line . "\n", FILE_APPEND | LOCK_EX) === false) {
-        error_log($line);
+    @chmod($d, 0700);
+    clearstatcache(true, $f);
+    if (is_file($f) && filesize($f) > API_ERRORS_MAX) {
+        $tail = @file_get_contents($f, false, null, max(0, filesize($f) - API_ERRORS_KEEP - 4096));
+        if ($tail !== false) @file_put_contents($f, api_errors_tail($tail, API_ERRORS_KEEP), LOCK_EX);
     }
+    $ok = @file_put_contents($f, $line . "\n", FILE_APPEND | LOCK_EX) !== false;
+    if ($ok) @chmod($f, 0600);
+    else     error_log($line);
 }
 
 function api_errors_send($ref)
