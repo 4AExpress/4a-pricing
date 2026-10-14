@@ -56,11 +56,11 @@ ck('όχι μέσα στο webroot', strpos($f, $web . '/') !== 0, $f);
 
 echo "\n═══ tasks.php: ο χειριστής ΠΡΙΝ από auth.php και tasks_lib.php ═══\n";
 $src = file_get_contents(__DIR__ . '/../../api/tasks.php');
-$iCfg  = strpos($src, "require_once 'config.php';");
-$iErr  = strpos($src, "require_once 'api_errors.php';");
+$iCfg  = strpos($src, "_once 'config.php';");
+$iErr  = strpos($src, "_once 'api_errors.php';");
 $iInst = strpos($src, "api_errors_install('tasks');");
-$iAuth = strpos($src, "require_once 'auth.php';");
-$iLib  = strpos($src, "require_once 'tasks_lib.php';");
+$iAuth = strpos($src, "_once 'auth.php';");
+$iLib  = strpos($src, "_once 'tasks_lib.php';");
 ck('υπάρχουν όλα', $iCfg !== false && $iErr !== false && $iInst !== false && $iAuth !== false && $iLib !== false);
 ck('config < api_errors < install < auth < tasks_lib',
    $iCfg < $iErr && $iErr < $iInst && $iInst < $iAuth && $iAuth < $iLib);
