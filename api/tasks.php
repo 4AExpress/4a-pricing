@@ -1,5 +1,8 @@
 <?php
-// tasks.php | v1.2 | 12-10-2026
+// tasks.php | v1.3 | 14-10-2026
+// v1.3: api_errors.php, κανένα σκέτο 500 (αφορμή: collation 13/10). Ό,τι
+//       ξεφεύγει απαντά JSON 500 με μήνυμα και κωδικό, και γράφεται στο
+//       δικό μας log με αρχείο:γραμμή. Η άρνηση δικαιώματος μένει 403.
 // v1.2: κάρτα βημάτων (Φάση 5 Κ2α): download, upload, admin_override,
 //       override_ack. Σε τύπο χωρίς βήματα απαντούν 409 (tasks_steps.php).
 // Endpoint της οθόνης εργασιών. Λεπτό routing — η λογική ζει στο
@@ -10,6 +13,8 @@
 error_reporting(E_ALL);
 ini_set('log_errors', 1);
 require_once 'config.php';
+require_once 'api_errors.php';
+api_errors_install('tasks');
 require_once 'auth.php';
 require_once 'tasks_lib.php';
 
