@@ -48,9 +48,9 @@ function env(opts){
   const doc = { getElementById: id => (els[id] = els[id] || { innerHTML: '', style: {} }) };
   // Η πραγματική athensNow() δεν τρέχει στα τεστ: σταθερό «τώρα» Αθήνας.
   const NOW = opts.now === undefined ? '2026-10-08 10:00:00' : opts.now;
-  const store = { getItem: () => null };
+  const store = opts.perms ? { getItem: k => k === '4a_perms' ? JSON.stringify(opts.perms) : null } : { getItem: () => null };
   const code = [
-    'let currentUser = { id: ' + (opts.userId === undefined ? 1 : opts.userId) + ' }, isAdmin = ' + (opts.admin === false ? 'false' : 'true') + ', view = "all", lastTasks = [];',
+    'let currentUser = { id: ' + (opts.userId === undefined ? 1 : opts.userId) + ' }, isAdmin = ' + (opts.admin === false ? 'false' : 'true') + ', view = ' + JSON.stringify(opts.view || 'all') + ', lastTasks = [];',
     'let STATUSES = ' + JSON.stringify(opts.statuses === undefined ? DB_STATUSES : opts.statuses) + ';',
     'let FUEL_TYPES = ' + JSON.stringify(opts.fuelTypes === undefined ? DB_FUEL_TYPES : opts.fuelTypes) + ';',
     'const histOpen = new Map(); const grpOpen = new Map();',
@@ -66,8 +66,8 @@ function env(opts){
     grabConst('UI_TEMP'), grab('tempText'), grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'), grabConst('TONE_MIX_STRONG'),
     grab('tint'), grab('groupTone'), grab('addDaysISO'), grab('fuelWeekInfo'), grab('fuelStateHtml'),
     grab('grpIsOpen'), grab('grpTogHtml'), grab('groupHtml'),
-    grab('taskRow'), grab('render'),
-    'return { render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
+    grab('taskRow'), grab('clientNameHtml'), grab('tabFromQuery'), grab('anchorFromHash'), grab('render'),
+    'return { clientNameHtml, tabFromQuery, anchorFromHash, render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
     '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS,',
     '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle,',
     '         tint, groupTone, groupHtml, grpOpen, fuelWeekInfo, fuelStateHtml, tempText, UI_TEMP };'
@@ -332,7 +332,11 @@ function appearanceStrip(html) {
     .replace(/ style="--tone-bg:[^"]*"/g, '')
     .replace(/\n {8}<button class="grp-tog"[^>]*>[^<]*<\/button>/g, '')
     .replace(/\n {6}<div class="grp-body"( hidden)?>/g, '')
-    .replace(/\n {6}<\/div>\n {4}<\/div>/g, '\n    </div>');
+    .replace(/\n {6}<\/div>\n {4}<\/div>/g, '\n    </div>')
+    // 14-10-2026: το όνομα πελάτη έγινε σύνδεσμος, και η ομάδα πήρε id
+    // (στόχος του «← Πίσω στις εργασίες»). Τίποτε άλλο.
+    .replace(/<a class="client-name client-link" href="[^"]*" title="[^"]*">([^<]*)<\/a>/g, '<span class="client-name">$1</span>')
+    .replace(/ id="client-\d+"/g, '');
 }
 
 console.log('\n═══ Εργασίες ΠΕΛΑΤΗ: byte-προς-byte ίδιες με το 20588f5 (εκτός από την εμφάνιση της ομάδας) ═══');
@@ -710,7 +714,7 @@ console.log('\n═══ Φόντο ομάδας: κίτρινο / κόκκιν�
     cliTask(3, 9, 'Γκρι', { status: 'done' }),
   ]);
   const L = els.list.innerHTML;
-  const heads = [...L.matchAll(/<div class="(client-group[^"]*)"( style="[^"]*")?>/g)].map(m => m[1]);
+  const heads = [...L.matchAll(/<div class="(client-group[^"]*)"( id="client-\d+")?( style="[^"]*")?>/g)].map(m => m[1]);
   ck('ΚΑΜΙΑ λευκή ομάδα: κάθε ομάδα είναι tone ή closed', heads.length === 5 && heads.every(c => / tone (open|late)$| closed$/.test(c)), heads.join(' | '));
   ck('ΣΥΣΤΗΜΑ κλειστή = γκρι · ΣΥΣΤΗΜΑ ανοιχτή = κίτρινο',
      heads[0] === 'client-group sys closed' && heads[1] === 'client-group sys tone open', heads.slice(0, 2).join(' | '));
@@ -844,7 +848,8 @@ console.log('\n═══ TEMP: τα προσωρινά κείμενα, σε ΕΝ
 {
   const { api } = env();
   const TEMP_KEYS = ['fuel_next_todo', 'fuel_uploaded', 'fuel_next_ready', 'fuel_now_ok', 'fuel_now_missing', 'fuel_older',
-                     'grp_tip_collapse', 'grp_tip_expand', 'color_open_head'];
+                     'grp_tip_collapse', 'grp_tip_expand', 'color_open_head',
+                     'client_no_account', 'client_no_offer', 'client_open_tip', 'mine_empty_queue'];
   ck(`UI_TEMP έχει ΑΚΡΙΒΩΣ τα ${TEMP_KEYS.length} κλειδιά: ${TEMP_KEYS.join(', ')}`,
      JSON.stringify(Object.keys(api.UI_TEMP).sort()) === JSON.stringify([...TEMP_KEYS].sort()), Object.keys(api.UI_TEMP).join(','));
   const used = [...new Set([...src.matchAll(/tempText\(\s*(?:[^'()]*\?\s*)?'(\w+)'(?:\s*:\s*'(\w+)')?/g)].flatMap(m => [m[1], m[2]]).filter(Boolean))].sort();
@@ -940,7 +945,8 @@ console.log('\n═══ Κλειδωμένη κάρτα: αντίθεση ≥ 4
 // Το τεστ καρφώνει τη σημερινή συμπεριφορά· αν αλλάξει (απόφαση), αλλάζει κι αυτό.
 console.log('\n═══ Καρτέλες: αριθμός μόνο στην καρτέλα που φορτώθηκε (από 24/09) ═══');
 {
-  ck('η σελίδα ανοίγει στην «Ουρά»', /let view = 'queue';/.test(src));
+  // 14/10: η προεπιλογή έγινε «Οι εργασίες μου» (βλ. ενότητα «?tab=» παρακάτω).
+  ck('η σελίδα ανοίγει στην «Οι εργασίες μου»', /let view = 'mine';/.test(src));
   ck('ο αριθμός γράφεται μόνο για την τρέχουσα καρτέλα', /counts\[view\] = d\.tasks\.length;/.test(src));
   const tabsCode = [grabConst('VIEW_LABELS'), grabConst('VIEW_TIPS'), grab('escHtml'), grab('renderTabs')].join('\n');
   const tab = (counts, view) => { const els = {};
@@ -953,6 +959,68 @@ console.log('\n═══ Καρτέλες: αριθμός μόνο στην κα
   const visited = tab({ mine: 4, queue: 7, all: null }, 'queue');
   ck('αφού ανοίξει η «Οι εργασίες μου»: κρατά τον αριθμό της (4)', /Οι εργασίες μου<span class="cnt">4<\/span>/.test(visited), visited);
   ck('ο αριθμός 0 φαίνεται ως 0, δεν κρύβεται', /<span class="cnt">0<\/span>/.test(tab({ mine: 0, queue: null, all: null }, 'mine')));
+}
+
+// ── 14-10-2026: (Α) ?tab= και άδεια «Οι εργασίες μου» · (Β) σύνδεσμος πελάτη
+//    και επιστροφή · (Γ) «χωρίς προσφορά» / «χωρίς AccountNo» στο UI_TEMP ──
+console.log('\n═══ (Α) ?tab=mine|queue, προεπιλογή «Οι εργασίες μου» ═══');
+{
+  const { api } = env();
+  const T = api.tabFromQuery;
+  ck('χωρίς ?tab -> mine', T('', false) === 'mine' && T('', true) === 'mine');
+  ck('?tab=queue -> queue', T('?tab=queue', false) === 'queue');
+  ck('?tab=mine -> mine', T('?tab=mine', true) === 'mine');
+  ck('?tab=all: διαχειριστής -> all, άλλος -> mine', T('?tab=all', true) === 'all' && T('?tab=all', false) === 'mine');
+  ck('άγνωστο / κακόβουλο -> mine', T('?tab=xyz', true) === 'mine' && T('?tab=<script>', true) === 'mine' && T('?tab=', true) === 'mine');
+  ck('με άλλες παραμέτρους -> διαβάζει το tab', T('?x=1&tab=queue', false) === 'queue');
+  ck('το boot διαβάζει το ?tab ΜΕΤΑ το isAdmin', (() => { const b = src.slice(src.indexOf('/* --- boot'));
+     return b.indexOf('isAdmin = (') > 0 && b.indexOf('isAdmin = (') < b.indexOf('view = tabFromQuery(location.search, isAdmin);'); })());
+
+  const empty = v => { const e = env({ view: v }); e.api.render([]); return e.els.list.innerHTML; };
+  const m = empty('mine');
+  ck('άδεια «Οι εργασίες μου»: μήνυμα + σύνδεσμος στην Ουρά', m.includes('Δεν έχετε εργασίες σε εξέλιξη.') &&
+     m.includes('href="tasks.html?tab=queue"') && m.includes("switchView('queue')") && m.includes('→ Δείτε την Ουρά αδιάθετων'), m);
+  ck('άδεια «Ουρά»: ΧΩΡΙΣ σύνδεσμο', !empty('queue').includes('to-queue'));
+  ck('άδεια «Όλες»: ΧΩΡΙΣ σύνδεσμο', !empty('all').includes('to-queue'));
+}
+
+console.log('\n═══ (Β) όνομα πελάτη -> pricelist-clients.html?client=…&from=tasks · #client-<id> ═══');
+{
+  const { api } = env({ view: 'queue' });
+  const a = api.clientNameHtml(1791540547308, 'Α&Β <ΑΕ>');
+  ck('σύνδεσμος ίδιου μοτίβου με το open_code, με from=tasks και την καρτέλα',
+     a.includes('href="pricelist-clients.html?client=1791540547308&amp;from=tasks&amp;tab=queue"'), a);
+  ck('το URL περνά το ACTION_URL_OK', /^[a-z0-9][a-z0-9_-]*\.html(\?[A-Za-z0-9_=&%.-]*)?$/.test('pricelist-clients.html?client=1791540547308&from=tasks&tab=queue'));
+  ck('το όνομα escaped', a.includes('>Α&amp;Β &lt;ΑΕ&gt;</a>'), a);
+  ck('κρατά την κλάση client-name (χρώματα tone/closed)', a.startsWith('<a class="client-name client-link"'));
+  ck('tooltip από το UI_TEMP', a.includes('title="Open client — Άνοιγμα της καρτέλας του πελάτη"'));
+  const no = env({ view: 'mine', perms: { 'pricelist-clients': { view: 0 } } }).api.clientNameHtml(5, 'Π');
+  ck('χωρίς δικαίωμα στο pricelist-clients: σκέτο όνομα, κανένας σύνδεσμος', no === '<span class="client-name">Π</span>', no);
+  const yes = env({ view: 'mine', perms: { 'pricelist-clients': { view: 1 } } }).api.clientNameHtml(5, 'Π');
+  ck('με δικαίωμα: σύνδεσμος', yes.includes('<a class="client-name client-link"'));
+
+  const e = env({ view: 'mine' });
+  e.api.render([cliTask(1, 7, 'Πελάτης'), sysTask(80, FW, 'fuel:2026-10-19', PAYLOAD, { status: 'in_progress' })]);
+  const L = e.els.list.innerHTML;
+  ck('η ομάδα πελάτη έχει id="client-7"', L.includes(' id="client-7"'));
+  ck('η ομάδα ΣΥΣΤΗΜΑ ΔΕΝ έχει id client-', (L.match(/ id="client-/g) || []).length === 1);
+  ck('το #client-<id> γίνεται δεκτό, οτιδήποτε άλλο -> null',
+     api.anchorFromHash('#client-7') === 'client-7' && api.anchorFromHash('#client-x') === null &&
+     api.anchorFromHash('#client-7"><img') === null && api.anchorFromHash('') === null && api.anchorFromHash('#x') === null);
+  ck('μετά την πρώτη απόδοση: revealAnchor() (ανοίγει την ομάδα, μία φορά)', /render\(d\.tasks\);\n\s*revealAnchor\(\);/.test(src) &&
+     /pendingAnchor = null;/.test(grab('revealAnchor')) && /grpOpen\.set\(key, true\)/.test(grab('revealAnchor')));
+}
+
+console.log('\n═══ (Γ) «χωρίς AccountNo» / «χωρίς προσφορά» από το UI_TEMP, ίδιο κείμενο ═══');
+{
+  const { api, els } = env({ view: 'mine' });
+  ck('UI_TEMP: ίδια κείμενα', api.UI_TEMP.client_no_account === 'χωρίς AccountNo' && api.UI_TEMP.client_no_offer === 'χωρίς προσφορά');
+  const t = cliTask(1, 7, 'Π', { client_account: '', offer_number: '' });
+  api.render([t]);
+  ck('η κεφαλίδα λέει «χωρίς AccountNo · χωρίς προσφορά» όπως πριν',
+     els.list.innerHTML.includes('χωρίς AccountNo') && els.list.innerHTML.includes(' · χωρίς προσφορά'), els.list.innerHTML);
+  ck('στο render: tempText, όχι γραμμένα κείμενα', /tempText\('client_no_account'\)/.test(grab('render')) && /tempText\('client_no_offer'\)/.test(grab('render')) &&
+     !/'χωρίς AccountNo'|' · χωρίς προσφορά'/.test(grab('render')));
 }
 
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);

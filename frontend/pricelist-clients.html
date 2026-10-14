@@ -163,6 +163,9 @@
                background: #e3f2fd; border: 1px solid #90caf9; border-left: 4px solid #1565c0;
                border-radius: 6px; margin-bottom: 14px; }
   .task-hint-main { flex: 1; }
+  .tasks-back { display: inline-block; margin-bottom: 10px; font-size: 13px; font-weight: 600;
+                color: #1565c0; text-decoration: none; }
+  .tasks-back:hover { text-decoration: underline; }
   .task-hint-title { font-size: 13px; font-weight: 700; color: #0d47a1; }
   .task-hint-sub { font-size: 12px; color: #1565c0; margin-top: 3px; line-height: 1.45; }
   .task-hint-x { background: none; border: none; font-size: 18px; line-height: 1;
@@ -358,6 +361,8 @@
   </div>
   <div class="section-body">
 
+    <!-- «← Πίσω στις εργασίες»: ΜΟΝΟ όταν ήρθαμε από το tasks.html (from=tasks) -->
+    <div id="tasks-back" style="display:none;"></div>
     <!-- Μήνυμα deep link από το σύστημα εργασιών· κενό σε κανονική χρήση -->
     <div id="task-hint" style="display:none;"></div>
 
@@ -1550,11 +1555,33 @@ function onAccountInput(){
 // ─────────────────────────────────────────────────────────────────────
 const FOCUS_TARGETS = { account: '#cl-account' };   // λευκή λίστα, όχι ελεύθερος selector
 
+// «← Πίσω στις εργασίες» (14/10). ΜΟΝΟ με from=tasks — λευκή λίστα, όχι
+// ελεύθερο URL επιστροφής. Η καρτέλα από λευκή λίστα (αλλιώς mine· το
+// tasks.html ξαναελέγχει το «all» για μη-διαχειριστή), και #client-<id>
+// μόνο για αριθμητικό id. Επιστρέφει null αν δεν ήρθαμε από τις εργασίες.
+function tasksBackHref(q){
+  if(!q || (q.get('from')||'') !== 'tasks') return null;
+  const tab = (q.get('tab')||'').trim();
+  const t   = ['mine','queue','all'].includes(tab) ? tab : 'mine';
+  const cid = (q.get('client')||'').trim();
+  return 'tasks.html?tab=' + t + (/^\d+$/.test(cid) ? '#client-' + cid : '');
+}
+function showTasksBack(href){
+  const el = document.getElementById('tasks-back');
+  if(!el || !href) return;
+  el.innerHTML = `<a class="tasks-back" href="${escHtml(href)}">← Πίσω στις εργασίες</a>`;
+  el.style.display = '';
+}
+
 function deepLink(){
   let q; try{ q = new URLSearchParams(location.search); }catch(e){ return; }
   const cid = (q.get('client')||'').trim();
   if(!cid) return;
   const focus = (q.get('focus')||'').trim();
+
+  // Επιστροφή στις εργασίες: ΠΡΙΝ το καθάρισμα του URL, και ΠΡΙΝ την
+  // αναζήτηση του πελάτη (χρειάζεται και όταν ο πελάτης δεν βρεθεί).
+  showTasksBack(tasksBackHref(q));
 
   // Καθαρίζουμε ΑΜΕΣΩΣ το URL: μια ανανέωση ή μια αποθήκευση δεν πρέπει
   // να ξαναφέρει το μήνυμα ούτε να ξανακλέψει την εστίαση.

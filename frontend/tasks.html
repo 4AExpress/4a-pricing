@@ -50,6 +50,10 @@
   .client-head { padding: 10px 14px; background: #fafafa; border-bottom: 1px solid #eee;
                  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .client-name { font-size: 14px; font-weight: 600; color: #333; }
+  a.client-name.client-link { text-decoration: underline dotted; text-underline-offset: 3px; }
+  a.client-name.client-link:hover { text-decoration-style: solid; }
+  .empty .to-queue { display: inline-block; margin-top: 8px; color: #1565c0; font-weight: 600; text-decoration: none; }
+  .empty .to-queue:hover { text-decoration: underline; }
   .client-meta { font-size: 11px; color: #999; }
   .flag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
   .flag.GR { background: #e3f2fd; color: #0d47a1; }
@@ -372,7 +376,12 @@ function doLogout(){ sessionStorage.removeItem('4a_current_user'); window.locati
 function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 let currentUser = null, isAdmin = false;
-let view = 'queue';
+// Προεπιλογή «Οι εργασίες μου» (14/10). Το ?tab= την αλλάζει, μέσω
+// tabFromQuery(): λευκή λίστα, και το «all» μόνο για διαχειριστή.
+let view = 'mine';
+// '#client-<id>' από το «← Πίσω στις εργασίες»: η ομάδα του πελάτη
+// ανοίγει και έρχεται στην οθόνη ΜΙΑ φορά, μετά την πρώτη φόρτωση.
+let pendingAnchor = null;
 // Η τελευταία λίστα που ήρθε από τον server. Την κρατάμε για να
 // ξαναζωγραφίσουμε (άνοιγμα ιστορικού) χωρίς νέο αίτημα.
 let lastTasks = [];
@@ -469,6 +478,48 @@ function renderTabs(){
 // πάνω από μια άσχετη λίστα.
 function switchView(v){ showOk(null); view=v; load(); }
 
+// ?tab=mine|queue|all -> καρτέλα. Λευκή λίστα· το «all» μόνο για
+// διαχειριστή. Οτιδήποτε άλλο -> «Οι εργασίες μου».
+function tabFromQuery(search, admin){
+  let t = '';
+  try{ t = (new URLSearchParams(search || '').get('tab') || '').trim(); }catch(e){}
+  if(t === 'mine' || t === 'queue') return t;
+  if(t === 'all' && admin) return 'all';
+  return 'mine';
+}
+// '#client-<αριθμός>' -> το id του στοιχείου. Οτιδήποτε άλλο -> null.
+function anchorFromHash(hash){
+  return /^#client-\d+$/.test(String(hash || '')) ? String(hash).slice(1) : null;
+}
+// Μετά την πρώτη απόδοση: ανοίγει την ομάδα του πελάτη, την φέρνει στην
+// οθόνη, και καθαρίζει το # από το URL ώστε μια ανανέωση να μην ξαναπηδά.
+// Πελάτης που δεν υπάρχει σε αυτή την καρτέλα: απλώς τίποτα.
+function revealAnchor(){
+  if(!pendingAnchor) return;
+  const id = pendingAnchor;
+  pendingAnchor = null;
+  try{ history.replaceState(null, '', location.pathname + '?tab=' + view); }catch(e){}
+  const key = 'c:' + id.slice('client-'.length);
+  if(!document.getElementById(id)) return;
+  if(document.querySelector(`#${id} > .grp-body[hidden]`)){
+    grpOpen.set(key, true);
+    render(lastTasks);
+  }
+  const el = document.getElementById(id);
+  if(el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
+}
+// Όνομα πελάτη στην κεφαλίδα: σύνδεσμος στην καρτέλα του, ίδιο μοτίβο με
+// το open_code (pricelist-clients.html?client=…), με from=tasks και την
+// τρέχουσα καρτέλα για το «← Πίσω». Χωρίς δικαίωμα στο pricelist-clients:
+// σκέτο όνομα, όπως πριν.
+function clientNameHtml(clientId, name){
+  const n = escHtml(name);
+  const href = 'pricelist-clients.html?client=' + encodeURIComponent(String(clientId)) +
+               '&from=tasks&tab=' + encodeURIComponent(view);
+  if(!canOpen('pricelist-clients') || !ACTION_URL_OK.test(href)) return `<span class="client-name">${n}</span>`;
+  return `<a class="client-name client-link" href="${escHtml(href)}" title="${escHtml(tempText('client_open_tip'))}">${n}</a>`;
+}
+
 async function load(){
   renderTabs();
   showErr(null);
@@ -487,6 +538,7 @@ async function load(){
     // Οι ετικέτες των τύπων επίναυλου, μία φορά, μόνο αν υπάρχει εργασία επίναυλου.
     if(!Object.keys(FUEL_TYPES).length && (d.tasks||[]).some(t => (taskPayload(t)||{}).kind==='fuel_weekly')) await loadFuelTypes();
     render(d.tasks);
+    revealAnchor();
   }catch(e){ showErr('Δεν έγινε σύνδεση με τον server — '+(e&&e.message?e.message:e)); }
 }
 
@@ -522,7 +574,11 @@ function render(tasks){
     const msg = view==='mine' ? 'Δεν έχετε εργασίες σε εξέλιξη.'
               : view==='queue' ? 'Καμία αδιάθετη εργασία για τις δεξιότητές σας.'
               : 'Καμία εργασία.';
-    el.innerHTML = `<div class="empty">${msg}</div>`;
+    // «Οι εργασίες μου» άδεια: η επόμενη δουλειά είναι στην Ουρά.
+    const toQueue = view==='mine'
+      ? `<br><a class="to-queue" href="tasks.html?tab=queue" onclick="switchView('queue');return false;">${escHtml(tempText('mine_empty_queue'))}</a>`
+      : '';
+    el.innerHTML = `<div class="empty">${msg}${toQueue}</div>`;
     return;
   }
   // Εργασίες ΧΩΡΙΣ πελάτη (συστήματος): δική τους ομάδα ανά subject_key,
@@ -568,10 +624,10 @@ function render(tasks){
     (view==='all' ? summaryHtml(tasks) : '') + sysHtml +
     [...groups.entries()].map(([k, g]) => groupHtml('c:' + k, 'client-group' + (g.isDemo?' demo':''), g.items, `
         ${g.isDemo?'<span class="demo-tag" title="Demo — Πελάτης επίδειξης. Τίποτα εδώ δεν είναι αληθινή δουλειά και δεν μετριέται πουθενά">ΕΠΙΔΕΙΞΗ</span>':''}
-        <span class="client-name">${escHtml(g.name)}</span>
+        ${clientNameHtml(k, g.name)}
         <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>
-        <span class="client-meta">${g.account?'AccountNo '+escHtml(g.account):'χωρίς AccountNo'}
-          ${g.offer?' · προσφορά '+escHtml(g.offer):' · χωρίς προσφορά'}</span>`)).join('');
+        <span class="client-meta">${g.account?'AccountNo '+escHtml(g.account):escHtml(tempText('client_no_account'))}
+          ${g.offer?' · προσφορά '+escHtml(g.offer):' · '+escHtml(tempText('client_no_offer'))}</span>`)).join('');
 }
 
 // Σε ΠΟΙΟΝ έχει ανατεθεί — σε ΟΛΕΣ τις καρτέλες, δίπλα στο badge.
@@ -738,6 +794,11 @@ const UI_TEMP = {
   // Χρώμα «προς εκτέλεση / σε εξέλιξη»: λεμονί κίτρινο του CMS (μετρημένο
   // από στιγμιότυπο). Κεφαλίδα γεμάτο, σώμα απόχρωση. Στη βάση με το Κ4α.
   color_open_head:    '#FCFF29',
+  // Κεφαλίδα ομάδας πελάτη (ίδια κείμενα με πριν, 14/10)
+  client_no_account:  'χωρίς AccountNo',
+  client_no_offer:    'χωρίς προσφορά',
+  client_open_tip:    'Open client — Άνοιγμα της καρτέλας του πελάτη',
+  mine_empty_queue:   '→ Δείτε την Ουρά αδιάθετων',
 };
 function tempText(key, vars){
   const s = UI_TEMP[key];
@@ -861,8 +922,10 @@ function groupHtml(key, baseCls, items, headInner, alert, startClosed, bodyHtml)
   const open = grpIsOpen(key, !!cs || !!startClosed);
   const cls = baseCls + (cs ? ' closed' : '') + (tone ? ' tone ' + tone.cls : '');
   const style = cs || (tone && tone.style);
+  // Ομάδα πελάτη: id="client-<id>", στόχος του «← Πίσω στις εργασίες».
+  const anchor = /^c:\d+$/.test(key) ? ` id="client-${key.slice(2)}"` : '';
   return `
-    <div class="${cls}"${style?` style="${style}"`:''}>
+    <div class="${cls}"${anchor}${style?` style="${style}"`:''}>
       <div class="client-head">${headInner}
         ${grpTogHtml(key, open)}
       </div>
@@ -1649,6 +1712,8 @@ document.addEventListener('keydown', function(e){
     isAdmin = (currentUser.role==='administrator');
     document.getElementById('whoami').textContent = currentUser.name || currentUser.username || '';
   }catch(e){}
+  view = tabFromQuery(location.search, isAdmin);
+  pendingAnchor = anchorFromHash(location.hash);
   load();
 })();
 </script>

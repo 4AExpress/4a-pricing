@@ -149,6 +149,35 @@ ck('road null', f.road === null);
 ck('λωρίδα λέει «—» στην προσφορά', e.warn.innerHTML.includes('«—»'));
 ck('η fuelState ΔΕΝ πετάει — η προσφορά βγαίνει', true);
 
+// 14-10-2026: «← Πίσω στις εργασίες», ΜΟΝΟ με from=tasks (λευκή λίστα).
+console.log('\n═══ 9. «← Πίσω στις εργασίες» (from=tasks) ═══');
+{
+  const code = grab(pageSrc, 'escHtml') + '\n' + grab(pageSrc, 'tasksBackHref') + '\n' + grab(pageSrc, 'showTasksBack') +
+               '\nreturn { tasksBackHref, showTasksBack };';
+  const box = { innerHTML: '', style: { display: 'none' } };
+  const api = new Function('document', code)({ getElementById: id => id === 'tasks-back' ? box : null });
+  const H = s => api.tasksBackHref(new URLSearchParams(s));
+  ck('χωρίς from -> κανένας σύνδεσμος', H('client=7') === null && H('client=7&focus=account') === null);
+  ck('from άλλο από tasks -> κανένας', H('client=7&from=evil') === null && H('client=7&from=https://x.y') === null);
+  ck('from=tasks&tab=queue -> tasks.html?tab=queue#client-7', H('client=7&from=tasks&tab=queue') === 'tasks.html?tab=queue#client-7');
+  ck('tab mine / all περνούν', H('client=7&from=tasks&tab=mine') === 'tasks.html?tab=mine#client-7' &&
+                               H('client=7&from=tasks&tab=all') === 'tasks.html?tab=all#client-7');
+  ck('tab άγνωστο ή κακόβουλο -> mine', H('client=7&from=tasks&tab=x') === 'tasks.html?tab=mine#client-7' &&
+                                        H('client=7&from=tasks&tab=%22%3E%3Cimg') === 'tasks.html?tab=mine#client-7');
+  ck('μη αριθμητικό client -> χωρίς #', H('client=7%22x&from=tasks&tab=mine') === 'tasks.html?tab=mine');
+  api.showTasksBack(null);
+  ck('null -> το κουτί μένει κρυφό', box.style.display === 'none' && box.innerHTML === '');
+  api.showTasksBack('tasks.html?tab=queue#client-7');
+  ck('εμφανίζεται με το κείμενο και το href', box.style.display === '' &&
+     box.innerHTML === '<a class="tasks-back" href="tasks.html?tab=queue#client-7">← Πίσω στις εργασίες</a>', box.innerHTML);
+  const dl = grab(pageSrc, 'deepLink');
+  ck('το deepLink το καλεί ΠΡΙΝ το replaceState και ΠΡΙΝ την αναζήτηση πελάτη',
+     dl.indexOf('showTasksBack(tasksBackHref(q))') > 0 &&
+     dl.indexOf('showTasksBack(tasksBackHref(q))') < dl.indexOf('history.replaceState') &&
+     dl.indexOf('showTasksBack(tasksBackHref(q))') < dl.indexOf('clients.find('));
+  ck('υπάρχει το #tasks-back στη σελίδα', pageSrc.includes('<div id="tasks-back" style="display:none;"></div>'));
+}
+
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══`);
 process.exit(fail?1:0);
 })();
