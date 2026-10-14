@@ -6,6 +6,7 @@
  *   · require __DIR__ . '/../../api/X'  ->  require '<API>/X'   (τα ΑΝΕΒΑΣΜΕΝΑ αρχεία του server)
  *   · file_get_contents(fixture)        ->  base64_decode('…')   (fixtures ενσωματωμένα, από το git HEAD)
  * Τίποτα δεν γράφεται στον server. Τα τεστ τρέχουν σε SQLite στη μνήμη.
+ * Εξαίρεση: tasks_roles_live.test.php, ζωντανή MySQL μόνο ανάγνωσης (Β8).
  * Τα ίδια τα τεστ ΔΕΝ αλλάζουν: η μετατροπή γίνεται μόνο εδώ.
  *
  * Πηγή: ΠΑΝΤΑ το git HEAD, ποτέ ο δίσκος (ίδιος κανόνας με το SCP του Β5).

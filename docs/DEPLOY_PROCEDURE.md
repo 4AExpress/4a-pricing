@@ -25,6 +25,10 @@
   - το charset της σύνδεσης και των πινάκων
   - αν υπάρχουν τα `pdo_sqlite` και `bcmath`
   - το md5 **ανά εργασία πελάτη** και το md5 του συνόλου
+  - τη **λίστα στηλών με collation ≠ `@@collation_database`** (πίνακας,
+    στήλη, τύπος, collation). Στήλες που συγκρίνονται μεταξύ τους πρέπει να
+    έχουν ίδιο collation, αλλιώς 1267/1270 σε MySQL (που τα τεστ SQLite δεν
+    βλέπουν, 13-10-2026)
 - Η έξοδος αποθηκεύεται τοπικά στο `<scratchpad>/B1_before`.
 
 ```
@@ -95,7 +99,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://4aexpress.com/api/<endpoint>
 ### Β8 Τεστ PHP στον server
 
 - Στέλνονται **μέσω stdin**, ένα αρχείο τεστ τη φορά.
-- Τρέχουν σε **SQLite στη μνήμη, όχι σε MySQL**.
+- Τρέχουν σε **SQLite στη μνήμη, όχι σε MySQL**, εκτός από το
+  `tasks_roles_live.test.php` (βλ. παρακάτω).
 - Αποτέλεσμα: **0 ΛΑΘΟΣ**, κανένα `Fatal` και κανένα `Warning`.
 - Τα bundles φτιάχνονται με το `tools/bundle_php_tests.js`, **πάντα** με
   `MSYS_NO_PATHCONV=1` στο Git Bash των Windows. Χωρίς αυτό, το Git Bash
@@ -113,6 +118,19 @@ MSYS_NO_PATHCONV=1 node tools/bundle_php_tests.js <outdir σε μορφή C:\...
 grep -ho "require[_once]* *'[^']*'" <outdir>/*.php | sort | uniq -c
 ssh -p <port> <user>@<host> "php" < <outdir>/<αρχείο>.test.php
 ```
+
+**Εξαίρεση: `tasks_roles_live.test.php` (ΖΩΝΤΑΝΗ MySQL, μόνο ανάγνωση).**
+Τρέχει το πραγματικό SQL της λίστας και του σήματος με τα πραγματικά
+δικαιώματα, ένας χρήστης ανά (ρόλος, pricelist_scope). Αναμενόμενο:
+administrator 200 παντού· μη-admin με `tasks.view` 200 σε mine/queue/badge
+και 403 με μήνυμα στο all· χωρίς `tasks.view` 403 παντού. **ΠΟΤΕ 500.**
+- Σταματά (exit 1) πριν από οτιδήποτε αν `4a_tasks`/`4a_task_events` δεν
+  είναι InnoDB ή αν λείπει ο `4a_sessions`.
+- Συνεδρία `READ ONLY`, `beginTransaction` … `rollBack` στο `finally`, και
+  μέτρηση `4a_tasks`/`4a_task_events` πριν και μετά: πρέπει ίσα.
+- Τυπώνει μόνο ρόλο, scope, view, κωδικό, και σε σφάλμα μήνυμα + αρχείο:γραμμή.
+- Τρέχει **πάντα** στο Β8, μετά από το Β4, ακόμα κι αν το deploy δεν αγγίζει
+  τις εργασίες: ένα migration σε άλλο πίνακα μπορεί να σπάσει collation.
 
 ### Β9 Τοπικά: push και frontend
 
