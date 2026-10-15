@@ -67,10 +67,10 @@ function fresh_db()
             `fuel_type` TEXT, `note` TEXT, `sort_order` INTEGER, `active` INTEGER)',
     ) as $ddl) $db->exec($ddl);
 
-    // Κανόνες προθεσμίας ΟΠΩΣ στο migration 2026-10-14b.
+    // Κανόνες προθεσμίας ΟΠΩΣ μετά το migration 2026-10-15a (verify 0 / 17:00).
     $db->exec("INSERT INTO `4a_task_types` (`code`,`label`,`sort_order`,`kind`,`depends_on`,`exclude_prev_assignee`,`due_offset_days`,`due_time`) VALUES
         ('fuel_weekly','Γενικός επίναυλος εβδομάδας — αρχείο CMS',900,'system',NULL,0,-3,'19:00:00'),
-        ('fuel_weekly_verify','Έλεγχος γενικού επίναυλου στο CMS',910,'system','fuel_weekly',1,0,'12:00:00')");
+        ('fuel_weekly_verify','Έλεγχος γενικού επίναυλου στο CMS',910,'system','fuel_weekly',1,0,'17:00:00')");
     $db->exec("INSERT INTO `4a_users` VALUES (1,'u1','administrator',1),(2,'u2','administrator',1)");
     $db->exec("INSERT INTO `4a_user_task_skills` VALUES (1,'fuel_weekly','BOTH'),(1,'fuel_weekly_verify','BOTH'),
                                                         (2,'fuel_weekly','BOTH'),(2,'fuel_weekly_verify','BOTH')");
@@ -132,7 +132,7 @@ $d = fuel_weekly_ensure($db, $cache, $types, '2026-10-08', true);
 ck('δοκιμή: δύο «θα δημιουργούνταν»', array_column($d['actions'], 'status') === array('would_create', 'would_create'), json_encode(array_column($d['actions'], 'status')));
 ck('δοκιμή: ΚΑΜΙΑ εγγραφή', $count($db) === 0);
 ck('δοκιμή: προθεσμία 2026-10-09 19:00:00, 69 γραμμές', $d['actions'][0]['due_at'] === '2026-10-09 19:00:00' && $d['actions'][0]['rows'] === 69);
-ck('δοκιμή: verify με ΔΙΚΗ του προθεσμία, Δευ 2026-10-12 12:00:00', $d['actions'][1]['code'] === 'fuel_weekly_verify' && $d['actions'][1]['due_at'] === '2026-10-12 12:00:00', json_encode($d['actions'][1]['due_at']));
+ck('δοκιμή: verify με ΔΙΚΗ του προθεσμία, Δευ 2026-10-12 17:00:00', $d['actions'][1]['code'] === 'fuel_weekly_verify' && $d['actions'][1]['due_at'] === '2026-10-12 17:00:00', json_encode($d['actions'][1]['due_at']));
 
 $r = fuel_weekly_ensure($db, $cache, $types, '2026-10-08');
 ck('πραγματική: created, created', array_column($r['actions'], 'status') === array('created', 'created'), json_encode(array_column($r['actions'], 'status')));
@@ -142,7 +142,7 @@ $v = tasks_fetch_one($db, $r['actions'][1]['task_id']);
 ck('fuel_weekly: subject fuel:2026-10-12, BOTH, προθεσμία Παρ 19:00', $w['subject_key'] === 'fuel:2026-10-12' && $w['task_country'] === 'BOTH' && $w['due_at'] === '2026-10-09 19:00:00');
 ck('fuel_weekly: ανατέθηκε σε 1 ή 2', in_array((int)$w['assigned_to'], array(1, 2), true), $w['assigned_to']);
 ck('verify: κλειδωμένο, χωρίς ανάδοχο', (int)$v['locked'] === 1 && $v['assigned_to'] === null);
-ck('verify: προθεσμία Δευ 12:00 της εβδομάδας ισχύος (2026-10-12 12:00:00)', $v['due_at'] === '2026-10-12 12:00:00', $v['due_at']);
+ck('verify: προθεσμία Δευ 17:00 της εβδομάδας ισχύος (2026-10-12 17:00:00)', $v['due_at'] === '2026-10-12 17:00:00', $v['due_at']);
 $p = json_decode($w['payload'], true);
 ck('payload: ισχύς 12-Oct-2026, 70 γραμμές αρχείου, AIR_CY 51.94', $p['effective_date'] === '12-Oct-2026' && count($p['file']['rows']) === 70 && $p['prices']['AIR_CY'] === '51.94');
 
@@ -159,7 +159,7 @@ ck('άκυρο cache (κενό air): λόγος, καμία ενέργεια', $
 $x = fuel_weekly_ensure($db, $cache, $types, '2026-10-12');
 ck('καμία μελλοντική εβδομάδα: καμία ενέργεια', $x['targets'] === array() && $count($db) === 0);
 
-echo "\n═══ Οι κανόνες του τεστ = οι κανόνες του migration 2026-10-14b ═══\n";
+echo "\n═══ Migration 2026-10-14b (ιστορικό: πρώτος κανόνας, verify 0 / 12:00, το 15a τον αλλάζει) ═══\n";
 $mig = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-14b_task_types_due_rule.sql');
 ck('migration: fuel_weekly -3 / 19:00:00 (απόφαση 09/10)',
    strpos($mig, "SET `due_offset_days` = -3, `due_time` = '19:00:00' WHERE `code` = 'fuel_weekly';") !== false);
@@ -192,6 +192,40 @@ ck('14c rollback: πίσω σε 17:00 μόνο από 12:00, και σβήσιμ
    && preg_match("/DELETE FROM `4a_task_events`\s+WHERE `task_id` = 88 AND `event` = 'note'\s+AND JSON_UNQUOTE\(JSON_EXTRACT\(`meta`, '\\$\.migration'\)\) = '2026-10-14c';/", $r14c) === 1);
 ck('14c και rollback: κανένα ; μέσα σε σχόλιο (ο διαχωρισμός του Β4 είναι ανά ;)',
    !preg_match('/^\s*--[^\n]*;/m', $m14c . "\n" . $r14c));
+
+echo "\n═══ 2026-10-15a: verify Δευ 17:00, όρια 17 / 3, ΜΟΝΟ η #88 (Π6, απόφαση 15/10) ═══\n";
+$m15a = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-15a_fuel_verify_due_1700.sql');
+$r15a = file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-15a_fuel_verify_due_1700.rollback.sql');
+ck('15a: κανόνας verify 12:00 -> 17:00, μόνο από 0 / 12:00, και = οι κανόνες του τεστ',
+   strpos($m15a, "UPDATE `4a_task_types` SET `due_time` = '17:00:00' WHERE `code` = 'fuel_weekly_verify' AND `due_offset_days` = 0 AND `due_time` = '12:00:00';") !== false
+   && (string)$db->query("SELECT `due_offset_days` || ' ' || `due_time` FROM `4a_task_types` WHERE `code` = 'fuel_weekly_verify'")->fetchColumn() === '0 17:00:00');
+ck('15a: όρια χρώματος verify 12 / 3 -> 17 / 3, μόνο από 12 / 3',
+   strpos($m15a, "UPDATE `4a_task_types` SET `due_warn_hours` = 17 WHERE `code` = 'fuel_weekly_verify' AND `due_warn_hours` = 12 AND `due_urgent_hours` = 3;") !== false);
+ck('15a: δύο UPDATE στο 4a_task_types, και τα δύο ΜΟΝΟ στο verify (η fuel_weekly δεν αγγίζεται)',
+   preg_match_all('/UPDATE `4a_task_types`/', $m15a) === 2
+   && preg_match_all("/UPDATE `4a_task_types`[^;]*WHERE `code` = 'fuel_weekly_verify' AND/", $m15a) === 2);
+$upd15 = "UPDATE `4a_tasks` SET `due_at` = '2026-10-19 17:00:00' WHERE `id` = 88 AND `task_code` = 'fuel_weekly_verify' AND `due_at` = '2026-10-19 12:00:00';";
+ck('15a: UPDATE της #88 με id, τύπο ΚΑΙ τρέχουσα τιμή (αυτή που έγραψε το 14c)',
+   strpos($m15a, $upd15) !== false && strpos($m14c, "SET `due_at` = '2026-10-19 12:00:00'") !== false);
+ck('15a: το ROW_COUNT διαβάζεται ΑΜΕΣΩΣ μετά το UPDATE της #88', strpos($m15a, $upd15 . "\nSET @c15 := ROW_COUNT();") !== false);
+ck('15a: νέα προθεσμία = fuel_weekly_due_at(2026-10-19, 0, 17:00) (Αθήνα)', fuel_weekly_due_at('2026-10-19', '0', '17:00:00') === '2026-10-19 17:00:00');
+ck('15a: ΕΝΑ μόνο UPDATE/DELETE στο 4a_tasks, η #87 δεν αγγίζεται',
+   preg_match_all('/(UPDATE|DELETE\s+FROM)\s+`4a_tasks`/i', $m15a) === 1 && !preg_match('/`id`\s*=\s*87\b/', $m15a));
+ck('15a: γεγονός μόνο αν άλλαξε γραμμή, και μία φορά',
+   strpos($m15a, 'WHERE @c15 = 1') !== false
+   && strpos($m15a, "JSON_EXTRACT(e.`meta`, '$.migration')) = '2026-10-15a'") !== false
+   && strpos($m15a, "JSON_OBJECT('migration', '2026-10-15a', 'from', '2026-10-19 12:00:00', 'to', '2026-10-19 17:00:00')") !== false);
+ck('15a: γεγονός συστήματος με το κείμενο που εγκρίθηκε',
+   strpos($m15a, "SELECT t.`id`, 'note', NULL,\n       'διόρθωση προθεσμίας verify σε Δευ 17:00 — Π2',") !== false);
+ck('15a rollback: κανόνας, όρια και #88 πίσω, μόνο από τις τιμές του 15a',
+   strpos($r15a, "UPDATE `4a_task_types` SET `due_time` = '12:00:00' WHERE `code` = 'fuel_weekly_verify' AND `due_offset_days` = 0 AND `due_time` = '17:00:00';") !== false
+   && strpos($r15a, "UPDATE `4a_task_types` SET `due_warn_hours` = 12 WHERE `code` = 'fuel_weekly_verify' AND `due_warn_hours` = 17 AND `due_urgent_hours` = 3;") !== false
+   && strpos($r15a, "UPDATE `4a_tasks` SET `due_at` = '2026-10-19 12:00:00' WHERE `id` = 88 AND `task_code` = 'fuel_weekly_verify' AND `due_at` = '2026-10-19 17:00:00';") !== false);
+ck('15a rollback: σβήνει ΜΟΝΟ το γεγονός του 15a',
+   preg_match("/DELETE FROM `4a_task_events`\s+WHERE `task_id` = 88 AND `event` = 'note'\s+AND JSON_UNQUOTE\(JSON_EXTRACT\(`meta`, '\\$\.migration'\)\) = '2026-10-15a';/", $r15a) === 1
+   && preg_match_all('/DELETE\s+FROM/i', $r15a) === 1 && strpos($r15a, "'2026-10-14c'") === false);
+ck('15a και rollback: κανένα ; ή \' μέσα σε σχόλιο (ο διαχωρισμός του Β4 είναι ανά ; έξω από \'...\')',
+   !preg_match("/^\s*--[^\n]*[;']/m", $m15a . "\n" . $r15a));
 
 echo "\n═══ Προθεσμία από τη ΒΑΣΗ: χωρίς κανόνα καμία εργασία, άλλος κανόνας άλλη ώρα ═══\n";
 $db = fresh_db();
