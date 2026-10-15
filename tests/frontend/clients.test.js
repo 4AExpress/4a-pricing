@@ -153,11 +153,18 @@ ck('η fuelState ΔΕΝ πετάει — η προσφορά βγαίνει', tr
 // ΜΟΝΟ με from=tasks (λευκή λίστα).
 console.log('\n═══ 9. Chip «🔗✅ Εργασίες» (from=tasks) ═══');
 {
-  // Το ΠΡΑΓΜΑΤΙΚΟ nav-chip.js και το ΠΡΑΓΜΑΤΙΚΟ μπλοκ σταθερών (NAV_TEMP).
+  // Το ΠΡΑΓΜΑΤΙΚΟ nav-chip.js, το ΠΡΑΓΜΑΤΙΚΟ ui-texts.js και τα κείμενα από
+  // το ΙΔΙΟ seed του migration 2026-10-15b (Π1, 15/10). Το fetch του
+  // ui-texts.js δεν τρέχει: τα κείμενα μπαίνουν όπως θα τα έδινε το endpoint.
   const navSrc = fs.readFileSync('frontend/nav-chip.js', 'utf8');
-  const constsSrc = pageSrc.slice(pageSrc.indexOf('const NAV_TEMP = {'), pageSrc.indexOf('};', pageSrc.indexOf('const NAV_TEMP = {')) + 2);
-  const code = navSrc + '\n' + constsSrc + '\n' + grab(pageSrc, 'escHtml') + '\n' + grab(pageSrc, 'tasksBackHref') + '\n' +
-               grab(pageSrc, 'showTasksBack') + '\nreturn { tasksBackHref, showTasksBack, NAV_TEMP };';
+  const uiSrc  = fs.readFileSync('frontend/ui-texts.js', 'utf8');
+  const MIG_TEXTS = {};
+  for (const m of fs.readFileSync('db/migrations/2026-10-15b_ui_texts.sql', 'utf8').matchAll(/\(\s*'([a-z_]+)',\s*'(\w+)',\s*'(text|color)',\s*'([^']*)'\)/g))
+    (MIG_TEXTS[m[1]] = MIG_TEXTS[m[1]] || {})[m[2]] = m[4];
+  const scopesSrc = pageSrc.slice(pageSrc.indexOf('const UI_SCOPES = '), pageSrc.indexOf(';', pageSrc.indexOf('const UI_SCOPES = ')) + 1);
+  const code = navSrc + '\n' + uiSrc + '\nUiTexts._merge(' + JSON.stringify({ ok: true, texts: MIG_TEXTS }) + ');\n' +
+               scopesSrc + '\n' + grab(pageSrc, 'escHtml') + '\n' + grab(pageSrc, 'tasksBackHref') + '\n' +
+               grab(pageSrc, 'showTasksBack') + '\nreturn { tasksBackHref, showTasksBack, UI_SCOPES, UiTexts };';
   const box = { innerHTML: '', style: { display: 'none' } };
   // Το μενού της σελίδας: link «✅ Εργασίες», με τα <span> του tasks-badge.js μετά το κείμενο.
   const tasksLink = { getAttribute: () => 'tasks.html',
@@ -175,24 +182,32 @@ console.log('\n═══ 9. Chip «🔗✅ Εργασίες» (from=tasks) ═�
   ck('tab άγνωστο ή κακόβουλο -> mine', H('client=7&from=tasks&tab=x') === 'tasks.html?tab=mine#client-7' &&
                                         H('client=7&from=tasks&tab=%22%3E%3Cimg') === 'tasks.html?tab=mine#client-7');
   ck('μη αριθμητικό client -> χωρίς #', H('client=7%22x&from=tasks&tab=mine') === 'tasks.html?tab=mine');
-  api.showTasksBack(null);
+  await api.showTasksBack(null);
   ck('null -> το κουτί μένει κρυφό', box.style.display === 'none' && box.innerHTML === '');
-  api.showTasksBack('tasks.html?tab=queue#client-7');
+  await api.showTasksBack('tasks.html?tab=queue#client-7');
   ck('chip «🔗✅ Εργασίες», εικονίδιο από το μενού, title «Πίσω στις εργασίες»', box.style.display === '' &&
      box.innerHTML === '<a class="nav-chip" href="tasks.html?tab=queue#client-7" title="Πίσω στις εργασίες">🔗✅ Εργασίες</a>', box.innerHTML);
   menu = [];
-  api.showTasksBack('tasks.html?tab=mine');
+  await api.showTasksBack('tasks.html?tab=mine');
   ck('χωρίς link στο μενού: «🔗 Εργασίες», χωρίς σφάλμα', box.innerHTML.endsWith('>🔗 Εργασίες</a>'), box.innerHTML);
-  ck('κείμενα από ΕΝΑ σημείο σταθερών (NAV_TEMP), όχι στη showTasksBack',
-     api.NAV_TEMP.link_icon === '🔗' && api.NAV_TEMP.clients_back_to_tasks === 'Εργασίες' &&
-     api.NAV_TEMP.clients_back_to_tasks_title === 'Πίσω στις εργασίες' && !/Εργασίες|🔗|✅/.test(grab(pageSrc, 'showTasksBack').replace(/\/\/.*$/gm, '')));
-  const top = pageSrc.indexOf('<script>\n// ═══ ΣΤΑΘΕΡΕΣ ΚΕΙΜΕΝΩΝ');
-  ck('το NAV_TEMP στην ΚΟΡΥΦΗ του script, πριν από την πρώτη εντολή του',
-     top > 0 && top < pageSrc.indexOf('const NAV_TEMP = {') &&
-     pageSrc.indexOf('const NAV_TEMP = {') < pageSrc.indexOf('let _sessionExpiry = null;'));
-  ck('η σελίδα φορτώνει το nav-chip.js?v=2026-10-14 πριν από το script της',
-     pageSrc.indexOf('<script src="nav-chip.js?v=2026-10-14"></script>') > 0 &&
-     pageSrc.indexOf('<script src="nav-chip.js?v=2026-10-14"></script>') < pageSrc.indexOf('const NAV_TEMP = {'));
+  ck('κείμενα από τη βάση (4a_ui_texts, scope clients + common), όχι στη showTasksBack',
+     JSON.stringify(api.UI_SCOPES) === '["clients","common"]' &&
+     MIG_TEXTS.common.link_icon === '🔗' && MIG_TEXTS.clients.clients_back_to_tasks === 'Εργασίες' &&
+     MIG_TEXTS.clients.clients_back_to_tasks_title === 'Πίσω στις εργασίες' && !/Εργασίες|🔗|✅/.test(grab(pageSrc, 'showTasksBack').replace(/\/\/.*$/gm, '')));
+  ck('το NAV_TEMP ΔΕΝ υπάρχει πια στη σελίδα', !/NAV_TEMP/.test(pageSrc));
+  // Ο loader απέτυχε: [κλειδί] (απόφαση 14/10), όχι κενό chip ή σφάλμα.
+  const failed = new Function('document', navSrc + '\n' + uiSrc + '\n' + scopesSrc + '\n' + grab(pageSrc, 'escHtml') + '\n' +
+    grab(pageSrc, 'showTasksBack') + '\nreturn { showTasksBack };')({ getElementById: () => box, baseURI: 'https://x.invalid/', querySelectorAll: () => [] });
+  box.innerHTML = '';
+  await failed.showTasksBack('tasks.html?tab=mine');
+  ck('χωρίς κείμενα από τη βάση -> «[link_icon] [clients_back_to_tasks]», χωρίς σφάλμα',
+     box.innerHTML.includes('[clients_back_to_tasks]') && box.innerHTML.includes('[link_icon]'), box.innerHTML);
+  ck('η σελίδα φορτώνει ui-texts.js και nav-chip.js?v=2026-10-14 πριν από το script της',
+     pageSrc.indexOf('<script src="ui-texts.js?v=2026-10-15"></script>') > 0 &&
+     pageSrc.indexOf('<script src="ui-texts.js?v=2026-10-15"></script>') < pageSrc.indexOf('<script src="nav-chip.js?v=2026-10-14"></script>') &&
+     pageSrc.indexOf('<script src="nav-chip.js?v=2026-10-14"></script>') < pageSrc.indexOf('const UI_SCOPES = '));
+  ck('το UI_SCOPES στην ΚΟΡΥΦΗ του script, πριν από την πρώτη εντολή του',
+     pageSrc.indexOf('const UI_SCOPES = ') > 0 && pageSrc.indexOf('const UI_SCOPES = ') < pageSrc.indexOf('let _sessionExpiry = null;'));
   ck('κανένα «← Πίσω στις εργασίες» πια στη σελίδα', !pageSrc.includes('← Πίσω στις εργασίες'));
   const dl = grab(pageSrc, 'deepLink');
   ck('το deepLink το καλεί ΠΡΙΝ το replaceState και ΠΡΙΝ την αναζήτηση πελάτη',

@@ -1,4 +1,7 @@
-/* tasks-badge.js | v1.1 | 12-10-2026
+/* tasks-badge.js | v1.2 | 15-10-2026
+ * v1.2: το tooltip των παρακάμψεων από τη βάση (4a_ui_texts common
+ *       badge_override_tip, μέσω του ui-texts.js, Π1). Αν τα κείμενα δεν
+ *       φορτωθούν: μόνο ο αριθμός, χωρίς tooltip παράκαμψης (απόφαση 14/10).
  * v1.1: το κόκκινο μετρά ΚΑΙ τις παρακάμψεις admin που περιμένουν «Το είδα»
  *       από αυτόν τον διαχειριστή (overrides, Φάση 5). 0 = όπως πριν.
  *
@@ -25,7 +28,8 @@
     catch (e) { return []; }
   }
 
-  function paint(attention, mine, overrides) {
+  // texts: φορτώθηκε το badge_override_tip από τη βάση.
+  function paint(attention, mine, overrides, texts) {
     overrides = overrides || 0;
     var red = attention + overrides;
     var a = links();
@@ -43,7 +47,7 @@
         r.textContent = red;
         var why = [];
         if (attention) why.push(attention + ' εργασίες χωρίς δικαιούχο — χρειάζονται άνθρωπο');
-        if (overrides) why.push(overrides + ' παρακάμψεις διαχειριστή περιμένουν «Το είδα»');
+        if (overrides && texts) why.push(UiTexts.t('badge_override_tip', { n: overrides }));
         r.title = why.join(' · ');
         r.style.cssText = 'background:#cc0000;color:#fff;font-size:10px;font-weight:700;' +
                           'line-height:1;padding:3px 6px;border-radius:9px;';
@@ -79,7 +83,11 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         if (!d || d.ok !== true) return;
-        paint(Number(d.attention) || 0, Number(d.mine) || 0, Number(d.overrides) || 0);
+        var o = Number(d.overrides) || 0;
+        // Τα κείμενα ΜΟΝΟ όταν υπάρχει παράκαμψη να εξηγηθεί.
+        var texts = !o || typeof UiTexts === 'undefined' ? Promise.resolve(false)
+                  : UiTexts.load(['common']).then(function () { return UiTexts.has('badge_override_tip'); });
+        return texts.then(function (ok) { paint(Number(d.attention) || 0, Number(d.mine) || 0, o, ok); });
       })
       .catch(function () { /* σιωπή, εσκεμμένα */ });
   }

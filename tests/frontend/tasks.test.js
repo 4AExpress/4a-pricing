@@ -10,6 +10,20 @@ const path = require('path');
 const HERE = __dirname;
 const src = fs.readFileSync('frontend/tasks.html', 'utf8');
 const NAVCHIP_SRC = fs.readFileSync('frontend/nav-chip.js', 'utf8');
+// Κείμενα οθόνης (Π1, 15/10): το ΠΡΑΓΜΑΤΙΚΟ ui-texts.js, γεμισμένο με το ΙΔΙΟ
+// seed του migration 2026-10-15b. Έτσι κάθε κείμενο που ελέγχεται εδώ είναι
+// αυτό που θα δώσει η βάση, και κάθε κλειδί του κώδικα πρέπει να υπάρχει εκεί.
+const UITEXTS_SRC = fs.readFileSync('frontend/ui-texts.js', 'utf8');
+const UI_MIG = 'db/migrations/2026-10-15b_ui_texts.sql';
+const MIG_TEXTS = (() => {
+  const out = {};
+  for (const m of fs.readFileSync(UI_MIG, 'utf8').matchAll(/\(\s*'([a-z_]+)',\s*'(\w+)',\s*'(text|color)',\s*'([^']*)'\)/g))
+    (out[m[1]] = out[m[1]] || {})[m[2]] = m[4];
+  return out;
+})();
+// texts === false: ο loader απέτυχε (καμία απάντηση από τη βάση).
+const uiTextsCode = texts => UITEXTS_SRC + '\n' +
+  (texts === false ? '' : 'UiTexts._merge(' + JSON.stringify({ ok: true, texts: texts || MIG_TEXTS }) + ');');
 const PAYLOAD = JSON.parse(fs.readFileSync(path.join(HERE, 'fuel_weekly_payload.fixture.json'), 'utf8'));
 
 function grab(name){
@@ -53,7 +67,8 @@ function env(opts){
   const NOW = opts.now === undefined ? '2026-10-08 10:00:00' : opts.now;
   const store = opts.perms ? { getItem: k => k === '4a_perms' ? JSON.stringify(opts.perms) : null } : { getItem: () => null };
   const code = [
-    NAVCHIP_SRC,
+    NAVCHIP_SRC, uiTextsCode(opts.texts),
+    'const counts = ' + JSON.stringify(opts.counts || { mine: null, queue: null, all: null }) + ';',
     'let currentUser = { id: ' + (opts.userId === undefined ? 1 : opts.userId) + ' }, isAdmin = ' + (opts.admin === false ? 'false' : 'true') + ', view = ' + JSON.stringify(opts.view || 'all') + ', lastTasks = [];',
     'let STATUSES = ' + JSON.stringify(opts.statuses === undefined ? DB_STATUSES : opts.statuses) + ';',
     'let FUEL_TYPES = ' + JSON.stringify(opts.fuelTypes === undefined ? DB_FUEL_TYPES : opts.fuelTypes) + ';',
@@ -67,14 +82,14 @@ function env(opts){
     grab('dueState'), grab('dueHtml'), grab('refreshDues'), grab('fuelColumns'), grab('fuelFactsHtml'),
     grabConst('STEP_UI_KEYS'), grab('uiText'),
     grab('stepTimelineHtml'), grab('stepMoreHtml'), grab('stepCardHtml'), grab('uploadCheck'),
-    grabConst('UI_TEMP'), grab('tempText'), grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'), grabConst('TONE_MIX_STRONG'),
+    grabConst('UI_SCOPES'), grab('pageText'), grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'), grabConst('TONE_MIX_STRONG'),
     grab('tint'), grab('groupTone'), grab('addDaysISO'), grab('fuelWeekInfo'), grab('fuelStateHtml'),
     grab('grpIsOpen'), grab('grpTogHtml'), grab('groupHtml'),
     grab('taskRow'), grab('clientChipHtml'), grab('tabFromQuery'), grab('anchorFromHash'), grab('render'),
     'return { clientChipHtml, NavChip, tabFromQuery, anchorFromHash, render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
     '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS,',
     '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle,',
-    '         tint, groupTone, groupHtml, grpOpen, fuelWeekInfo, fuelStateHtml, tempText, UI_TEMP };'
+    '         tint, groupTone, groupHtml, grpOpen, fuelWeekInfo, fuelStateHtml, pageText, UI_SCOPES, UiTexts };'
   ].join('\n');
   const api = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, store, {});
   return { api, els };
@@ -354,9 +369,9 @@ console.log('\n═══ Εργασίες ΠΕΛΑΤΗ: byte-προς-byte ίδ�
     const [v, who] = key.split(':');
     const els = {};
     const doc = { getElementById: id => (els[id] = els[id] || { innerHTML: '', style: {} }) };
-    const code = [NAVCHIP_SRC, 'let currentUser = { id: 1 }, isAdmin = ' + (who === 'admin') + ', view = "' + v + '", lastTasks = [];',
+    const code = [NAVCHIP_SRC, uiTextsCode(), 'let currentUser = { id: 1 }, isAdmin = ' + (who === 'admin') + ', view = "' + v + '", lastTasks = [];',
       'let STATUSES = ' + JSON.stringify(cases.STATUSES) + ';', 'let FUEL_TYPES = {};', 'const histOpen = new Map(); const grpOpen = new Map();',
-      ...['UI_TEMP', 'OVERDUE_COLOR', 'TONE_MIX', 'TONE_MIX_STRONG'].filter(c => src.includes('const ' + c + ' =')).map(grabConst),
+      ...['UI_SCOPES', 'OVERDUE_COLOR', 'TONE_MIX', 'TONE_MIX_STRONG'].filter(c => src.includes('const ' + c + ' =')).map(grabConst),
       grabConst('TIPS'), grabConst('ACTION_URL_OK'), grabConst('FUEL_CMS_HEADER'), grabConst('GR_DAY3'),
       ...cases.FUNCS.filter(f => src.includes('function ' + f + '(')).map(grab),
       'return { render, taskRow };'].join('\n');
@@ -693,8 +708,10 @@ console.log('\n═══ Φόντο ομάδας: κίτρινο / κόκκιν�
      ov['tone-bg'] === '#fcff29' && ov['tone-fg'] === '#000' && ov['tone-fg2'] === '#000', open.style);
   ck('CSS: κεφαλίδα και γραμμές της ομάδας παίρνουν το ΙΔΙΟ --tone-bg',
      /\.client-group\.tone, \.client-group\.tone > \.client-head, \.client-group\.tone > \.grp-body > \.task \{\s*background: var\(--tone-bg\)/.test(src));
-  ck('το λεμονί έρχεται από το UI_TEMP (color_open_head), όχι γραμμένο στη groupTone',
-     /tempText\('color_open_head'\)/.test(grab('groupTone')) && !/FCFF29/i.test(grab('groupTone')));
+  ck('το λεμονί έρχεται από τη βάση (4a_ui_texts color_open_head), όχι γραμμένο στη groupTone',
+     /pageText\('color_open_head'\)/.test(grab('groupTone')) && !/FCFF29/i.test(grab('groupTone')));
+  ck('χωρίς κείμενα από τη βάση (loader απέτυχε) -> κανένα tone, η σημερινή εμφάνιση',
+     env({ texts: false }).api.groupTone([cliTask(1, 7, 'Α', { status: 'in_progress' })]) === null);
   const late = api.groupTone([cliTask(1, 7, 'Α', { status: 'open', due_at: '2026-10-07 17:00:00' }),
                               cliTask(2, 7, 'Α', { status: 'done' })]);
   ck('έστω μία ανοιχτή σε καθυστέρηση -> tone late (και για πελάτη, χωρίς όρια προθεσμίας)', late && late.cls === 'late', JSON.stringify(late));
@@ -705,7 +722,7 @@ console.log('\n═══ Φόντο ομάδας: κίτρινο / κόκκιν�
      api.groupTone([cliTask(1, 7, 'Α', { status: 'done', due_at: '2026-10-07 17:00:00' }), cliTask(2, 7, 'Α', { status: 'in_progress' })]).cls === 'open');
   ck('κλειστή ομάδα -> κανένα tone (μένει το σημερινό γκρι)',
      api.groupTone([cliTask(1, 7, 'Α', { status: 'done' }), cliTask(2, 7, 'Α', { status: 'na' })]) === null);
-  ck('κίτρινο: ΔΕΝ εξαρτάται από τη βάση (UI_TEMP), ούτε χωρίς in_progress',
+  ck('κίτρινο: ΔΕΝ εξαρτάται από το χρώμα in_progress των καταστάσεων',
      env({ statuses: DB_STATUSES }).api.groupTone([cliTask(1, 7, 'Α', { status: 'in_progress' })]).cls === 'open');
   ck('πορτοκαλί χωρίς χρώμα in_progress στη βάση -> κανένα tone, όχι επινοημένο χρώμα',
      env({ statuses: DB_STATUSES }).api.groupTone([cliTask(1, 7, 'Α', { status: 'in_progress' })], undefined, 'orange') === null);
@@ -779,15 +796,15 @@ console.log('\n═══ Εβδομάδα επίναυλου: φάση και έ
   ck('επόμενη, ανέβασμα ανοιχτό: «◷ ΠΡΟΣ ΕΚΤΕΛΕΣΗ · προθεσμία Παρ 16/10 17:00», χωρίς χρώμα',
      i.phase === 'next' && i.text === '◷ ΠΡΟΣ ΕΚΤΕΛΕΣΗ · προθεσμία Παρ 16/10 17:00' && i.alert === null, JSON.stringify(i));
   i = I('2026-10-19', 'done', 'in_progress');
-  ck('επόμενη, ανέβηκε, επαλήθευση ανοιχτή: «Ανέβηκε · εκκρεμεί επαλήθευση», πορτοκαλί',
-     i.text === 'Ανέβηκε · εκκρεμεί επαλήθευση' && i.alert === 'orange', JSON.stringify(i));
+  ck('επόμενη, ανέβηκε, επαλήθευση ανοιχτή: «⏳ Ανέβηκε · εκκρεμεί επαλήθευση» (14/10), πορτοκαλί',
+     i.text === '⏳ Ανέβηκε · εκκρεμεί επαλήθευση' && i.alert === 'orange', JSON.stringify(i));
   i = I('2026-10-19', 'done', 'done');
   ck('επόμενη, όλα έτοιμα: «✓ Έτοιμη · ισχύει από Δευ 19/10»', i.text === '✓ Έτοιμη · ισχύει από Δευ 19/10' && i.alert === null, JSON.stringify(i));
   i = I('2026-10-12', 'in_progress', 'open');
   ck('σε ισχύ, ανέβασμα ΟΧΙ done: «⚠ Σε ισχύ · CMS ΜΗ ενημερωμένο», κόκκινο',
      i.phase === 'now' && i.text === '⚠ Σε ισχύ · CMS ΜΗ ενημερωμένο' && i.alert === 'red', JSON.stringify(i));
   i = I('2026-10-12', 'done', 'in_progress');
-  ck('σε ισχύ, ανέβηκε, επαλήθευση ανοιχτή: πορτοκαλί, ΟΧΙ κόκκινο', i.text === 'Ανέβηκε · εκκρεμεί επαλήθευση' && i.alert === 'orange');
+  ck('σε ισχύ, ανέβηκε, επαλήθευση ανοιχτή: πορτοκαλί, ΟΧΙ κόκκινο', i.text === '⏳ Ανέβηκε · εκκρεμεί επαλήθευση' && i.alert === 'orange');
   i = I('2026-10-12', 'done', 'done');
   ck('σε ισχύ, όλα done: «✓ Σε ισχύ · CMS ενημερωμένο»', i.text === '✓ Σε ισχύ · CMS ενημερωμένο' && i.alert === null);
   ck('«na» στο ανέβασμα ΔΕΝ μετρά ως ενημερωμένο CMS (κόκκινο)', I('2026-10-12', 'na', 'na').alert === 'red');
@@ -848,28 +865,42 @@ console.log('\n═══ Σειρά: επόμενη -> σε ισχύ -> «Παλ
     return !e.els.list.innerHTML.includes('sys:older'); })());
 }
 
-console.log('\n═══ TEMP: τα προσωρινά κείμενα, σε ΕΝΑ σημείο ═══');
+console.log('\n═══ Κείμενα οθόνης από τη βάση (4a_ui_texts, Π1 15/10) ═══');
 {
   const { api } = env();
-  const TEMP_KEYS = ['fuel_next_todo', 'fuel_uploaded', 'fuel_next_ready', 'fuel_now_ok', 'fuel_now_missing', 'fuel_older',
-                     'grp_tip_collapse', 'grp_tip_expand', 'color_open_head',
-                     'client_no_account', 'client_no_offer', 'mine_empty_queue',
-                     'link_icon', 'task_group_client_link', 'task_group_client_link_title'];
-  ck(`UI_TEMP έχει ΑΚΡΙΒΩΣ τα ${TEMP_KEYS.length} κλειδιά: ${TEMP_KEYS.join(', ')}`,
-     JSON.stringify(Object.keys(api.UI_TEMP).sort()) === JSON.stringify([...TEMP_KEYS].sort()), Object.keys(api.UI_TEMP).join(','));
-  const used = [...new Set([...src.matchAll(/tempText\(\s*(?:[^'()]*\?\s*)?'(\w+)'(?:\s*:\s*'(\w+)')?/g)].flatMap(m => [m[1], m[2]]).filter(Boolean))].sort();
-  ck('κάθε tempText(…) του κώδικα έχει κλειδί στο UI_TEMP', used.every(k => k in api.UI_TEMP), used.join(','));
-  const block = src.slice(src.indexOf('// ═══ TEMP'), src.indexOf('// ═══ τέλος TEMP'));
+  ck('το UI_TEMP και το tempText ΔΕΝ υπάρχουν πια στον κώδικα', !/const UI_TEMP\b/.test(src) && !/tempText\(/.test(src));
+  ck('UI_SCOPES = tasks, common', JSON.stringify(api.UI_SCOPES) === '["tasks","common"]');
+  // Κάθε pageText('…') του κώδικα (και τα δύο σκέλη ενός «? 'α' : 'β'»).
+  const used = [...new Set([...src.matchAll(/pageText\(\s*(?:[^'()]*\?\s*)?'(\w+)'(?:\s*:\s*'(\w+)')?/g)].flatMap(m => [m[1], m[2]]).filter(Boolean))].sort();
+  const inScopes = k => api.UI_SCOPES.some(s => MIG_TEXTS[s] && k in MIG_TEXTS[s]);
+  ck(`κάθε pageText(…) του κώδικα (${used.length}) έχει κλειδί στο seed του ${UI_MIG}, σε scope της σελίδας`,
+     used.length >= 10 && used.every(inScopes), used.filter(k => !inScopes(k)).join(',') || String(used.length));
   // Σχόλια εξαιρούνται: περιγράφουν τα κείμενα, δεν τα εμφανίζουν.
-  const outside = src.replace(block, '').split(/\r?\n/).filter(l => !/^\s*(\/\/|\/\*|\*)/.test(l)).join('\n');
+  const outside = src.split(/\r?\n/).filter(l => !/^\s*(\/\/|\/\*|\*)/.test(l)).join('\n');
   // Τιμή μίας λέξης (π.χ. «Πελάτης», 14/10): διαρροή μόνο ως ΟΛΟΚΛΗΡΗ
   // συμβολοσειρά ('…', `…`, >…<), αλλιώς θα έπιανε το «Πελάτης επίδειξης».
   const isLeak = t => /\s/.test(t) ? outside.includes(t)
                                    : ["'" + t + "'", '`' + t + '`', '>' + t + '<'].some(q => outside.includes(q));
-  const leaked = Object.values(api.UI_TEMP).map(t => t.replace(/\{\w+\}.*$/, '').trim()).filter(isLeak);
-  ck('κανένα προσωρινό κείμενο γραμμένο ΕΞΩ από το μπλοκ TEMP', leaked.length === 0, leaked.join(' | '));
-  ck('το μπλοκ σημειώνεται TEMP και λέει πότε φεύγει (Κ4α, 15/10)', /TEMP — ΠΡΟΣΩΡΙΝΑ ΚΕΙΜΕΝΑ/.test(block) && /Κ4α/.test(block));
-  ck('κλειδί που λείπει -> [κλειδί], όχι κενό', api.tempText('δεν_υπάρχει') === '[δεν_υπάρχει]');
+  const pageTexts = Object.assign({}, MIG_TEXTS.tasks, MIG_TEXTS.common);
+  const leaked = Object.values(pageTexts).map(t => t.replace(/\{\w+\}.*$/, '').trim()).filter(t => t && isLeak(t));
+  ck('κανένα κείμενο του seed γραμμένο στον κώδικα', leaked.length === 0, leaked.join(' | '));
+  ck('κλειδί που λείπει -> [κλειδί], όχι κενό', api.pageText('δεν_υπάρχει') === '[δεν_υπάρχει]');
+  ck('{n} -> τιμή', api.pageText('fuel_older', { n: 3 }) === 'Παλαιότερες εβδομάδες (3)');
+  ck('fuel_uploaded με ⏳ (αλλαγή 14/10)', api.pageText('fuel_uploaded') === '⏳ Ανέβηκε · εκκρεμεί επαλήθευση');
+
+  // Ο loader απέτυχε: [κλειδί] (απόφαση 14/10), χωρίς σφάλμα.
+  const f = env({ texts: false, view: 'mine' });
+  f.api.render([cliTask(1, 7, 'Π', { client_account: '', offer_number: '' })]);
+  ck('loader απέτυχε -> «[client_no_account]», όχι κενό ή σφάλμα', f.els.list.innerHTML.includes('[client_no_account]'), f.els.list.innerHTML);
+  ck('χωρίς ui-texts.js (UiTexts undefined) -> [κλειδί]', new Function(grab('pageText') + '\nreturn pageText;')()('x') === '[x]');
+
+  const ld = grab('load');
+  ck('το load() ζητά τα κείμενα ΠΑΡΑΛΛΗΛΑ με τη λίστα και τα περιμένει ΠΡΙΝ το render',
+     ld.indexOf('UiTexts.load(UI_SCOPES)') > 0 && ld.indexOf('UiTexts.load(UI_SCOPES)') < ld.indexOf('apiFetch(') &&
+     ld.indexOf('await texts;') > ld.indexOf('apiFetch(') && ld.indexOf('await texts;') < ld.indexOf('render(d.tasks)'));
+  ck('η σελίδα φορτώνει το ui-texts.js πριν από το script της',
+     src.indexOf('<script src="ui-texts.js?v=2026-10-15"></script>') > 0 &&
+     src.indexOf('<script src="ui-texts.js?v=2026-10-15"></script>') < src.indexOf('const API = '));
 
   // ΧΩΡΙΣ ΗΜΕΡΟΜΗΝΙΑ (απόφαση 13/10): το τεστ ΑΠΟΤΥΓΧΑΝΕΙ μόνο όταν υπάρχει
   // ΤΑΥΤΟΧΡΟΝΑ (α) migration που δημιουργεί τον πίνακα κειμένων οθόνης
@@ -890,7 +921,7 @@ console.log('\n═══ TEMP: τα προσωρινά κείμενα, σε ΕΝ
   ck('πίνακας ΚΑΙ άδειο UI_TEMP -> περνά', tempOk([MIG], 'const UI_TEMP = {\n};'));
   ck('πίνακας ΚΑΙ κανένα UI_TEMP -> περνά', tempOk([MIG], '// καθαρό'));
   ck('χωρίς πίνακα, με UI_TEMP -> περνά (καμία ημερομηνία)', tempOk(['CREATE TABLE IF NOT EXISTS `άλλος` (x INT)'], 'const UI_TEMP = {\n  a: \'x\',\n};'));
-  ck('κανένας έλεγχος ημερομηνίας στο τεστ', !/TEST_NOW|TEMP_DEADLINE|athensToday/.test(grab('tempText')));
+  ck('ο πίνακας υπάρχει σε migration ΚΑΙ το UI_TEMP έφυγε', hasTable);
 }
 
 // ── Επίδειξη: ρίγες ΚΑΙ χρώμα κατάστασης (13-10-2026) ──────────────────────
@@ -971,7 +1002,7 @@ console.log('\n═══ Καρτέλες: αριθμός μόνο στην κα
 }
 
 // ── 14-10-2026: (Α) ?tab= και άδεια «Οι εργασίες μου» · (Β) σύνδεσμος πελάτη
-//    και επιστροφή · (Γ) «χωρίς προσφορά» / «χωρίς AccountNo» στο UI_TEMP ──
+//    και επιστροφή · (Γ) «χωρίς προσφορά» / «χωρίς AccountNo» από τη βάση ──
 console.log('\n═══ (Α) ?tab=mine|queue, προεπιλογή «Οι εργασίες μου» ═══');
 {
   const { api } = env();
@@ -989,6 +1020,13 @@ console.log('\n═══ (Α) ?tab=mine|queue, προεπιλογή «Οι ερ�
   const m = empty('mine');
   ck('άδεια «Οι εργασίες μου»: μήνυμα + σύνδεσμος στην Ουρά', m.includes('Δεν έχετε εργασίες σε εξέλιξη.') &&
      m.includes('href="tasks.html?tab=queue"') && m.includes("switchView('queue')") && m.includes('→ Δείτε την Ουρά αδιάθετων'), m);
+  const withN = q => { const e = env({ view: 'mine', counts: { mine: 0, queue: q, all: null } }); e.api.render([]); return e.els.list.innerHTML; };
+  ck('«→ Δείτε την Ουρά αδιάθετων (7)»: το πλήθος της Ουράς', withN(7).includes('→ Δείτε την Ουρά αδιάθετων (7)'), withN(7));
+  ck('Ουρά 0 -> «(0)»', withN(0).includes('αδιάθετων (0)'));
+  ck('πλήθος άγνωστο -> «(–)», όχι «{n}»', withN(null).includes('αδιάθετων (–)') && !withN(null).includes('{n}'));
+  ck('το load() φέρνει το πλήθος της Ουράς ΜΟΝΟ όταν η «Οι εργασίες μου» είναι άδεια',
+     /if\(view==='mine' && !lastTasks\.length\) await loadQueueCount\(\);/.test(grab('load')) &&
+     /view=queue/.test(grab('loadQueueCount')) && /counts\.queue = d\.tasks\.length/.test(grab('loadQueueCount')));
   ck('άδεια «Ουρά»: ΧΩΡΙΣ σύνδεσμο', !empty('queue').includes('to-queue'));
   ck('άδεια «Όλες»: ΧΩΡΙΣ σύνδεσμο', !empty('all').includes('to-queue'));
 }
@@ -1046,15 +1084,15 @@ console.log('\n═══ (Β) chip «🔗👥 Πελάτης» -> pricelist-clie
      /pendingAnchor = null;/.test(grab('revealAnchor')) && /grpOpen\.set\(key, true\)/.test(grab('revealAnchor')));
 }
 
-console.log('\n═══ (Γ) «χωρίς AccountNo» / «χωρίς προσφορά» από το UI_TEMP, ίδιο κείμενο ═══');
+console.log('\n═══ (Γ) «χωρίς AccountNo» / «χωρίς προσφορά» από τη βάση, ίδιο κείμενο ═══');
 {
   const { api, els } = env({ view: 'mine' });
-  ck('UI_TEMP: ίδια κείμενα', api.UI_TEMP.client_no_account === 'χωρίς AccountNo' && api.UI_TEMP.client_no_offer === 'χωρίς προσφορά');
+  ck('seed: ίδια κείμενα', api.pageText('client_no_account') === 'χωρίς AccountNo' && api.pageText('client_no_offer') === 'χωρίς προσφορά');
   const t = cliTask(1, 7, 'Π', { client_account: '', offer_number: '' });
   api.render([t]);
   ck('η κεφαλίδα λέει «χωρίς AccountNo · χωρίς προσφορά» όπως πριν',
      els.list.innerHTML.includes('χωρίς AccountNo') && els.list.innerHTML.includes(' · χωρίς προσφορά'), els.list.innerHTML);
-  ck('στο render: tempText, όχι γραμμένα κείμενα', /tempText\('client_no_account'\)/.test(grab('render')) && /tempText\('client_no_offer'\)/.test(grab('render')) &&
+  ck('στο render: pageText, όχι γραμμένα κείμενα', /pageText\('client_no_account'\)/.test(grab('render')) && /pageText\('client_no_offer'\)/.test(grab('render')) &&
      !/'χωρίς AccountNo'|' · χωρίς προσφορά'/.test(grab('render')));
 }
 

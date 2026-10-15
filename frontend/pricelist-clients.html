@@ -641,17 +641,15 @@
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="shelf-grouping.js?v=2026-09-22-5"></script>
 <script src="fuel-freshness.js?v=2026-09-27"></script>
+<script src="ui-texts.js?v=2026-10-15"></script>
 <script src="nav-chip.js?v=2026-10-14"></script>
 <script>
-// ═══ ΣΤΑΘΕΡΕΣ ΚΕΙΜΕΝΩΝ (προσωρινά εδώ -> 4a_ui_texts με το Κ4α) ═══════════
-// Το chip επιστροφής στις εργασίες (nav-chip.js). Το εικονίδιο ✅ ΔΕΝ
-// γράφεται εδώ: διαβάζεται από το link «Εργασίες» του μενού.
-const NAV_TEMP = {
-  link_icon:                    '🔗',
-  clients_back_to_tasks:        'Εργασίες',
-  clients_back_to_tasks_title:  'Πίσω στις εργασίες',
-};
-// ═══ τέλος σταθερών κειμένων ═════════════════════════════════════════════
+// ═══ ΚΕΙΜΕΝΑ ΟΘΟΝΗΣ ΑΠΟ ΤΗ ΒΑΣΗ (4a_ui_texts, Π1, 15-10-2026) ═══════════
+// Το chip επιστροφής στις εργασίες (nav-chip.js): λέξεις και 🔗 από τον
+// 4a_ui_texts (scope clients + common), μέσω του ui-texts.js. Το εικονίδιο ✅
+// ΔΕΝ γράφεται πουθενά: διαβάζεται από το link «Εργασίες» του μενού.
+const UI_SCOPES = ['clients', 'common'];
+// ═══ τέλος κειμένων οθόνης ═══════════════════════════════════════════════
 ﻿let _sessionExpiry = null;
 let _sessionTimerInterval = null;
 function startSessionTimer(expiresAtStr){
@@ -1579,13 +1577,17 @@ function tasksBackHref(q){
   return 'tasks.html?tab=' + t + (/^\d+$/.test(cid) ? '#client-' + cid : '');
 }
 // Το chip «🔗✅ Εργασίες» (nav-chip.js). Χωρίς nav-chip.js: τίποτα.
+// Τα κείμενα έρχονται πρώτα από τη βάση· αποτυχία -> [κλειδί] (απόφαση 14/10).
+// Χωρίς ui-texts.js: τίποτα, όπως χωρίς nav-chip.js.
 function showTasksBack(href){
   const el = document.getElementById('tasks-back');
-  if(!el || !href || typeof NavChip === 'undefined') return;
-  el.innerHTML = NavChip.html({ doc: document, target: 'tasks.html', href,
-                                link: NAV_TEMP.link_icon, word: NAV_TEMP.clients_back_to_tasks,
-                                title: NAV_TEMP.clients_back_to_tasks_title });
-  el.style.display = '';
+  if(!el || !href || typeof NavChip === 'undefined' || typeof UiTexts === 'undefined') return Promise.resolve();
+  return UiTexts.load(UI_SCOPES).then(() => {
+    el.innerHTML = NavChip.html({ doc: document, target: 'tasks.html', href,
+                                  link: UiTexts.t('link_icon'), word: UiTexts.t('clients_back_to_tasks'),
+                                  title: UiTexts.t('clients_back_to_tasks_title') });
+    el.style.display = '';
+  });
 }
 
 function deepLink(){
@@ -4032,6 +4034,6 @@ init();
 })();
 </script>
 <!-- 4A build 2026.08.19-legal -->
-<script src="tasks-badge.js?v=2026-09-24"></script>
+<script src="tasks-badge.js?v=2026-10-15"></script>
 </body>
 </html>

@@ -15,8 +15,8 @@
  *     «+ Νέος Τιμοκατάλογος» δεν είναι εικονίδιο.
  * Αν δεν βρεθεί: «🔗 + λέξη», χωρίς σφάλμα.
  *
- * Οι λέξεις, τα titles και το 🔗 τα δίνει η σελίδα (UI_TEMP στο tasks.html,
- * σταθερές στην κορυφή του pricelist-clients.html) -> 4a_ui_texts με το Κ4α.
+ * Οι λέξεις, τα titles και το 🔗 τα δίνει η σελίδα, από τον 4a_ui_texts
+ * μέσω του ui-texts.js (Π1, 15/10).
  */
 var NavChip = (function () {
   var PICTO = /\p{Extended_Pictographic}/u;

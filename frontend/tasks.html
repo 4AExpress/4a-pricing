@@ -361,6 +361,7 @@
 
 <div id="modals"></div>
 
+<script src="ui-texts.js?v=2026-10-15"></script>
 <script src="nav-chip.js?v=2026-10-14"></script>
 <script>
 const API = 'https://4aexpress.com/api';
@@ -521,8 +522,8 @@ function clientChipHtml(clientId){
                '&from=tasks&tab=' + encodeURIComponent(view);
   if(typeof NavChip === 'undefined' || !canOpen('pricelist-clients') || !ACTION_URL_OK.test(href)) return '';
   return ' ' + NavChip.html({ doc: document, target: 'pricelist-clients.html', href,
-                              link: tempText('link_icon'), word: tempText('task_group_client_link'),
-                              title: tempText('task_group_client_link_title') });
+                              link: pageText('link_icon'), word: pageText('task_group_client_link'),
+                              title: pageText('task_group_client_link_title') });
 }
 
 async function load(){
@@ -530,8 +531,11 @@ async function load(){
   showErr(null);
   document.getElementById('list').innerHTML = '<div class="loading">Φόρτωση…</div>';
   try{
+    // Τα κείμενα από τη βάση, ΠΑΡΑΛΛΗΛΑ με τη λίστα. Αποτυχία -> [κλειδί].
+    const texts = typeof UiTexts !== 'undefined' ? UiTexts.load(UI_SCOPES) : Promise.resolve(false);
     const r = await apiFetch(`${API}/tasks.php?view=${view}&v=${Date.now()}`);
     const d = await r.json().catch(()=>null);
+    await texts;
     if(!r.ok || !d || d.ok!==true){ showErr((d&&d.error)||`HTTP ${r.status}`); document.getElementById('list').innerHTML=''; return; }
     renderPageSub(d.description);
     STATUSES = {};
@@ -539,12 +543,25 @@ async function load(){
     renderLegend();
     lastTasks = d.tasks || [];
     counts[view] = d.tasks.length;
+    // «Οι εργασίες μου» άδεια: το πλήθος της Ουράς για το «Δείτε την Ουρά
+    // αδιάθετων ({n})». Ίδιο αίτημα με την καρτέλα, μόνο τότε.
+    if(view==='mine' && !lastTasks.length) await loadQueueCount();
     renderTabs();
     // Οι ετικέτες των τύπων επίναυλου, μία φορά, μόνο αν υπάρχει εργασία επίναυλου.
     if(!Object.keys(FUEL_TYPES).length && (d.tasks||[]).some(t => (taskPayload(t)||{}).kind==='fuel_weekly')) await loadFuelTypes();
     render(d.tasks);
     revealAnchor();
   }catch(e){ showErr('Δεν έγινε σύνδεση με τον server — '+(e&&e.message?e.message:e)); }
+}
+
+// Το πλήθος της «Ουράς αδιάθετων» στο counts.queue. Αποτυχία: μένει ό,τι
+// ήταν, χωρίς μήνυμα — είναι βοηθητικό νούμερο, όχι η λίστα του χρήστη.
+async function loadQueueCount(){
+  try{
+    const r = await apiFetch(`${API}/tasks.php?view=queue&v=${Date.now()}`);
+    const d = await r.json().catch(()=>null);
+    if(r.ok && d && d.ok===true && Array.isArray(d.tasks)) counts.queue = d.tasks.length;
+  }catch(e){}
 }
 
 // Σύνοψη ανά άνθρωπο — μόνο στην «Όλες», όπου φαίνονται και οι ξένες.
@@ -581,7 +598,7 @@ function render(tasks){
               : 'Καμία εργασία.';
     // «Οι εργασίες μου» άδεια: η επόμενη δουλειά είναι στην Ουρά.
     const toQueue = view==='mine'
-      ? `<br><a class="to-queue" href="tasks.html?tab=queue" onclick="switchView('queue');return false;">${escHtml(tempText('mine_empty_queue'))}</a>`
+      ? `<br><a class="to-queue" href="tasks.html?tab=queue" onclick="switchView('queue');return false;">${escHtml(pageText('mine_empty_queue', { n: counts.queue === null ? '–' : counts.queue }))}</a>`
       : '';
     el.innerHTML = `<div class="empty">${msg}${toQueue}</div>`;
     return;
@@ -613,7 +630,7 @@ function render(tasks){
   const sysHtml = sysList.filter(x => !older.includes(x)).map(sysOne).join('') +
     (older.length ? groupHtml('sys:older', 'client-group sys older', older.flatMap(x => x.g.items), `
         <span class="sys-tag" title="System — Εργασία χωρίς πελάτη, δημιουργείται από το σύστημα">ΣΥΣΤΗΜΑ</span>
-        <span class="client-name">${escHtml(tempText('fuel_older', { n: older.length }))}</span>`, null, true,
+        <span class="client-name">${escHtml(pageText('fuel_older', { n: older.length }))}</span>`, null, true,
         older.map(sysOne).join('')) : '');
 
   // Ομαδοποίηση ανά πελάτη — η αλυσίδα ενός πελάτη διαβάζεται μαζί.
@@ -631,8 +648,8 @@ function render(tasks){
         ${g.isDemo?'<span class="demo-tag" title="Demo — Πελάτης επίδειξης. Τίποτα εδώ δεν είναι αληθινή δουλειά και δεν μετριέται πουθενά">ΕΠΙΔΕΙΞΗ</span>':''}
         <span class="client-name">${escHtml(g.name)}</span>${clientChipHtml(k)}
         <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>
-        <span class="client-meta">${g.account?'AccountNo '+escHtml(g.account):escHtml(tempText('client_no_account'))}
-          ${g.offer?' · προσφορά '+escHtml(g.offer):' · '+escHtml(tempText('client_no_offer'))}</span>`)).join('');
+        <span class="client-meta">${g.account?'AccountNo '+escHtml(g.account):escHtml(pageText('client_no_account'))}
+          ${g.offer?' · προσφορά '+escHtml(g.offer):' · '+escHtml(pageText('client_no_offer'))}</span>`)).join('');
 }
 
 // Σε ΠΟΙΟΝ έχει ανατεθεί — σε ΟΛΕΣ τις καρτέλες, δίπλα στο badge.
@@ -782,38 +799,17 @@ function closedGroupStyle(items){
   return `--closed-bg:${c};--closed-fg:${textOn(c)};`;
 }
 
-// ═══ TEMP — ΠΡΟΣΩΡΙΝΑ ΚΕΙΜΕΝΑ ΟΘΟΝΗΣ (13-10-2026) ════════════════════════
-// ΟΛΑ τα νέα κείμενα των ομάδων ζουν ΜΟΝΟ εδώ, μέχρι να μπουν στον γενικό
-// πίνακα κειμένων της βάσης με το Κ4α (Πέμπτη 15/10). Το τεστ τα απαριθμεί
-// και ελέγχει ότι κανένα δεν γράφεται αλλού στον κώδικα. ΜΗΝ προσθέτεις
-// κείμενο οθόνης έξω από αυτόν τον πίνακα.
-const UI_TEMP = {
-  fuel_next_todo:     '◷ ΠΡΟΣ ΕΚΤΕΛΕΣΗ · προθεσμία {due}',
-  fuel_uploaded:      'Ανέβηκε · εκκρεμεί επαλήθευση',
-  fuel_next_ready:    '✓ Έτοιμη · ισχύει από {day}',
-  fuel_now_ok:        '✓ Σε ισχύ · CMS ενημερωμένο',
-  fuel_now_missing:   '⚠ Σε ισχύ · CMS ΜΗ ενημερωμένο',
-  fuel_older:         'Παλαιότερες εβδομάδες ({n})',
-  grp_tip_collapse:   'Collapse — Μάζεμα της ομάδας',
-  grp_tip_expand:     'Expand — Άνοιγμα της ομάδας',
-  // Χρώμα «προς εκτέλεση / σε εξέλιξη»: λεμονί κίτρινο του CMS (μετρημένο
-  // από στιγμιότυπο). Κεφαλίδα γεμάτο, σώμα απόχρωση. Στη βάση με το Κ4α.
-  color_open_head:    '#FCFF29',
-  // Κεφαλίδα ομάδας πελάτη (ίδια κείμενα με πριν, 14/10)
-  client_no_account:  'χωρίς AccountNo',
-  client_no_offer:    'χωρίς προσφορά',
-  // Chip συνδέσμου (nav-chip.js). Το εικονίδιο του προορισμού από το μενού.
-  link_icon:                     '🔗',
-  task_group_client_link:        'Πελάτης',
-  task_group_client_link_title:  'Άνοιγμα πελάτη',
-  mine_empty_queue:   '→ Δείτε την Ουρά αδιάθετων',
-};
-function tempText(key, vars){
-  const s = UI_TEMP[key];
-  if(typeof s !== 'string') return '[' + key + ']';
-  return s.replace(/\{(\w+)\}/g, (m, k) => (vars && vars[k] !== undefined) ? String(vars[k]) : m);
+// ═══ ΚΕΙΜΕΝΑ ΟΘΟΝΗΣ ΑΠΟ ΤΗ ΒΑΣΗ (4a_ui_texts, Π1, 15-10-2026) ═══════════
+// Τα κείμενα των ομάδων ζουν ΜΟΝΟ στον 4a_ui_texts (migration 2026-10-15b)
+// και έρχονται μέσω του ui-texts.js. Κλειδί που λείπει -> [κλειδί]: κανένα
+// κείμενο εφεδρείας εδώ. ΜΗΝ γράφεις κείμενο οθόνης στον κώδικα — νέο
+// κείμενο = νέα γραμμή με migration. Το τεστ ελέγχει ότι κάθε pageText(…)
+// έχει κλειδί στο seed.
+const UI_SCOPES = ['tasks', 'common'];
+function pageText(key, vars){
+  return typeof UiTexts !== 'undefined' ? UiTexts.t(key, vars) : '[' + key + ']';
 }
-// ═══ τέλος TEMP ═══════════════════════════════════════════════════════════
+// ═══ τέλος κειμένων οθόνης ═══════════════════════════════════════════════
 
 // Το κόκκινο της καθυστέρησης: ΙΔΙΟ με το κείμενο «καθυστέρηση» της
 // προθεσμίας (.fuel-due.d-over). Ο 4a_task_statuses δεν έχει κόκκινη
@@ -841,7 +837,7 @@ function tint(hex, a){
 //         μέσω της dueState(): εκείνη χρωματίζει μόνο τύπους με όρια
 //         προθεσμίας, ενώ εδώ μετρά κάθε εργασία, και πελάτη.
 //   open: οτιδήποτε άλλο με ανοιχτή εργασία: ΟΛΗ η ομάδα (κεφαλίδα και
-//         σώμα) στο λεμονί κίτρινο του CMS (UI_TEMP color_open_head), με
+//         σώμα) στο λεμονί κίτρινο του CMS (4a_ui_texts color_open_head), με
 //         μαύρα γράμματα. Οι γραμμές ανάμεσα στις εργασίες: διάφανο μαύρο.
 //   alert (προαιρετικό, από την fuelWeekInfo): 'red' ή 'orange' υπερισχύει.
 //   orange: το χρώμα «in_progress» της βάσης, στο TONE_MIX_STRONG.
@@ -853,7 +849,7 @@ function groupTone(items, now, alert){
   const orange = !late && alert === 'orange';
   const open = !late && !orange;
   const base = late ? OVERDUE_COLOR : orange ? (STATUSES.in_progress && STATUSES.in_progress.color)
-                                             : tempText('color_open_head');
+                                             : pageText('color_open_head');
   const mix = late ? TONE_MIX : orange ? TONE_MIX_STRONG : 1;
   const bg = tint(base, mix);
   if(!bg) return null;
@@ -891,7 +887,7 @@ function fuelWeekInfo(items, now){
     else if(verifyOpen){ key = 'fuel_uploaded'; alert = 'orange'; }
     else key = 'fuel_now_ok';
   }
-  return { ws, phase, alert, key, text: key ? tempText(key, vars) : null };
+  return { ws, phase, alert, key, text: key ? pageText(key, vars) : null };
 }
 // Η ένδειξη ως HTML. Κόκκινη/πορτοκαλί: πλακίδιο με το ΓΕΜΑΤΟ χρώμα (το
 // κείμενο σε απόχρωση δεν περνά τον έλεγχο αντίθεσης). Οι υπόλοιπες: κείμενο.
@@ -910,7 +906,7 @@ const grpOpen = new Map();
 function grpIsOpen(key, closed){ return grpOpen.has(key) ? grpOpen.get(key) : !closed; }
 function grpTogHtml(key, open){
   return `<button class="grp-tog" data-g="${escHtml(key)}" aria-expanded="${open}"` +
-         ` title="${escHtml(tempText(open ? 'grp_tip_collapse' : 'grp_tip_expand'))}"` +
+         ` title="${escHtml(pageText(open ? 'grp_tip_collapse' : 'grp_tip_expand'))}"` +
          ` onclick="toggleGroup(this.dataset.g)">${open ? '−' : '+'}</button>`;
 }
 function toggleGroup(key){

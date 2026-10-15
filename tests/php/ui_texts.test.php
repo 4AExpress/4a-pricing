@@ -1,0 +1,143 @@
+<?php
+/* tests/php/ui_texts.test.php
+ *
+ *   php tests/php/ui_texts.test.php        (από τη ρίζα του repo)
+ *
+ * Φάση Α, Α1 (Π1): api/ui_texts_lib.php, api/ui_texts.php και το
+ * migration 2026-10-15b. SQLite στη μνήμη, γεμισμένο με το ΙΔΙΟ seed του
+ * migration (διαβάζεται από το αρχείο). Κανένα δίκτυο, τίποτα δεν γράφεται.
+ * Έξοδος 1 αν έστω ένας έλεγχος πέσει.
+ */
+
+require_once __DIR__ . '/../../api/ui_texts_lib.php';
+
+$pass = 0; $fail = 0;
+function ck($label, $ok, $extra = '')
+{
+    global $pass, $fail;
+    $ok ? $pass++ : $fail++;
+    printf("   %s %s%s\n", $ok ? 'OK   ' : 'ΛΑΘΟΣ', $label, $ok ? '' : "   → $extra");
+}
+
+$mig = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-15b_ui_texts.sql');
+$rb  = file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-15b_ui_texts.rollback.sql');
+$ep  = file_get_contents(__DIR__ . '/../../api/ui_texts.php');
+
+// Οι γραμμές του seed, όπως είναι γραμμένες στο migration.
+preg_match_all("/\\(\\s*'([a-z_]+)',\\s*'(\\w+)',\\s*'(text|color)',\\s*'([^']*)'\\)/u", $mig, $m, PREG_SET_ORDER);
+$seed = array();
+foreach ($m as $r) $seed[] = array('scope' => $r[1], 'k' => $r[2], 'kind' => $r[3], 'text' => $r[4]);
+
+// Ο πίνακας Δ του K4a_review_1014.md, ΟΠΩΣ ΕΓΚΡΙΘΗΚΕ 14/10 (με τις αλλαγές της ίδιας μέρας).
+$APPROVED = array(
+    'common'  => array('link_icon' => '🔗',
+                       'badge_override_tip' => '{n} παρακάμψεις διαχειριστή περιμένουν «Το είδα»'),
+    'clients' => array('clients_back_to_tasks' => 'Εργασίες',
+                       'clients_back_to_tasks_title' => 'Πίσω στις εργασίες'),
+    'tasks'   => array('task_group_client_link' => 'Πελάτης',
+                       'task_group_client_link_title' => 'Άνοιγμα πελάτη',
+                       'client_no_account' => 'χωρίς AccountNo',
+                       'client_no_offer' => 'χωρίς προσφορά',
+                       'mine_empty_queue' => '→ Δείτε την Ουρά αδιάθετων ({n})',
+                       'fuel_next_todo' => '◷ ΠΡΟΣ ΕΚΤΕΛΕΣΗ · προθεσμία {due}',
+                       'fuel_uploaded' => '⏳ Ανέβηκε · εκκρεμεί επαλήθευση',
+                       'fuel_next_ready' => '✓ Έτοιμη · ισχύει από {day}',
+                       'fuel_now_ok' => '✓ Σε ισχύ · CMS ενημερωμένο',
+                       'fuel_now_missing' => '⚠ Σε ισχύ · CMS ΜΗ ενημερωμένο',
+                       'fuel_older' => 'Παλαιότερες εβδομάδες ({n})',
+                       'grp_tip_collapse' => 'Collapse — Μάζεμα της ομάδας',
+                       'grp_tip_expand' => 'Expand — Άνοιγμα της ομάδας',
+                       'color_open_head' => '#FCFF29'),
+);
+
+echo "\n═══ migration 2026-10-15b: σχήμα ═══\n";
+ck('CREATE TABLE IF NOT EXISTS `4a_ui_texts`', strpos($mig, 'CREATE TABLE IF NOT EXISTS `4a_ui_texts` (') !== false);
+ck('UNIQUE (scope, k)', strpos($mig, 'UNIQUE KEY `uq_ui_texts_scope_k` (`scope`, `k`)') !== false);
+ck("kind ENUM('text','color') DEFAULT 'text'", strpos($mig, "`kind`       ENUM('text','color') NOT NULL DEFAULT 'text'") !== false);
+ck('CHECK: color ΜΟΝΟ #rrggbb', strpos($mig, "CHECK (`kind` <> 'color' OR `text` REGEXP '^#[0-9A-Fa-f]{6}\$')") !== false);
+ck('ΚΑΜΙΑ ρητή collation ή charset στον πίνακα (παίρνει της βάσης)',
+   preg_match('/CREATE TABLE IF NOT EXISTS `4a_ui_texts` \([^;]*(COLLATE|CHARSET)/i', $mig) === 0);
+ck('seed χωρίς αντικατάσταση υπαρχόντων (ON DUPLICATE KEY UPDATE k = k)',
+   strpos($mig, 'ON DUPLICATE KEY UPDATE `k` = `k`;') !== false && preg_match('/REPLACE\s+INTO|DELETE\s+FROM|UPDATE\s+`4a_ui_texts`/i', $mig) === 0);
+ck('κανένα ; ή \' μέσα σε σχόλιο (ο διαχωρισμός του Β4 είναι ανά ; έξω από \'...\')',
+   !preg_match("/^\\s*--[^\\n]*[;']/m", $mig . "\n" . $rb));
+ck('rollback: ΜΟΝΟ DROP TABLE IF EXISTS `4a_ui_texts`',
+   strpos($rb, 'DROP TABLE IF EXISTS `4a_ui_texts`;') !== false && preg_match_all('/\b(DROP|DELETE|UPDATE|ALTER|INSERT)\b/', preg_replace('/^\s*--.*$/m', '', $rb)) === 1);
+
+echo "\n═══ migration 2026-10-15b: seed = ο πίνακας Δ που εγκρίθηκε ═══\n";
+ck('18 γραμμές', count($seed) === 18, (string)count($seed));
+$keys = array_column($seed, 'k');
+ck('κάθε κλειδί ΜΟΝΑΔΙΚΟ σε όλα τα scope (ο loader τα κρατά σε ένα επίπεδο)', count(array_unique($keys)) === count($keys));
+$got = array();
+foreach ($seed as $r) $got[$r['scope']][$r['k']] = $r['text'];
+foreach ($APPROVED as $s => $kv) {
+    foreach ($kv as $k => $t) {
+        ck("{$s}.{$k} = «{$t}»", isset($got[$s][$k]) && $got[$s][$k] === $t, isset($got[$s][$k]) ? $got[$s][$k] : 'λείπει');
+    }
+}
+ck('κανένα κλειδί εκτός του πίνακα Δ', count($seed) === array_sum(array_map('count', $APPROVED)));
+$colors = array_filter($seed, function ($r) { return $r['kind'] === 'color'; });
+ck('μόνο το color_open_head είναι color, και περνά το hex',
+   array_column($colors, 'k') === array('color_open_head') && ui_texts_color_ok(reset($colors)['text']));
+ck('κάθε άλλο είναι text', count($seed) - count($colors) === 17);
+
+echo "\n═══ ui_texts_scopes: λευκή λίστα ═══\n";
+ck('«tasks,common» -> [tasks, common]', ui_texts_scopes('tasks,common') === array('tasks', 'common'));
+ck('κενά γύρω -> κόβονται', ui_texts_scopes(' tasks , common ') === array('tasks', 'common'));
+ck('διπλό -> μία φορά, η σειρά κρατιέται', ui_texts_scopes('common,tasks,common') === array('common', 'tasks'));
+ck('κενό -> null', ui_texts_scopes('') === null && ui_texts_scopes(null) === null);
+ck('«../x» -> null', ui_texts_scopes('../x') === null);
+ck('κεφαλαία -> null', ui_texts_scopes('Tasks') === null);
+ck("SQL -> null", ui_texts_scopes("tasks' OR 1=1") === null);
+ck('21 χαρακτήρες -> null', ui_texts_scopes(str_repeat('a', 21)) === null && ui_texts_scopes(str_repeat('a', 20)) === array(str_repeat('a', 20)));
+ck('6 scope -> null, 5 -> δεκτά', ui_texts_scopes('a,b,c,d,e,f') === null && count(ui_texts_scopes('a,b,c,d,e')) === 5);
+ck('«tasks,» (κενό στο τέλος) -> null', ui_texts_scopes('tasks,') === null);
+ck('πίνακας αντί για κείμενο -> null', ui_texts_scopes(array('tasks')) === null);
+
+echo "\n═══ ui_texts_color_ok ═══\n";
+ck('#FCFF29 / #fcff29 δεκτά', ui_texts_color_ok('#FCFF29') && ui_texts_color_ok('#fcff29'));
+ck('#FFF, FCFF29, #FCFF290, red -> όχι',
+   !ui_texts_color_ok('#FFF') && !ui_texts_color_ok('FCFF29') && !ui_texts_color_ok('#FCFF290') && !ui_texts_color_ok('red'));
+ck("γραμμή μετά -> όχι", !ui_texts_color_ok("#FCFF29\n"));
+
+echo "\n═══ ui_texts_fetch: πάνω στο seed του migration (SQLite) ═══\n";
+$db = new PDO('sqlite::memory:');
+$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$db->exec('CREATE TABLE `4a_ui_texts` (`id` INTEGER PRIMARY KEY, `scope` TEXT NOT NULL, `k` TEXT NOT NULL,
+           `kind` TEXT NOT NULL DEFAULT \'text\', `text` TEXT NOT NULL, `updated_at` TEXT, UNIQUE(`scope`, `k`))');
+$ins = $db->prepare('INSERT INTO `4a_ui_texts` (`scope`, `k`, `kind`, `text`) VALUES (?, ?, ?, ?)');
+foreach ($seed as $r) $ins->execute(array($r['scope'], $r['k'], $r['kind'], $r['text']));
+$count = function () use ($db) { return (int)$db->query('SELECT COUNT(*) FROM `4a_ui_texts`')->fetchColumn(); };
+$n0 = $count();
+
+$t = ui_texts_fetch($db, array('tasks', 'common'));
+ck('δύο scope, με τη σειρά τους', array_keys($t) === array('tasks', 'common'));
+ck('tasks: 14 κλειδιά, common: 2', count($t['tasks']) === 14 && count($t['common']) === 2);
+ck('κανένα κλειδί άλλου scope (clients)', !isset($t['tasks']['clients_back_to_tasks']) && !isset($t['common']['clients_back_to_tasks']));
+ck('κείμενο αυτούσιο, με {n}', $t['tasks']['mine_empty_queue'] === '→ Δείτε την Ουρά αδιάθετων ({n})');
+ck('χρώμα αυτούσιο', $t['tasks']['color_open_head'] === '#FCFF29');
+$t = ui_texts_fetch($db, array('nothing'));
+ck('scope χωρίς γραμμές -> υπάρχει, άδειο', $t === array('nothing' => array()));
+ck('κανένα scope -> []', ui_texts_fetch($db, array()) === array());
+$db->exec("INSERT INTO `4a_ui_texts` (`scope`, `k`, `kind`, `text`) VALUES ('tasks', 'bad_color', 'color', 'red')");
+$t = ui_texts_fetch($db, array('tasks'));
+ck('χρώμα που δεν είναι #rrggbb ΔΕΝ επιστρέφεται (η σελίδα το βλέπει ως κλειδί που λείπει)',
+   !isset($t['tasks']['bad_color']) && isset($t['tasks']['color_open_head']));
+$db->exec("DELETE FROM `4a_ui_texts` WHERE `k` = 'bad_color'");
+ck('η ανάγνωση δεν γράφει τίποτα', $count() === $n0);
+
+echo "\n═══ api/ui_texts.php: λεπτό endpoint ═══\n";
+$code = preg_replace('#^\s*//.*$#m', '', $ep);
+ck('ΚΑΝΕΝΑ DDL (CREATE / ALTER / DROP)', preg_match('/\b(CREATE|ALTER|DROP)\s+TABLE\b/i', $code) === 0);
+ck('μόνο GET (405 αλλιώς), OPTIONS 204',
+   strpos($code, "if (\$method !== 'GET') respond(") !== false && strpos($code, '405') !== false && strpos($code, 'http_response_code(204)') !== false);
+ck('require_user() ΠΡΙΝ από κάθε ανάγνωση (χωρίς token -> 401 από το auth.php)',
+   strpos($code, 'require_user();') !== false && strpos($code, 'require_user();') < strpos($code, 'ui_texts_fetch('));
+ck('άκυρο scope -> 400, ΠΡΙΝ από την ανάγνωση',
+   strpos($code, 'if ($scopes === null) {') !== false
+   && strpos($code, '], 400);', strpos($code, 'if ($scopes === null) {')) < strpos($code, 'ui_texts_fetch('));
+ck('api_errors_install ΠΡΙΝ από το auth.php', strpos($code, "api_errors_install('ui_texts')") < strpos($code, "require_once 'auth.php'"));
+ck('άδειο scope ως {} (object), όχι []', strpos($code, '$texts[$s] = (object)$kv;') !== false);
+
+echo "\n═══ ΣΥΝΟΛΟ: $pass OK, $fail ΛΑΘΟΣ ═══\n";
+exit($fail ? 1 : 0);
