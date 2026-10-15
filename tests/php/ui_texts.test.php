@@ -133,6 +133,10 @@ ck('μόνο GET (405 αλλιώς), OPTIONS 204',
    strpos($code, "if (\$method !== 'GET') respond(") !== false && strpos($code, '405') !== false && strpos($code, 'http_response_code(204)') !== false);
 ck('require_user() ΠΡΙΝ από κάθε ανάγνωση (χωρίς token -> 401 από το auth.php)',
    strpos($code, 'require_user();') !== false && strpos($code, 'require_user();') < strpos($code, 'ui_texts_fetch('));
+ck('χωρίς token -> 401 ΠΡΙΝ από 405 και 400 (v1.1): require_user() αμέσως μετά το OPTIONS',
+   strpos($code, 'http_response_code(204)') < strpos($code, 'require_user();')
+   && strpos($code, 'require_user();') < strpos($code, "if (\$method !== 'GET')")
+   && strpos($code, 'require_user();') < strpos($code, 'ui_texts_scopes('));
 ck('άκυρο scope -> 400, ΠΡΙΝ από την ανάγνωση',
    strpos($code, 'if ($scopes === null) {') !== false
    && strpos($code, '], 400);', strpos($code, 'if ($scopes === null) {')) < strpos($code, 'ui_texts_fetch('));

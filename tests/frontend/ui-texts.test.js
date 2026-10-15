@@ -4,6 +4,8 @@
 // frontend/tasks-badge.js με ψεύτικο fetch:
 //   · κείμενα από το api/ui_texts.php, {x} -> τιμή, κλειδί που λείπει -> [κλειδί]
 //   · σιωπηλή αποτυχία (δίκτυο, 401, άκυρη απάντηση, χωρίς συνεδρία)
+//   · αντίγραφο στο localStorage (v1.1): server OK -> γράφεται· server πέφτει
+//     με αντίγραφο -> κείμενα από αυτό· χωρίς αντίγραφο -> [κλειδί]
 //   · ένα αίτημα ανά scope, όσες φορές κι αν ζητηθεί
 //   · σήμα: tooltip παράκαμψης από τη βάση, αλλιώς ΜΟΝΟ αριθμός (απόφαση 14/10)
 const fs = require('fs');
@@ -30,7 +32,15 @@ function fakeFetch(reply) {
   return f;
 }
 const json = (status, body) => ({ ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) });
-const load = (fetch, session) => new Function('fetch', 'sessionStorage', UI_SRC + '\nreturn UiTexts;')(fetch, session || SESSION);
+// Ψεύτικο localStorage· broken = πετάει σε κάθε κλήση (private mode).
+function fakeLS(init, broken) {
+  const m = Object.assign({}, init || {});
+  const no = () => { throw new Error('SecurityError'); };
+  return broken ? { getItem: no, setItem: no, m } :
+    { getItem: k => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); }, m };
+}
+const load = (fetch, session, ls) => new Function('fetch', 'sessionStorage', 'localStorage', UI_SRC + '\nreturn UiTexts;')(
+  fetch, session || SESSION, ls === undefined ? fakeLS() : ls);
 
 (async () => {
 
@@ -97,6 +107,94 @@ for (const [label, reply] of [
   const U = load(f);
   await U.load(['common', '../x', 'A']);
   ck('άκυρο scope δεν φτάνει στο αίτημα', f.calls.length === 1 && /scope=common&/.test(f.calls[0].url), f.calls[0] && f.calls[0].url);
+}
+
+console.log('\n═══ UiTexts: αντίγραφο στο localStorage ═══');
+const COPY = (texts, v) => JSON.stringify({ v: v === undefined ? 1 : v, saved_at: '2026-10-15T10:00:00.000Z', texts });
+{ // server OK -> αντίγραφο ανά scope, με έκδοση και χρόνο
+  const ls = fakeLS();
+  const U = load(fakeFetch(() => json(200, TEXTS)), SESSION, ls);
+  const ok = await U.load(['tasks', 'common']);
+  const c = JSON.parse(ls.m['4a_ui_texts:common'] || 'null'), t = JSON.parse(ls.m['4a_ui_texts:tasks'] || 'null');
+  ck('server OK: true, πηγή server', ok === true && U.source('common') === 'server' && U.source('tasks') === 'server');
+  ck('server OK: αντίγραφο ανά scope {v:1, saved_at ISO, texts}', c && c.v === 1 && /^\d{4}-\d\d-\d\dT/.test(c.saved_at) &&
+     JSON.stringify(c.texts) === JSON.stringify(TEXTS.texts.common) && t && t.texts.fuel_older === 'Παλαιότερες εβδομάδες ({n})', JSON.stringify(ls.m));
+}
+{ // server OK αντικαθιστά το παλιό αντίγραφο ολόκληρο (κλειδί που σβήστηκε φεύγει)
+  const ls = fakeLS({ '4a_ui_texts:common': COPY({ old_key: 'παλιό', link_icon: 'Χ' }) });
+  const U = load(fakeFetch(() => json(200, TEXTS)), SESSION, ls);
+  await U.load(['common']);
+  const c = JSON.parse(ls.m['4a_ui_texts:common']);
+  ck('server OK: το νέο αντίγραφο αντικαθιστά το παλιό, ΟΧΙ συγχώνευση', !('old_key' in c.texts) && c.texts.link_icon === '🔗');
+  ck('server OK: το παλιό αντίγραφο ΔΕΝ διαβάζεται', !U.has('old_key') && U.t('link_icon') === '🔗');
+}
+for (const [label, reply, session] of [
+  ['δίκτυο', () => new Error('net')],
+  ['401', () => json(401, { error: 'Unauthorized' })],
+  ['500', () => json(500, { ok: false })],
+  ['ok: false', () => json(200, { ok: false })],
+  ['χωρίς συνεδρία', () => json(200, TEXTS), NO_SESSION],
+]) { // server πέφτει ΜΕ αντίγραφο
+  const ls = fakeLS({ '4a_ui_texts:common': COPY(TEXTS.texts.common) });
+  const before = ls.m['4a_ui_texts:common'];
+  const U = load(fakeFetch(reply), session, ls);
+  const ok = await U.load(['common']);
+  ck(`server πέφτει (${label}) ΜΕ αντίγραφο: true, κείμενα από αντίγραφο, όχι [κλειδί]`,
+     ok === true && U.source('common') === 'copy' &&
+     U.t('badge_override_tip', { n: 2 }) === '2 παρακάμψεις διαχειριστή περιμένουν «Το είδα»' &&
+     U.has('link_icon') && ls.m['4a_ui_texts:common'] === before, U.t('link_icon'));
+}
+for (const [label, ls] of [['κενό localStorage', fakeLS()], ['localStorage πετάει', fakeLS(null, true)],
+                           ['localStorage ανύπαρκτο', null],
+                           ['αντίγραφο άλλης έκδοσης', fakeLS({ '4a_ui_texts:common': COPY(TEXTS.texts.common, 2) })],
+                           ['αντίγραφο χαλασμένο', fakeLS({ '4a_ui_texts:common': '{χαλασμένο' })],
+                           ['αντίγραφο άλλου scope', fakeLS({ '4a_ui_texts:tasks': COPY(TEXTS.texts.tasks) })]]) {
+  // server πέφτει ΧΩΡΙΣ αντίγραφο
+  const U = load(fakeFetch(() => new Error('net')), SESSION, ls);
+  let threw = false, ok;
+  try { ok = await U.load(['common']); } catch (e) { threw = true; }
+  ck(`server πέφτει ΧΩΡΙΣ αντίγραφο (${label}): false, [κλειδί], χωρίς εξαίρεση`,
+     !threw && ok === false && U.source('common') === null && U.t('link_icon') === '[link_icon]');
+}
+{ // μικτό: ένα scope με αντίγραφο, ένα χωρίς
+  const U = load(fakeFetch(() => new Error('net')), SESSION, fakeLS({ '4a_ui_texts:common': COPY(TEXTS.texts.common) }));
+  const ok = await U.load(['tasks', 'common']);
+  ck('μικτό: false, common από αντίγραφο, tasks [κλειδί]', ok === false && U.t('link_icon') === '🔗' && U.t('fuel_older') === '[fuel_older]');
+}
+{ // αντίγραφο -> το επόμενο load ξαναρωτά τον server και τον προτιμά
+  let n = 0;
+  const ls = fakeLS({ '4a_ui_texts:common': COPY({ link_icon: 'ΠΑΛΙΟ' }) });
+  const f = fakeFetch(() => (++n === 1 ? new Error('net') : json(200, TEXTS)));
+  const U = load(f, SESSION, ls);
+  await U.load(['common']);
+  ck('1ο load: από αντίγραφο', U.t('link_icon') === 'ΠΑΛΙΟ' && U.source('common') === 'copy');
+  const ok = await U.load(['common']);
+  ck('2ο load: ξαναρωτά τον server, παίρνει τα νέα, ανανεώνει το αντίγραφο',
+     ok === true && f.calls.length === 2 && U.t('link_icon') === '🔗' && U.source('common') === 'server' &&
+     JSON.parse(ls.m['4a_ui_texts:common']).texts.link_icon === '🔗');
+  await U.load(['common']);
+  ck('3ο load: ήδη από τη βάση -> κανένα νέο αίτημα', f.calls.length === 2);
+}
+{ // _merge (τεστ σελίδων) δεν γράφει αντίγραφο
+  const ls = fakeLS();
+  const U = load(fakeFetch(() => json(200, TEXTS)), SESSION, ls);
+  U._merge(TEXTS);
+  ck('_merge: κείμενα χωρίς εγγραφή αντιγράφου', U.has('link_icon') && Object.keys(ls.m).length === 0);
+}
+ck('κανένα κείμενο οθόνης στον κώδικα του loader (εκτός σχολίων μόνο ASCII)',
+   !/[^\x00-\x7f]/.test(UI_SRC.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')));
+{ // σήμα: server κειμένων πέφτει, αντίγραφο υπάρχει -> tooltip από το αντίγραφο
+  const spans = [];
+  const link = { querySelector: () => null, appendChild: w => spans.push(w) };
+  const doc = { readyState: 'complete', querySelectorAll: () => [link],
+                createElement: () => ({ style: {}, children: [], appendChild(c) { this.children.push(c); } }) };
+  const f = fakeFetch(url => url.includes('/tasks.php?action=badge') ? json(200, { ok: true, attention: 0, mine: 0, overrides: 2 }) : new Error('net'));
+  const U = load(f, SESSION, fakeLS({ '4a_ui_texts:common': COPY(TEXTS.texts.common) }));
+  new Function('window', 'document', 'fetch', 'sessionStorage', 'UiTexts', BADGE_SRC)({}, doc, f, SESSION, U);
+  for (let i = 0; i < 10; i++) await new Promise(r => setImmediate(r));
+  const red = spans[0] && spans[0].children[0];
+  ck('σήμα: server κειμένων πέφτει, αντίγραφο -> tooltip από το αντίγραφο',
+     red && red.title === '2 παρακάμψεις διαχειριστή περιμένουν «Το είδα»', red && red.title);
 }
 
 console.log('\n═══ tasks-badge.js: tooltip παράκαμψης από τη βάση, αλλιώς μόνο αριθμός ═══');
