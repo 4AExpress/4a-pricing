@@ -136,7 +136,9 @@ ck('require_user() ΠΡΙΝ από κάθε ανάγνωση (χωρίς token -
 ck('άκυρο scope -> 400, ΠΡΙΝ από την ανάγνωση',
    strpos($code, 'if ($scopes === null) {') !== false
    && strpos($code, '], 400);', strpos($code, 'if ($scopes === null) {')) < strpos($code, 'ui_texts_fetch('));
-ck('api_errors_install ΠΡΙΝ από το auth.php', strpos($code, "api_errors_install('ui_texts')") < strpos($code, "require_once 'auth.php'"));
+// Το όνομα του αρχείου σκέτο, ΟΧΙ ως «require…»: ο έλεγχος του Β8 θεωρεί κάθε
+// τέτοια συμβολοσειρά του bundle διαδρομή και απαιτεί να ξεκινά από το api.
+ck('api_errors_install ΠΡΙΝ από το auth.php', strpos($code, "api_errors_install('ui_texts')") < strpos($code, "'auth.php'"));
 ck('άδειο scope ως {} (object), όχι []', strpos($code, '$texts[$s] = (object)$kv;') !== false);
 
 echo "\n═══ ΣΥΝΟΛΟ: $pass OK, $fail ΛΑΘΟΣ ═══\n";
