@@ -81,7 +81,7 @@ ck('μόνο το color_open_head είναι color, και περνά το hex',
    array_column($colors, 'k') === array('color_open_head') && ui_texts_color_ok(reset($colors)['text']));
 ck('κάθε άλλο είναι text', count($seed) - count($colors) === 17);
 
-echo "\n═══ migration 2026-10-19b (Α2): τα 8 κείμενα της εβδομάδας, όπως εγκρίθηκαν 16/10 ═══\n";
+echo "\n═══ migration 2026-10-19b (Α2): τα 9 κείμενα της εβδομάδας, όπως εγκρίθηκαν 16/10 ═══\n";
 $mig19 = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-19b_ui_texts_fuel_week.sql');
 $rb19  = file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-19b_ui_texts_fuel_week.rollback.sql');
 preg_match_all("/\\(\\s*'([a-z_]+)',\\s*'(\\w+)',\\s*'(text|color)',\\s*'([^']*)'\\)/u", $mig19, $m19, PREG_SET_ORDER);
@@ -94,11 +94,12 @@ $APPROVED19 = array(
     'fuel_w_done'             => '✓ Σε ισχύ · ανέβηκε και επαληθεύτηκε',
     'fuel_verify_locked'      => '🔒 Περιμένει το ανέβασμα ({name})',
     'fuel_verify_locked_none' => '🔒 Περιμένει το ανέβασμα (αδιάθετο)',
+    'fuel_verify_uploaded'    => '✓ ① Ανέβηκε από {name} · {when}',
 );
 $got19 = array();
 foreach ($m19 as $r) $got19[$r[2]] = array($r[1], $r[3], $r[4]);
-ck('8 γραμμές, ΟΛΕΣ scope tasks, kind text', count($m19) === 8 && count(array_filter($got19, function ($r) {
-   return $r[0] === 'tasks' && $r[1] === 'text'; })) === 8, (string)count($m19));
+ck('9 γραμμές, ΟΛΕΣ scope tasks, kind text', count($m19) === 9 && count(array_filter($got19, function ($r) {
+   return $r[0] === 'tasks' && $r[1] === 'text'; })) === 9, (string)count($m19));
 foreach ($APPROVED19 as $k => $t) ck("tasks.{$k} = «{$t}»", isset($got19[$k]) && $got19[$k][2] === $t, isset($got19[$k]) ? $got19[$k][2] : 'λείπει');
 ck('κανένα κλειδί κοινό με το 15b (ο loader τα κρατά σε ένα επίπεδο)', !array_intersect(array_keys($got19), $keys));
 ck('κανένα «19:00» ή «17:00» στα κείμενα: οι ώρες έρχονται από τα δεδομένα',
@@ -110,7 +111,7 @@ ck('κανένα ; ή \' μέσα σε σχόλιο (19b και rollback)', !pre
 preg_match("/DELETE FROM `4a_ui_texts`\\s+WHERE `scope` = 'tasks'\\s+AND `k` IN \\(([^)]*)\\)/", $rb19, $dm);
 preg_match_all("/'(\\w+)'/", isset($dm[1]) ? $dm[1] : '', $dk);
 $dk = $dk[1]; sort($dk); $ak = array_keys($APPROVED19); sort($ak);
-ck('rollback: DELETE ΜΟΝΟ των 8 κλειδιών του 19b, σε scope tasks', $dk === $ak, implode(',', $dk));
+ck('rollback: DELETE ΜΟΝΟ των 9 κλειδιών του 19b, σε scope tasks', $dk === $ak, implode(',', $dk));
 ck('rollback: καμία άλλη εντολή αλλαγής',
    preg_match_all('/\b(DROP|DELETE|UPDATE|ALTER|INSERT)\b/', preg_replace('/^\s*--.*$/m', '', $rb19)) === 1);
 

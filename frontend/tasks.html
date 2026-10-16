@@ -880,14 +880,14 @@ function addDaysISO(iso, n){
 function fuelActiveRoot(items){
   const root = (items || []).find(t => t.depends_on === null);
   const p = root ? taskPayload(root) : null;
-  return root && root.step && p && p.kind === 'fuel_weekly' ? root : null;
+  return root && (root.step || root.has_steps === true) && p && p.kind === 'fuel_weekly' ? root : null;
 }
 // Η ομάδα ΟΛΗ (εύρημα 16/10): οι εργασίες που φαίνονται ΚΑΙ όσες της
 // αλυσίδας τους λείπουν από την καρτέλα, από το t.chain του server. Στην
 // «Οι εργασίες μου» και στην «Ουρά» η ρίζα συχνά δεν είναι στη λίστα· χωρίς
 // αυτό η κεφαλίδα κρινόταν μόνο από το verify («ΠΡΟΣ ΕΚΤΕΛΕΣΗ» αντί για
 // «Ανέβηκε · εκκρεμεί επαλήθευση»). Κανόνας: κεφαλίδα = κατάσταση ΟΛΗΣ της
-// εβδομάδας, ΙΔΙΑ σε κάθε καρτέλα. ΜΟΝΟ για κεφαλίδα, χρώμα και τίτλο· οι
+// εβδομάδας, ΙΔΙΑ σε κάθε καρτέλα. ΜΟΝΟ για κεφαλίδα, χρώμα και πύλη· οι
 // γραμμές της ομάδας μένουν όσες φαίνονται. Χωρίς t.chain (εργασίες πελάτη,
 // παλιός server): οι ίδιες οι εργασίες, όπως πριν.
 function weekItems(items){
@@ -1469,7 +1469,7 @@ function uploadCheck(rows, v, ui){
 function taskRow(t, group){
   if(t.step) return stepCardHtml(t);
   // ΦΑΣΗ Α: επαλήθευση (παλιά ροή) μέσα σε ΕΝΕΡΓΗ εβδομάδα επίναυλου.
-  const fa = group ? fuelActiveRoot(group) : null;
+  const fa = group ? fuelActiveRoot(weekItems(group)) : null;
   const verifyActive = !!fa && t.client_id === null && Number(t.id) !== Number(fa.id);
   const locked = Number(t.locked)===1;
   const mine   = currentUser && Number(t.assigned_to)===Number(currentUser.id);
@@ -1552,6 +1552,13 @@ function taskRow(t, group){
     }
     if(isAdmin) acts += asgBtn;
   }
+  // «✓ ① Ανέβηκε από {όνομα} · {ημ/ώρα}» όταν το ① έκλεισε ως done (ΟΧΙ na).
+  // Όνομα και ώρα ΜΟΝΟ από τον server (t.chain: closed_by_name, closed_at)·
+  // χωρίς chain, καμία γραμμή.
+  const upC = verifyActive && Array.isArray(t.chain) ? t.chain.find(c => Number(c.id) === Number(fa.id)) : null;
+  if(upC && upC.status === 'done')
+    acts += `<span class="lockmsg">${escHtml(pageText('fuel_verify_uploaded',
+              { name: upC.closed_by_name || upC.assigned_name || '—', when: fmtDue(upC.closed_at, true) }))}</span>`;
   // Ξεκλείδωτο verify ΠΡΙΝ τη Δευτέρα: «⏳ ② Επαλήθευση · από … · έως …». Ο
   // server αρνείται το κλείσιμο ως τότε (Δ-Α8). Ώρες από τα δεδομένα.
   const ws = payload && /^\d{4}-\d{2}-\d{2}$/.test(String(payload.week_start||'')) ? payload.week_start : null;

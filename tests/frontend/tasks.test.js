@@ -14,7 +14,7 @@ const NAVCHIP_SRC = fs.readFileSync('frontend/nav-chip.js', 'utf8');
 // seed του migration 2026-10-15b. Έτσι κάθε κείμενο που ελέγχεται εδώ είναι
 // αυτό που θα δώσει η βάση, και κάθε κλειδί του κώδικα πρέπει να υπάρχει εκεί.
 const UITEXTS_SRC = fs.readFileSync('frontend/ui-texts.js', 'utf8');
-// Α2 (16/10): και τα 8 κείμενα της εβδομάδας του migration 2026-10-19b.
+// Α2 (16/10): και τα 9 κείμενα της εβδομάδας του migration 2026-10-19b.
 const UI_MIGS = ['db/migrations/2026-10-15b_ui_texts.sql', 'db/migrations/2026-10-19b_ui_texts_fuel_week.sql'];
 const UI_MIG = UI_MIGS.join(' + ');
 const MIG_TEXTS = (() => {
@@ -1295,7 +1295,7 @@ console.log('\n═══ Α3 verify (παλιά ροή) σε ενεργή εβδ
   h = R({ userId: 2, admin: false, now: '2026-10-24 10:00:00' }, plain);
   ck('ΧΩΡΙΣ step στη ρίζα: το verify ακριβώς όπως πριν (λήψη, χωρίς γραμμή αναμονής)',
      h.includes('downloadFuelCms(91)') && !h.includes('⏳ ②') && h === env({ statuses: ST_DB, userId: 2, admin: false, now: '2026-10-24 10:00:00' }).api.taskRow(plain[1]));
-  ck('taskRow χωρίς ομάδα (εργασίες πελάτη, golden): καμία αλλαγή', !/fuelActiveRoot\(t\b/.test(grab('taskRow')) && /group \? fuelActiveRoot\(group\) : null/.test(grab('taskRow')));
+  ck('taskRow χωρίς ομάδα (εργασίες πελάτη, golden): καμία αλλαγή', !/fuelActiveRoot\(t\b/.test(grab('taskRow')) && /group \? fuelActiveRoot\(weekItems\(group\)\) : null/.test(grab('taskRow')));
 }
 
 console.log('\n═══ Α3 πύλη: ΜΕ step στη ρίζα η λίστα ΑΛΛΑΖΕΙ (ο έλεγχος δεν είναι κενός) ═══');
@@ -1309,7 +1309,7 @@ console.log('\n═══ Α3 πύλη: ΜΕ step στη ρίζα η λίστα �
 }
 
 // ═════════════════════════════════════════════════════════════════════
-// Α2α, ΕΥΡΗΜΑ 16/10: η κεφαλίδα της εβδομάδας = κατάσταση ΟΛΗΣ της εβδομάδας
+// Α3, ΕΥΡΗΜΑ 16/10: η κεφαλίδα της εβδομάδας = κατάσταση ΟΛΗΣ της εβδομάδας
 // (t.chain από τον server), ΙΔΙΑ σε «Οι εργασίες μου», «Ουρά» και «Όλες».
 // Οι λίστες φιλτράρονται ΟΠΩΣ στο tasks_list (mine: δικές μου in_progress/
 // paused, queue: αδιάθετες open, all: όλες), και κάθε εργασία συστήματος
@@ -1351,10 +1351,12 @@ const WEEK_STATES = [
   ['① na, ② σε εξέλιξη (u2)',                   { status: 'na', assigned_to: 1, assigned_name: 'u1' }, VER_U2],
 ];
 const NOWS = ['2026-10-22 10:00:00', '2026-10-24 10:00:00', '2026-10-26 09:00:00', '2026-10-26 18:00:00', '2026-10-28 10:00:00', '2026-11-03 10:00:00'];
-const stateWeek = (up, ver) => {
+const stateWeek = (up, ver, step) => {
   const w = fuelWeek(90, '2026-10-26', up.status, ver.status, {
     up:  Object.assign({ due_at: '2026-10-23 19:00:00', assigned_to: null, assigned_name: null }, up),
     ver: Object.assign({ due_at: '2026-10-26 17:00:00', assigned_to: null, assigned_name: null }, ver) });
+  if (step) Object.assign(w[0], { step: up.status === 'done' ? STEP.uploaded : STEP.download, steps: STEPS(up.status === 'done', up.status === 'done'),
+                                  allow: ALLOW0, timeline: [], override: null, ui: UI });
   // locked όπως η tasks_base_sql
   w[1].locked = w[0].status === 'done' || w[0].status === 'na' ? 0 : 1;
   return w;
@@ -1366,12 +1368,12 @@ const listOf = (ts, now, view, me, admin) => {
   return { html: els.list.innerHTML, api };
 };
 
-console.log('\n═══ Α2α εύρημα 16/10: ΙΔΙΑ κεφαλίδα εβδομάδας σε mine / queue / all, για κάθε κατάσταση ═══');
-{
+console.log('\n═══ Α3 εύρημα 16/10: ΙΔΙΑ κεφαλίδα εβδομάδας σε mine / queue / all, για κάθε κατάσταση ═══');
+for (const step of [false, true]) {
   const keys = new Set(), bad = [];
   let compared = 0;
   for (const now of NOWS) for (const [lbl, up, ver] of WEEK_STATES) {
-    const ts = withChain([...stateWeek(up, ver), cliTask(1, 7, 'Πελάτης', { status: 'in_progress', assigned_to: 2, assigned_name: 'u2' })]);
+    const ts = withChain([...stateWeek(up, ver, step), cliTask(1, 7, 'Πελάτης', { status: 'in_progress', assigned_to: 2, assigned_name: 'u2' })]);
     const all = listOf(ts, now, 'all', 9, true);
     const ref = heads(all.html);
     const info = all.api.fuelWeekInfo(all.api.weekItems(ts.filter(t => t.client_id === null)), now);
@@ -1385,9 +1387,10 @@ console.log('\n═══ Α2α εύρημα 16/10: ΙΔΙΑ κεφαλίδα ε�
       }
     }
   }
-  const want = ['fuel_next_todo', 'fuel_uploaded', 'fuel_next_ready', 'fuel_now_missing', 'fuel_now_ok', 'older'];
-  ck(`όλες οι καταστάσεις καλύπτονται (${want.join(', ')})`, want.every(k => keys.has(k)), [...keys].join(','));
-  ck(`${compared} κεφαλίδες σε mine/queue: ΙΔΙΕΣ byte-προς-byte με την «Όλες»`, compared >= 60 && bad.length === 0, bad.slice(0, 3).join(' | '));
+  const want = step ? ['fuel_w_upload', 'fuel_w_upload_late', 'fuel_w_verify_wait', 'fuel_w_verify_now', 'fuel_w_verify_late', 'fuel_w_done', 'older']
+                    : ['fuel_next_todo', 'fuel_uploaded', 'fuel_next_ready', 'fuel_now_missing', 'fuel_now_ok', 'older'];
+  ck(`${step ? 'ΜΕ' : 'χωρίς'} step: όλες οι καταστάσεις καλύπτονται (${want.join(', ')})`, want.every(k => keys.has(k)), [...keys].join(','));
+  ck(`${step ? 'ΜΕ' : 'χωρίς'} step: ${compared} κεφαλίδες σε mine/queue: ΙΔΙΕΣ byte-προς-byte με την «Όλες»`, compared >= 60 && bad.length === 0, bad.slice(0, 3).join(' | '));
 }
 {
   // Το εύρημα αυτούσιο: εβδομάδα 19/10, Παρ 16/10, ① done από u1, ② της u2.
@@ -1396,16 +1399,40 @@ console.log('\n═══ Α2α εύρημα 16/10: ΙΔΙΑ κεφαλίδα ε�
   const mineH = listOf(withChain(wk), now, 'mine', 2, false).html;
   ck('εύρημα: «Οι εργασίες μου» της u2 -> «⏳ Ανέβηκε · εκκρεμεί επαλήθευση», πορτοκαλί (όχι «ΠΡΟΣ ΕΚΤΕΛΕΣΗ», όχι λεμονί)',
      mineH.includes('⏳ Ανέβηκε · εκκρεμεί επαλήθευση') && !mineH.includes('ΠΡΟΣ ΕΚΤΕΛΕΣΗ') && /class="client-group sys tone warn"/.test(mineH), heads(mineH)['sys:fuel:2026-10-19']);
-  ck('...ο τίτλος του ① (Γενικός επίναυλος…), όχι του verify', mineH.includes('Γενικός επίναυλος') && !/client-name">[^<]*<[^>]*>[^<]*<\/span>Έλεγχος/.test(mineH));
   ck('...και οι γραμμές μένουν όσες φαίνονται: μόνο το ② (καμία γραμμή για το ①)', !/act\(80,|downloadFuelCms\(80\)|toggleHist\(80\)/.test(mineH) && /toggleHist\(81\)/.test(mineH));
-  // ΠΑΛΙΟΣ SERVER (χωρίς chain): η οθόνη ΑΚΡΙΒΩΣ όπως σήμερα.
   const oldH = listOf(wk, now, 'mine', 2, false).html;
-  ck('χωρίς chain (παλιός server): όπως σήμερα, από όσες φαίνονται («ΠΡΟΣ ΕΚΤΕΛΕΣΗ»)', oldH.includes('ΠΡΟΣ ΕΚΤΕΛΕΣΗ'));
+  ck('χωρίς chain (παλιός server): όπως πριν, από όσες φαίνονται', oldH.includes('ΠΡΟΣ ΕΚΤΕΛΕΣΗ'));
   ck('weekItems χωρίς chain: τα ΙΔΙΑ αντικείμενα (εργασίες πελάτη, golden)', (() => {
     const { api } = env({}); const xs = [cliTask(1, 7, 'Π'), cliTask(2, 7, 'Π')]; const r = api.weekItems(xs);
     return r.length === 2 && r[0] === xs[0] && r[1] === xs[1]; })());
   ck('weekItems: κάθε εργασία μία φορά, ακόμα κι όταν φαίνονται και οι δύο', (() => {
     const { api } = env({}); return api.weekItems(withChain(wk)).length === 2; })());
+}
+
+console.log('\n═══ Α3 εύρημα 16/10: «✓ ① Ανέβηκε από {όνομα} · {ημ/ώρα}» στο verify ═══');
+{
+  const R = (ts, me, view, now) => { const shown = tabOf(ts, view, me);
+    return env({ statuses: ST_DB, userId: me, admin: me === 9, view, now }).api.taskRow(shown.find(t => t.id === 91), shown); };
+  const ts = withChain(stateWeek(UP_DONE, VER_U2, true));
+  const LINE = '<span class="lockmsg">✓ ① Ανέβηκε από u1 · Παρ 23/10 18:12</span>';
+  const h = R(ts, 2, 'mine', '2026-10-24 10:00:00');
+  ck('«Οι εργασίες μου» (το ① δεν φαίνεται): «✓ ① Ανέβηκε από u1 · Παρ 23/10 18:12»', h.includes(LINE), h);
+  ck('...πριν από τη γραμμή «⏳ ② Επαλήθευση · από …»', h.indexOf(LINE) >= 0 && h.indexOf(LINE) < h.indexOf('⏳ ②'));
+  ck('...«Οι εργασίες μου»: η πύλη ενεργή και χωρίς τη ρίζα στη λίστα (καμία λήψη στο verify)', !h.includes('downloadFuelCms('));
+  ck('...ίδια στην «Όλες»', R(ts, 9, 'all', '2026-10-24 10:00:00').includes(LINE));
+  ck('...και μετά τη Δευτέρα, και με το ② κλειστό', R(ts, 2, 'mine', '2026-10-26 09:00:00').includes(LINE)
+     && R(withChain(stateWeek(UP_DONE, { status: 'done', assigned_to: 2, assigned_name: 'u2' }, true)), 9, 'all', '2026-10-26 18:00:00').includes(LINE));
+  const by = n => withChain(stateWeek(Object.assign({}, UP_DONE, { closed_by_name: n }), VER_U2, true));
+  ck('όνομα = όποιος το έκλεισε (closed_by_name), όχι ο ανάδοχος', R(by('Admin'), 2, 'mine', '2026-10-24 10:00:00').includes('✓ ① Ανέβηκε από Admin · '));
+  ck('χωρίς closed_by_name: ο ανάδοχος του ①', R(by(null), 2, 'mine', '2026-10-24 10:00:00').includes(LINE));
+  ck('το όνομα από τη βάση: escaped', R(by('<b>x</b>'), 2, 'mine', '2026-10-24 10:00:00').includes('Ανέβηκε από &lt;b&gt;x&lt;/b&gt;'));
+  ck('① «na» (δεν ανέβηκε): ΚΑΜΙΑ γραμμή', !R(withChain(stateWeek({ status: 'na', assigned_to: 1, assigned_name: 'u1' }, VER_U2, true)),
+     2, 'mine', '2026-10-24 10:00:00').includes('Ανέβηκε από'));
+  ck('① ανοιχτό (verify κλειδωμένο): ΚΑΜΙΑ γραμμή', !R(withChain(stateWeek({ status: 'in_progress', assigned_to: 1, assigned_name: 'u1' },
+     { status: 'open' }, true)), 9, 'all', '2026-10-22 10:00:00').includes('Ανέβηκε από'));
+  ck('ΧΩΡΙΣ step (παλιά ροή): ΚΑΜΙΑ γραμμή', !R(withChain(stateWeek(UP_DONE, VER_U2, false)), 2, 'mine', '2026-10-24 10:00:00').includes('Ανέβηκε από'));
+  ck('χωρίς chain (παλιός server): ΚΑΜΙΑ γραμμή', !R(stateWeek(UP_DONE, VER_U2, true), 9, 'all', '2026-10-24 10:00:00').includes('Ανέβηκε από'));
+  ck('το κλειδί fuel_verify_uploaded υπάρχει στο seed του 19b', !!MIG_TEXTS.tasks && MIG_TEXTS.tasks.fuel_verify_uploaded === '✓ ① Ανέβηκε από {name} · {when}');
 }
 
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);
