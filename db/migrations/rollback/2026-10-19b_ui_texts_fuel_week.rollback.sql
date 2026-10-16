@@ -18,7 +18,7 @@ DELETE FROM `4a_ui_texts`
    AND `k` IN ('fuel_w_upload', 'fuel_w_upload_late', 'fuel_w_verify_wait', 'fuel_w_verify_now',
                'fuel_w_verify_late', 'fuel_w_done', 'strip_l1', 'strip_l2', 'strip_l3', 'strip_m2',
                'strip_m3', 'strip_unassigned', 'strip_who', 'strip_wait_assign', 'strip_b3', 'strip_d1',
-               'strip_d2', 'strip_d3', 'strip_when', 'strip_tip_locked', 'strip_tip_monday',
+               'strip_upload_done', 'strip_d3', 'strip_when', 'strip_tip_locked', 'strip_tip_monday',
                'strip_tip_done', 'strip_notes_h', 'strip_notes_none', 'strip_note_to',
                'strip_menu_assign', 'strip_menu_hist', 'color_step_done', 'color_step_locked');
 

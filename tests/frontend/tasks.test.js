@@ -949,12 +949,8 @@ console.log('\n═══ Κείμενα οθόνης από τη βάση (4a_ui
   const isLeak = t => /\s/.test(t) ? outside.includes(t)
                                    : ["'" + t + "'", '`' + t + '`', '>' + t + '<'].some(q => outside.includes(q));
   const pageTexts = Object.assign({}, MIG_TEXTS.tasks, MIG_TEXTS.common);
-  // ΕΞΑΙΡΕΣΗ (16/10): το «✓ Ολοκληρώθηκε» του strip_d2 (λωρίδα) συμπίπτει με
-  // το ΓΕΝΙΚΟ μήνυμα κλεισίματος της closeMsg, που είναι στον κώδικα πριν από
-  // τη Φάση Α (backlog γενικών μηνυμάτων). Μόνο εκεί, μόνο αυτό.
-  const COINCIDE = { '✓ Ολοκληρώθηκε': /const verb = action === 'na' \? '[^']*' : '✓ Ολοκληρώθηκε';/ };
-  const leakOk = t => COINCIDE[t] && (outside.split(t).length - 1) === 1 && COINCIDE[t].test(grab('closeMsg'));
-  const leaked = Object.values(pageTexts).map(t => t.replace(/\{\w+\}.*$/, '').trim()).filter(t => t && isLeak(t) && !leakOk(t));
+  // ΚΑΜΙΑ εξαίρεση (απόφαση 16/10).
+  const leaked = Object.values(pageTexts).map(t => t.replace(/\{\w+\}.*$/, '').trim()).filter(t => t && isLeak(t));
   ck('κανένα κείμενο του seed γραμμένο στον κώδικα', leaked.length === 0, leaked.join(' | '));
   ck('κλειδί που λείπει -> [κλειδί], όχι κενό', api.pageText('δεν_υπάρχει') === '[δεν_υπάρχει]');
   ck('{n} -> τιμή', api.pageText('fuel_older', { n: 3 }) === 'Παλαιότερες εβδομάδες (3)');
@@ -1454,7 +1450,7 @@ console.log('\n═══ Α3 λωρίδα: ΙΔΙΑ σε mine / queue / all, γ�
   const mineU2s2 = stripOf(stripWeek(2), '2026-10-26 09:00:00', 'mine', 2, false);
   ck('③ τώρα, «Οι εργασίες μου» της u2 (μόνο το verify στη λίστα): 3 βήματα, ① και ② «έγινε» με ώρα και όνομα',
      cellsOf(mineU2s2).length === 3 && mineU2s2.includes('✓ Κατέβηκε · ⬇ ξανά<small>Πεμ 22/10 09:05 · u1</small>')
-     && mineU2s2.includes('✓ Ολοκληρώθηκε<small>Παρ 23/10 18:12 · u1</small>'), mineU2s2);
+     && mineU2s2.includes('✓ Ανέβηκε στο CMS<small>Παρ 23/10 18:12 · u1</small>'), mineU2s2);
 }
 
 console.log('\n═══ Α3 λωρίδα: ΚΑΤΑΣΤΑΣΗ = κουκκίδα · ΕΝΕΡΓΕΙΑ = κουμπί · ΕΓΙΝΕ = γκρι ✓ · ΔΕΝ ΓΙΝΕΤΑΙ = διακεκομμένο ═══');
@@ -1491,8 +1487,8 @@ console.log('\n═══ Α3 λωρίδα: ΚΑΤΑΣΤΑΣΗ = κουκκίδα
   ck('στάδιο 1, χρήστης εκτός εβδομάδας: ① ΕΓΙΝΕ αλλά ανενεργό (ο server θα αρνιόταν)', /class="btn sbtn done"[^>]*disabled/.test(c[0].html) && !c[0].html.includes('onclick'));
 
   c = S(2, 2, false, '2026-10-24 10:00:00');
-  ck('στάδιο 2, ΠΡΙΝ τη Δευτέρα: ② ΕΓΙΝΕ «✓ Ολοκληρώθηκε · Παρ 23/10 18:12 · u1», ανενεργό, «δεν ξαναγίνεται»',
-     c[1].cls === 'ok' && c[1].html.includes('<button class="btn sbtn done" title="Completed — Ολοκληρώθηκε, δεν ξαναγίνεται" disabled>✓ Ολοκληρώθηκε<small>Παρ 23/10 18:12 · u1</small></button>'), c[1].html);
+  ck('στάδιο 2, ΠΡΙΝ τη Δευτέρα: ② ΕΓΙΝΕ «✓ Ανέβηκε στο CMS · Παρ 23/10 18:12 · u1», ανενεργό, «δεν ξαναγίνεται»',
+     c[1].cls === 'ok' && c[1].html.includes('<button class="btn sbtn done" title="Completed — Ολοκληρώθηκε, δεν ξαναγίνεται" disabled>✓ Ανέβηκε στο CMS<small>Παρ 23/10 18:12 · u1</small></button>'), c[1].html);
   ck('...③ ΤΡΕΧΟΝ αλλά διακεκομμένο: «Ανοίγει Δευ 26/10 00:00»', c[2].cls === 'now'
      && c[2].html.includes('<button class="btn sbtn lock" title="Ανοίγει Δευ 26/10 00:00" disabled>🔍 Επαλήθευση</button>'), c[2].html);
   ck('...όριο: Κυρ 25/10 23:59:59 ακόμα κλειστό, Δευ 26/10 00:00:00 ανοίγει',

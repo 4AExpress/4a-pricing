@@ -1561,7 +1561,7 @@ function fuelStripHtml(wk, root){
   const rc = chainEntry(wk, root.id) || {};
   let b2;
   if(closed(root))
-    b2 = doneBtn(pageText('strip_d2'), (sUp && sUp.done_at) || rc.closed_at || root.closed_at,
+    b2 = doneBtn(pageText('strip_upload_done'), (sUp && sUp.done_at) || rc.closed_at || root.closed_at,
                  (sUp && sUp.done_by) || rc.closed_by_name, uiText(ui, 'tip_upload_done'), '');
   else if(stage === 1)
     b2 = own(root) && open(root) ? actBtn(lbl(sUp), `openUpload(${root.id})`) : stat(root);
