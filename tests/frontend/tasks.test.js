@@ -14,11 +14,14 @@ const NAVCHIP_SRC = fs.readFileSync('frontend/nav-chip.js', 'utf8');
 // seed του migration 2026-10-15b. Έτσι κάθε κείμενο που ελέγχεται εδώ είναι
 // αυτό που θα δώσει η βάση, και κάθε κλειδί του κώδικα πρέπει να υπάρχει εκεί.
 const UITEXTS_SRC = fs.readFileSync('frontend/ui-texts.js', 'utf8');
-const UI_MIG = 'db/migrations/2026-10-15b_ui_texts.sql';
+// Α2 (16/10): και τα 8 κείμενα της εβδομάδας του migration 2026-10-19b.
+const UI_MIGS = ['db/migrations/2026-10-15b_ui_texts.sql', 'db/migrations/2026-10-19b_ui_texts_fuel_week.sql'];
+const UI_MIG = UI_MIGS.join(' + ');
 const MIG_TEXTS = (() => {
   const out = {};
-  for (const m of fs.readFileSync(UI_MIG, 'utf8').matchAll(/\(\s*'([a-z_]+)',\s*'(\w+)',\s*'(text|color)',\s*'([^']*)'\)/g))
-    (out[m[1]] = out[m[1]] || {})[m[2]] = m[4];
+  for (const f of UI_MIGS)
+    for (const m of fs.readFileSync(f, 'utf8').matchAll(/\(\s*'([a-z_]+)',\s*'(\w+)',\s*'(text|color)',\s*'([^']*)'\)/g))
+      (out[m[1]] = out[m[1]] || {})[m[2]] = m[4];
   return out;
 })();
 // texts === false: ο loader απέτυχε (καμία απάντηση από τη βάση).
@@ -81,15 +84,15 @@ function env(opts){
     'function athensNow(){ return ' + JSON.stringify(NOW) + '; }', grab('normDateTime'), grab('msLeft'), grab('fmtLeft'),
     grab('dueState'), grab('dueHtml'), grab('refreshDues'), grab('fuelColumns'), grab('fuelFactsHtml'),
     grabConst('STEP_UI_KEYS'), grab('uiText'),
-    grab('stepTimelineHtml'), grab('stepMoreHtml'), grab('stepCardHtml'), grab('uploadCheck'),
+    grab('stepTimelineHtml'), grab('stepMoreHtml'), grab('stepBtnHtml'), grab('stepCardHtml'), grab('uploadCheck'),
     grabConst('UI_SCOPES'), grab('pageText'), grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'), grabConst('TONE_MIX_STRONG'),
-    grab('tint'), grab('groupTone'), grab('addDaysISO'), grab('weekItems'), grab('fuelWeekInfo'), grab('fuelStateHtml'),
+    grab('tint'), grab('groupTone'), grab('addDaysISO'), grab('fuelActiveRoot'), grab('weekItems'), grab('dueClock'), grab('fuelWeekInfo'), grab('fuelStateHtml'),
     grab('grpIsOpen'), grab('grpTogHtml'), grab('groupHtml'),
     grab('taskRow'), grab('clientChipHtml'), grab('tabFromQuery'), grab('anchorFromHash'), grab('render'),
     'return { clientChipHtml, NavChip, tabFromQuery, anchorFromHash, render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
     '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS,',
     '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle,',
-    '         tint, groupTone, groupHtml, grpOpen, fuelWeekInfo, fuelStateHtml, weekItems, pageText, UI_SCOPES, UiTexts };'
+    '         tint, groupTone, groupHtml, grpOpen, fuelWeekInfo, fuelStateHtml, fuelActiveRoot, weekItems, dueClock, pageText, UI_SCOPES, UiTexts };'
   ].join('\n');
   const api = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, store, {});
   return { api, els };
@@ -518,7 +521,9 @@ const STEP = {
 const UI = {
   h_do: 'ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ', h_status: 'ΚΑΤΑΣΤΑΣΗ', who: 'Το κάνει: {name}',
   menu_override: 'Παράκαμψη (admin)…', tip_override: 'Override — Κλείνει την εργασία χωρίς τα βήματά της',
-  menu_view: 'Προβολή αρχείου', tip_view: 'View file — Καταγράφεται, δεν αλλάζει το βήμα', tip_more: 'More — Υπόλοιπες ενέργειες',
+  tip_redownload: 'Download again — Κατεβάζει ξανά το αρχείο. Καταγράφεται, δεν αλλάζει το βήμα',
+  tip_upload_wait: 'Complete — Πρώτα η λήψη του αρχείου', tip_upload_done: 'Completed — Ολοκληρώθηκε, δεν ξαναγίνεται',
+  tip_more: 'More — Υπόλοιπες ενέργειες',
   ov_box: 'Παράκαμψη από {name} · {at}', ov_ack: 'Το είδα', tip_ack: 'Acknowledge — Σβήνει το κόκκινο σήμα',
   tl_late: '(εκ των υστέρων)', tip_late: 'Late entry — η ώρα είναι η πραγματική',
   up_title: 'Επιβεβαίωση ανεβάσματος', up_hint: 'Από το Merge Result του CMS (Import → Fuel Charge Import). Το αρχείο έχει {rows} γραμμές.',
@@ -528,43 +533,104 @@ const UI = {
   ov_title: 'Παράκαμψη από διαχειριστή', ov_warn: 'Η εργασία κλείνει χωρίς τα βήματά της.', ov_reason: 'Λόγος',
   ov_short: 'Ο λόγος θέλει τουλάχιστον 10 χαρακτήρες.', ov_send: 'Παράκαμψη', already_closed: 'Η εργασία είναι ήδη ολοκληρωμένη',
 };
+// Φάση Α (Α2): ο server στέλνει και steps (όλα τα μη-τελικά βήματα με done)
+// και allow (σημαίες του τύπου). Μετά το Α4 το fuel_weekly έχει allow = 0.
+const STEPS = (d1, d2) => [
+  { code: 'download', action: 'download', button_label: 'Λήψη',       button_icon: '⬇', done: d1 },
+  { code: 'upload',   action: 'upload',   button_label: 'Ολοκλήρωση', button_icon: '✓', done: d2 }];
+const ALLOW0 = { na: false, release: false, reject: false, steal: false };
+const ALLOW1 = { na: true, release: true, reject: true, steal: true };
 const stepTask = (step, extra) => sysTask(76, FW, 'fuel:2026-10-12', PAYLOAD,
-  Object.assign({ status: 'in_progress', assigned_to: 1, assigned_name: 'u1', step, timeline: [], override: null, ui: UI }, extra || {}));
+  Object.assign({ status: 'in_progress', assigned_to: 1, assigned_name: 'u1', step, steps: STEPS(false, false), allow: ALLOW0,
+                  timeline: [], override: null, ui: UI }, extra || {}));
 
-console.log('\n═══ Κάρτα βημάτων: ΕΝΑ κουμπί, μόνο για τον ανάδοχο ═══');
+console.log('\n═══ Α3 κάρτα: ΔΥΟ κουμπιά με τη σειρά, μόνο για τον ανάδοχο ═══');
 {
   const own = env({ userId: 1, admin: false }).api;
-  const h = own.taskRow(stepTask(STEP.download));
-  ck('taskRow με t.step -> κάρτα βημάτων', h.includes('class="task has-steps') && h.includes('ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ') && h.includes('ΚΑΤΑΣΤΑΣΗ'), h);
-  ck('① ανάδοχος: κουμπί λήψης του βήματος, κείμενο από τη βάση', h.includes('onclick="stepDownload(76)">⬇ Λήψη αρχείου CMS</button>'));
-  ck('...ΕΝΑ μόνο κουμπί btn-go στο «ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ»', (h.match(/class="btn btn-go"/g) || []).length === 1);
-  ck('...ετικέτα και οδηγία από τη βάση', h.includes('<div class="step-lbl">Αναμονή λήψης αρχείου</div>') && h.includes('<div class="step-hint">Κατέβασε το αρχείο</div>'));
-  ck('...ΚΑΜΙΑ «Ολοκλήρωση», ΚΑΝΕΝΑ «Δεν εφαρμόζεται»', !h.includes("act(76,'done')") && !h.includes('markNa(') && !h.includes('Ολοκλήρωση'));
-  ck('...κανένα badge κατάστασης (Ρ)', !h.includes('class="st"'));
-  ck('...ο πίνακας τιμών στη δεξιά στήλη (Υ5 α)', h.indexOf('ΚΑΤΑΣΤΑΣΗ') < h.indexOf('fuel-tbl') && h.indexOf('fuel-tbl') > h.indexOf('ΤΙ ΠΡΕΠΕΙ'));
-  ck('...στο «⋯»: Αφήνω και Απόρριψη, όχι Παράκαμψη (μη-admin)', h.includes("act(76,'release')") && h.includes('openReject(76)') && !h.includes('openOverride('));
-  ck('...στο «⋯»: ΟΧΙ «Προβολή αρχείου» (έχει το κουμπί του βήματος)', !h.includes('Προβολή αρχείου'));
-  const u = own.taskRow(stepTask(STEP.upload));
-  ck('② ανάδοχος: κουμπί επιβεβαίωσης -> openUpload', u.includes('onclick="openUpload(76)">⬆ Επιβεβαίωση ανεβάσματος</button>') && !u.includes('stepDownload('));
-  ck('...στο «⋯»: «Προβολή αρχείου» (ξανά-λήψη χωρίς βήμα)', u.includes('Προβολή αρχείου') && u.includes('downloadFuelCms(76)'));
-  const f = own.taskRow(stepTask(STEP.uploaded, { status: 'done' }));
-  ck('③ τελικό: ΚΑΝΕΝΑ κουμπί βήματος, η οδηγία της βάσης', !f.includes('class="btn btn-go"') && f.includes('Τίποτα άλλο σήμερα'));
-  ck('...ετικέτα «Ανέβηκε · ισχύει από Δευ 12/10», όχι «Ολοκληρωμένη»', f.includes('Ανέβηκε · ισχύει από Δευ 12/10') && !f.includes('Ολοκληρωμένη'));
-  ck('...στο «⋯»: ούτε Αφήνω ούτε Απόρριψη σε κλειστή', !f.includes("act(76,'release')") && !f.includes('openReject('));
+  const btns = h => [...h.matchAll(/<button class="btn btn-go( step-done)?"([^>]*)>([^<]*)<\/button>/g)]
+    .map(m => ({ done: !!m[1], attrs: m[2], label: m[3] }));
+  let h = own.taskRow(stepTask(STEP.download));
+  let b = btns(h);
+  ck('taskRow με t.step -> κάρτα βημάτων, επικεφαλίδες από τη βάση', h.includes('class="task has-steps') &&
+     h.includes('<div class="step-h">ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ</div>') && h.includes('ΚΑΤΑΣΤΑΣΗ'));
+  ck('πριν το ①: ΔΥΟ κουμπιά, με τη σειρά των βημάτων', b.length === 2 && b[0].label === '⬇ Λήψη' && b[1].label === '✓ Ολοκλήρωση', JSON.stringify(b));
+  ck('...① ενεργό -> stepDownload', !b[0].done && /onclick="stepDownload\(76\)"/.test(b[0].attrs) && !/disabled/.test(b[0].attrs));
+  ck('...② ανενεργό, χωρίς onclick, tooltip tip_upload_wait', !b[1].done && /disabled/.test(b[1].attrs) && !/onclick/.test(b[1].attrs)
+     && b[1].attrs.includes('title="Complete — Πρώτα η λήψη του αρχείου"'), b[1].attrs);
+  ck('...ετικέτα και οδηγία του βήματος από τη βάση', h.includes('<div class="step-lbl">Αναμονή λήψης αρχείου</div>') && h.includes('<div class="step-hint">Κατέβασε το αρχείο</div>'));
+  ck('...κανένα badge κατάστασης (Ρ), ο πίνακας τιμών δεξιά (Υ5 α)', !h.includes('class="st"') && h.indexOf('ΚΑΤΑΣΤΑΣΗ') < h.indexOf('fuel-tbl'));
 
-  const adm = env({ userId: 9, admin: true }).api;
-  const a = adm.taskRow(stepTask(STEP.download));
-  ck('admin που ΔΕΝ είναι ανάδοχος: κανένα κουμπί βήματος, «Το κάνει: u1»', !a.includes('stepDownload(') && a.includes('Το κάνει: u1'));
-  ck('...στο «⋯»: Αναλαμβάνω, Ανάθεση, Παράκαμψη, Προβολή αρχείου', a.includes('steal(76)') && a.includes('assign(76)')
-     && a.includes('openOverride(76)') && a.includes('Προβολή αρχείου'));
-  const am = env({ userId: 1, admin: true }).api.taskRow(stepTask(STEP.download));
-  ck('admin που ΕΙΝΑΙ ανάδοχος: κουμπί βήματος, ΟΧΙ Παράκαμψη', am.includes('stepDownload(76)') && !am.includes('openOverride('));
+  h = own.taskRow(stepTask(STEP.upload, { steps: STEPS(true, false) })); b = btns(h);
+  ck('μετά το ①: ① γκρι ΑΛΛΑ πατήσιμο, tooltip tip_redownload', b[0].done && /onclick="stepDownload\(76\)"/.test(b[0].attrs)
+     && !/disabled/.test(b[0].attrs) && b[0].attrs.includes('title="Download again — Κατεβάζει ξανά το αρχείο. Καταγράφεται, δεν αλλάζει το βήμα"'), b[0].attrs);
+  ck('...② ενεργό -> openUpload', !b[1].done && /onclick="openUpload\(76\)"/.test(b[1].attrs) && !/disabled/.test(b[1].attrs), b[1].attrs);
+
+  h = own.taskRow(stepTask(STEP.uploaded, { status: 'done', steps: STEPS(true, true) })); b = btns(h);
+  ck('μετά το ②: και τα δύο γκρι', b.length === 2 && b[0].done && b[1].done, JSON.stringify(b));
+  ck('...το ② ΜΗ πατήσιμο, tooltip tip_upload_done', /disabled/.test(b[1].attrs) && !/onclick/.test(b[1].attrs)
+     && b[1].attrs.includes('title="Completed — Ολοκληρώθηκε, δεν ξαναγίνεται"'), b[1].attrs);
+  ck('...το ① ξαναπατιέται και σε κλειστή (file_viewed)', /onclick="stepDownload\(76\)"/.test(b[0].attrs) && !/disabled/.test(b[0].attrs));
+  ck('...η οδηγία του τελικού βήματος από τη βάση', h.includes('Τίποτα άλλο σήμερα') && h.includes('Ανέβηκε · ισχύει από Δευ 12/10'));
+  b = btns(own.taskRow(stepTask(STEP.uploaded, { status: 'done', steps: STEPS(true, false) })));
+  ck('κλειστή με παράκαμψη πριν το ②: ② γκρι και μη πατήσιμο', b[1].done && /disabled/.test(b[1].attrs) && !/onclick/.test(b[1].attrs));
+  ck('χωρίς έγκυρο αρχείο στο payload: κανένα κουμπί λήψης, το ② μένει', (() => {
+    const x = btns(own.taskRow(stepTask(STEP.download, { payload: JSON.stringify({ kind: 'fuel_weekly', week_start: '2026-10-12' }) })));
+    return x.length === 1 && x[0].label === '✓ Ολοκλήρωση'; })());
+  ck('χωρίς t.steps (παλιός server): κανένα κουμπί, χωρίς σφάλμα', btns(own.taskRow(stepTask(STEP.download, { steps: undefined }))).length === 0);
+
+  const adm9 = env({ userId: 9, admin: true }).api.taskRow(stepTask(STEP.download));
+  ck('admin που ΔΕΝ είναι ανάδοχος: κανένα κουμπί βήματος, «Το κάνει: u1»', btns(adm9).length === 0 && adm9.includes('Το κάνει: u1'));
+  const adm1 = env({ userId: 1, admin: true }).api.taskRow(stepTask(STEP.download));
+  ck('admin που ΕΙΝΑΙ ανάδοχος: τα δύο κουμπιά', btns(adm1).length === 2);
+  const u3 = env({ userId: 3, admin: false }).api.taskRow(stepTask(STEP.upload, { steps: STEPS(true, false) }));
+  ck('συνάδελφος: κανένα κουμπί βήματος, «Το κάνει: u1»', btns(u3).length === 0 && u3.includes('Το κάνει: u1'));
   const q = own.taskRow(stepTask(STEP.download, { status: 'open', assigned_to: null, assigned_name: null }));
-  ck('αδιάθετη: το κουμπί είναι η «Ανάληψη»', q.includes('onclick="claim(76)">Ανάληψη</button>') && !q.includes('stepDownload('));
+  ck('αδιάθετη: ΚΑΝΕΝΑ κουμπί, ούτε «Ανάληψη» (Δ-Α2: μόνο «Ανάθεση…» από admin)', btns(q).length === 0 && !q.includes('claim(76)'));
   const lk = own.taskRow(stepTask(STEP.download, { locked: 1 }));
-  ck('κλειδωμένη: κανένα κουμπί, ούτε στο «⋯» ενέργειες', !lk.includes('class="btn btn-go"') && !lk.includes("act(76,'release')") && lk.includes('🔒'));
-  const other = env({ userId: 3, admin: false }).api.taskRow(stepTask(STEP.upload));
-  ck('συνάδελφος (όχι ανάδοχος, όχι admin): κανένα κουμπί βήματος, μόνο Αναλαμβάνω', !other.includes('openUpload(') && other.includes('steal(76)') && !other.includes('assign(76)'));
+  ck('κλειδωμένη: κανένα κουμπί', btns(lk).length === 0 && lk.includes('🔒'));
+  const x = '<img src=x onerror=alert(1)>';
+  const esc = own.taskRow(stepTask(STEP.download, { steps: [{ code: 'download', action: 'download', button_label: x, button_icon: '"><b>', done: false }] }));
+  ck('ετικέτα και εικονίδιο κουμπιού από τη βάση: escaped', !esc.includes('<img') && !esc.includes('"><b>') && esc.includes('&lt;img'));
+}
+
+console.log('\n═══ Α3 κάρτα: ΠΟΤΕ Δεν εφαρμόζεται / Αφήνω / Αναλαμβάνω / Απόρριψη / Έτοιμη για ολοκλήρωση ═══');
+{
+  const NEVER = /Δεν εφαρμόζεται|Αφήνω|Αναλαμβάνω|Απόρριψη|Έτοιμη για ολοκλήρωση|>Ανάληψη<|Προβολή αρχείου|markNa\(|act\(76,'done'\)|act\(76,'release'\)|openReject\(|steal\(76\)|claim\(76\)/;
+  const cases = [['πριν το ①', stepTask(STEP.download)], ['μετά το ①', stepTask(STEP.upload, { steps: STEPS(true, false) })],
+                 ['κλειστή', stepTask(STEP.uploaded, { status: 'done', steps: STEPS(true, true) })],
+                 ['αδιάθετη', stepTask(STEP.download, { status: 'open', assigned_to: null, assigned_name: null })]];
+  const bad = [];
+  for (const [lbl, t] of cases)
+    for (const [u, adm] of [[1, false], [1, true], [9, true], [3, false]]) {
+      const h = env({ userId: u, admin: adm }).api.taskRow(t);
+      if (NEVER.test(h)) bad.push(`${lbl} / ${u}${adm ? ' admin' : ''}: ${h.match(NEVER)[0]}`);
+    }
+  ck('4 καταστάσεις × 4 χρήστες: κανένα από αυτά στην κάρτα (allow = 0, όπως μετά το Α4)', bad.length === 0, bad.join(' | '));
+}
+
+console.log('\n═══ Α3 «⋯»: admin Ανάθεση + Παράκαμψη + ιστορικό, μη-admin μόνο ιστορικό ═══');
+{
+  const menu = h => { const m = /<div class="step-menu">([\s\S]*?)<\/div><\/details>/.exec(h); return m ? m[1] : null; };
+  const names = h => [...menu(h).matchAll(/onclick="(\w+)\(/g)].map(m => m[1]);
+  const t = stepTask(STEP.download);
+  ck('admin (όχι ανάδοχος): Ανάθεση…, Παράκαμψη, ιστορικό — με αυτή τη σειρά',
+     JSON.stringify(names(env({ userId: 9, admin: true }).api.taskRow(t))) === '["assign","openOverride","toggleHist"]',
+     names(env({ userId: 9, admin: true }).api.taskRow(t)).join(','));
+  ck('admin ανάδοχος: Ανάθεση…, ιστορικό (ΟΧΙ Παράκαμψη)',
+     JSON.stringify(names(env({ userId: 1, admin: true }).api.taskRow(t))) === '["assign","toggleHist"]');
+  ck('μη-admin ανάδοχος: μόνο ιστορικό', JSON.stringify(names(env({ userId: 1, admin: false }).api.taskRow(t))) === '["toggleHist"]');
+  ck('μη-admin συνάδελφος: μόνο ιστορικό', JSON.stringify(names(env({ userId: 3, admin: false }).api.taskRow(t))) === '["toggleHist"]');
+  const un = stepTask(STEP.download, { status: 'open', assigned_to: null, assigned_name: null });
+  ck('αδιάθετη, admin: «Ανάθεση…» (ο μόνος δρόμος, Δ-Α2)', names(env({ userId: 9, admin: true }).api.taskRow(un)).includes('assign'));
+  ck('κλειστή, admin: μόνο ιστορικό', JSON.stringify(names(env({ userId: 9, admin: true }).api.taskRow(
+     stepTask(STEP.uploaded, { status: 'done', steps: STEPS(true, true) })))) === '["toggleHist"]');
+  // Ο τύπος τα επιτρέπει (allow = 1): τα γενικά κουμπιά επιστρέφουν, ίδια με πριν.
+  const a1 = stepTask(STEP.download, { allow: ALLOW1 });
+  ck('allow = 1: ανάδοχος -> Αφήνω και Απόρριψη…', JSON.stringify(names(env({ userId: 1, admin: false }).api.taskRow(a1))) === '["act","openReject","toggleHist"]');
+  ck('allow = 1: συνάδελφος -> Αναλαμβάνω', JSON.stringify(names(env({ userId: 3, admin: false }).api.taskRow(a1))) === '["steal","toggleHist"]');
+  ck('χωρίς t.allow: τα γενικά κουμπιά κρυφά', JSON.stringify(names(env({ userId: 1, admin: false }).api.taskRow(
+     stepTask(STEP.download, { allow: undefined })))) === '["toggleHist"]');
+  ck('ΚΑΜΙΑ «Προβολή αρχείου» στο «⋯» σε καμία περίπτωση (το ① ξαναπατιέται)', !/downloadFuelCms\(/.test(grab('stepMoreHtml')));
 }
 
 console.log('\n═══ Κάρτα βημάτων: χρονολόγιο ═══');
@@ -1094,6 +1160,152 @@ console.log('\n═══ (Γ) «χωρίς AccountNo» / «χωρίς προσφ
      els.list.innerHTML.includes('χωρίς AccountNo') && els.list.innerHTML.includes(' · χωρίς προσφορά'), els.list.innerHTML);
   ck('στο render: pageText, όχι γραμμένα κείμενα', /pageText\('client_no_account'\)/.test(grab('render')) && /pageText\('client_no_offer'\)/.test(grab('render')) &&
      !/'χωρίς AccountNo'|' · χωρίς προσφορά'/.test(grab('render')));
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// ΦΑΣΗ Α, Α3: ΠΥΛΗ. Χωρίς `step` στη ρίζα της εβδομάδας η οθόνη είναι ΙΔΙΑ
+// byte-προς-byte με πριν από το Α3. tasks_fuel_gate.golden.json = η έξοδος
+// του tasks.html στο 1e5279d (πριν από το Α3), για τα ίδια σενάρια. Τα
+// δεδομένα έχουν ήδη ό,τι στέλνει ο server του Α2 (blocked_by_assignee_name),
+// που ΔΕΝ πρέπει να αλλάζει τίποτα όσο η εβδομάδα δεν είναι ενεργή.
+// Ξαναγράφεται ΜΟΝΟ ρητά: GEN_FUEL_GATE_GOLDEN=1 node tests/frontend/tasks.test.js
+const GATE_GOLDEN = path.join(HERE, 'tasks_fuel_gate.golden.json');
+// sha256 ανά λίστα: έλεγχος byte-προς-byte χωρίς 1,3 MB HTML στο repo.
+const sha = s => require('crypto').createHash('sha256').update(s, 'utf8').digest('hex');
+const gateWeeks = () => {
+  const lockV = { ver: { locked: 1, blocked_by_label: 'Γενικός επίναυλος εβδομάδας — αρχείο CMS', blocked_by_assignee_name: 'u1' } };
+  const lockN = { up: { assigned_to: null, assigned_name: null }, ver: { locked: 1, blocked_by_label: 'Γενικός επίναυλος εβδομάδας — αρχείο CMS', blocked_by_assignee_name: null } };
+  const own = { up: { assigned_to: 1, assigned_name: 'u1' }, ver: { assigned_to: 2, assigned_name: 'u2' } };
+  const merge = (a, b) => ({ up: Object.assign({}, a.up, b && b.up), ver: Object.assign({}, a.ver, b && b.ver) });
+  return [
+    ...fuelWeek(90, '2026-10-26', 'in_progress', 'open', merge(own, lockV)),
+    ...fuelWeek(80, '2026-10-19', 'done', 'in_progress', own),
+    ...fuelWeek(76, '2026-10-12', 'done', 'done', own),
+    ...fuelWeek(70, '2026-10-05', 'done', 'done', own),
+    ...fuelWeek(60, '2026-11-02', 'open', 'open', lockN),
+    cliTask(1, 7, 'Πελάτης', { status: 'in_progress', assigned_to: 1, assigned_name: 'u1', due_at: '2026-10-20 17:00:00' }),
+  ];
+};
+const GATE_RUNS = [];
+for (const now of ['2026-10-13 12:00:00', '2026-10-23 10:00:00', '2026-10-24 10:00:00', '2026-10-26 09:00:00', '2026-10-26 18:00:00'])
+  for (const [who, userId, admin] of [['admin1', 1, true], ['admin9', 9, true], ['user2', 2, false], ['user3', 3, false]])
+    for (const view of ['all', 'mine', 'queue']) GATE_RUNS.push({ now, who, userId, admin, view });
+const gateHtml = withStep => {
+  const out = {};
+  for (const g of GATE_RUNS) {
+    const { api, els } = env({ statuses: ST_DB, now: g.now, userId: g.userId, admin: g.admin, view: g.view });
+    const ts = gateWeeks();
+    if (withStep) ts.filter(t => t.task_code === 'fuel_weekly').forEach(t => Object.assign(t, {
+      step: STEP.download, steps: [], allow: { na: false, release: false, reject: false, steal: false }, timeline: [], override: null, ui: UI }));
+    api.setTasks(ts);
+    api.render(ts);
+    out[`${g.now} ${g.who} ${g.view}`] = els.list.innerHTML;
+  }
+  return out;
+};
+console.log('\n═══ Α3 πύλη: χωρίς step στη ρίζα, η λίστα ΙΔΙΑ με πριν από το Α3 (golden) ═══');
+if (process.env.GEN_FUEL_GATE_GOLDEN === '1') {
+  const h = gateHtml(false), o = {};
+  for (const k of Object.keys(h)) o[k] = sha(h[k]);
+  fs.writeFileSync(GATE_GOLDEN, JSON.stringify(o, null, 1) + '\n');
+  console.log('   γράφτηκε ' + GATE_GOLDEN);
+}
+{
+  const golden = JSON.parse(fs.readFileSync(GATE_GOLDEN, 'utf8'));
+  const got = gateHtml(false);
+  const diff = Object.keys(golden).filter(k => got[k] === undefined || sha(got[k]) !== golden[k]);
+  ck(`${Object.keys(golden).length} λίστες (5 στιγμές × 4 χρήστες × 3 καρτέλες): ΙΔΙΕΣ bytes`,
+     Object.keys(golden).length === GATE_RUNS.length && diff.length === 0, diff.slice(0, 3).join(' | '));
+}
+
+// ── Α3: ενεργή εβδομάδα (η ρίζα έχει step, όπως μετά το Α4) ───────────────
+// Εβδομάδα 26/10: ① προθεσμία Παρ 23/10 19:00, ② (verify) Δευ 26/10 17:00,
+// όπως οι ζωντανοί κανόνες. Οι ώρες ΜΟΝΟ από τα due_at.
+const activeWeek = (up, ver, o) => {
+  o = o || {};
+  const w = fuelWeek(90, '2026-10-26', up, ver, {
+    up:  Object.assign({ due_at: o.upDue || '2026-10-23 19:00:00', assigned_to: 1, assigned_name: 'u1' }, o.up),
+    ver: Object.assign({ due_at: o.verDue || '2026-10-26 17:00:00', assigned_to: 2, assigned_name: 'u2' }, o.ver) });
+  Object.assign(w[0], { step: up === 'done' ? STEP.uploaded : STEP.download, steps: STEPS(up === 'done', up === 'done'),
+                        allow: ALLOW0, timeline: [], override: null, ui: UI });
+  return w;
+};
+
+console.log('\n═══ Α3 ενδείξεις: ΤΙ · ΑΠΟ ΠΟΤΕ · ΕΩΣ ΠΟΤΕ, 6 καταστάσεις ═══');
+{
+  const { api } = env({ statuses: ST_DB });
+  const I = (w, now) => api.fuelWeekInfo(w, now);
+  const cases = [
+    ['① ανοιχτή, πριν τη λήξη',  activeWeek('in_progress', 'open'), '2026-10-22 10:00:00', '◷ ① Ανέβασμα στο CMS · τώρα · έως Παρ 23/10 19:00', null],
+    ['① ανοιχτή, μετά τη λήξη',  activeWeek('in_progress', 'open'), '2026-10-24 10:00:00', '⚠ ① Ανέβασμα στο CMS · εκπρόθεσμο από Παρ 23/10 19:00', 'red'],
+    ['② πριν τη Δευτέρα',        activeWeek('done', 'in_progress'), '2026-10-24 10:00:00', '⏳ ② Επαλήθευση · από Δευ 26/10 · έως 17:00', 'orange'],
+    ['② Δευτέρα, πριν τη λήξη',  activeWeek('done', 'in_progress'), '2026-10-26 09:00:00', '◷ ② Επαλήθευση · τώρα · έως 17:00', 'orange'],
+    ['② μετά τη λήξη',           activeWeek('done', 'in_progress'), '2026-10-26 18:00:00', '⚠ ② Επαλήθευση · εκπρόθεσμη από Δευ 26/10 17:00', 'red'],
+    ['όλα κλειστά',              activeWeek('done', 'done'),        '2026-10-26 18:00:00', '✓ Σε ισχύ · ανέβηκε και επαληθεύτηκε', null],
+  ];
+  for (const [lbl, w, now, text, alert] of cases) {
+    const i = I(w, now);
+    ck(`${lbl}: «${text}»${alert ? ', ' + alert : ', χωρίς πλακίδιο'}`, i && i.text === text && i.alert === alert, JSON.stringify(i));
+  }
+  ck('οι ώρες ΜΟΝΟ από τα δεδομένα: ① 18:45 και ② 15:30',
+     I(activeWeek('in_progress', 'open', { upDue: '2026-10-23 18:45:00' }), '2026-10-22 10:00:00').text === '◷ ① Ανέβασμα στο CMS · τώρα · έως Παρ 23/10 18:45'
+     && I(activeWeek('done', 'in_progress', { verDue: '2026-10-26 15:30:00' }), '2026-10-24 10:00:00').text === '⏳ ② Επαλήθευση · από Δευ 26/10 · έως 15:30');
+  ck('όριο: Κυρ 25/10 23:59:59 ακόμα «από Δευ», Δευ 26/10 00:00:00 «τώρα»',
+     I(activeWeek('done', 'in_progress'), '2026-10-25 23:59:59').key === 'fuel_w_verify_wait'
+     && I(activeWeek('done', 'in_progress'), '2026-10-26 00:00:00').key === 'fuel_w_verify_now');
+  ck('παλαιότερη ενεργή εβδομάδα: καμία ένδειξη, όπως πριν', I(activeWeek('done', 'done'), '2026-11-03 10:00:00').text === null);
+  const pill = api.fuelStateHtml(I(activeWeek('in_progress', 'open'), '2026-10-24 10:00:00'));
+  ck('κόκκινο: πλακίδιο του OVERDUE_COLOR · πορτοκαλί: in_progress της βάσης · τα άλλα: κείμενο',
+     pill.includes('background:#cc0000;') && api.fuelStateHtml(I(activeWeek('done', 'in_progress'), '2026-10-24 10:00:00')).includes('background:#f0a000;')
+     && api.fuelStateHtml(I(activeWeek('done', 'done'), '2026-10-26 18:00:00')).includes('class="grp-state plain"'));
+  const keys = [...grab('fuelWeekInfo').matchAll(/'(fuel_w_\w+)'/g)].map(m => m[1]);
+  ck(`κάθε κλειδί fuel_w_* της fuelWeekInfo (${new Set(keys).size}) υπάρχει στο seed του 19b`,
+     new Set(keys).size === 6 && keys.every(k => MIG_TEXTS.tasks && k in MIG_TEXTS.tasks), keys.join(','));
+  const code = ['fuelWeekInfo', 'fuelActiveRoot', 'dueClock', 'taskRow', 'stepCardHtml', 'stepBtnHtml', 'stepMoreHtml']
+    .map(grab).join('\n').replace(/^\s*\/\/.*$/gm, '');
+  ck('ΚΑΝΕΝΑ «19:00» ή «17:00» γραμμένο στον κώδικα (φρουρός)', !/\b(19|17):00\b/.test(code));
+}
+
+console.log('\n═══ Α3 verify (παλιά ροή) σε ενεργή εβδομάδα: καμία λήψη, «🔒 Περιμένει το ανέβασμα» ═══');
+{
+  const R = (opts, w, which) => env(Object.assign({ statuses: ST_DB }, opts)).api.taskRow(w[which === undefined ? 1 : which], w);
+  const lockedW = name => activeWeek('in_progress', 'open', { ver: { status: 'open', assigned_to: null, assigned_name: null, locked: 1,
+    blocked_by_label: 'Γενικός επίναυλος εβδομάδας — αρχείο CMS', blocked_by_assignee_name: name } });
+  let h = R({ userId: 9, admin: true, view: 'all', now: '2026-10-22 10:00:00' }, lockedW('u1'));
+  ck('κλειδωμένο: «🔒 Περιμένει το ανέβασμα (u1)» αντί για το κείμενο εξάρτησης',
+     h.includes('>🔒 Περιμένει το ανέβασμα (u1)</span>') && !h.includes('>Γενικός επίναυλος εβδομάδας — αρχείο CMS</span>'), h);
+  ck('...και ΟΧΙ το «—» της στήλης αναδόχου (στην «Όλες»)', !h.includes('class="who none"'));
+  ck('...καμία λήψη (Δ-Α3)', !h.includes('downloadFuelCms('));
+  h = R({ userId: 9, admin: true, view: 'all', now: '2026-10-22 10:00:00' }, lockedW(null));
+  ck('κλειδωμένο, ① αδιάθετο: «🔒 Περιμένει το ανέβασμα (αδιάθετο)»', h.includes('>🔒 Περιμένει το ανέβασμα (αδιάθετο)</span>'), h);
+  h = R({ userId: 9, admin: true, view: 'all', now: '2026-10-22 10:00:00' }, lockedW('<b>x</b>'));
+  ck('το όνομα από τη βάση: escaped', h.includes('(&lt;b&gt;x&lt;/b&gt;)') && !h.includes('<b>x</b>'));
+
+  const open = activeWeek('done', 'in_progress');
+  h = R({ userId: 2, admin: false, now: '2026-10-24 10:00:00' }, open);
+  ck('ξεκλείδωτο ΠΡΙΝ τη Δευτέρα: γραμμή «⏳ ② Επαλήθευση · από Δευ 26/10 · έως 17:00»',
+     h.includes('<span class="lockmsg">⏳ ② Επαλήθευση · από Δευ 26/10 · έως 17:00</span>'), h);
+  ck('...τα κουμπιά της παλιάς ροής μένουν (Ολοκλήρωση, Δεν εφαρμόζεται), καμία λήψη',
+     h.includes("act(91,'done')") && h.includes('markNa(91)') && !h.includes('downloadFuelCms('));
+  h = R({ userId: 2, admin: false, now: '2026-10-26 09:00:00' }, open);
+  ck('Δευτέρα: ΚΑΜΙΑ γραμμή αναμονής, κουμπιά όπως πριν', !h.includes('⏳ ②') && h.includes("act(91,'done')") && !h.includes('downloadFuelCms('));
+  h = R({ userId: 2, admin: false, now: '2026-10-24 10:00:00' }, activeWeek('done', 'done'));
+  ck('κλειστό verify: καμία γραμμή αναμονής', !h.includes('⏳ ②'));
+  const plain = fuelWeek(90, '2026-10-26', 'done', 'in_progress', { ver: { assigned_to: 2, assigned_name: 'u2' } });
+  h = R({ userId: 2, admin: false, now: '2026-10-24 10:00:00' }, plain);
+  ck('ΧΩΡΙΣ step στη ρίζα: το verify ακριβώς όπως πριν (λήψη, χωρίς γραμμή αναμονής)',
+     h.includes('downloadFuelCms(91)') && !h.includes('⏳ ②') && h === env({ statuses: ST_DB, userId: 2, admin: false, now: '2026-10-24 10:00:00' }).api.taskRow(plain[1]));
+  ck('taskRow χωρίς ομάδα (εργασίες πελάτη, golden): καμία αλλαγή', !/fuelActiveRoot\(t\b/.test(grab('taskRow')) && /group \? fuelActiveRoot\(group\) : null/.test(grab('taskRow')));
+}
+
+console.log('\n═══ Α3 πύλη: ΜΕ step στη ρίζα η λίστα ΑΛΛΑΖΕΙ (ο έλεγχος δεν είναι κενός) ═══');
+{
+  const golden = JSON.parse(fs.readFileSync(GATE_GOLDEN, 'utf8'));
+  const withStep = gateHtml(true);
+  const changed = Object.keys(golden).filter(k => sha(withStep[k]) !== golden[k]);
+  ck(`με step: άλλαξαν ${changed.length} από ${Object.keys(golden).length} λίστες (όσες δείχνουν ενεργή εβδομάδα)`, changed.length >= 40, String(changed.length));
+  const L = withStep['2026-10-24 10:00:00 admin9 all'];
+  ck('...π.χ. Σαβ 24/10, admin: «⚠ ① Ανέβασμα στο CMS · εκπρόθεσμο από …» και κάρτα δύο κουμπιών', L.includes('⚠ ① Ανέβασμα στο CMS · εκπρόθεσμο από') && L.includes('class="task has-steps'));
 }
 
 // ═════════════════════════════════════════════════════════════════════

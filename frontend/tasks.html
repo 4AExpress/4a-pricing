@@ -230,6 +230,11 @@
      το λέει το badge. Πλάγια, ώστε να διαβάζεται ως αναφορά σε άλλη
      εργασία και όχι ως κατάσταση αυτής. */
   .lockmsg { font-size: 11px; color: #999; white-space: nowrap; font-style: italic; }
+  /* Φάση Α: βήμα της κάρτας που έγινε -> γκρι. Το ① ξαναπατιέται (ο server
+     γράφει file_viewed), το ② μετά το κλείσιμο είναι disabled. */
+  .step-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .btn.btn-go.step-done { background: #f5f5f5; border-color: #ccc; color: #555; font-weight: 400; }
+  .btn.btn-go.step-done:hover:not(:disabled) { background: #eee; }
 
   /* Κόκκινο σήμα: κανένας δικαιούχος δεν έμεινε. Δεν είναι σφάλμα — είναι
      αίτημα προς άνθρωπο. Γι' αυτό μένει ορατό και στη γραμμή και στην ουρά. */
@@ -867,6 +872,16 @@ function addDaysISO(iso, n){
   const d = new Date(Date.UTC(+iso.slice(0,4), +iso.slice(5,7)-1, +iso.slice(8,10) + n));
   return d.toISOString().slice(0, 10);
 }
+// ── ΦΑΣΗ Α: ΠΥΛΗ ────────────────────────────────────────────────────────
+// Η εβδομάδα επίναυλου είναι ΕΝΕΡΓΗ μόνο όταν η ρίζα της έχει βήμα (t.step),
+// δηλαδή μετά το migration ενεργοποίησης (Α4). Τότε: κάρτα δύο κουμπιών,
+// ενδείξεις ΤΙ · ΑΠΟ ΠΟΤΕ · ΕΩΣ ΠΟΤΕ, και verify χωρίς λήψη. Αλλιώς ΟΛΑ
+// όπως πριν, byte-προς-byte (tasks_fuel_gate.golden.json).
+function fuelActiveRoot(items){
+  const root = (items || []).find(t => t.depends_on === null);
+  const p = root ? taskPayload(root) : null;
+  return root && root.step && p && p.kind === 'fuel_weekly' ? root : null;
+}
 // Η ομάδα ΟΛΗ (εύρημα 16/10): οι εργασίες που φαίνονται ΚΑΙ όσες της
 // αλυσίδας τους λείπουν από την καρτέλα, από το t.chain του server. Στην
 // «Οι εργασίες μου» και στην «Ουρά» η ρίζα συχνά δεν είναι στη λίστα· χωρίς
@@ -887,6 +902,12 @@ function weekItems(items){
   }));
   return out;
 }
+// «Παρ 23/10 19:00» -> «19:00»· οι ώρες ΜΟΝΟ από τα δεδομένα.
+function dueClock(s){
+  const m = /\d{2}:\d{2}$/.exec(fmtDue(s, true));
+  return m ? m[0] : '—';
+}
+
 // null αν η ομάδα δεν είναι εβδομάδα επίναυλου. Αλλιώς:
 //   ws, phase: next | now | older, text (ή null), alert: red | orange | null
 function fuelWeekInfo(items, now){
@@ -899,6 +920,27 @@ function fuelWeekInfo(items, now){
   const upDone = root.status === 'done';
   const verifyOpen = items.some(t => t !== root && t.status !== 'done' && t.status !== 'na');
   let key = null, alert = null, vars = {};
+  // ΕΝΕΡΓΗ εβδομάδα (Φάση Α): ΤΙ · ΑΠΟ ΠΟΤΕ · ΕΩΣ ΠΟΤΕ, ώρες από τα due_at.
+  //   ① ανοιχτή: fuel_w_upload, ή fuel_w_upload_late (κόκκινο) μετά τη λήξη
+  //   ② ανοιχτή: πριν τη Δευτέρα fuel_w_verify_wait, μετά fuel_w_verify_now
+  //              (πορτοκαλί), και fuel_w_verify_late (κόκκινο) μετά τη λήξη
+  //   όλα κλειστά: fuel_w_done
+  if(fuelActiveRoot(items) && phase !== 'older'){
+    const ver = items.find(t => t !== root) || null;
+    const verOpen = !!ver && ver.status !== 'done' && ver.status !== 'na';
+    const past = s => (msLeft(s, now) ?? 0) < 0;
+    if(!upDone){
+      key = past(root.due_at) ? 'fuel_w_upload_late' : 'fuel_w_upload';
+      alert = key === 'fuel_w_upload_late' ? 'red' : null;
+      vars.due = fmtDue(root.due_at, true);
+    } else if(verOpen){
+      if(today < ws){ key = 'fuel_w_verify_wait'; alert = 'orange';
+                      vars.from = fmtDue(ws + ' 00:00', true).slice(0, 9); vars.time = dueClock(ver.due_at); }
+      else if(past(ver.due_at)){ key = 'fuel_w_verify_late'; alert = 'red'; vars.due = fmtDue(ver.due_at, true); }
+      else { key = 'fuel_w_verify_now'; alert = 'orange'; vars.time = dueClock(ver.due_at); }
+    } else key = 'fuel_w_done';
+    return { ws, phase, alert, key, text: pageText(key, vars) };
+  }
   if(phase === 'next'){
     if(!upDone){ key = 'fuel_next_todo'; vars.due = fmtDue(root.due_at, true); }
     else if(verifyOpen){ key = 'fuel_uploaded'; alert = 'orange'; }
@@ -957,7 +999,7 @@ function groupHtml(key, baseCls, items, headInner, alert, startClosed, bodyHtml)
         ${grpTogHtml(key, open)}
       </div>
       <div class="grp-body"${open?'':' hidden'}>
-      ${bodyHtml === undefined ? items.map(taskRow).join('') : bodyHtml}
+      ${bodyHtml === undefined ? items.map(t => taskRow(t, items)).join('') : bodyHtml}
       </div>
     </div>`;
 }
@@ -1267,13 +1309,17 @@ function fuelFactsHtml(t, p, now){
 // μένουν στον κώδικα (backlog), και οι όροι του CMS Total/Merge/Updated/
 // Exception, που είναι ονόματα πεδίων του CMS, όχι κείμενο.
 //
-// ΕΝΑ κουμπί στο «ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ», μόνο για τον ανάδοχο. Τα υπόλοιπα
-// στο «⋯». Χωρίς «Ολοκλήρωση» και χωρίς «Δεν εφαρμόζεται»: ο server τα
-// αρνείται (409).
+// ΦΑΣΗ Α: ΟΛΑ τα βήματα ως κουμπιά, με τη σειρά τους (t.steps), ΜΟΝΟ για τον
+// ανάδοχο. Οι άλλοι βλέπουν «Το κάνει: {name}». ① λήψη: ενεργό πριν γίνει,
+// γκρι μετά, και ξαναπατιέται. ② ολοκλήρωση: ανενεργό πριν από το ①, ενεργό
+// μετά, γκρι και μη πατήσιμο μετά το κλείσιμο. Στο «⋯» μόνο Ανάθεση…
+// (admin), Παράκαμψη (admin) και ιστορικό· Αφήνω / Απόρριψη… / Αναλαμβάνω
+// ΜΟΝΟ αν τα επιτρέπει ο τύπος (t.allow, από τη βάση). Χωρίς «Ολοκλήρωση» και
+// χωρίς «Δεν εφαρμόζεται»: ο server τα αρνείται (409).
 
 // Τα κλειδιά των κειμένων της κάρτας (kind = 'ui' στον 4a_task_steps). Το
 // migration ενεργοποίησης πρέπει να τα γράφει ΟΛΑ — το ελέγχει τεστ.
-const STEP_UI_KEYS = ['h_do','h_status','who','menu_override','tip_override','menu_view','tip_view','tip_more',
+const STEP_UI_KEYS = ['h_do','h_status','who','menu_override','tip_override','tip_redownload','tip_upload_wait','tip_upload_done','tip_more',
   'ov_box','ov_ack','tip_ack','tl_late','tip_late','up_title','up_hint','up_send','up_err_fill','up_err_total',
   'up_err_exc','up_warn_prefix','up_warn_sum','up_warn_upd','ov_title','ov_warn','ov_reason','ov_short','ov_send',
   'already_closed'];
@@ -1311,43 +1357,59 @@ function stepMoreHtml(t){
   const mine   = currentUser && Number(t.assigned_to)===Number(currentUser.id);
   const open   = t.status==='in_progress' || t.status==='paused';
   const closed = t.status==='done' || t.status==='na';
+  const allow  = t.allow || {};
   const items  = [];
   if(!closed && !locked){
-    if(open && mine){
+    // Τα γενικά κουμπιά ΜΟΝΟ όταν ο τύπος τα επιτρέπει ΡΗΤΑ (allow από τη
+    // βάση). Απουσία πεδίου = κρυφά: ο server του Α2 το στέλνει πάντα μαζί
+    // με τα βήματα.
+    if(open && mine && allow.release === true)
       items.push(`<button class="btn btn-rel" title="${escHtml(TIPS.rel)}" onclick="act(${t.id},'release')">Αφήνω</button>`);
+    if(open && mine && allow.reject === true)
       items.push(`<button class="btn btn-rej" title="${escHtml(TIPS.rej)}" onclick="openReject(${t.id})">Απόρριψη…</button>`);
-    }
-    if(open && !mine) items.push(`<button class="btn btn-steal" title="${escHtml(TIPS.steal)}" onclick="steal(${t.id})">Αναλαμβάνω</button>`);
+    if(open && !mine && allow.steal === true)
+      items.push(`<button class="btn btn-steal" title="${escHtml(TIPS.steal)}" onclick="steal(${t.id})">Αναλαμβάνω</button>`);
     if(isAdmin) items.push(`<button class="btn btn-asg" title="${escHtml(TIPS.assign)}" onclick="assign(${t.id})">Ανάθεση…</button>`);
     if(isAdmin && !mine) items.push(`<button class="btn btn-ov" title="${escHtml(uiText(t.ui,'tip_override'))}" onclick="openOverride(${t.id})">${escHtml(uiText(t.ui,'menu_override'))}</button>`);
   }
-  // Λήψη χωρίς να κλείνει βήμα (file_viewed): για όποιον δεν έχει το κουμπί λήψης του βήματος.
-  const ownDownload = mine && open && t.step && t.step.action==='download';
-  if(!ownDownload && fuelCmsAoa(taskPayload(t)))
-    items.push(`<button class="btn btn-rel" title="${escHtml(uiText(t.ui,'tip_view'))}" onclick="downloadFuelCms(${t.id})">${escHtml(uiText(t.ui,'menu_view'))}</button>`);
   items.push(`<button class="btn btn-hist" title="${escHtml(TIPS.hist)}" onclick="toggleHist(${t.id})">${histOpen.has(t.id)?'▾':'▸'} ιστορικό</button>`);
   return `<details class="step-more"><summary title="${escHtml(uiText(t.ui,'tip_more'))}" aria-label="${escHtml(uiText(t.ui,'tip_more'))}">⋯</summary>`+
          `<div class="step-menu">${items.join('')}</div></details>`;
+}
+
+// Το κουμπί ΕΝΟΣ βήματος της κάρτας. prevDone: έγιναν όλα τα προηγούμενα.
+function stepBtnHtml(t, x, prevDone, p){
+  const open   = t.status==='in_progress' || t.status==='paused';
+  const lbl    = `${x.button_icon ? escHtml(x.button_icon) + ' ' : ''}${escHtml(x.button_label || '')}`;
+  if(x.action === 'download'){
+    if(!fuelCmsAoa(p)) return '';
+    // Μετά τη λήψη (ή σε κλειστή): γκρι, αλλά ξαναπατιέται — file_viewed.
+    return (x.done || !open)
+      ? `<button class="btn btn-go step-done" title="${escHtml(uiText(t.ui,'tip_redownload'))}" onclick="stepDownload(${t.id})">${lbl}</button>`
+      : `<button class="btn btn-go" onclick="stepDownload(${t.id})">${lbl}</button>`;
+  }
+  if(x.action === 'upload'){
+    if(x.done || !open)
+      return `<button class="btn btn-go step-done" title="${escHtml(uiText(t.ui,'tip_upload_done'))}" disabled>${lbl}</button>`;
+    if(!prevDone)
+      return `<button class="btn btn-go" title="${escHtml(uiText(t.ui,'tip_upload_wait'))}" disabled>${lbl}</button>`;
+    return `<button class="btn btn-go" onclick="openUpload(${t.id})">${lbl}</button>`;
+  }
+  return '';
 }
 
 function stepCardHtml(t){
   const s      = t.step;
   const locked = Number(t.locked)===1;
   const mine   = currentUser && Number(t.assigned_to)===Number(currentUser.id);
-  const open   = t.status==='in_progress' || t.status==='paused';
   const p      = taskPayload(t);
 
-  // ΤΟ κουμπί του βήματος. Μόνο για τον ανάδοχο· αδιάθετη -> «Ανάληψη».
-  let btn = '';
-  if(!s.final && !locked){
-    const lbl = `${s.button_icon ? escHtml(s.button_icon) + ' ' : ''}${escHtml(s.button_label || '')}`;
-    if(t.status==='open' && t.assigned_to===null)
-      btn = `<button class="btn btn-claim" title="${escHtml(TIPS.claim)}" onclick="claim(${t.id})">Ανάληψη</button>`;
-    else if(open && mine && s.action==='download' && fuelCmsAoa(p))
-      btn = `<button class="btn btn-go" onclick="stepDownload(${t.id})">${lbl}</button>`;
-    else if(open && mine && s.action==='upload')
-      btn = `<button class="btn btn-go" onclick="openUpload(${t.id})">${lbl}</button>`;
-  }
+  // ΤΑ κουμπιά των βημάτων, ΟΛΑ με τη σειρά, μόνο για τον ανάδοχο. Αδιάθετη:
+  // κανένα κουμπί — ανάδοχο ορίζει ο διαχειριστής με «Ανάθεση…» (Δ-Α2).
+  const steps = Array.isArray(t.steps) ? t.steps : [];
+  const btns = (mine && !locked)
+    ? steps.map((x, i) => stepBtnHtml(t, x, steps.slice(0, i).every(y => y.done === true), p)).join('') : '';
+  const btn = btns ? `<div class="step-btns">${btns}</div>` : '';
   const who = (!s.final && !mine && t.assigned_name)
     ? `<div class="step-who">${escHtml(uiText(t.ui,'who',{name:t.assigned_name}))}</div>` : '';
 
@@ -1403,8 +1465,12 @@ function uploadCheck(rows, v, ui){
   return { ok: errs.length===0, errs, warns, n };
 }
 
-function taskRow(t){
+// group: οι εργασίες της ομάδας (από την groupHtml), για την πύλη της Φάσης Α.
+function taskRow(t, group){
   if(t.step) return stepCardHtml(t);
+  // ΦΑΣΗ Α: επαλήθευση (παλιά ροή) μέσα σε ΕΝΕΡΓΗ εβδομάδα επίναυλου.
+  const fa = group ? fuelActiveRoot(group) : null;
+  const verifyActive = !!fa && t.client_id === null && Number(t.id) !== Number(fa.id);
   const locked = Number(t.locked)===1;
   const mine   = currentUser && Number(t.assigned_to)===Number(currentUser.id);
   const meta   = [];
@@ -1452,9 +1518,17 @@ function taskRow(t){
   let acts = actionBtn(t, blocked);
   // Λήψη αρχείου CMS: ανάγνωση, όπως το άνοιγμα καρτέλας — φαίνεται σε
   // κάθε κατάσταση, και σε κλειδωμένη εργασία.
-  if(fuelCmsAoa(payload)) acts += `<button class="btn btn-go" title="Download — Το αρχείο FuelChargeImport από το στιγμιότυπο της εργασίας"`+
-                                  ` onclick="downloadFuelCms(${t.id})">⬇ Λήψη αρχείου CMS</button>`;
-  if(locked){
+  // Σε ενεργή εβδομάδα η λήψη ανήκει ΜΟΝΟ στο ① (Δ-Α3): καμία λήψη στο verify.
+  if(fuelCmsAoa(payload) && !verifyActive)
+    acts += `<button class="btn btn-go" title="Download — Το αρχείο FuelChargeImport από το στιγμιότυπο της εργασίας"`+
+            ` onclick="downloadFuelCms(${t.id})">⬇ Λήψη αρχείου CMS</button>`;
+  if(locked && verifyActive){
+    // «🔒 Περιμένει το ανέβασμα (όνομα)» αντί για το όνομα της εργασίας που
+    // περιμένει· ο ανάδοχος του ① από τον server (blocked_by_assignee_name).
+    acts += `<span class="lockmsg" title="Locked — Ξεκλειδώνει μόλις ολοκληρωθεί αυτή η εργασία">`+
+            `${escHtml(t.blocked_by_assignee_name ? pageText('fuel_verify_locked', { name: t.blocked_by_assignee_name })
+                                                  : pageText('fuel_verify_locked_none'))}</span>`;
+  } else if(locked){
     // ΜΟΝΟ το όνομα της εργασίας που περιμένει. Το «Περιμένει» το λέει
     // ήδη το badge, από τη βάση — εδώ θα ήταν η ίδια λέξη δύο φορές στην
     // ίδια γραμμή.
@@ -1478,6 +1552,12 @@ function taskRow(t){
     }
     if(isAdmin) acts += asgBtn;
   }
+  // Ξεκλείδωτο verify ΠΡΙΝ τη Δευτέρα: «⏳ ② Επαλήθευση · από … · έως …». Ο
+  // server αρνείται το κλείσιμο ως τότε (Δ-Α8). Ώρες από τα δεδομένα.
+  const ws = payload && /^\d{4}-\d{2}-\d{2}$/.test(String(payload.week_start||'')) ? payload.week_start : null;
+  if(verifyActive && !locked && ws && t.status!=='done' && t.status!=='na' && athensNow().slice(0, 10) < ws)
+    acts += `<span class="lockmsg">${escHtml(pageText('fuel_w_verify_wait',
+              { from: fmtDue(ws + ' 00:00', true).slice(0, 9), time: dueClock(t.due_at) }))}</span>`;
 
   acts += `<button class="btn btn-hist" title="${escHtml(TIPS.hist)}" aria-expanded="${histOpen.has(t.id)?'true':'false'}"`+
           ` onclick="toggleHist(${t.id})">${histOpen.has(t.id)?'▾':'▸'} ιστορικό</button>`;
@@ -1496,7 +1576,7 @@ function taskRow(t){
       <div class="task-meta">${escHtml(t.task_code)}${meta.length?' · '+meta.join(' · '):''}</div>
     </div>
     ${attn?'<span class="attn-tag" title="Απορρίφθηκε από όλους τους δικαιούχους — χρειάζεται ανάθεση">χρειάζεται ανάθεση</span>':''}
-    ${whoCell(t)}
+    ${locked && verifyActive ? '' : whoCell(t)}
     ${stBadge(t.display_status || t.status, t.status)}
     <div class="acts">${acts}</div>
     ${fuel}
