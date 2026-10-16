@@ -477,7 +477,7 @@ $sd = function () use ($db, $listOne, $doer, $PU, $w) {
 $t = $listOne($db, $doer, $PU($doer), $w);
 ck('δύο βήματα με τη σειρά, χωρίς το τελικό', array_column($t['steps'], 'code') === array('download', 'upload'), json_encode($t['steps']));
 ck('...κουμπί και εικονίδιο από τη βάση', $t['steps'][0]['button_label'] === 'Λήψη αρχείου CMS' && $t['steps'][0]['button_icon'] === '⬇'
-   && $t['steps'][1]['action'] === 'upload' && array_keys($t['steps'][0]) === array('code', 'action', 'button_label', 'button_icon', 'done'));
+   && $t['steps'][1]['action'] === 'upload' && array_keys($t['steps'][0]) === array('code', 'action', 'button_label', 'button_icon', 'done', 'done_at', 'done_by'));
 ck('πριν τη λήψη: κανένα done', $sd() === array('download:0', 'upload:0'), json_encode($sd()));
 tasks_download($db, $S($doer), $PU($doer), $w);
 ck('μετά το downloaded: ① done', $sd() === array('download:1', 'upload:0'), json_encode($sd()));
@@ -527,7 +527,7 @@ $all = tasks_list($db, $S(9), $A, 'all')['tasks'];
 $tw = $byId($all, $w); $tv = $byId($all, $v); $tc = $byId($all, $c);
 ck('ρίζα και verify: chain με ΔΥΟ εγγραφές, ρίζα πρώτη', array_column($tw['chain'], 'id') === array($w, $v) && $tv['chain'] === $tw['chain'], json_encode($tw['chain']));
 ck('...τα πεδία της εγγραφής, με αυτή τη σειρά', array_keys($tw['chain'][0]) === array('id', 'task_code', 'depends_on', 'status', 'due_at', 'closed_at',
-   'locked', 'assigned_name', 'closed_by_name', 'has_steps', 'task_label', 'task_icon', 'task_title_template'), json_encode(array_keys($tw['chain'][0])));
+   'locked', 'assigned_name', 'closed_by_name', 'has_steps', 'task_label', 'task_icon', 'task_title_template', 'assigned_to', 'notices'), json_encode(array_keys($tw['chain'][0])));
 ck('...ο τίτλος του τύπου, ίδιος με της γραμμής (τίτλος ομάδας χωρίς τη ρίζα)', $tw['chain'][0]['task_label'] === $tw['task_label']
    && $tw['chain'][0]['task_icon'] === $tw['task_icon'] && $tw['chain'][0]['task_title_template'] === $tw['task_title_template']
    && $tw['chain'][1]['task_label'] === $tv['task_label']);
@@ -565,6 +565,52 @@ ck('δύο εβδομάδες: κάθε μία τη ΔΙΚΗ της αλυσίδ
    && array_column($byId($l, (int)$b['task_id'])['chain'], 'id') === array((int)$b['task_id']));
 ck('ΕΝΑ ερώτημα για όλη τη λίστα (όχι ανά εργασία)', substr_count(file_get_contents(__DIR__ . '/../../api/tasks_lib.php'), 'LEFT JOIN `4a_users` cb ON cb.`id` = d.`closed_by`') === 1
    && preg_match('/function tasks_chain\(.*?\n}\n/s', file_get_contents(__DIR__ . '/../../api/tasks_lib.php'), $m) && substr_count($m[0], '->prepare(') === 1);
+
+echo "\n═══ Α3 λωρίδα (16/10): steps με done_at / done_by ═══\n";
+$db = fresh_db('fuel');
+list($w, $v, $c, $doer, $other) = $chain($db);
+$t = $listOne($db, 1, $A, $w);
+ck('πριν τη λήψη: done_at / done_by null', $t['steps'][0]['done_at'] === null && $t['steps'][0]['done_by'] === null && $t['steps'][1]['done_at'] === null);
+tasks_download($db, $S($doer), $PU($doer), $w);
+$evAt = $db->query("SELECT `created_at` FROM `4a_task_events` WHERE `task_id` = $w AND `event` = 'downloaded'")->fetchColumn();
+$t = $listOne($db, 1, $A, $w);
+ck("μετά τη λήψη: done_at = ώρα του downloaded, done_by = u$doer", $t['steps'][0]['done'] === true && $t['steps'][0]['done_at'] === $evAt
+   && $t['steps'][0]['done_by'] === 'u' . $doer && $t['steps'][1]['done_at'] === null, json_encode($t['steps'][0]));
+tasks_download($db, $S($doer), $PU($doer), $w);
+ck('ξανά-λήψη (file_viewed): το done_at ΔΕΝ αλλάζει', $listOne($db, 1, $A, $w)['steps'][0]['done_at'] === $evAt);
+$db->exec("INSERT INTO `4a_task_events` (`task_id`,`event`,`actor_id`,`note`,`meta`) VALUES ($w,'downloaded',$other,'καθυστερημένη','{\"occurred_at\":\"2026-10-10 08:00:00\"}')");
+$t = $listOne($db, 1, $A, $w);
+ck('καθυστερημένη καταγραφή: done_at = occurred_at (όπως το χρονολόγιο), το τελευταίο γεγονός', $t['steps'][0]['done_at'] === '2026-10-10 08:00:00' && $t['steps'][0]['done_by'] === 'u' . $other, json_encode($t['steps'][0]));
+
+echo "\n═══ Α3 λωρίδα: chain με assigned_to, notices, και πλήρη βήματα της ρίζας ═══\n";
+$db = fresh_db('fuel');
+list($w, $v, $c, $doer, $other) = $chain($db);
+tasks_download($db, $S($doer), $PU($doer), $w);
+$all = tasks_list($db, $S(9), $A, 'all')['tasks'];
+$tw = $byId($all, $w); $tv = $byId($all, $v);
+$cw = $tw['chain'][0]; $cv = $tw['chain'][1];
+ck('assigned_to: ο ανάδοχος ως int, null για αδιάθετη', $cw['assigned_to'] === $doer && $cv['assigned_to'] === null, json_encode(array($cw['assigned_to'], $cv['assigned_to'])));
+$K = array('step', 'steps', 'allow', 'timeline', 'override', 'ui');
+$same = true; foreach ($K as $k) if (!array_key_exists($k, $cw) || json_encode($cw[$k]) !== json_encode($tw[$k])) $same = false;
+ck('ρίζα (τύπος με βήματα): step, steps, allow, timeline, override, ui ΙΔΙΑ με της γραμμής της', $same);
+ck('verify (χωρίς βήματα): κανένα από αυτά', !array_intersect($K, array_keys($cv)));
+ck('ΚΑΝΕΝΑ payload μέσα στο chain (το έχει ήδη η γραμμή)', !array_key_exists('payload', $cw) && !array_key_exists('payload', $cv));
+ck('notices: κενές ως τη Φάση Β', $cw['notices'] === array() && $cv['notices'] === array());
+tasks_upload($db, $S($doer), $PU($doer), $w, $NUMS);
+$mine = tasks_list($db, $S($other), $PU($other), 'mine')['tasks'];
+$allW = $byId(tasks_list($db, $S(9), $A, 'all')['tasks'], $w);
+ck('«Οι εργασίες μου» του αναδόχου του ③ (χωρίς τη ρίζα): τα βήματα της ρίζας ΙΔΙΑ με την «Όλες»',
+   count($mine) === 1 && json_encode($mine[0]['chain'][0]['steps']) === json_encode($allW['steps'])
+   && $mine[0]['chain'][0]['steps'][1]['done'] === true && $mine[0]['chain'][0]['steps'][1]['done_by'] === 'u' . $doer, json_encode($mine[0]['chain'][0]['steps'] ?? null));
+$db->exec("INSERT INTO `4a_task_events` (`task_id`,`event`,`actor_id`,`note`,`meta`) VALUES ($v,'notified',NULL,'📧 Ανέβηκε · σειρά σου για επαλήθευση','{\"to\":\"u$other\"}')");
+$db->exec("INSERT INTO `4a_task_events` (`task_id`,`event`,`actor_id`,`note`,`meta`) VALUES ($w,'notified',NULL,'<b>x</b>',NULL)");
+$ch = $byId(tasks_list($db, $S(9), $A, 'all')['tasks'], $w)['chain'];
+ck('notices από το ιστορικό (event notified): ώρα, τι (note), προς (meta.to), ανά εργασία',
+   count($ch[1]['notices']) === 1 && $ch[1]['notices'][0]['what'] === '📧 Ανέβηκε · σειρά σου για επαλήθευση'
+   && $ch[1]['notices'][0]['to'] === 'u' . $other && $ch[1]['notices'][0]['at'] !== null && array_keys($ch[1]['notices'][0]) === array('at', 'what', 'to'), json_encode($ch[1]['notices']));
+ck('...χωρίς meta.to: to = null', $ch[0]['notices'][0]['to'] === null && $ch[0]['notices'][0]['what'] === '<b>x</b>');
+ck('...άλλα γεγονότα (downloaded, uploaded) ΔΕΝ είναι ειδοποιήσεις', count($ch[0]['notices']) === 1);
+ck('εργασία πελάτη: καμία αλλαγή (ούτε chain)', !array_key_exists('chain', $byId(tasks_list($db, $S(9), $A, 'all')['tasks'], $c)));
 
 echo "\n═══ Α2: εργασίες ΠΕΛΑΤΗ — JSON ΙΔΙΟ πριν και μετά (στήλες, βήματα, σημαίες, κλειδωμένο verify) ═══\n";
 $clientJson = function ($db) use ($S, $A) {

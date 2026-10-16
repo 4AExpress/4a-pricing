@@ -1,5 +1,10 @@
 <?php
-// tasks_lib.php | v1.6 | 16-10-2026
+// tasks_lib.php | v1.7 | 16-10-2026
+// v1.7: Α3, λωρίδα βημάτων (απόφαση 16/10). Το chain στέλνει και
+//       assigned_to, notices (ειδοποιήσεις από το ιστορικό, κενές ως τη
+//       Φάση Β) και, σε τύπους με βήματα, ό,τι και η γραμμή της λίστας
+//       (step, steps, allow, timeline, override, ui). Έτσι η λωρίδα είναι
+//       ΙΔΙΑ σε κάθε καρτέλα, και όταν η ρίζα δεν είναι στη λίστα.
 // v1.6: Φάση Α, Α2. «Αφήνω», «Απόρριψη», «Αναλαμβάνω»: 409 όταν ο τύπος έχει
 //       allow_release / allow_reject / allow_steal = 0 (προεπιλογή 1, όπως
 //       σήμερα). Η λίστα: blocked_by_assignee_name ΜΟΝΟ σε κλειδωμένες
@@ -796,7 +801,8 @@ function tasks_chain($db, array $tasks)
     $keys = array_values(array_unique($keys));
     $st = $db->prepare('SELECT d.`id`, d.`dedupe_key`, d.`task_code`, tt.`depends_on`, d.`status`, d.`due_at`,
                                d.`closed_at`, u.`name` AS assigned_name, cb.`name` AS closed_by_name,
-                               tt.`label` AS task_label, tt.`icon` AS task_icon, tt.`title_template` AS task_title_template
+                               tt.`label` AS task_label, tt.`icon` AS task_icon, tt.`title_template` AS task_title_template,
+                               d.`assigned_to`, d.`payload`
                           FROM `4a_tasks` d
                           JOIN `4a_task_types` tt ON tt.`code` = d.`task_code`
                      LEFT JOIN `4a_users` u  ON u.`id`  = d.`assigned_to`
@@ -811,6 +817,13 @@ function tasks_chain($db, array $tasks)
         if ($r['status'] === 'done' || $r['status'] === 'na') $closed[$r['dedupe_key'] . "\n" . $r['task_code']] = true;
     }
     $stepped = tasks_steps_load($db, array_column($rows, 'task_code'));
+    // Τύποι με βήματα: ό,τι στέλνει και η γραμμή της λίστας (tasks_steps_attach).
+    $full = [];
+    foreach (tasks_steps_attach($db, array_values(array_filter($rows, function ($r) use ($stepped) {
+        return isset($stepped[$r['task_code']]); }))) as $a) {
+        $full[(int)$a['id']] = array_intersect_key($a, array_flip(['step', 'steps', 'allow', 'timeline', 'override', 'ui']));
+    }
+    $notices = tasks_chain_notices($db, array_map('intval', array_column($rows, 'id')));
     $chains = [];
     foreach ($rows as $r) {
         $chains[$r['dedupe_key']][] = [
@@ -828,13 +841,46 @@ function tasks_chain($db, array $tasks)
             'task_label'          => $r['task_label'],
             'task_icon'           => $r['task_icon'],
             'task_title_template' => $r['task_title_template'],
-        ];
+            'assigned_to'         => $r['assigned_to'] === null ? null : (int)$r['assigned_to'],
+            'notices'             => $notices[(int)$r['id']],
+        ] + (isset($full[(int)$r['id']]) ? $full[(int)$r['id']] : []);
     }
     foreach ($tasks as $i => $t) {
         if ($t['client_id'] !== null || $t['dedupe_key'] === null) continue;
         $tasks[$i]['chain'] = isset($chains[(string)$t['dedupe_key']]) ? $chains[(string)$t['dedupe_key']] : [];
     }
     return $tasks;
+}
+
+/**
+ * «📧 Ειδοποιήσεις που στάλθηκαν» της λωρίδας (απόφαση 16/10): από το
+ * ιστορικό, γεγονότα `notified` ανά εργασία, με τη σειρά τους. ΚΑΝΕΝΑ δεν
+ * γράφεται ως τη Φάση Β· εδώ μόνο η ανάγνωση. at = πότε, what = note (τι
+ * στάλθηκε), to = meta.to (προς ποιον). Ένα ερώτημα.
+ */
+function tasks_chain_notices($db, array $ids)
+{
+    $out = [];
+    foreach ($ids as $id) $out[$id] = [];
+    if (!$ids) return $out;
+    // Βοηθητικό: σφάλμα εδώ ΔΕΝ ρίχνει τη λίστα (όπως η tasks_steps_load).
+    try {
+        $st = $db->prepare("SELECT `task_id`, `created_at`, `note`, `meta` FROM `4a_task_events`
+                             WHERE `event` = 'notified'
+                               AND `task_id` IN (" . implode(',', array_fill(0, count($ids), '?')) . ')
+                          ORDER BY `id`');
+        $st->execute($ids);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        error_log('tasks_chain_notices: ' . $e->getMessage());
+        return $out;
+    }
+    foreach ($rows as $e) {
+        $m = $e['meta'] !== null ? json_decode($e['meta'], true) : null;
+        $out[(int)$e['task_id']][] = ['at' => $e['created_at'], 'what' => $e['note'],
+                                      'to' => is_array($m) && isset($m['to']) && is_string($m['to']) ? $m['to'] : null];
+    }
+    return $out;
 }
 
 // Φάση Α: τα γενικά κουμπιά που ένας τύπος μπορεί να κλείσει (στήλες του

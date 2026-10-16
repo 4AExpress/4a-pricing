@@ -1,5 +1,8 @@
 <?php
-// tasks_steps.php | v1.1 | 16-10-2026
+// tasks_steps.php | v1.2 | 16-10-2026
+// v1.2: Α3, λωρίδα βημάτων (απόφαση 16/10). Κάθε βήμα του `steps` στέλνει
+//       και done_at / done_by: πότε και από ποιον έγινε (το τελευταίο
+//       done_event μετά το reopened). Όταν δεν έγινε: null.
 // v1.1: Φάση Α, Α2. Η λίστα στέλνει και `steps` (όλα τα μη-τελικά βήματα με
 //       «έγινε») και `allow` (σημαίες του τύπου), ΜΟΝΟ σε τύπους με βήματα.
 //       Σημαίες ανά τύπο allow_release / allow_reject / allow_steal (409 όταν
@@ -214,17 +217,23 @@ function tasks_steps_timeline(array $def, array $events)
  */
 function tasks_steps_list(array $def, array $events)
 {
+    // Το ΤΕΛΕΥΤΑΙΟ γεγονός ανά κωδικό: ώρα (occurred_at για καθυστερημένη
+    // καταγραφή, όπως το χρονολόγιο) και όνομα.
     $seen = [];
-    foreach (tasks_steps_since_reopen($events) as $e) $seen[$e['event']] = true;
+    foreach (tasks_steps_since_reopen($events) as $e) $seen[$e['event']] = $e;
     $out = [];
     foreach ($def['steps'] as $s) {
         if ((int)$s['is_final'] === 1) continue;
+        $e = $s['done_event'] !== null && isset($seen[$s['done_event']]) ? $seen[$s['done_event']] : null;
+        $late = $e !== null && is_array($e['meta']) && isset($e['meta']['occurred_at']) && is_string($e['meta']['occurred_at']);
         $out[] = [
             'code'         => $s['step_code'],
             'action'       => $s['action'],
             'button_label' => $s['button_label'],
             'button_icon'  => $s['button_icon'],
-            'done'         => $s['done_event'] !== null && isset($seen[$s['done_event']]),
+            'done'         => $e !== null,
+            'done_at'      => $e === null ? null : ($late ? $e['meta']['occurred_at'] : $e['created_at']),
+            'done_by'      => $e === null ? null : $e['actor_name'],
         ];
     }
     return $out;

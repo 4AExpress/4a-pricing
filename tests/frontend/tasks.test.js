@@ -85,12 +85,13 @@ function env(opts){
     grab('dueState'), grab('dueHtml'), grab('refreshDues'), grab('fuelColumns'), grab('fuelFactsHtml'),
     grabConst('STEP_UI_KEYS'), grab('uiText'),
     grab('stepTimelineHtml'), grab('stepMoreHtml'), grab('stepBtnHtml'), grab('stepCardHtml'), grab('uploadCheck'),
+    grab('taskById'), grab('chainEntry'), grab('stripColorVar'), grab('fuelStripHtml'), grab('fuelStripMenu'),
     grabConst('UI_SCOPES'), grab('pageText'), grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'), grabConst('TONE_MIX_STRONG'),
     grab('tint'), grab('groupTone'), grab('addDaysISO'), grab('fuelActiveRoot'), grab('weekItems'), grab('dueClock'), grab('fuelWeekInfo'), grab('fuelStateHtml'),
     grab('grpIsOpen'), grab('grpTogHtml'), grab('groupHtml'),
     grab('taskRow'), grab('clientChipHtml'), grab('tabFromQuery'), grab('anchorFromHash'), grab('render'),
     'return { clientChipHtml, NavChip, tabFromQuery, anchorFromHash, render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
-    '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS,',
+    '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS, fuelStripHtml, fuelStripMenu, taskById, chainEntry,',
     '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle,',
     '         tint, groupTone, groupHtml, grpOpen, fuelWeekInfo, fuelStateHtml, fuelActiveRoot, weekItems, dueClock, pageText, UI_SCOPES, UiTexts };'
   ].join('\n');
@@ -948,7 +949,12 @@ console.log('\n═══ Κείμενα οθόνης από τη βάση (4a_ui
   const isLeak = t => /\s/.test(t) ? outside.includes(t)
                                    : ["'" + t + "'", '`' + t + '`', '>' + t + '<'].some(q => outside.includes(q));
   const pageTexts = Object.assign({}, MIG_TEXTS.tasks, MIG_TEXTS.common);
-  const leaked = Object.values(pageTexts).map(t => t.replace(/\{\w+\}.*$/, '').trim()).filter(t => t && isLeak(t));
+  // ΕΞΑΙΡΕΣΗ (16/10): το «✓ Ολοκληρώθηκε» του strip_d2 (λωρίδα) συμπίπτει με
+  // το ΓΕΝΙΚΟ μήνυμα κλεισίματος της closeMsg, που είναι στον κώδικα πριν από
+  // τη Φάση Α (backlog γενικών μηνυμάτων). Μόνο εκεί, μόνο αυτό.
+  const COINCIDE = { '✓ Ολοκληρώθηκε': /const verb = action === 'na' \? '[^']*' : '✓ Ολοκληρώθηκε';/ };
+  const leakOk = t => COINCIDE[t] && (outside.split(t).length - 1) === 1 && COINCIDE[t].test(grab('closeMsg'));
+  const leaked = Object.values(pageTexts).map(t => t.replace(/\{\w+\}.*$/, '').trim()).filter(t => t && isLeak(t) && !leakOk(t));
   ck('κανένα κείμενο του seed γραμμένο στον κώδικα', leaked.length === 0, leaked.join(' | '));
   ck('κλειδί που λείπει -> [κλειδί], όχι κενό', api.pageText('δεν_υπάρχει') === '[δεν_υπάρχει]');
   ck('{n} -> τιμή', api.pageText('fuel_older', { n: 3 }) === 'Παλαιότερες εβδομάδες (3)');
@@ -1261,41 +1267,9 @@ console.log('\n═══ Α3 ενδείξεις: ΤΙ · ΑΠΟ ΠΟΤΕ · ΕΩ
   const keys = [...grab('fuelWeekInfo').matchAll(/'(fuel_w_\w+)'/g)].map(m => m[1]);
   ck(`κάθε κλειδί fuel_w_* της fuelWeekInfo (${new Set(keys).size}) υπάρχει στο seed του 19b`,
      new Set(keys).size === 6 && keys.every(k => MIG_TEXTS.tasks && k in MIG_TEXTS.tasks), keys.join(','));
-  const code = ['fuelWeekInfo', 'fuelActiveRoot', 'dueClock', 'taskRow', 'stepCardHtml', 'stepBtnHtml', 'stepMoreHtml']
+  const code = ['fuelWeekInfo', 'fuelActiveRoot', 'dueClock', 'taskRow', 'stepCardHtml', 'stepBtnHtml', 'stepMoreHtml', 'fuelStripHtml', 'fuelStripMenu']
     .map(grab).join('\n').replace(/^\s*\/\/.*$/gm, '');
   ck('ΚΑΝΕΝΑ «19:00» ή «17:00» γραμμένο στον κώδικα (φρουρός)', !/\b(19|17):00\b/.test(code));
-}
-
-console.log('\n═══ Α3 verify (παλιά ροή) σε ενεργή εβδομάδα: καμία λήψη, «🔒 Περιμένει το ανέβασμα» ═══');
-{
-  const R = (opts, w, which) => env(Object.assign({ statuses: ST_DB }, opts)).api.taskRow(w[which === undefined ? 1 : which], w);
-  const lockedW = name => activeWeek('in_progress', 'open', { ver: { status: 'open', assigned_to: null, assigned_name: null, locked: 1,
-    blocked_by_label: 'Γενικός επίναυλος εβδομάδας — αρχείο CMS', blocked_by_assignee_name: name } });
-  let h = R({ userId: 9, admin: true, view: 'all', now: '2026-10-22 10:00:00' }, lockedW('u1'));
-  ck('κλειδωμένο: «🔒 Περιμένει το ανέβασμα (u1)» αντί για το κείμενο εξάρτησης',
-     h.includes('>🔒 Περιμένει το ανέβασμα (u1)</span>') && !h.includes('>Γενικός επίναυλος εβδομάδας — αρχείο CMS</span>'), h);
-  ck('...και ΟΧΙ το «—» της στήλης αναδόχου (στην «Όλες»)', !h.includes('class="who none"'));
-  ck('...καμία λήψη (Δ-Α3)', !h.includes('downloadFuelCms('));
-  h = R({ userId: 9, admin: true, view: 'all', now: '2026-10-22 10:00:00' }, lockedW(null));
-  ck('κλειδωμένο, ① αδιάθετο: «🔒 Περιμένει το ανέβασμα (αδιάθετο)»', h.includes('>🔒 Περιμένει το ανέβασμα (αδιάθετο)</span>'), h);
-  h = R({ userId: 9, admin: true, view: 'all', now: '2026-10-22 10:00:00' }, lockedW('<b>x</b>'));
-  ck('το όνομα από τη βάση: escaped', h.includes('(&lt;b&gt;x&lt;/b&gt;)') && !h.includes('<b>x</b>'));
-
-  const open = activeWeek('done', 'in_progress');
-  h = R({ userId: 2, admin: false, now: '2026-10-24 10:00:00' }, open);
-  ck('ξεκλείδωτο ΠΡΙΝ τη Δευτέρα: γραμμή «⏳ ② Επαλήθευση · από Δευ 26/10 · έως 17:00»',
-     h.includes('<span class="lockmsg">⏳ ② Επαλήθευση · από Δευ 26/10 · έως 17:00</span>'), h);
-  ck('...τα κουμπιά της παλιάς ροής μένουν (Ολοκλήρωση, Δεν εφαρμόζεται), καμία λήψη',
-     h.includes("act(91,'done')") && h.includes('markNa(91)') && !h.includes('downloadFuelCms('));
-  h = R({ userId: 2, admin: false, now: '2026-10-26 09:00:00' }, open);
-  ck('Δευτέρα: ΚΑΜΙΑ γραμμή αναμονής, κουμπιά όπως πριν', !h.includes('⏳ ②') && h.includes("act(91,'done')") && !h.includes('downloadFuelCms('));
-  h = R({ userId: 2, admin: false, now: '2026-10-24 10:00:00' }, activeWeek('done', 'done'));
-  ck('κλειστό verify: καμία γραμμή αναμονής', !h.includes('⏳ ②'));
-  const plain = fuelWeek(90, '2026-10-26', 'done', 'in_progress', { ver: { assigned_to: 2, assigned_name: 'u2' } });
-  h = R({ userId: 2, admin: false, now: '2026-10-24 10:00:00' }, plain);
-  ck('ΧΩΡΙΣ step στη ρίζα: το verify ακριβώς όπως πριν (λήψη, χωρίς γραμμή αναμονής)',
-     h.includes('downloadFuelCms(91)') && !h.includes('⏳ ②') && h === env({ statuses: ST_DB, userId: 2, admin: false, now: '2026-10-24 10:00:00' }).api.taskRow(plain[1]));
-  ck('taskRow χωρίς ομάδα (εργασίες πελάτη, golden): καμία αλλαγή', !/fuelActiveRoot\(t\b/.test(grab('taskRow')) && /group \? fuelActiveRoot\(weekItems\(group\)\) : null/.test(grab('taskRow')));
 }
 
 console.log('\n═══ Α3 πύλη: ΜΕ step στη ρίζα η λίστα ΑΛΛΑΖΕΙ (ο έλεγχος δεν είναι κενός) ═══');
@@ -1305,7 +1279,8 @@ console.log('\n═══ Α3 πύλη: ΜΕ step στη ρίζα η λίστα �
   const changed = Object.keys(golden).filter(k => sha(withStep[k]) !== golden[k]);
   ck(`με step: άλλαξαν ${changed.length} από ${Object.keys(golden).length} λίστες (όσες δείχνουν ενεργή εβδομάδα)`, changed.length >= 40, String(changed.length));
   const L = withStep['2026-10-24 10:00:00 admin9 all'];
-  ck('...π.χ. Σαβ 24/10, admin: «⚠ ① Ανέβασμα στο CMS · εκπρόθεσμο από …» και κάρτα δύο κουμπιών', L.includes('⚠ ① Ανέβασμα στο CMS · εκπρόθεσμο από') && L.includes('class="task has-steps'));
+  ck('...π.χ. Σαβ 24/10, admin: «⚠ ① Ανέβασμα στο CMS · εκπρόθεσμο από …» και λωρίδα βημάτων αντί για γραμμές', L.includes('⚠ ① Ανέβασμα στο CMS · εκπρόθεσμο από')
+     && L.includes('<div class="fstrip"') && !L.includes('class="task has-steps'));
 }
 
 // ═════════════════════════════════════════════════════════════════════
@@ -1321,10 +1296,12 @@ const withChain = ts => {
     if (t.client_id !== null) return t;
     const sib = byKey.get(t.subject_key);
     const closed = code => sib.some(x => x.task_code === code && (x.status === 'done' || x.status === 'na'));
-    return Object.assign({}, t, { chain: sib.map(x => ({ id: x.id, task_code: x.task_code, depends_on: x.depends_on, status: x.status,
+    return Object.assign({}, t, { chain: sib.map(x => Object.assign({ id: x.id, task_code: x.task_code, depends_on: x.depends_on, status: x.status,
       due_at: x.due_at, closed_at: x.closed_at || null, locked: x.depends_on !== null && !closed(x.depends_on) ? 1 : 0,
       assigned_name: x.assigned_name, closed_by_name: x.closed_by_name || null, has_steps: !!x.step,
-      task_label: x.task_label, task_icon: x.task_icon, task_title_template: x.task_title_template })) });
+      task_label: x.task_label, task_icon: x.task_icon, task_title_template: x.task_title_template,
+      assigned_to: x.assigned_to === undefined ? null : x.assigned_to, notices: x.notices || [] },
+      x.step ? { step: x.step, steps: x.steps, allow: x.allow, timeline: x.timeline, override: x.override, ui: x.ui } : {})) });
   });
 };
 const tabOf = (ts, view, me) => ts.filter(t => view === 'all' ? true
@@ -1409,30 +1386,205 @@ for (const step of [false, true]) {
     const { api } = env({}); return api.weekItems(withChain(wk)).length === 2; })());
 }
 
-console.log('\n═══ Α3 εύρημα 16/10: «✓ ① Ανέβηκε από {όνομα} · {ημ/ώρα}» στο verify ═══');
+// ═════════════════════════════════════════════════════════════════════
+// Α3, ΛΩΡΙΔΑ ΒΗΜΑΤΩΝ (απόφαση 16/10, Πρόταση Β). Βήματα με ώρα και όνομα,
+// όπως τα στέλνει ο server (steps[].done_at / done_by, chain).
+const STEPS_AT = (d1, d2) => [
+  { code: 'download', action: 'download', button_label: 'Λήψη αρχείου CMS', button_icon: '⬇', done: d1,
+    done_at: d1 ? '2026-10-22 09:05:00' : null, done_by: d1 ? 'u1' : null },
+  { code: 'upload', action: 'upload', button_label: 'Ολοκλήρωση', button_icon: '✓', done: d2,
+    done_at: d2 ? '2026-10-23 18:12:00' : null, done_by: d2 ? 'u1' : null }];
+// Μια ενεργή εβδομάδα σε στάδιο: 0 ① τώρα · 1 ② τώρα · 2 ③ τώρα · 3 όλα έγιναν.
+// rootWho / verWho: ανάδοχοι (null = αδιάθετη).
+const stripWeek = (stage, o) => {
+  o = o || {};
+  const rootWho = o.rootWho === undefined ? 1 : o.rootWho, verWho = o.verWho === undefined ? 2 : o.verWho;
+  const up = stage >= 2 ? { status: 'done', closed_at: '2026-10-23 18:12:00', closed_by_name: 'u1' }
+                        : { status: rootWho ? 'in_progress' : 'open' };
+  const ver = stage === 3 ? { status: 'done', closed_at: '2026-10-26 10:30:00', closed_by_name: 'u2' }
+            : { status: stage === 2 && verWho ? 'in_progress' : 'open' };
+  const w = fuelWeek(90, '2026-10-26', up.status, ver.status, {
+    up:  Object.assign({ due_at: '2026-10-23 19:00:00', assigned_to: rootWho, assigned_name: rootWho ? 'u' + rootWho : null }, up),
+    ver: Object.assign({ due_at: '2026-10-26 17:00:00', assigned_to: stage >= 2 ? verWho : null,
+                         assigned_name: stage >= 2 && verWho ? 'u' + verWho : null }, ver) });
+  Object.assign(w[0], { step: stage >= 2 ? STEP.uploaded : stage === 1 ? STEP.upload : STEP.download,
+                        steps: STEPS_AT(stage >= 1, stage >= 2), allow: ALLOW0, timeline: [], override: o.override || null, ui: UI,
+                        notices: o.rootNotices });
+  w[1].notices = o.verNotices;
+  w[1].locked = stage >= 2 ? 0 : 1;
+  return withChain(w);
+};
+// Η λωρίδα όπως τη βλέπει ο χρήστης me στην καρτέλα view.
+const stripOf = (ts, now, view, me, admin, texts) => {
+  const { api, els } = env({ statuses: ST_DB, now, userId: me, admin, view, texts });
+  const shown = tabOf(ts, view, me);
+  api.setTasks(shown); api.render(shown);
+  const h = els.list.innerHTML;
+  const i = h.indexOf('<div class="fstrip"');
+  return i < 0 ? null : h.slice(i, h.indexOf('</div><!--fs-end-->', i) >= 0 ? h.indexOf('</div><!--fs-end-->', i) : h.length);
+};
+const cellsOf = h => [...h.matchAll(/<div class="fs-stp ([a-z]+)">([\s\S]*?)(?=<div class="fs-stp |<\/div>\s*<\/div>\s*(?:<div class="step-ov|<div class="fs-notes))/g)]
+  .map(m => ({ cls: m[1], html: m[2] }));
+const STAGE_NOW = { 0: '2026-10-22 08:00:00', 1: '2026-10-22 10:00:00', 2: '2026-10-24 10:00:00', 3: '2026-10-26 18:00:00' };
+
+console.log('\n═══ Α3 λωρίδα: ΙΔΙΑ σε mine / queue / all, για κάθε στάδιο και κάθε χρήστη ═══');
 {
-  const R = (ts, me, view, now) => { const shown = tabOf(ts, view, me);
-    return env({ statuses: ST_DB, userId: me, admin: me === 9, view, now }).api.taskRow(shown.find(t => t.id === 91), shown); };
-  const ts = withChain(stateWeek(UP_DONE, VER_U2, true));
-  const LINE = '<span class="lockmsg">✓ ① Ανέβηκε από u1 · Παρ 23/10 18:12</span>';
-  const h = R(ts, 2, 'mine', '2026-10-24 10:00:00');
-  ck('«Οι εργασίες μου» (το ① δεν φαίνεται): «✓ ① Ανέβηκε από u1 · Παρ 23/10 18:12»', h.includes(LINE), h);
-  ck('...πριν από τη γραμμή «⏳ ② Επαλήθευση · από …»', h.indexOf(LINE) >= 0 && h.indexOf(LINE) < h.indexOf('⏳ ②'));
-  ck('...«Οι εργασίες μου»: η πύλη ενεργή και χωρίς τη ρίζα στη λίστα (καμία λήψη στο verify)', !h.includes('downloadFuelCms('));
-  ck('...ίδια στην «Όλες»', R(ts, 9, 'all', '2026-10-24 10:00:00').includes(LINE));
-  ck('...και μετά τη Δευτέρα, και με το ② κλειστό', R(ts, 2, 'mine', '2026-10-26 09:00:00').includes(LINE)
-     && R(withChain(stateWeek(UP_DONE, { status: 'done', assigned_to: 2, assigned_name: 'u2' }, true)), 9, 'all', '2026-10-26 18:00:00').includes(LINE));
-  const by = n => withChain(stateWeek(Object.assign({}, UP_DONE, { closed_by_name: n }), VER_U2, true));
-  ck('όνομα = όποιος το έκλεισε (closed_by_name), όχι ο ανάδοχος', R(by('Admin'), 2, 'mine', '2026-10-24 10:00:00').includes('✓ ① Ανέβηκε από Admin · '));
-  ck('χωρίς closed_by_name: ο ανάδοχος του ①', R(by(null), 2, 'mine', '2026-10-24 10:00:00').includes(LINE));
-  ck('το όνομα από τη βάση: escaped', R(by('<b>x</b>'), 2, 'mine', '2026-10-24 10:00:00').includes('Ανέβηκε από &lt;b&gt;x&lt;/b&gt;'));
-  ck('① «na» (δεν ανέβηκε): ΚΑΜΙΑ γραμμή', !R(withChain(stateWeek({ status: 'na', assigned_to: 1, assigned_name: 'u1' }, VER_U2, true)),
-     2, 'mine', '2026-10-24 10:00:00').includes('Ανέβηκε από'));
-  ck('① ανοιχτό (verify κλειδωμένο): ΚΑΜΙΑ γραμμή', !R(withChain(stateWeek({ status: 'in_progress', assigned_to: 1, assigned_name: 'u1' },
-     { status: 'open' }, true)), 9, 'all', '2026-10-22 10:00:00').includes('Ανέβηκε από'));
-  ck('ΧΩΡΙΣ step (παλιά ροή): ΚΑΜΙΑ γραμμή', !R(withChain(stateWeek(UP_DONE, VER_U2, false)), 2, 'mine', '2026-10-24 10:00:00').includes('Ανέβηκε από'));
-  ck('χωρίς chain (παλιός server): ΚΑΜΙΑ γραμμή', !R(stateWeek(UP_DONE, VER_U2, true), 9, 'all', '2026-10-24 10:00:00').includes('Ανέβηκε από'));
-  ck('το κλειδί fuel_verify_uploaded υπάρχει στο seed του 19b', !!MIG_TEXTS.tasks && MIG_TEXTS.tasks.fuel_verify_uploaded === '✓ ① Ανέβηκε από {name} · {when}');
+  const bad = []; let compared = 0;
+  const cases = [];
+  for (const stage of [0, 1, 2, 3]) for (const o of [{}, { rootWho: null }, { verWho: null }])
+    for (const now of [STAGE_NOW[stage], '2026-10-26 09:00:00']) cases.push([stage, o, now]);
+  for (const [stage, o, now] of cases) {
+    if (stage === 0 && o.rootWho === null && now !== STAGE_NOW[0]) continue;
+    const ts = stripWeek(stage, o);
+    for (const [me, admin] of [[1, false], [2, false], [3, false], [9, true]]) {
+      const all = stripOf(ts, now, 'all', me, admin);
+      for (const view of ['mine', 'queue']) {
+        const got = stripOf(ts, now, view, me, admin);
+        if (got === null) continue;              // η εβδομάδα δεν φαίνεται σε αυτή την καρτέλα
+        compared++;
+        if (got !== all) bad.push(`στάδιο ${stage} ${JSON.stringify(o)} ${now} u${me} ${view}`);
+      }
+    }
+  }
+  ck(`${compared} λωρίδες σε mine/queue: ΙΔΙΕΣ byte-προς-byte με την «Όλες» του ίδιου χρήστη`, compared >= 30 && bad.length === 0, bad.slice(0, 3).join(' | '));
+  const mineU1 = stripOf(stripWeek(1), STAGE_NOW[1], 'mine', 1, false);
+  ck('② τώρα, «Οι εργασίες μου» του u1 (μόνο η ρίζα στη λίστα): ολόκληρη η λωρίδα, και το ③ «αδιάθετο»',
+     mineU1 !== null && cellsOf(mineU1).length === 3 && mineU1.includes('<div class="fs-meta">αδιάθετο · Δευ 26/10 00:00–17:00</div>'),
+     String(mineU1 && cellsOf(mineU1).length));
+  const mineU2s2 = stripOf(stripWeek(2), '2026-10-26 09:00:00', 'mine', 2, false);
+  ck('③ τώρα, «Οι εργασίες μου» της u2 (μόνο το verify στη λίστα): 3 βήματα, ① και ② «έγινε» με ώρα και όνομα',
+     cellsOf(mineU2s2).length === 3 && mineU2s2.includes('✓ Κατέβηκε · ⬇ ξανά<small>Πεμ 22/10 09:05 · u1</small>')
+     && mineU2s2.includes('✓ Ολοκληρώθηκε<small>Παρ 23/10 18:12 · u1</small>'), mineU2s2);
+}
+
+console.log('\n═══ Α3 λωρίδα: ΚΑΤΑΣΤΑΣΗ = κουκκίδα · ΕΝΕΡΓΕΙΑ = κουμπί · ΕΓΙΝΕ = γκρι ✓ · ΔΕΝ ΓΙΝΕΤΑΙ = διακεκομμένο ═══');
+{
+  const S = (stage, me, admin, now, o) => cellsOf(stripOf(stripWeek(stage, o), now || STAGE_NOW[stage], 'all', me, admin));
+  let c = S(0, 1, false);
+  ck('στάδιο 0, ανάδοχος ①: ① ΤΡΕΧΟΝ με κουμπί «⬇ Λήψη αρχείου CMS» -> stepDownload',
+     c[0].cls === 'now' && /<button class="btn btn-go sbtn" onclick="stepDownload\(90\)">⬇ Λήψη αρχείου CMS<\/button>/.test(c[0].html), c[0].html);
+  ck('...② ΔΕΝ ΓΙΝΕΤΑΙ: διακεκομμένο, ανενεργό, «Πρώτα το προηγούμενο βήμα»',
+     c[1].cls === 'lock' && /<button class="btn sbtn lock" title="Πρώτα το προηγούμενο βήμα" disabled>✓ Ολοκλήρωση<\/button>/.test(c[1].html), c[1].html);
+  ck('...③ ΔΕΝ ΓΙΝΕΤΑΙ: «🔍 Επαλήθευση» διακεκομμένο, ίδιο tooltip',
+     c[2].cls === 'lock' && c[2].html.includes('<button class="btn sbtn lock" title="Πρώτα το προηγούμενο βήμα" disabled>🔍 Επαλήθευση</button>'));
+  ck('...μεταδεδομένα: ① ανάδοχος, ② «έως Παρ 23/10 19:00», ③ «αδιάθετο · Δευ 26/10 00:00–17:00»',
+     c[0].html.includes('<div class="fs-meta">u1</div>') && c[1].html.includes('<div class="fs-meta">έως Παρ 23/10 19:00</div>')
+     && c[2].html.includes('<div class="fs-meta">αδιάθετο · Δευ 26/10 00:00–17:00</div>'), c[2].html);
+  c = S(0, 2, false);
+  ck('στάδιο 0, άλλος χρήστης: ① ΚΑΤΑΣΤΑΣΗ με κουκκίδα «Το κάνει: u1», ΟΧΙ κουμπί',
+     c[0].html.includes('<span class="sstat"><span class="sdot"></span>Το κάνει: u1</span>') && !/<button/.test(c[0].html), c[0].html);
+  c = S(0, 9, true, STAGE_NOW[0], { rootWho: null });
+  ck('στάδιο 0, ① αδιάθετο: «Περιμένει ανάθεση», κανένα κουμπί ούτε για admin', c[0].html.includes('Περιμένει ανάθεση') && !/<button/.test(c[0].html)
+     && c[0].html.includes('<div class="fs-meta">αδιάθετο</div>'));
+
+  c = S(1, 1, false);
+  ck('στάδιο 1, ανάδοχος ①: ① ΕΓΙΝΕ «✓ Κατέβηκε · ⬇ ξανά» + ώρα + όνομα, ΠΑΤΗΣΙΜΟ (καταγράφεται, δεν αλλάζει βήμα)',
+     c[0].cls === 'ok' && c[0].html.includes('<button class="btn sbtn done" title="Download again — Κατεβάζει ξανά το αρχείο. Καταγράφεται, δεν αλλάζει το βήμα" onclick="stepDownload(90)">✓ Κατέβηκε · ⬇ ξανά<small>Πεμ 22/10 09:05 · u1</small></button>'), c[0].html);
+  ck('...② ΤΡΕΧΟΝ, κουμπί «✓ Ολοκλήρωση» -> openUpload', c[1].cls === 'now' && /<button class="btn btn-go sbtn" onclick="openUpload\(90\)">✓ Ολοκλήρωση<\/button>/.test(c[1].html));
+  c = S(1, 2, false);
+  ck('στάδιο 1, άλλος χρήστης (το ③ δεν έχει ακόμα ανάδοχο): ② ΚΑΤΑΣΤΑΣΗ «Το κάνει: u1», κανένα κουμπί',
+     c[1].html.includes('Το κάνει: u1') && !/<button/.test(c[1].html));
+  c = S(2, 2, false, '2026-10-24 10:00:00');
+  ck('στάδιο 2, ανάδοχος ③: το ① ξανακατεβαίνει (ο server δέχεται όποιον έχει εργασία της εβδομάδας)',
+     /class="btn sbtn done"[^>]*onclick="stepDownload\(90\)"/.test(c[0].html), c[0].html);
+  c = S(1, 3, false);
+  ck('στάδιο 1, χρήστης εκτός εβδομάδας: ① ΕΓΙΝΕ αλλά ανενεργό (ο server θα αρνιόταν)', /class="btn sbtn done"[^>]*disabled/.test(c[0].html) && !c[0].html.includes('onclick'));
+
+  c = S(2, 2, false, '2026-10-24 10:00:00');
+  ck('στάδιο 2, ΠΡΙΝ τη Δευτέρα: ② ΕΓΙΝΕ «✓ Ολοκληρώθηκε · Παρ 23/10 18:12 · u1», ανενεργό, «δεν ξαναγίνεται»',
+     c[1].cls === 'ok' && c[1].html.includes('<button class="btn sbtn done" title="Completed — Ολοκληρώθηκε, δεν ξαναγίνεται" disabled>✓ Ολοκληρώθηκε<small>Παρ 23/10 18:12 · u1</small></button>'), c[1].html);
+  ck('...③ ΤΡΕΧΟΝ αλλά διακεκομμένο: «Ανοίγει Δευ 26/10 00:00»', c[2].cls === 'now'
+     && c[2].html.includes('<button class="btn sbtn lock" title="Ανοίγει Δευ 26/10 00:00" disabled>🔍 Επαλήθευση</button>'), c[2].html);
+  ck('...όριο: Κυρ 25/10 23:59:59 ακόμα κλειστό, Δευ 26/10 00:00:00 ανοίγει',
+     S(2, 2, false, '2026-10-25 23:59:59')[2].html.includes('Ανοίγει Δευ 26/10 00:00')
+     && /onclick="act\(91,'done'\)"/.test(S(2, 2, false, '2026-10-26 00:00:00')[2].html));
+  c = S(2, 2, false, '2026-10-26 09:00:00');
+  ck('στάδιο 2, Δευτέρα, ανάδοχος ③: κουμπί «🔍 Επαλήθευση» -> act(91,\'done\')',
+     /<button class="btn btn-go sbtn" onclick="act\(91,'done'\)">🔍 Επαλήθευση<\/button>/.test(c[2].html)
+     && c[2].html.includes('<div class="fs-meta">u2 · Δευ 26/10 00:00–17:00</div>'), c[2].html);
+  c = S(2, 1, false, '2026-10-26 09:00:00');
+  ck('...ανάδοχος ①: ③ ΚΑΤΑΣΤΑΣΗ «Το κάνει: u2»', c[2].html.includes('Το κάνει: u2') && !/<button/.test(c[2].html));
+  c = S(3, 9, true);
+  ck('στάδιο 3: ③ ΕΓΙΝΕ «✓ Επαληθεύτηκε · Δευ 26/10 10:30 · u2», ανενεργό', c[2].cls === 'ok'
+     && c[2].html.includes('disabled>✓ Επαληθεύτηκε<small>Δευ 26/10 10:30 · u2</small></button>') && c.every(x => x.cls === 'ok'), c[2].html);
+  ck('...και το ① ξανακατεβαίνει ΚΑΙ μετά την Ολοκλήρωση (admin)', /onclick="stepDownload\(90\)"/.test(c[0].html));
+
+  // ΠΟΤΕ: γενικά κουμπιά, badge, οβάλ «Έτοιμη για ολοκλήρωση», σε κανένα στάδιο/χρήστη.
+  const NEVER = /Δεν εφαρμόζεται|Απόρριψη|Αφήνω|Αναλαμβάνω|Έτοιμη για ολοκλήρωση|markNa\(|openReject\(|steal\(|claim\(|act\(90,|class="st"/;
+  const bad = [];
+  for (const stage of [0, 1, 2, 3]) for (const now of [STAGE_NOW[stage], '2026-10-26 09:00:00'])
+    for (const [me, admin] of [[1, false], [1, true], [2, false], [9, true], [3, false]]) {
+      const h = stripOf(stripWeek(stage), now, 'all', me, admin);
+      if (NEVER.test(h)) bad.push(`στάδιο ${stage} u${me}: ${h.match(NEVER)[0]}`);
+    }
+  ck('κανένα «Δεν εφαρμόζεται / Απόρριψη / Αφήνω / Αναλαμβάνω», κανένα badge, κανένα οβάλ (40 περιπτώσεις)', bad.length === 0, bad.slice(0, 3).join(' | '));
+  const st = stripOf(stripWeek(0), STAGE_NOW[0], 'all', 2, false);
+  ck('η ΚΑΤΑΣΤΑΣΗ δεν είναι ποτέ κουμπί: το sstat είναι <span>', /<span class="sstat">/.test(st) && !/<button[^>]*sstat/.test(st));
+}
+
+console.log('\n═══ Α3 λωρίδα: «⋯», ειδοποιήσεις, χρώματα, κινητό ═══');
+{
+  const menu = h => { const m = /<div class="step-menu">([\s\S]*?)<\/div><\/details>/.exec(h); return m ? m[1] : ''; };
+  const calls = h => [...menu(h).matchAll(/onclick="(\w+)\((\d+)\)"/g)].map(m => m[1] + m[2]);
+  let h = stripOf(stripWeek(1), STAGE_NOW[1], 'all', 9, true);
+  ck('admin (όχι ανάδοχος): Ανάθεση ①, Παράκαμψη, Ανάθεση ③, ιστορικό ①, ιστορικό ③',
+     JSON.stringify(calls(h)) === '["assign90","openOverride90","assign91","toggleHist90","toggleHist91"]', calls(h).join(','));
+  ck('...ετικέτες από τη βάση: «Ανάθεση ①…», «Ανάθεση ③…», «ιστορικό ①»', menu(h).includes('>Ανάθεση ①…</button>')
+     && menu(h).includes('>Ανάθεση ③…</button>') && menu(h).includes('▸ ιστορικό ①</button>'));
+  h = stripOf(stripWeek(1), STAGE_NOW[1], 'all', 1, true);
+  ck('admin ανάδοχος ①: ΟΧΙ Παράκαμψη', !calls(h).includes('openOverride90') && calls(h).includes('assign90'));
+  for (const me of [1, 2, 3])
+    ck(`μη-admin u${me}: μόνο ιστορικό ① και ③`, JSON.stringify(calls(stripOf(stripWeek(1), STAGE_NOW[1], 'all', me, false))) === '["toggleHist90","toggleHist91"]');
+  h = stripOf(stripWeek(3), STAGE_NOW[3], 'all', 9, true);
+  ck('όλα κλειστά, admin: μόνο ιστορικό', JSON.stringify(calls(h)) === '["toggleHist90","toggleHist91"]');
+
+  h = stripOf(stripWeek(1), STAGE_NOW[1], 'all', 2, false);
+  ck('📧 Ειδοποιήσεις: ΚΕΝΗ ως τη Φάση Β («Καμία ακόμα»)', h.includes('<div class="fs-notes-h">📧 Ειδοποιήσεις που στάλθηκαν</div><div class="fs-note none">Καμία ακόμα</div>'), h);
+  h = stripOf(stripWeek(2, { verNotices: [{ at: '2026-10-23 18:13:00', what: '📧 Ανέβηκε · σειρά σου για επαλήθευση', to: 'u2' }],
+                             rootNotices: [{ at: '2026-10-22 19:00:00', what: '<b>x</b>', to: null }] }), '2026-10-24 10:00:00', 'mine', 2, false);
+  ck('...με ειδοποιήσεις από το ιστορικό: ώρα · τι · προς ποιον, με τη σειρά της ώρας, escaped',
+     h.includes('<div class="fs-note"><span class="fs-at">Πεμ 22/10 19:00</span><span>&lt;b&gt;x&lt;/b&gt;</span></div>')
+     && h.includes('<div class="fs-note"><span class="fs-at">Παρ 23/10 18:13</span><span>📧 Ανέβηκε · σειρά σου για επαλήθευση</span><span class="fs-to">προς u2</span></div>')
+     && h.indexOf('Πεμ 22/10 19:00') < h.indexOf('Παρ 23/10 18:13'), h);
+
+  h = stripOf(stripWeek(1), STAGE_NOW[1], 'all', 1, false);
+  ck('χρώματα από τη βάση: τρέχον = color_open_head, έγινε = color_step_done (λευκά γράμματα), κλειδωμένο = color_step_locked',
+     h.startsWith('<div class="fstrip" style="--fs-now:#FCFF29;--fs-done:#5a5d60;--fs-lock:#ececec;--fs-done-fg:#fff;">'), h.slice(0, 140));
+  h = stripOf(stripWeek(1), STAGE_NOW[1], 'all', 1, false, false);
+  ck('...κείμενα που δεν φορτώθηκαν: κανένα inline χρώμα (το CSS κρατά την εφεδρεία), [κλειδί] στα κείμενα',
+     h.startsWith('<div class="fstrip">') && h.includes('[strip_l1]'), h.slice(0, 80));
+  const lum = hex => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+                       return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  ck(`αντίθεση: λευκό σε color_step_done ${ratio('#ffffff', '#5a5d60').toFixed(1)}:1, #666 σε color_step_locked ${ratio('#666666', '#ececec').toFixed(1)}:1 (≥ 4.5)`,
+     ratio('#ffffff', MIG_TEXTS.tasks.color_step_done) >= 4.5 && ratio('#666666', MIG_TEXTS.tasks.color_step_locked) >= 4.5);
+  const css = src.slice(src.indexOf('.fs-track {'), src.indexOf('/* Κόκκινο σήμα'));
+  ck('κινητό (≤ 640px): τα 3 βήματα στοιβάζονται κάθετα', /@media \(max-width: 640px\) \{\s*\.fs-track \{ grid-template-columns: minmax\(0,1fr\); \}/.test(css)
+     && /\.fs-track \{ display: grid; grid-template-columns: repeat\(3, minmax\(0,1fr\)\); \}/.test(css));
+  const keys = [...new Set([...['fuelStripHtml', 'fuelStripMenu', 'stripColorVar'].map(grab).join('\n').matchAll(/pageText\('(\w+)'/g)].map(m => m[1]))];
+  ck(`κάθε pageText της λωρίδας (${keys.length}) έχει κλειδί στο seed του 19b ή 15b`, keys.length >= 20 && keys.every(k => k in MIG_TEXTS.tasks), keys.filter(k => !(k in MIG_TEXTS.tasks)).join(','));
+}
+
+console.log('\n═══ Α3 λωρίδα: ρίζα ΕΚΤΟΣ λίστας (chain) — λήψη / ολοκλήρωση / παράκαμψη βρίσκουν την εργασία ═══');
+{
+  const ts = stripWeek(2);
+  const { api } = env({ statuses: ST_DB, now: '2026-10-26 09:00:00', userId: 2, admin: false, view: 'mine' });
+  const shown = tabOf(ts, 'mine', 2);
+  api.setTasks(shown);
+  const r = api.taskById(90);
+  ck('taskById: η ρίζα (90) δεν είναι στη λίστα, τη βρίσκει στο chain, με payload, βήματα και ui',
+     shown.every(t => t.id !== 90) && r && r.id === 90 && r.payload === shown[0].payload && Array.isArray(r.steps) && r.ui === UI, JSON.stringify(r && Object.keys(r)));
+  ck('...και η downloadFuelCms / uploadTask / overrideTask την ψάχνουν με taskById',
+     /const t = taskById\(id\);/.test(grab('downloadFuelCms')) && /taskById\(uploadId\)/.test(grab('uploadTask')) && /taskById\(overrideId\)/.test(grab('overrideTask')));
+  ck('taskById: άγνωστο id -> null', api.taskById(12345) === null);
+}
+
+console.log('\n═══ Α3 λωρίδα: ΧΩΡΙΣ step (παλιά ροή) καμία λωρίδα · taskRow όπως πριν από το Α3 ═══');
+{
+  const old = fuelWeek(80, '2026-10-19', 'done', 'in_progress', { up: { assigned_to: 1, assigned_name: 'u1' }, ver: { assigned_to: 2, assigned_name: 'u2' } });
+  ck('εβδομάδα χωρίς step: γραμμές, όχι λωρίδα', stripOf(withChain(old), '2026-10-16 12:00:00', 'all', 9, true) === null);
+  ck('taskRow χωρίς τίποτα από την παλιά γραμμή verify του Α3 (η λωρίδα αντικαθιστά τις γραμμές)',
+     /^function taskRow\(t\)\{/.test(grab('taskRow')) && !/verifyActive|fuel_verify_|fuelActiveRoot|weekItems/.test(grab('taskRow')));
 }
 
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);
