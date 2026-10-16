@@ -83,13 +83,13 @@ function env(opts){
     grabConst('STEP_UI_KEYS'), grab('uiText'),
     grab('stepTimelineHtml'), grab('stepMoreHtml'), grab('stepCardHtml'), grab('uploadCheck'),
     grabConst('UI_SCOPES'), grab('pageText'), grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'), grabConst('TONE_MIX_STRONG'),
-    grab('tint'), grab('groupTone'), grab('addDaysISO'), grab('fuelWeekInfo'), grab('fuelStateHtml'),
+    grab('tint'), grab('groupTone'), grab('addDaysISO'), grab('weekItems'), grab('fuelWeekInfo'), grab('fuelStateHtml'),
     grab('grpIsOpen'), grab('grpTogHtml'), grab('groupHtml'),
     grab('taskRow'), grab('clientChipHtml'), grab('tabFromQuery'), grab('anchorFromHash'), grab('render'),
     'return { clientChipHtml, NavChip, tabFromQuery, anchorFromHash, render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
     '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS,',
     '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle,',
-    '         tint, groupTone, groupHtml, grpOpen, fuelWeekInfo, fuelStateHtml, pageText, UI_SCOPES, UiTexts };'
+    '         tint, groupTone, groupHtml, grpOpen, fuelWeekInfo, fuelStateHtml, weekItems, pageText, UI_SCOPES, UiTexts };'
   ].join('\n');
   const api = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, store, {});
   return { api, els };
@@ -1094,6 +1094,106 @@ console.log('\n═══ (Γ) «χωρίς AccountNo» / «χωρίς προσφ
      els.list.innerHTML.includes('χωρίς AccountNo') && els.list.innerHTML.includes(' · χωρίς προσφορά'), els.list.innerHTML);
   ck('στο render: pageText, όχι γραμμένα κείμενα', /pageText\('client_no_account'\)/.test(grab('render')) && /pageText\('client_no_offer'\)/.test(grab('render')) &&
      !/'χωρίς AccountNo'|' · χωρίς προσφορά'/.test(grab('render')));
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// Α2α, ΕΥΡΗΜΑ 16/10: η κεφαλίδα της εβδομάδας = κατάσταση ΟΛΗΣ της εβδομάδας
+// (t.chain από τον server), ΙΔΙΑ σε «Οι εργασίες μου», «Ουρά» και «Όλες».
+// Οι λίστες φιλτράρονται ΟΠΩΣ στο tasks_list (mine: δικές μου in_progress/
+// paused, queue: αδιάθετες open, all: όλες), και κάθε εργασία συστήματος
+// παίρνει chain ΟΠΩΣ στο tasks_chain.
+const withChain = ts => {
+  const byKey = new Map();
+  ts.filter(t => t.client_id === null).forEach(t => { const k = t.subject_key; if (!byKey.has(k)) byKey.set(k, []); byKey.get(k).push(t); });
+  return ts.map(t => {
+    if (t.client_id !== null) return t;
+    const sib = byKey.get(t.subject_key);
+    const closed = code => sib.some(x => x.task_code === code && (x.status === 'done' || x.status === 'na'));
+    return Object.assign({}, t, { chain: sib.map(x => ({ id: x.id, task_code: x.task_code, depends_on: x.depends_on, status: x.status,
+      due_at: x.due_at, closed_at: x.closed_at || null, locked: x.depends_on !== null && !closed(x.depends_on) ? 1 : 0,
+      assigned_name: x.assigned_name, closed_by_name: x.closed_by_name || null, has_steps: !!x.step,
+      task_label: x.task_label, task_icon: x.task_icon, task_title_template: x.task_title_template })) });
+  });
+};
+const tabOf = (ts, view, me) => ts.filter(t => view === 'all' ? true
+  : view === 'mine' ? Number(t.assigned_to) === me && (t.status === 'in_progress' || t.status === 'paused')
+  : t.assigned_to === null && t.status === 'open');
+// Οι κεφαλίδες ανά ομάδα: από το <div class="client-group…> ως το grp-body (χρώμα, τίτλος, ένδειξη, [+]/[−]).
+const heads = html => {
+  const out = {};
+  for (const m of html.matchAll(/<div class="client-group[\s\S]*?<div class="grp-body"/g)) {
+    const k = /data-g="([^"]*)"/.exec(m[0]); if (k) out[k[1]] = m[0];
+  }
+  return out;
+};
+// Κάθε κατάσταση εβδομάδας, με τα δύο μισά σε διαφορετικούς ανθρώπους.
+// u1 = ανάδοχος του ①, u2 = του ②.
+const UP_DONE = { status: 'done', assigned_to: 1, assigned_name: 'u1', closed_by_name: 'u1', closed_at: '2026-10-23 18:12:00' };
+const VER_U2 = { status: 'in_progress', assigned_to: 2, assigned_name: 'u2' };
+const WEEK_STATES = [
+  ['① σε εξέλιξη (u1), ② κλειδωμένο αδιάθετο', { status: 'in_progress', assigned_to: 1, assigned_name: 'u1' }, { status: 'open' }],
+  ['① αδιάθετο, ② κλειδωμένο αδιάθετο',         { status: 'open' }, { status: 'open' }],
+  ['① done (u1), ② σε εξέλιξη (u2)',            UP_DONE, VER_U2],
+  ['① done (u1), ② αδιάθετο',                   UP_DONE, { status: 'open' }],
+  ['① done, ② done',                            { status: 'done', assigned_to: 1, assigned_name: 'u1' }, { status: 'done', assigned_to: 2, assigned_name: 'u2' }],
+  ['① na, ② σε εξέλιξη (u2)',                   { status: 'na', assigned_to: 1, assigned_name: 'u1' }, VER_U2],
+];
+const NOWS = ['2026-10-22 10:00:00', '2026-10-24 10:00:00', '2026-10-26 09:00:00', '2026-10-26 18:00:00', '2026-10-28 10:00:00', '2026-11-03 10:00:00'];
+const stateWeek = (up, ver) => {
+  const w = fuelWeek(90, '2026-10-26', up.status, ver.status, {
+    up:  Object.assign({ due_at: '2026-10-23 19:00:00', assigned_to: null, assigned_name: null }, up),
+    ver: Object.assign({ due_at: '2026-10-26 17:00:00', assigned_to: null, assigned_name: null }, ver) });
+  // locked όπως η tasks_base_sql
+  w[1].locked = w[0].status === 'done' || w[0].status === 'na' ? 0 : 1;
+  return w;
+};
+const listOf = (ts, now, view, me, admin) => {
+  const { api, els } = env({ statuses: ST_DB, now, userId: me, admin, view });
+  const shown = tabOf(ts, view, me);
+  api.setTasks(shown); api.render(shown);
+  return { html: els.list.innerHTML, api };
+};
+
+console.log('\n═══ Α2α εύρημα 16/10: ΙΔΙΑ κεφαλίδα εβδομάδας σε mine / queue / all, για κάθε κατάσταση ═══');
+{
+  const keys = new Set(), bad = [];
+  let compared = 0;
+  for (const now of NOWS) for (const [lbl, up, ver] of WEEK_STATES) {
+    const ts = withChain([...stateWeek(up, ver), cliTask(1, 7, 'Πελάτης', { status: 'in_progress', assigned_to: 2, assigned_name: 'u2' })]);
+    const all = listOf(ts, now, 'all', 9, true);
+    const ref = heads(all.html);
+    const info = all.api.fuelWeekInfo(all.api.weekItems(ts.filter(t => t.client_id === null)), now);
+    keys.add(info.key || (info.phase === 'older' ? 'older' : 'null'));
+    for (const [me, admin, view] of [[1, false, 'mine'], [2, false, 'mine'], [2, false, 'queue'], [9, true, 'queue'], [9, true, 'mine']]) {
+      const got = heads(listOf(ts, now, view, me, admin).html);
+      for (const k of Object.keys(got)) {
+        if (k.startsWith('c:')) continue;
+        compared++;
+        if (got[k] !== ref[k]) bad.push(`${now} · ${lbl} · u${me} ${view} · ${k}`);
+      }
+    }
+  }
+  const want = ['fuel_next_todo', 'fuel_uploaded', 'fuel_next_ready', 'fuel_now_missing', 'fuel_now_ok', 'older'];
+  ck(`όλες οι καταστάσεις καλύπτονται (${want.join(', ')})`, want.every(k => keys.has(k)), [...keys].join(','));
+  ck(`${compared} κεφαλίδες σε mine/queue: ΙΔΙΕΣ byte-προς-byte με την «Όλες»`, compared >= 60 && bad.length === 0, bad.slice(0, 3).join(' | '));
+}
+{
+  // Το εύρημα αυτούσιο: εβδομάδα 19/10, Παρ 16/10, ① done από u1, ② της u2.
+  const now = '2026-10-16 12:00:00';
+  const wk = fuelWeek(80, '2026-10-19', 'done', 'in_progress', { up: { assigned_to: 1, assigned_name: 'u1' }, ver: { assigned_to: 2, assigned_name: 'u2' } });
+  const mineH = listOf(withChain(wk), now, 'mine', 2, false).html;
+  ck('εύρημα: «Οι εργασίες μου» της u2 -> «⏳ Ανέβηκε · εκκρεμεί επαλήθευση», πορτοκαλί (όχι «ΠΡΟΣ ΕΚΤΕΛΕΣΗ», όχι λεμονί)',
+     mineH.includes('⏳ Ανέβηκε · εκκρεμεί επαλήθευση') && !mineH.includes('ΠΡΟΣ ΕΚΤΕΛΕΣΗ') && /class="client-group sys tone warn"/.test(mineH), heads(mineH)['sys:fuel:2026-10-19']);
+  ck('...ο τίτλος του ① (Γενικός επίναυλος…), όχι του verify', mineH.includes('Γενικός επίναυλος') && !/client-name">[^<]*<[^>]*>[^<]*<\/span>Έλεγχος/.test(mineH));
+  ck('...και οι γραμμές μένουν όσες φαίνονται: μόνο το ② (καμία γραμμή για το ①)', !/act\(80,|downloadFuelCms\(80\)|toggleHist\(80\)/.test(mineH) && /toggleHist\(81\)/.test(mineH));
+  // ΠΑΛΙΟΣ SERVER (χωρίς chain): η οθόνη ΑΚΡΙΒΩΣ όπως σήμερα.
+  const oldH = listOf(wk, now, 'mine', 2, false).html;
+  ck('χωρίς chain (παλιός server): όπως σήμερα, από όσες φαίνονται («ΠΡΟΣ ΕΚΤΕΛΕΣΗ»)', oldH.includes('ΠΡΟΣ ΕΚΤΕΛΕΣΗ'));
+  ck('weekItems χωρίς chain: τα ΙΔΙΑ αντικείμενα (εργασίες πελάτη, golden)', (() => {
+    const { api } = env({}); const xs = [cliTask(1, 7, 'Π'), cliTask(2, 7, 'Π')]; const r = api.weekItems(xs);
+    return r.length === 2 && r[0] === xs[0] && r[1] === xs[1]; })());
+  ck('weekItems: κάθε εργασία μία φορά, ακόμα κι όταν φαίνονται και οι δύο', (() => {
+    const { api } = env({}); return api.weekItems(withChain(wk)).length === 2; })());
 }
 
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);

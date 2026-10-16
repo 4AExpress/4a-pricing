@@ -405,5 +405,52 @@ foreach (array(null, 'empty', 'fuel') as $mode) {
     ck("$tag: na πελάτη OK (allow_na = 1)", $n['ok'] === true, json_encode($n));
 }
 
+echo "\n═══ Α2α (εύρημα 16/10): chain = ΟΛΗ η αλυσίδα, ΙΔΙΑ σε κάθε καρτέλα ═══\n";
+$db = fresh_db('empty');
+list($w, $v, $c, $doer, $other) = $chain($db);
+$byId = function ($ts, $id) { foreach ($ts as $t) if ((int)$t['id'] === $id) return $t; return null; };
+$all = tasks_list($db, $S(9), $A, 'all')['tasks'];
+$tw = $byId($all, $w); $tv = $byId($all, $v); $tc = $byId($all, $c);
+ck('ρίζα και verify: chain με ΔΥΟ εγγραφές, ρίζα πρώτη', array_column($tw['chain'], 'id') === array($w, $v) && $tv['chain'] === $tw['chain'], json_encode($tw['chain']));
+ck('...τα πεδία της εγγραφής, με αυτή τη σειρά', array_keys($tw['chain'][0]) === array('id', 'task_code', 'depends_on', 'status', 'due_at', 'closed_at',
+   'locked', 'assigned_name', 'closed_by_name', 'has_steps', 'task_label', 'task_icon', 'task_title_template'), json_encode(array_keys($tw['chain'][0])));
+ck('...ο τίτλος του τύπου, ίδιος με της γραμμής (τίτλος ομάδας χωρίς τη ρίζα)', $tw['chain'][0]['task_label'] === $tw['task_label']
+   && $tw['chain'][0]['task_icon'] === $tw['task_icon'] && $tw['chain'][0]['task_title_template'] === $tw['task_title_template']
+   && $tw['chain'][1]['task_label'] === $tv['task_label']);
+ck('...locked ΙΔΙΟ με της tasks_base_sql (ρίζα 0, verify 1)', $tw['chain'][0]['locked'] === (int)$tw['locked'] && $tw['chain'][1]['locked'] === (int)$tv['locked']
+   && $tw['chain'][1]['locked'] === 1);
+ck('...ανάδοχος, κατάσταση, προθεσμία από τη βάση', $tw['chain'][0]['assigned_name'] === 'u' . $doer && $tw['chain'][0]['status'] === $tw['status']
+   && $tw['chain'][1]['due_at'] === $tv['due_at'] && $tw['chain'][0]['closed_by_name'] === null);
+ck('...has_steps false χωρίς γραμμές στον 4a_task_steps', $tw['chain'][0]['has_steps'] === false);
+ck('εργασία πελάτη: ΚΑΝΕΝΑ chain', !array_key_exists('chain', $tc));
+$q = $byId(tasks_list($db, $S(9), $A, 'queue')['tasks'], $v);
+ck('«Ουρά»: το verify (χωρίς τη ρίζα στη λίστα) έχει ΟΛΗ την αλυσίδα, ίδια με την «Όλες»', $q !== null && $q['chain'] === $tv['chain'], json_encode($q));
+tasks_done($db, $S($doer), $PU($doer), $w);
+$mine = tasks_list($db, $S($other), $PU($other), 'mine')['tasks'];
+$all = tasks_list($db, $S(9), $A, 'all')['tasks'];
+ck('«Οι εργασίες μου» του άλλου: μόνο το verify, αλλά chain ΙΔΙΟ με την «Όλες»',
+   count($mine) === 1 && (int)$mine[0]['id'] === $v && $mine[0]['chain'] === $byId($all, $v)['chain'], json_encode($mine[0]['chain'] ?? null));
+$r0 = $mine[0]['chain'][0];
+ck("...ρίζα done, closed_by_name = u$doer, closed_at από τη βάση (για «✓ ① Ανέβηκε από …»)",
+   $r0['status'] === 'done' && $r0['closed_by_name'] === 'u' . $doer && $r0['closed_at'] !== null
+   && $r0['closed_at'] === $db->query("SELECT `closed_at` FROM `4a_tasks` WHERE `id` = $w")->fetchColumn(), json_encode($r0));
+ck('...το verify ξεκλείδωσε και στο chain', $mine[0]['chain'][1]['locked'] === 0 && (int)$mine[0]['locked'] === 0);
+$db->exec("UPDATE `4a_tasks` SET `status` = 'na' WHERE `id` = $w");
+ck('ρίζα «na»: το verify μένει ξεκλείδωτο στο chain (κανόνας της tasks_base_sql)',
+   $byId(tasks_list($db, $S(9), $A, 'all')['tasks'], $v)['chain'][1]['locked'] === 0);
+$db = fresh_db('fuel');
+list($w) = $chain($db);
+ck('τύπος με βήματα: has_steps true στη ρίζα, false στο verify', (function () use ($db, $A, $S, $byId, $w) {
+    $ch = $byId(tasks_list($db, $S(9), $A, 'all')['tasks'], $w)['chain'];
+    return $ch[0]['has_steps'] === true && $ch[1]['has_steps'] === false; })());
+$db = fresh_db('empty');
+$a = tasks_create_system($db, 'fuel_weekly', 'fuel:2026-10-12', $PAYLOAD, 'BOTH', '2026-10-09 17:00:00');
+$b = tasks_create_system($db, 'fuel_weekly', 'fuel:2026-10-19', $PAYLOAD, 'BOTH', '2026-10-16 17:00:00');
+$l = tasks_list($db, $S(9), $A, 'all')['tasks'];
+ck('δύο εβδομάδες: κάθε μία τη ΔΙΚΗ της αλυσίδα (dedupe_key)', array_column($byId($l, (int)$a['task_id'])['chain'], 'id') === array((int)$a['task_id'])
+   && array_column($byId($l, (int)$b['task_id'])['chain'], 'id') === array((int)$b['task_id']));
+ck('ΕΝΑ ερώτημα για όλη τη λίστα (όχι ανά εργασία)', substr_count(file_get_contents(__DIR__ . '/../../api/tasks_lib.php'), 'LEFT JOIN `4a_users` cb ON cb.`id` = d.`closed_by`') === 1
+   && preg_match('/function tasks_chain\(.*?\n}\n/s', file_get_contents(__DIR__ . '/../../api/tasks_lib.php'), $m) && substr_count($m[0], '->prepare(') === 1);
+
 printf("\n═══ ΣΥΝΟΛΟ: %d OK, %d ΛΑΘΟΣ ═══\n\n", $pass, $fail);
 exit($fail ? 1 : 0);

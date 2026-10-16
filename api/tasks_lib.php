@@ -1,5 +1,9 @@
 <?php
-// tasks_lib.php | v1.5 | 12-10-2026
+// tasks_lib.php | v1.5a | 16-10-2026
+// v1.5a: Α2α (εύρημα 16/10). Κάθε εργασία ΣΥΣΤΗΜΑΤΟΣ παίρνει `chain`: η
+//       σύνοψη ΟΛΗΣ της αλυσίδας της (ίδιο dedupe_key), ώστε η κεφαλίδα
+//       της εβδομάδας να είναι ίδια σε κάθε καρτέλα, ακόμα κι όταν η ρίζα
+//       δεν είναι στη λίστα. Εργασίες πελάτη: κανένα νέο κλειδί.
 // v1.5: κάρτα βημάτων (api/tasks_steps.php, Φάση 5 Κ2α). Τύπος με γραμμές
 //       στον 4a_task_steps: η λίστα παίρνει step/timeline/override, το
 //       γενικό done απαντά 409. allow_na ανά τύπο στο na. Σήμα: overrides.
@@ -726,8 +730,74 @@ function tasks_list($db, $session, $perms, $view)
     $st->execute($params);
     // Τα βήματα προστίθενται ΜΟΝΟ σε τύπους με γραμμές στον 4a_task_steps·
     // κάθε άλλη εργασία επιστρέφεται χωρίς κανένα νέο κλειδί.
-    return ['ok' => true, 'code' => 200, 'error' => null,
-            'tasks' => tasks_steps_attach($db, array_map('tasks_with_action', $st->fetchAll(PDO::FETCH_ASSOC)))];
+    $tasks = tasks_steps_attach($db, array_map('tasks_with_action', $st->fetchAll(PDO::FETCH_ASSOC)));
+    return ['ok' => true, 'code' => 200, 'error' => null, 'tasks' => tasks_chain($db, $tasks)];
+}
+
+/**
+ * Η κατάσταση ΟΛΗΣ της αλυσίδας μιας εργασίας ΣΥΣΤΗΜΑΤΟΣ (εύρημα 16/10).
+ * Στην «Οι εργασίες μου» και στην «Ουρά» η ρίζα της εβδομάδας επίναυλου
+ * συχνά λείπει από τη λίστα, και η κεφαλίδα κρινόταν μόνο από όσες
+ * φαίνονται. Κανόνας: κεφαλίδα = κατάσταση όλης της εβδομάδας, ΙΔΙΑ σε κάθε
+ * καρτέλα. Γι' αυτό κάθε εργασία συστήματος παίρνει `chain`: όλες οι
+ * εργασίες με το ίδιο dedupe_key, με ό,τι χρειάζεται η κεφαλίδα και η
+ * γραμμή «✓ ① Ανέβηκε από …» (closed_by_name, closed_at), και ο τίτλος
+ * του τύπου (task_label, task_icon, task_title_template). Το `locked`
+ * υπολογίζεται με τον κανόνα της tasks_base_sql. has_steps: ο τύπος έχει
+ * βήματα (η πύλη της Φάσης Α όταν η ρίζα δεν είναι στη λίστα).
+ *
+ * Εργασίες ΠΕΛΑΤΗ: ΚΑΝΕΝΑ νέο κλειδί (JSON ίδιο byte-προς-byte). Ένα
+ * ερώτημα για όλη τη λίστα.
+ */
+function tasks_chain($db, array $tasks)
+{
+    $keys = [];
+    foreach ($tasks as $t) {
+        if ($t['client_id'] === null && $t['dedupe_key'] !== null) $keys[] = (string)$t['dedupe_key'];
+    }
+    if (!$keys) return $tasks;
+    $keys = array_values(array_unique($keys));
+    $st = $db->prepare('SELECT d.`id`, d.`dedupe_key`, d.`task_code`, tt.`depends_on`, d.`status`, d.`due_at`,
+                               d.`closed_at`, u.`name` AS assigned_name, cb.`name` AS closed_by_name,
+                               tt.`label` AS task_label, tt.`icon` AS task_icon, tt.`title_template` AS task_title_template
+                          FROM `4a_tasks` d
+                          JOIN `4a_task_types` tt ON tt.`code` = d.`task_code`
+                     LEFT JOIN `4a_users` u  ON u.`id`  = d.`assigned_to`
+                     LEFT JOIN `4a_users` cb ON cb.`id` = d.`closed_by`
+                         WHERE d.`client_id` IS NULL
+                           AND d.`dedupe_key` IN (' . implode(',', array_fill(0, count($keys), '?')) . ')
+                      ORDER BY tt.`sort_order`, d.`id`');
+    $st->execute($keys);
+    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    $closed = [];
+    foreach ($rows as $r) {
+        if ($r['status'] === 'done' || $r['status'] === 'na') $closed[$r['dedupe_key'] . "\n" . $r['task_code']] = true;
+    }
+    $stepped = tasks_steps_load($db, array_column($rows, 'task_code'));
+    $chains = [];
+    foreach ($rows as $r) {
+        $chains[$r['dedupe_key']][] = [
+            'id'             => (int)$r['id'],
+            'task_code'      => $r['task_code'],
+            'depends_on'     => $r['depends_on'],
+            'status'         => $r['status'],
+            'due_at'         => $r['due_at'],
+            'closed_at'      => $r['closed_at'],
+            'locked'         => $r['depends_on'] !== null && !isset($closed[$r['dedupe_key'] . "\n" . $r['depends_on']]) ? 1 : 0,
+            'assigned_name'  => $r['assigned_name'],
+            'closed_by_name' => $r['closed_by_name'],
+            'has_steps'      => isset($stepped[$r['task_code']]),
+            // Ο τίτλος της ομάδας = του τύπου-ρίζας, και όταν η ρίζα δεν φαίνεται.
+            'task_label'          => $r['task_label'],
+            'task_icon'           => $r['task_icon'],
+            'task_title_template' => $r['task_title_template'],
+        ];
+    }
+    foreach ($tasks as $i => $t) {
+        if ($t['client_id'] !== null || $t['dedupe_key'] === null) continue;
+        $tasks[$i]['chain'] = isset($chains[(string)$t['dedupe_key']]) ? $chains[(string)$t['dedupe_key']] : [];
+    }
+    return $tasks;
 }
 
 // ─────────────────────────────────────────────────────────────────────

@@ -614,10 +614,11 @@ function render(tasks){
   // Εβδομάδες επίναυλου: επόμενη -> σε ισχύ -> παλαιότερες (week_start
   // φθίνουσα). Οι παλαιότερες μαζί σε μία ομάδα «Παλαιότερες εβδομάδες (N)».
   // Ό,τι δεν είναι εβδομάδα επίναυλου μένει μετά, με τη σειρά του.
-  const sysList = [...sysGroups.entries()].map(([k, g]) => ({ k, g, info: fuelWeekInfo(g.items) }));
+  const sysList = [...sysGroups.entries()].map(([k, g]) => ({ k, g, info: fuelWeekInfo(weekItems(g.items)) }));
   sysList.sort((a, b) => (b.info ? b.info.ws : '').localeCompare(a.info ? a.info.ws : ''));
   const sysOne = ({ k, g, info }) => {
-    const root = g.items.find(t => t.depends_on === null) || g.items[0];
+    // Η ρίζα από ΟΛΗ την εβδομάδα (weekItems): ίδιος τίτλος σε κάθε καρτέλα.
+    const root = weekItems(g.items).find(t => t.depends_on === null) || g.items[0];
     // Τίτλος της ομάδας = ο τίτλος του τύπου-ρίζας, με εικονίδιο και εβδομάδα
     // από τη βάση (taskTitle). Η εβδομάδα δεν ξαναγράφεται δίπλα.
     return groupHtml('sys:' + k, 'client-group sys', g.items, `
@@ -866,6 +867,26 @@ function addDaysISO(iso, n){
   const d = new Date(Date.UTC(+iso.slice(0,4), +iso.slice(5,7)-1, +iso.slice(8,10) + n));
   return d.toISOString().slice(0, 10);
 }
+// Η ομάδα ΟΛΗ (εύρημα 16/10): οι εργασίες που φαίνονται ΚΑΙ όσες της
+// αλυσίδας τους λείπουν από την καρτέλα, από το t.chain του server. Στην
+// «Οι εργασίες μου» και στην «Ουρά» η ρίζα συχνά δεν είναι στη λίστα· χωρίς
+// αυτό η κεφαλίδα κρινόταν μόνο από το verify («ΠΡΟΣ ΕΚΤΕΛΕΣΗ» αντί για
+// «Ανέβηκε · εκκρεμεί επαλήθευση»). Κανόνας: κεφαλίδα = κατάσταση ΟΛΗΣ της
+// εβδομάδας, ΙΔΙΑ σε κάθε καρτέλα. ΜΟΝΟ για κεφαλίδα, χρώμα και τίτλο· οι
+// γραμμές της ομάδας μένουν όσες φαίνονται. Χωρίς t.chain (εργασίες πελάτη,
+// παλιός server): οι ίδιες οι εργασίες, όπως πριν.
+function weekItems(items){
+  items = items || [];
+  const out = items.slice(), seen = new Set(items.map(t => Number(t.id)));
+  items.forEach(t => (Array.isArray(t.chain) ? t.chain : []).forEach(c => {
+    if(seen.has(Number(c.id))) return;
+    seen.add(Number(c.id));
+    // Το payload είναι ΙΔΙΟ σε όλη την εβδομάδα (api/fuel_weekly.php): από
+    // την εργασία που φαίνεται, για τη week_start.
+    out.push(Object.assign({ client_id: null, subject_key: t.subject_key, payload: t.payload }, c));
+  }));
+  return out;
+}
 // null αν η ομάδα δεν είναι εβδομάδα επίναυλου. Αλλιώς:
 //   ws, phase: next | now | older, text (ή null), alert: red | orange | null
 function fuelWeekInfo(items, now){
@@ -921,8 +942,10 @@ function toggleGroup(key){
 // startClosed: αρχικά μαζεμένη ακόμα κι αν δεν είναι κλειστή («Παλαιότερες»).
 // bodyHtml: περιεχόμενο αντί για τις γραμμές (οι ομάδες μέσα στις «Παλαιότερες»).
 function groupHtml(key, baseCls, items, headInner, alert, startClosed, bodyHtml){
-  const cs = closedGroupStyle(items);
-  const tone = cs ? null : groupTone(items, undefined, alert);
+  // Χρώμα και «κλειστή» από ΟΛΗ την εβδομάδα (weekItems), ίδια σε κάθε καρτέλα.
+  const wk = weekItems(items);
+  const cs = closedGroupStyle(wk);
+  const tone = cs ? null : groupTone(wk, undefined, alert);
   const open = grpIsOpen(key, !!cs || !!startClosed);
   const cls = baseCls + (cs ? ' closed' : '') + (tone ? ' tone ' + tone.cls : '');
   const style = cs || (tone && tone.style);
