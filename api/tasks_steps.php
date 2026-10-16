@@ -1,5 +1,10 @@
 <?php
-// tasks_steps.php | v1.0 | 12-10-2026
+// tasks_steps.php | v1.1 | 16-10-2026
+// v1.1: Φάση Α, Α2. Η λίστα στέλνει και `steps` (όλα τα μη-τελικά βήματα με
+//       «έγινε») και `allow` (σημαίες του τύπου), ΜΟΝΟ σε τύπους με βήματα.
+//       Σημαίες ανά τύπο allow_release / allow_reject / allow_steal (409 όταν
+//       0) στο μοτίβο του allow_na. Μηνύματα: «επιβεβαίωση» -> «ολοκλήρωση»
+//       (Δ-Κ2). Κανόνας close_from_week_start (Δ-Α8, tasks_close_gate).
 // Φάση 5, Κ2α — ΚΑΡΤΑ ΒΗΜΑΤΩΝ (fuel_weekly). Σχέδιο: phase5_plan.md, Ε.10.
 //
 // ΟΙ ΚΑΝΟΝΕΣ ΤΗΣ ΝΕΑΣ ΚΑΡΤΑΣ ΖΟΥΝ ΣΤΗ ΒΑΣΗ, στον 4a_task_steps
@@ -203,8 +208,31 @@ function tasks_steps_timeline(array $def, array $events)
 }
 
 /**
- * Προσθέτει `step`, `timeline` και `override` ΜΟΝΟ στις εργασίες τύπων με
- * βήματα. Όλες οι άλλες (κάθε εργασία πελάτη) επιστρέφονται ΑΘΙΚΤΕΣ: ούτε
+ * Όλα τα μη-τελικά βήματα, με τη σειρά τους, και αν έγιναν: το done_event
+ * υπάρχει μετά το τελευταίο reopened. Η κάρτα δείχνει ΚΑΘΕ βήμα ως κουμπί
+ * (Φάση Α), όχι μόνο το τρέχον.
+ */
+function tasks_steps_list(array $def, array $events)
+{
+    $seen = [];
+    foreach (tasks_steps_since_reopen($events) as $e) $seen[$e['event']] = true;
+    $out = [];
+    foreach ($def['steps'] as $s) {
+        if ((int)$s['is_final'] === 1) continue;
+        $out[] = [
+            'code'         => $s['step_code'],
+            'action'       => $s['action'],
+            'button_label' => $s['button_label'],
+            'button_icon'  => $s['button_icon'],
+            'done'         => $s['done_event'] !== null && isset($seen[$s['done_event']]),
+        ];
+    }
+    return $out;
+}
+
+/**
+ * Προσθέτει `step`, `steps`, `allow`, `timeline` και `override` ΜΟΝΟ στις
+ * εργασίες τύπων με βήματα. Όλες οι άλλες (κάθε εργασία πελάτη) επιστρέφονται ΑΘΙΚΤΕΣ: ούτε
  * ένα νέο κλειδί, ώστε το JSON τους να μένει byte-προς-byte ίδιο.
  */
 function tasks_steps_attach($db, array $tasks)
@@ -215,6 +243,11 @@ function tasks_steps_attach($db, array $tasks)
     $ids = [];
     foreach ($tasks as $t) if (isset($defs[$t['task_code']])) $ids[] = (int)$t['id'];
     $evs = tasks_steps_events($db, $ids);
+    $allow = [];
+    foreach (array_keys($defs) as $code) {
+        $allow[$code] = [];
+        foreach (['na', 'release', 'reject', 'steal'] as $a) $allow[$code][$a] = tasks_type_allows($db, $code, 'allow_' . $a);
+    }
 
     foreach ($tasks as $i => $t) {
         if (!isset($defs[$t['task_code']])) continue;
@@ -232,6 +265,10 @@ function tasks_steps_attach($db, array $tasks)
             'button_label' => $cur['button_label'],
             'button_icon'  => $cur['button_icon'],
         ];
+        $tasks[$i]['steps']    = tasks_steps_list($def, $ev);
+        // Ποια από τα γενικά κουμπιά επιτρέπει ο τύπος (από τη βάση). Η κάρτα
+        // κρύβει όσα είναι false· ο server τα αρνείται ούτως ή άλλως (409).
+        $tasks[$i]['allow']    = $allow[$t['task_code']];
         $tasks[$i]['timeline'] = tasks_steps_timeline($def, $ev);
         $tasks[$i]['override'] = tasks_steps_override($ev);
         // Τα κείμενα της κάρτας (τίτλοι, μενού, παράθυρα) από τη βάση. Τα
@@ -265,9 +302,12 @@ function tasks_err_closed()
     return $e;
 }
 
-function tasks_close($db, $task, $actorId, $event, $note, $meta = null)
+function tasks_close($db, $task, $actorId, $event, $note, $meta = null, $now = null)
 {
     $taskId = (int)$task['id'];
+    // Δ-Α8: τύπος που κλείνει μόνο από τη Δευτέρα της εβδομάδας ισχύος.
+    $gate = tasks_close_gate($db, $task, $now);
+    if ($gate !== null) return $gate;
     if (isset($task['task_kind']) && $task['task_kind'] === 'system') {
         $st = $db->prepare('UPDATE `4a_tasks` SET `status` = \'done\', `closed_at` = NOW(), `closed_by` = ?
                              WHERE `id` = ? AND `status` NOT IN (\'done\', \'na\')');
@@ -345,7 +385,7 @@ function tasks_download($db, $session, $perms, $taskId)
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// ② ΕΠΙΒΕΒΑΙΩΣΗ ΑΝΕΒΑΣΜΑΤΟΣ — απόφαση Π.
+// ② ΟΛΟΚΛΗΡΩΣΗ (πρώην «επιβεβαίωση ανεβάσματος») — απόφαση Π.
 //
 // Τα 4 νούμερα του Merge Result του CMS (Total / Merge / Updated /
 // Exception). Κλείνει ΜΟΝΟ αν Total = rows_count του payload ΚΑΙ
@@ -367,7 +407,7 @@ function tasks_upload($db, $session, $perms, $taskId, $nums)
 
     if (in_array($task['status'], ['done', 'na'], true)) return tasks_err_closed();
     if ($task['assigned_to'] === null || (int)$task['assigned_to'] !== $me) {
-        return tasks_err(403, 'την επιβεβαίωση ανεβάσματος την κάνει μόνο ο ανάδοχος');
+        return tasks_err(403, 'την ολοκλήρωση την κάνει μόνο ο ανάδοχος');
     }
     $evs = tasks_steps_events($db, [(int)$taskId]);
     $cur = tasks_steps_current($def, $task, $evs[(int)$taskId]);
@@ -399,7 +439,7 @@ function tasks_upload($db, $session, $perms, $taskId, $nums)
     if ($why) {
         $meta['reasons'] = $why;
         tasks_event($db, $taskId, 'upload_failed', $me, implode(' · ', $why), $meta);
-        return tasks_err(409, 'το ανέβασμα δεν επιβεβαιώνεται: ' . implode(' · ', $why));
+        return tasks_err(409, 'η ολοκλήρωση δεν δέχεται τα νούμερα: ' . implode(' · ', $why));
     }
 
     $warn = [];
@@ -495,17 +535,83 @@ function tasks_overrides_pending($db, $session, $perms)
     return (int)$st->fetchColumn();
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// ΣΗΜΑΙΕΣ ΑΝΑ ΤΥΠΟ (4a_task_types). Μόνο οι στήλες της λίστας: το όνομα
+// μπαίνει στο SQL, άρα ΠΟΤΕ από τον χρήστη.
+//   allow_na, allow_release, allow_reject, allow_steal  προεπιλογή 1
+//     (migrations 2026-10-12a, 2026-10-19a)
+//   close_from_week_start                             προεπιλογή 0
+//     (migration 2026-10-19c, Δ-Α8)
+// Χωρίς στήλη (ο κώδικας ανέβηκε πριν από το migration) ή χωρίς τύπο: η
+// προεπιλογή, δηλαδή η σημερινή συμπεριφορά.
+// ─────────────────────────────────────────────────────────────────────
+if (!defined('TASKS_TYPE_FLAGS')) {
+    define('TASKS_TYPE_FLAGS', 'allow_na:1,allow_release:1,allow_reject:1,allow_steal:1,close_from_week_start:0');
+}
+
+/** Η τιμή (0/1) μιας σημαίας του τύπου. Άγνωστη σημαία: εξαίρεση (λάθος κώδικα). */
+function tasks_type_flag($db, $taskCode, $flag)
+{
+    $defaults = [];
+    foreach (explode(',', TASKS_TYPE_FLAGS) as $kv) {
+        list($k, $v) = explode(':', $kv);
+        $defaults[$k] = (int)$v;
+    }
+    if (!isset($defaults[$flag])) throw new InvalidArgumentException('άγνωστη σημαία τύπου: ' . $flag);
+    try {
+        $st = $db->prepare('SELECT `' . $flag . '` FROM `4a_task_types` WHERE `code` = ?');
+        $st->execute([(string)$taskCode]);
+        $v = $st->fetchColumn();
+        return $v === false || $v === null ? $defaults[$flag] : ((int)$v === 1 ? 1 : 0);
+    } catch (Exception $e) {
+        return $defaults[$flag];
+    }
+}
+
+/** allow_* του τύπου ως bool. */
+function tasks_type_allows($db, $taskCode, $flag)
+{
+    return tasks_type_flag($db, $taskCode, $flag) === 1;
+}
+
 /** allow_na του τύπου. Χωρίς στήλη ή χωρίς τύπο = 1 (σημερινή συμπεριφορά). */
 function tasks_allow_na($db, $taskCode)
 {
-    try {
-        $st = $db->prepare('SELECT `allow_na` FROM `4a_task_types` WHERE `code` = ?');
-        $st->execute([(string)$taskCode]);
-        $v = $st->fetchColumn();
-        return $v === false || $v === null ? true : ((int)$v === 1);
-    } catch (Exception $e) {
-        return true;
+    return tasks_type_allows($db, $taskCode, 'allow_na');
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Δ-Α8 (16/10): ΚΛΕΙΣΙΜΟ ΟΧΙ ΠΡΙΝ ΤΗ ΔΕΥΤΕΡΑ ΤΗΣ ΕΒΔΟΜΑΔΑΣ ΙΣΧΥΟΣ
+//
+// Τύπος με close_from_week_start = 1 (fuel_weekly_verify, migration
+// 2026-10-19c): το done, το na και κάθε κλείσιμο από βήμα απαντούν 409
+// πριν από τις 00:00 ώρα Αθήνας της Δευτέρας week_start του payload. Η
+// επαλήθευση τιμών γίνεται όταν οι τιμές ισχύουν, όχι την Παρασκευή που
+// ξεκλειδώνει (#77). Χωρίς παράκαμψη διαχειριστή.
+//
+// FAIL OPEN: σημαία 1 χωρίς έγκυρο week_start στο payload δεν κλειδώνει
+// την εργασία για πάντα· γράφεται στο error_log.
+//
+// $now: «Y-m-d H:i:s» ώρα Αθήνας, μόνο για τα τεστ. null = τώρα.
+// ─────────────────────────────────────────────────────────────────────
+if (!defined('TASKS_LOCAL_TZ'))   define('TASKS_LOCAL_TZ', 'Europe/Athens');
+if (!defined('TASKS_CLOSE_FROM')) define('TASKS_CLOSE_FROM', 'η επαλήθευση ανοίγει Δευ {date}');
+
+/** null αν το κλείσιμο επιτρέπεται τώρα, αλλιώς το 409. */
+function tasks_close_gate($db, $task, $now = null)
+{
+    if (tasks_type_flag($db, $task['task_code'], 'close_from_week_start') !== 1) return null;
+    $p  = isset($task['payload']) && is_string($task['payload']) ? json_decode($task['payload'], true) : null;
+    $ws = is_array($p) && isset($p['week_start']) ? (string)$p['week_start'] : '';
+    $tz = new DateTimeZone(TASKS_LOCAL_TZ);
+    $from = DateTime::createFromFormat('!Y-m-d', $ws, $tz);
+    if (!$from || $from->format('Y-m-d') !== $ws) {
+        error_log('tasks_close_gate: εργασία #' . $task['id'] . ' χωρίς έγκυρο week_start');
+        return null;
     }
+    $at = new DateTime($now === null ? 'now' : (string)$now, $tz);
+    if ($at >= $from) return null;
+    return tasks_err(409, str_replace('{date}', $from->format('d/m'), TASKS_CLOSE_FROM));
 }
 
 } // function_exists

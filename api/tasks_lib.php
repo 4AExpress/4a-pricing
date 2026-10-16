@@ -1,5 +1,9 @@
 <?php
-// tasks_lib.php | v1.5a | 16-10-2026
+// tasks_lib.php | v1.6 | 16-10-2026
+// v1.6: Φάση Α, Α2. «Αφήνω», «Απόρριψη», «Αναλαμβάνω»: 409 όταν ο τύπος έχει
+//       allow_release / allow_reject / allow_steal = 0 (προεπιλογή 1, όπως
+//       σήμερα). Η λίστα: blocked_by_assignee_name ΜΟΝΟ σε κλειδωμένες
+//       εργασίες συστήματος. Δ-Α8: done/na περνούν από το tasks_close_gate.
 // v1.5a: Α2α (εύρημα 16/10). Κάθε εργασία ΣΥΣΤΗΜΑΤΟΣ παίρνει `chain`: η
 //       σύνοψη ΟΛΗΣ της αλυσίδας της (ίδιο dedupe_key), ώστε η κεφαλίδα
 //       της εβδομάδας να είναι ίδια σε κάθε καρτέλα, ακόμα κι όταν η ρίζα
@@ -731,7 +735,40 @@ function tasks_list($db, $session, $perms, $view)
     // Τα βήματα προστίθενται ΜΟΝΟ σε τύπους με γραμμές στον 4a_task_steps·
     // κάθε άλλη εργασία επιστρέφεται χωρίς κανένα νέο κλειδί.
     $tasks = tasks_steps_attach($db, array_map('tasks_with_action', $st->fetchAll(PDO::FETCH_ASSOC)));
-    return ['ok' => true, 'code' => 200, 'error' => null, 'tasks' => tasks_chain($db, $tasks)];
+    return ['ok' => true, 'code' => 200, 'error' => null, 'tasks' => tasks_chain($db, tasks_blocked_names($db, $tasks))];
+}
+
+/**
+ * «🔒 Περιμένει το ανέβασμα ({όνομα})» (Φάση Α): σε ΚΛΕΙΔΩΜΕΝΗ εργασία
+ * ΣΥΣΤΗΜΑΤΟΣ, το όνομα του αναδόχου της εργασίας από την οποία εξαρτάται
+ * (ίδιο dedupe_key, task_code = depends_on), ή null αν είναι αδιάθετη.
+ * Η οθόνη δεν μπορεί να το βρει μόνη της: η ρίζα συχνά δεν είναι στη λίστα.
+ *
+ * Εργασίες ΠΕΛΑΤΗ και ξεκλείδωτες: ΚΑΝΕΝΑ νέο κλειδί, ώστε το JSON τους να
+ * μένει byte-προς-byte ίδιο. Ένα ερώτημα για όλη τη λίστα.
+ */
+function tasks_blocked_names($db, array $tasks)
+{
+    $keys = [];
+    foreach ($tasks as $t) {
+        if ($t['client_id'] === null && (int)$t['locked'] === 1 && $t['depends_on'] !== null) $keys[] = (string)$t['dedupe_key'];
+    }
+    if (!$keys) return $tasks;
+    $keys = array_values(array_unique($keys));
+    $st = $db->prepare('SELECT d.`dedupe_key`, d.`task_code`, u.`name`
+                          FROM `4a_tasks` d
+                     LEFT JOIN `4a_users` u ON u.`id` = d.`assigned_to`
+                         WHERE d.`client_id` IS NULL
+                           AND d.`dedupe_key` IN (' . implode(',', array_fill(0, count($keys), '?')) . ')');
+    $st->execute($keys);
+    $names = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) $names[$r['dedupe_key'] . "\n" . $r['task_code']] = $r['name'];
+    foreach ($tasks as $i => $t) {
+        if ($t['client_id'] !== null || (int)$t['locked'] !== 1 || $t['depends_on'] === null) continue;
+        $k = (string)$t['dedupe_key'] . "\n" . $t['depends_on'];
+        $tasks[$i]['blocked_by_assignee_name'] = isset($names[$k]) ? $names[$k] : null;
+    }
+    return $tasks;
 }
 
 /**
@@ -798,6 +835,18 @@ function tasks_chain($db, array $tasks)
         $tasks[$i]['chain'] = isset($chains[(string)$t['dedupe_key']]) ? $chains[(string)$t['dedupe_key']] : [];
     }
     return $tasks;
+}
+
+// Φάση Α: τα γενικά κουμπιά που ένας τύπος μπορεί να κλείσει (στήλες του
+// migration 2026-10-19a). Μηνύματα Γ, εγκεκριμένα 15/10 (§δ.3).
+if (!defined('TASKS_NO_RELEASE')) {
+    define('TASKS_NO_RELEASE', 'το «Αφήνω» δεν επιτρέπεται σε αυτόν τον τύπο εργασίας· αλλαγή αναδόχου μόνο με «Ανάθεση» από διαχειριστή');
+}
+if (!defined('TASKS_NO_REJECT')) {
+    define('TASKS_NO_REJECT', 'η «Απόρριψη» δεν επιτρέπεται σε αυτόν τον τύπο εργασίας');
+}
+if (!defined('TASKS_NO_STEAL')) {
+    define('TASKS_NO_STEAL', 'το «Αναλαμβάνω» δεν επιτρέπεται σε αυτόν τον τύπο εργασίας· αλλαγή αναδόχου μόνο με «Ανάθεση» από διαχειριστή');
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -869,6 +918,7 @@ function tasks_release($db, $session, $perms, $taskId, $note = null)
 {
     list($task, $err) = tasks_guard_owner($db, $session, $perms, $taskId);
     if ($err) return $err;
+    if (!tasks_type_allows($db, $task['task_code'], 'allow_release')) return tasks_err(409, TASKS_NO_RELEASE);
     if ($task['assigned_to'] === null) return tasks_err(409, 'η εργασία είναι ήδη αδιάθετη');
 
     $me = (int)$session['id'];
@@ -889,7 +939,8 @@ function tasks_release($db, $session, $perms, $taskId, $note = null)
     return tasks_okres($db, $taskId);
 }
 
-function tasks_done($db, $session, $perms, $taskId, $note = null)
+// $now (done, na): «Y-m-d H:i:s» ώρα Αθήνας, ΜΟΝΟ για τα τεστ του Δ-Α8.
+function tasks_done($db, $session, $perms, $taskId, $note = null, $now = null)
 {
     list($task, $err) = tasks_guard_owner($db, $session, $perms, $taskId);
     if ($err) return $err;
@@ -924,10 +975,10 @@ function tasks_done($db, $session, $perms, $taskId, $note = null)
     // admin_override. Τρέχει και για εργασία που είχε ανατεθεί με force —
     // η αλυσίδα όντως προχώρησε.
     return tasks_close($db, $task, (int)$session['id'], 'done',
-                       $note !== null && trim($note) !== '' ? trim($note) : 'ολοκληρώθηκε');
+                       $note !== null && trim($note) !== '' ? trim($note) : 'ολοκληρώθηκε', null, $now);
 }
 
-function tasks_na($db, $session, $perms, $taskId, $reason)
+function tasks_na($db, $session, $perms, $taskId, $reason, $now = null)
 {
     list($task, $err) = tasks_guard_owner($db, $session, $perms, $taskId);
     if ($err) return $err;
@@ -936,6 +987,9 @@ function tasks_na($db, $session, $perms, $taskId, $reason)
     if (!tasks_allow_na($db, $task['task_code'])) {
         return tasks_err(409, 'το «Δεν εφαρμόζεται» δεν επιτρέπεται σε αυτόν τον τύπο εργασίας');
     }
+    // Δ-Α8: και το na κλείνει την εργασία, άρα ο ίδιος κανόνας με το done.
+    $gate = tasks_close_gate($db, $task, $now);
+    if ($gate !== null) return $gate;
 
     // Ο λόγος είναι ΥΠΟΧΡΕΩΤΙΚΟΣ: το 'na' υπάρχει ώστε να μη διαγράφεται
     // εργασία που αποδείχθηκε άσχετη. Χωρίς λόγο, η εγγραφή δεν εξηγεί
@@ -981,6 +1035,7 @@ function tasks_reject($db, $session, $perms, $taskId, $reasonCode, $note = null)
     }
     // Αδιάθετη δεν απορρίπτεται ΠΟΤΕ, ούτε σε επίδειξη: δεν υπάρχει
     // απορρίπτων να γραφτεί στο 4a_task_rejections.
+    if (!tasks_type_allows($db, $task['task_code'], 'allow_reject')) return tasks_err(409, TASKS_NO_REJECT);
     if ($task['assigned_to'] === null) {
         return tasks_err(409, 'η εργασία είναι αδιάθετη — δεν απορρίπτεται');
     }
@@ -1062,6 +1117,7 @@ function tasks_steal($db, $session, $perms, $taskId)
     if (in_array($task['status'], ['done', 'na'], true)) {
         return tasks_err(409, 'η εργασία έχει ήδη κλείσει');
     }
+    if (!tasks_type_allows($db, $task['task_code'], 'allow_steal')) return tasks_err(409, TASKS_NO_STEAL);
     if ($task['assigned_to'] === null) {
         return tasks_err(409, 'η εργασία είναι αδιάθετη — κάντε ανάληψη');
     }

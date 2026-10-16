@@ -24,6 +24,8 @@ class TestPDO extends PDO
     private function fix($sql)
     {
         $sql = preg_replace('/\bINSERT\s+IGNORE\b/i', 'INSERT OR IGNORE', $sql);
+        // tasks_held_by_steal (release/reject): η json_extract της SQLite δίνει ήδη χωρίς εισαγωγικά.
+        $sql = preg_replace('/JSON_UNQUOTE\(JSON_EXTRACT\(([^()]*)\)\)/', 'json_extract($1)', $sql);
         return str_replace('NOW()', "datetime('now')", $sql);
     }
     #[\ReturnTypeWillChange]
@@ -405,6 +407,118 @@ foreach (array(null, 'empty', 'fuel') as $mode) {
     ck("$tag: na πελάτη OK (allow_na = 1)", $n['ok'] === true, json_encode($n));
 }
 
+// ═════════════════════════════════════════════════════════════════════
+// ΦΑΣΗ Α, Α2 (16/10): allow_release / allow_reject / allow_steal, steps,
+// allow, blocked_by_assignee_name, και Δ-Α8 (close_from_week_start).
+// ═════════════════════════════════════════════════════════════════════
+// Οι στήλες των migrations 2026-10-19a και 2026-10-19c, με τις προεπιλογές τους.
+$cols = function ($db) {
+    foreach (array('allow_release' => 1, 'allow_reject' => 1, 'allow_steal' => 1, 'close_from_week_start' => 0) as $c => $d) {
+        $db->exec("ALTER TABLE `4a_task_types` ADD COLUMN `$c` INTEGER NOT NULL DEFAULT $d");
+    }
+};
+$reasons = function ($db) {
+    $db->exec('CREATE TABLE `4a_task_reject_reasons` (`code` TEXT PRIMARY KEY, `label` TEXT, `requires_note` INTEGER NOT NULL DEFAULT 0,
+               `active` INTEGER NOT NULL DEFAULT 1, `task_code` TEXT, `sort_order` INTEGER NOT NULL DEFAULT 0)');
+    $db->exec("INSERT INTO `4a_task_reject_reasons` (`code`,`label`) VALUES ('busy','Φόρτος')");
+    $db->exec('DROP TABLE `4a_task_rejections`');
+    $db->exec('CREATE TABLE `4a_task_rejections` (`task_id` INTEGER, `user_id` INTEGER, `reason_code` TEXT, `note` TEXT, UNIQUE (`task_id`, `user_id`))');
+};
+// Μία από τις τρεις ενέργειες στη ρίζα fuel_weekly: release/reject από τον ανάδοχο, steal από τον άλλον.
+$one = function ($db, $a, $w, $doer, $other) use ($S, $PU) {
+    if ($a === 'release') return tasks_release($db, $S($doer), $PU($doer), $w);
+    if ($a === 'reject')  return tasks_reject($db, $S($doer), $PU($doer), $w, 'busy');
+    return tasks_steal($db, $S($other), $PU($other), $w);
+};
+
+echo "\n═══ Α2: allow_* = 0 -> 409, χωρίς γεγονός, χωρίς αλλαγή στο 4a_tasks ═══\n";
+$db = fresh_db('fuel'); $cols($db); $reasons($db);
+$db->exec("UPDATE `4a_task_types` SET `allow_release` = 0, `allow_reject` = 0, `allow_steal` = 0 WHERE `code` = 'fuel_weekly'");
+list($w, $v, $c, $doer, $other) = $chain($db);
+$before = array($row($db, $w), $events($db, $w));
+$msg = array('release' => TASKS_NO_RELEASE, 'reject' => TASKS_NO_REJECT, 'steal' => TASKS_NO_STEAL);
+foreach (array('release', 'reject', 'steal') as $a) {
+    $r = $one($db, $a, $w, $doer, $other);
+    ck("$a -> 409 «{$msg[$a]}»", $r['ok'] === false && $r['code'] === 409 && $r['error'] === $msg[$a], $r['code'] . ' ' . $r['error']);
+}
+ck('...καμία αλλαγή στο 4a_tasks, κανένα γεγονός', array($row($db, $w), $events($db, $w)) === $before, json_encode($events($db, $w)));
+$r = tasks_release($db, $S(9), $A, $w);
+ck('admin: «Αφήνω» -> 409 κι αυτός (κανόνας τύπου, όχι ρόλου)', $r['code'] === 409 && $r['error'] === TASKS_NO_RELEASE);
+$r = tasks_assign($db, $S(9), $A, $w, $other);
+ck('η «Ανάθεση» από admin μένει ο δρόμος αλλαγής αναδόχου', $r['ok'] === true && (int)$row($db, $w)['assigned_to'] === $other, $r['code'] . ' ' . $r['error']);
+ck('τα μηνύματα είναι τα εγκεκριμένα του §δ.3', TASKS_NO_RELEASE === 'το «Αφήνω» δεν επιτρέπεται σε αυτόν τον τύπο εργασίας· αλλαγή αναδόχου μόνο με «Ανάθεση» από διαχειριστή'
+   && TASKS_NO_REJECT === 'η «Απόρριψη» δεν επιτρέπεται σε αυτόν τον τύπο εργασίας'
+   && TASKS_NO_STEAL === 'το «Αναλαμβάνω» δεν επιτρέπεται σε αυτόν τον τύπο εργασίας· αλλαγή αναδόχου μόνο με «Ανάθεση» από διαχειριστή');
+
+echo "\n═══ Α2: allow_* = 1, ή χωρίς στήλες -> ΟΠΩΣ ΣΗΜΕΡΑ ═══\n";
+foreach (array('στήλες = 1' => true, 'χωρίς στήλες' => false) as $tag => $withCols) {
+    foreach (array('release', 'reject', 'steal') as $a) {
+        $db = fresh_db('empty'); if ($withCols) $cols($db); $reasons($db);
+        list($w, $v, $c, $doer, $other) = $chain($db);
+        $r = $one($db, $a, $w, $doer, $other);
+        ck("$tag: $a -> OK", $r['ok'] === true, $r['code'] . ' ' . $r['error']);
+    }
+}
+$db = fresh_db('fuel'); $cols($db); $reasons($db);
+$db->exec("UPDATE `4a_task_types` SET `allow_release` = 0, `allow_reject` = 0, `allow_steal` = 0 WHERE `code` = 'fuel_weekly'");
+list($w, $v, $c, $doer, $other) = $chain($db);
+$db->exec("UPDATE `4a_tasks` SET `assigned_to` = 3, `status` = 'in_progress' WHERE `id` = $c");
+$r = tasks_release($db, $S(3), $P, $c);
+ck('εργασία πελάτη: «Αφήνω» όπως πριν (σημαίες μόνο στο fuel_weekly)', $r['ok'] === true, $r['code'] . ' ' . $r['error']);
+
+echo "\n═══ Α2: steps και allow ΜΟΝΟ σε τύπους με βήματα ═══\n";
+ck('ανενεργό: κανένα "steps" / "allow" στη λίστα', strpos($lists[1], '"steps"') === false && strpos($lists[1], '"allow"') === false);
+$db = fresh_db('fuel');
+list($w, $v, $c, $doer, $other) = $chain($db);
+$sd = function () use ($db, $listOne, $doer, $PU, $w) {
+    $t = $listOne($db, $doer, $PU($doer), $w);
+    return array_map(function ($s) { return $s['code'] . ':' . ($s['done'] ? '1' : '0'); }, $t['steps']);
+};
+$t = $listOne($db, $doer, $PU($doer), $w);
+ck('δύο βήματα με τη σειρά, χωρίς το τελικό', array_column($t['steps'], 'code') === array('download', 'upload'), json_encode($t['steps']));
+ck('...κουμπί και εικονίδιο από τη βάση', $t['steps'][0]['button_label'] === 'Λήψη αρχείου CMS' && $t['steps'][0]['button_icon'] === '⬇'
+   && $t['steps'][1]['action'] === 'upload' && array_keys($t['steps'][0]) === array('code', 'action', 'button_label', 'button_icon', 'done'));
+ck('πριν τη λήψη: κανένα done', $sd() === array('download:0', 'upload:0'), json_encode($sd()));
+tasks_download($db, $S($doer), $PU($doer), $w);
+ck('μετά το downloaded: ① done', $sd() === array('download:1', 'upload:0'), json_encode($sd()));
+tasks_download($db, $S($doer), $PU($doer), $w);
+ck('ξανά-λήψη (file_viewed): καμία αλλαγή', $sd() === array('download:1', 'upload:0'));
+tasks_upload($db, $S($doer), $PU($doer), $w, array('total' => 68, 'merge' => 0, 'updated' => 68, 'exception' => 0));
+ck('upload_failed: το ② ΔΕΝ γίνεται done', $sd() === array('download:1', 'upload:0'));
+tasks_upload($db, $S($doer), $PU($doer), $w, $NUMS);
+ck('μετά το uploaded: και τα δύο done', $sd() === array('download:1', 'upload:1'), json_encode($sd()));
+$db->exec("INSERT INTO `4a_task_events` (`task_id`,`event`,`actor_id`,`note`) VALUES ($w,'reopened',$other,'δοκιμή')");
+ck('μετά το reopened: κανένα done', $sd() === array('download:0', 'upload:0'), json_encode($sd()));
+$t = $listOne($db, $doer, $PU($doer), $w);
+ck('allow χωρίς στήλες 19a: na από τη βάση (0), τα υπόλοιπα 1', $t['allow'] === array('na' => false, 'release' => true, 'reject' => true, 'steal' => true), json_encode($t['allow']));
+$db2 = fresh_db('fuel'); $cols($db2);
+$db2->exec("UPDATE `4a_task_types` SET `allow_release` = 0, `allow_steal` = 0 WHERE `code` = 'fuel_weekly'");
+list($w2) = $chain($db2);
+ck('allow με στήλες: οι τιμές της βάσης', $listOne($db2, 1, $A, $w2)['allow'] === array('na' => false, 'release' => false, 'reject' => true, 'steal' => false));
+$tv = $listOne($db, 1, $A, $v); $tc = $listOne($db, 1, $A, $c);
+ck('verify και εργασία πελάτη: κανένα steps / allow', !array_key_exists('steps', $tv) && !array_key_exists('allow', $tv)
+   && !array_key_exists('steps', $tc) && !array_key_exists('allow', $tc));
+
+echo "\n═══ Α2: blocked_by_assignee_name ΜΟΝΟ σε κλειδωμένη εργασία συστήματος ═══\n";
+$db = fresh_db('empty');
+list($w, $v, $c, $doer, $other) = $chain($db);
+$tv = $listOne($db, 1, $A, $v);
+ck("verify κλειδωμένο: το όνομα του αναδόχου του ανεβάσματος (u$doer)", (int)$tv['locked'] === 1 && $tv['blocked_by_assignee_name'] === 'u' . $doer, json_encode($tv['blocked_by_assignee_name'] ?? 'λείπει'));
+$tw = $listOne($db, 1, $A, $w);
+ck('η ρίζα (ξεκλείδωτη): κανένα κλειδί', !array_key_exists('blocked_by_assignee_name', $tw));
+$cr = (int)$db->query("SELECT `id` FROM `4a_tasks` WHERE `client_id` = 7 AND `task_code` = 'cms_rates'")->fetchColumn();
+$tcr = $listOne($db, 1, $A, $cr);
+ck('εργασία πελάτη ΚΛΕΙΔΩΜΕΝΗ (cms_rates): κανένα κλειδί', (int)$tcr['locked'] === 1 && !array_key_exists('blocked_by_assignee_name', $tcr));
+$db->exec("UPDATE `4a_tasks` SET `assigned_to` = NULL, `status` = 'open' WHERE `id` = $w");
+$tv = $listOne($db, 1, $A, $v);
+ck('ανέβασμα αδιάθετο: null (όχι λείπει)', array_key_exists('blocked_by_assignee_name', $tv) && $tv['blocked_by_assignee_name'] === null);
+$db->exec("UPDATE `4a_tasks` SET `assigned_to` = $doer, `status` = 'in_progress' WHERE `id` = $w");
+tasks_done($db, $S($doer), $PU($doer), $w);
+ck('μετά το κλείσιμο του ανεβάσματος (ξεκλείδωτο): κανένα κλειδί', !array_key_exists('blocked_by_assignee_name', $listOne($db, 1, $A, $v)));
+$mine = tasks_list($db, $S($other), $PU($other), 'mine')['tasks'];
+ck('«Οι εργασίες μου»: ίδια συμπεριφορά (το verify ανατέθηκε, ξεκλείδωτο, χωρίς κλειδί)',
+   count($mine) === 1 && (int)$mine[0]['id'] === $v && !array_key_exists('blocked_by_assignee_name', $mine[0]), json_encode(array_column($mine, 'id')));
+
 echo "\n═══ Α2α (εύρημα 16/10): chain = ΟΛΗ η αλυσίδα, ΙΔΙΑ σε κάθε καρτέλα ═══\n";
 $db = fresh_db('empty');
 list($w, $v, $c, $doer, $other) = $chain($db);
@@ -451,6 +565,130 @@ ck('δύο εβδομάδες: κάθε μία τη ΔΙΚΗ της αλυσίδ
    && array_column($byId($l, (int)$b['task_id'])['chain'], 'id') === array((int)$b['task_id']));
 ck('ΕΝΑ ερώτημα για όλη τη λίστα (όχι ανά εργασία)', substr_count(file_get_contents(__DIR__ . '/../../api/tasks_lib.php'), 'LEFT JOIN `4a_users` cb ON cb.`id` = d.`closed_by`') === 1
    && preg_match('/function tasks_chain\(.*?\n}\n/s', file_get_contents(__DIR__ . '/../../api/tasks_lib.php'), $m) && substr_count($m[0], '->prepare(') === 1);
+
+echo "\n═══ Α2: εργασίες ΠΕΛΑΤΗ — JSON ΙΔΙΟ πριν και μετά (στήλες, βήματα, σημαίες, κλειδωμένο verify) ═══\n";
+$clientJson = function ($db) use ($S, $A) {
+    $out = array();
+    foreach (array('all', 'queue') as $view) {
+        foreach (tasks_list($db, $S(1), $A, $view)['tasks'] as $t) {
+            if ($t['client_id'] === null) continue;
+            unset($t['created_at']);
+            $out[] = $t;
+        }
+    }
+    return json_encode($out, JSON_UNESCAPED_UNICODE);
+};
+$scenario = function ($db) use ($S, $P, $chain, $reasons) {
+    $reasons($db);
+    list($w, $v, $c) = $chain($db);
+    // 14 ενέργειες σε εργασίες πελάτη, ίδιες και στις δύο βάσεις. Κάθε
+    // αυτόματη ανάθεση έχει ΕΝΑΝ δικαιούχο (random_int δεν σπέρνεται).
+    $cr = (int)$db->query("SELECT `id` FROM `4a_tasks` WHERE `client_id` = 7 AND `task_code` = 'cms_rates'")->fetchColumn();
+    $db->exec("INSERT INTO `4a_users` VALUES (4,'u4','user',1)");
+    $db->exec("INSERT INTO `4a_user_task_skills` VALUES (4,'open_code','GR'),(4,'cms_rates','GR')");
+    $r = array();
+    $r[] = tasks_release($db, $S(3), $P, $c);               // 3 την αφήνει
+    $r[] = tasks_claim($db, $S(4), $P, $c);                 // 4 ανάληψη
+    $r[] = tasks_steal($db, $S(3), $P, $c);                 // 3 την τραβά από τον 4
+    $r[] = tasks_reject($db, $S(3), $P, $c, 'busy');        // 3 απορρίπτει -> μόνος δικαιούχος ο 4
+    $r[] = tasks_release($db, $S(4), $P, $c);
+    $r[] = tasks_claim($db, $S(4), $P, $c);
+    $r[] = tasks_done($db, $S(4), $P, $c);                  // ξεκλειδώνει το cms_rates -> μόνος δικαιούχος ο 4
+    $db->exec("INSERT INTO `4a_user_task_skills` VALUES (3,'cms_rates','GR')");
+    $r[] = tasks_steal($db, $S(3), $P, $cr);
+    $r[] = tasks_release($db, $S(3), $P, $cr);
+    $r[] = tasks_claim($db, $S(4), $P, $cr);
+    $r[] = tasks_reject($db, $S(4), $P, $cr, 'busy');       // -> μόνος δικαιούχος ο 3
+    $r[] = tasks_na($db, $S(3), $P, $cr, 'δοκιμή');
+    $r[] = tasks_done($db, $S(3), $P, $cr);                 // ήδη κλειστή -> 409
+    $r[] = tasks_claim($db, $S(4), $P, $cr);                // κλειστή -> 409
+    return array_map(function ($x) { return $x['code']; }, $r);
+};
+$old = fresh_db(null);
+$codesOld = $scenario($old);
+$new = fresh_db('fuel'); $cols($new);
+$new->exec("UPDATE `4a_task_types` SET `allow_release` = 0, `allow_reject` = 0, `allow_steal` = 0, `close_from_week_start` = 0 WHERE `code` = 'fuel_weekly'");
+$new->exec("UPDATE `4a_task_types` SET `close_from_week_start` = 1 WHERE `code` = 'fuel_weekly_verify'");
+$codesNew = $scenario($new);
+ck('14 ενέργειες πελάτη: ίδιοι κωδικοί απάντησης, 12 επιτυχίες και 2 «ήδη κλειστή»',
+   $codesOld === $codesNew && $codesOld === array(200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 409, 409), json_encode(array($codesOld, $codesNew)));
+ck('...το JSON των εργασιών πελάτη ΙΔΙΟ byte-προς-byte (all + queue)', $clientJson($old) === $clientJson($new));
+ck('...και περιέχει κλειδωμένη εργασία πελάτη ή κλειστές (σενάριο με ουσία)', strpos($clientJson($new), '"status":"done"') !== false);
+
+echo "\n═══ Δ-Α8: verify ΔΕΝ κλείνει πριν από Δευ 00:00 (Αθήνα) του week_start ═══\n";
+// Ρίζα κλεισμένη με την παλιά ροή (empty) -> verify ξεκλείδωτο στον άλλον. week_start 2026-10-12.
+$gateDb = function ($withFlag) use ($cols, $chain, $S, $PU) {
+    $db = fresh_db('empty'); $cols($db);
+    if ($withFlag) $db->exec("UPDATE `4a_task_types` SET `close_from_week_start` = 1 WHERE `code` = 'fuel_weekly_verify'");
+    list($w, $v, $c, $doer, $other) = $chain($db);
+    tasks_done($db, $S($doer), $PU($doer), $w, null, '2026-10-09 18:00:00');
+    return array($db, $w, $v, $doer, $other);
+};
+list($db, $w, $v, $doer, $other) = $gateDb(true);
+ck('η ρίζα (fuel_weekly, σημαία 0) έκλεισε την Παρασκευή κανονικά', $row($db, $w)['status'] === 'done');
+ck("το verify ξεκλείδωσε και πήγε στον άλλον ($other)", (int)$row($db, $v)['assigned_to'] === $other && $row($db, $v)['status'] === 'in_progress');
+$before = array($row($db, $v), $events($db, $v));
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-11 23:59:59');
+ck('done Κυρ 11/10 23:59:59 -> 409 «η επαλήθευση ανοίγει Δευ 12/10»', $r['code'] === 409 && $r['error'] === 'η επαλήθευση ανοίγει Δευ 12/10', $r['code'] . ' ' . $r['error']);
+$r = tasks_na($db, $S($other), $PU($other), $v, 'δοκιμή', '2026-10-09 18:05:00');
+ck('na Παρ 09/10 -> 409, ίδιο μήνυμα', $r['code'] === 409 && $r['error'] === 'η επαλήθευση ανοίγει Δευ 12/10', $r['code'] . ' ' . $r['error']);
+$r = tasks_done($db, $S(9), $A, $v, null, '2026-10-10 12:00:00');
+ck('admin -> 409 κι αυτός (καμία παράκαμψη)', $r['code'] === 409);
+ck('...καμία αλλαγή στο 4a_tasks, κανένα γεγονός', array($row($db, $v), $events($db, $v)) === $before);
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-12 00:00:00');
+ck('done Δευ 12/10 00:00:00 -> κλείνει', $r['ok'] === true && $row($db, $v)['status'] === 'done', $r['code'] . ' ' . $r['error']);
+list($db, $w, $v, $doer, $other) = $gateDb(true);
+$r = tasks_na($db, $S($other), $PU($other), $v, 'δοκιμή', '2026-10-12 09:00:00');
+ck('na Δευ 12/10 09:00 -> κλείνει', $r['ok'] === true && $row($db, $v)['status'] === 'na', $r['code'] . ' ' . $r['error']);
+list($db, $w, $v, $doer, $other) = $gateDb(false);
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-09 18:05:00');
+ck('σημαία 0: done την Παρασκευή, όπως σήμερα', $r['ok'] === true, $r['code'] . ' ' . $r['error']);
+$db = fresh_db('empty');   // χωρίς στήλη: όπως σήμερα
+list($w, $v, $c, $doer, $other) = $chain($db);
+tasks_done($db, $S($doer), $PU($doer), $w);
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-09 18:05:00');
+ck('χωρίς στήλη close_from_week_start: done όπως σήμερα', $r['ok'] === true, $r['code'] . ' ' . $r['error']);
+list($db, $w, $v, $doer, $other) = $gateDb(true);
+$r = tasks_done($db, $S($other), $PU($other), $v);
+ck('πραγματική ώρα (now = null), week_start 12/10 στο παρελθόν -> κλείνει', $r['ok'] === true, $r['code'] . ' ' . $r['error']);
+list($db, $w, $v, $doer, $other) = $gateDb(true);
+$db->exec("UPDATE `4a_tasks` SET `payload` = '{\"kind\":\"fuel_weekly\",\"week_start\":\"2099-01-05\"}' WHERE `id` = $v");
+$r = tasks_done($db, $S($other), $PU($other), $v);
+ck('πραγματική ώρα, week_start 2099-01-05 -> 409 «…Δευ 05/01»', $r['code'] === 409 && $r['error'] === 'η επαλήθευση ανοίγει Δευ 05/01', $r['code'] . ' ' . $r['error']);
+$db->exec("UPDATE `4a_tasks` SET `payload` = '{\"kind\":\"fuel_weekly\"}' WHERE `id` = $v");
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-09 18:05:00');
+ck('σημαία 1 χωρίς week_start: FAIL OPEN, κλείνει (δεν κλειδώνει για πάντα)', $r['ok'] === true, $r['code'] . ' ' . $r['error']);
+$db = fresh_db('empty'); $cols($db);
+ck('tasks_type_flag: άγνωστη σημαία -> εξαίρεση (ποτέ όνομα στήλης από τον χρήστη)', (function () use ($db) {
+    try { tasks_type_flag($db, 'fuel_weekly', 'code` FROM x --'); return false; } catch (InvalidArgumentException $e) { return true; } })());
+ck('tasks_type_flag: χωρίς τύπο -> η προεπιλογή', tasks_type_flag($db, 'δεν_υπάρχει', 'allow_steal') === 1
+   && tasks_type_flag($db, 'δεν_υπάρχει', 'close_from_week_start') === 0);
+
+echo "\n═══ Migrations 2026-10-19a και 2026-10-19c: σχήμα, κανένα DDL στο λάθος σημείο, rollback συμμετρικό ═══\n";
+$M = function ($f) { return file_get_contents(__DIR__ . '/../../db/migrations/' . $f); };
+$m19a = $M('2026-10-19a_task_types_allow_actions.sql');  $r19a = $M('rollback/2026-10-19a_task_types_allow_actions.rollback.sql');
+$m19c = $M('2026-10-19c_task_types_close_from_week.sql'); $r19c = $M('rollback/2026-10-19c_task_types_close_from_week.rollback.sql');
+$noCom = function ($s) { return preg_replace('/^\s*--.*$/m', '', $s); };
+foreach (array('allow_release', 'allow_reject', 'allow_steal') as $col) {
+    ck("19a: ADD $col TINYINT(1) NOT NULL DEFAULT 1, με φρουρό information_schema",
+       strpos($m19a, "ADD COLUMN `$col` TINYINT(1) NOT NULL DEFAULT 1") !== false && strpos($m19a, "AND COLUMN_NAME  = '$col') = 0") !== false);
+    ck("19a rollback: DROP $col με φρουρό", strpos($r19a, "DROP COLUMN `$col`") !== false && strpos($r19a, "AND COLUMN_NAME  = '$col') = 1") !== false);
+}
+ck('19a: ΚΑΝΕΝΑ UPDATE / INSERT / DELETE (όλοι οι τύποι μένουν 1)', preg_match('/\b(UPDATE|INSERT|DELETE)\b/', $noCom($m19a)) === 0);
+ck('19c: ADD close_from_week_start TINYINT(1) NOT NULL DEFAULT 0, με φρουρό',
+   strpos($m19c, 'ADD COLUMN `close_from_week_start` TINYINT(1) NOT NULL DEFAULT 0') !== false
+   && strpos($m19c, "AND COLUMN_NAME  = 'close_from_week_start') = 0") !== false);
+ck("19c: ΕΝΑ UPDATE, ΜΟΝΟ fuel_weekly_verify, με φρουρό στην τρέχουσα τιμή",
+   preg_match_all('/\bUPDATE\b/', $noCom($m19c)) === 1
+   && strpos($m19c, "UPDATE `4a_task_types` SET `close_from_week_start` = 1\n WHERE `code` = 'fuel_weekly_verify' AND `close_from_week_start` = 0;") !== false);
+ck('19c: καμία εργασία (4a_tasks) δεν αγγίζεται, ούτε στα 19a', strpos($noCom($m19a . $m19c), '`4a_tasks`') === false);
+ck('19c rollback: DROP close_from_week_start με φρουρό', strpos($r19c, 'DROP COLUMN `close_from_week_start`') !== false
+   && strpos($r19c, "AND COLUMN_NAME  = 'close_from_week_start') = 1") !== false);
+$flags = array();
+foreach (explode(',', TASKS_TYPE_FLAGS) as $kv) { list($k, $d) = explode(':', $kv); $flags[$k] = (int)$d; }
+ck('οι προεπιλογές του κώδικα = του migration (allow_* 1, close_from_week_start 0)',
+   $flags === array('allow_na' => 1, 'allow_release' => 1, 'allow_reject' => 1, 'allow_steal' => 1, 'close_from_week_start' => 0));
+ck('κανένα ; ή \' μέσα σε σχόλιο (ο διαχωρισμός του Β4)', !preg_match("/^\\s*--[^\\n]*[;']/m", $m19a . $r19a . $m19c . $r19c));
 
 printf("\n═══ ΣΥΝΟΛΟ: %d OK, %d ΛΑΘΟΣ ═══\n\n", $pass, $fail);
 exit($fail ? 1 : 0);
