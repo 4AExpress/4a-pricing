@@ -1,10 +1,14 @@
 <?php
-// tasks_steps.php | v1.3 | 21-10-2026
-// v1.3: ζώνη ώρας (απόφαση 21/10, time_lib.php). done_at των βημάτων, at του
+// tasks_steps.php | v1.4 | 21-10-2026
+// v1.4: ζώνη ώρας (απόφαση 21/10, time_lib.php). done_at των βημάτων, at του
 //       χρονολογίου και της παράκαμψης σε ώρα Αθήνας (από UTC). Δ-Α8: το
 //       «Δευ 00:00 Αθήνας» μέσω time_reached_local· το $now των τεστ = UTC.
 //       meta.occurred_at (γεγονός εκ των υστέρων, γραμμένο από άνθρωπο) =
 //       ώρα Αθήνας, περνά όπως είναι.
+// v1.3: ΕΠΑΛΗΘΕΥΤΗΣ. Λήψη αρχείου CMS σε εβδομάδα με ενεργό επαληθευτή:
+//       ανάδοχος, admin, ή δικαίωμα fuel_verify_values (Ε2). Παράκαμψη admin
+//       και στο verify με ενεργό επαληθευτή (Ε4)· δεν την κάνει όποιος
+//       υπέβαλε απαντήσεις.
 // v1.2: Α3, λωρίδα βημάτων (απόφαση 16/10). Κάθε βήμα του `steps` στέλνει
 //       και done_at / done_by: πότε και από ποιον έγινε (το τελευταίο
 //       done_event μετά το reopened). Όταν δεν έγινε: null.
@@ -387,6 +391,12 @@ function tasks_download($db, $session, $perms, $taskId)
         $st->execute([(string)$task['dedupe_key'], $me]);
         if ((int)$st->fetchColumn() === 0) return tasks_err(403, 'η εργασία δεν είναι δική σας');
     }
+    // ΕΠΑΛΗΘΕΥΤΗΣ (Ε2, 19/10): σε εβδομάδα με ενεργό επαληθευτή, το αρχείο
+    // (που έχει τις τιμές) μόνο για τον ανάδοχο, τον admin, ή όποιον έχει το
+    // δικαίωμα αναμενόμενων τιμών. Όχι για τον ανάδοχο του verify.
+    if (!$isOwner && !tasks_is_admin($perms) && !fuel_verify_sees_week($db, $session, $perms, $task)) {
+        return fuel_verify_err(403, 'no_download');
+    }
 
     $evs = tasks_steps_events($db, [(int)$taskId]);
     $cur = tasks_steps_current($def, $task, $evs[(int)$taskId]);
@@ -477,10 +487,18 @@ function tasks_upload($db, $session, $perms, $taskId, $nums)
 //   · γεγονός admin_override, κόκκινη γραμμή στο χρονολόγιο, και κόκκινο
 //     σήμα στους ΑΛΛΟΥΣ διαχειριστές μέχρι ένας να πατήσει «Το είδα»
 // ─────────────────────────────────────────────────────────────────────
-function tasks_admin_override($db, $session, $perms, $taskId, $reason)
+// $now: μόνο για τα τεστ του Δ-Α8 (όπως στα done / na).
+function tasks_admin_override($db, $session, $perms, $taskId, $reason, $now = null)
 {
     if (!tasks_is_admin($perms)) return tasks_err(403, 'μόνο διαχειριστής μπορεί να κάνει παράκαμψη');
-    list($task, $def, $err) = tasks_steps_guard($db, $session, $perms, $taskId);
+    // ΕΠΑΛΗΘΕΥΤΗΣ (Ε4, 19/10): και το verify με ενεργό επαληθευτή, χωρίς βήματα.
+    $vt = tasks_fetch_one($db, $taskId);
+    if ($vt && in_array((string)$vt['task_code'], fuel_verify_types($db), true) && fuel_verify_active($db, $vt)) {
+        list($task, $err) = fuel_verify_guard($db, $session, $perms, $taskId);
+        $def = null;
+    } else {
+        list($task, $def, $err) = tasks_steps_guard($db, $session, $perms, $taskId);
+    }
     if ($err) return $err;
     $me = (int)$session['id'];
 
@@ -495,13 +513,13 @@ function tasks_admin_override($db, $session, $perms, $taskId, $reason)
 
     $evs = tasks_steps_events($db, [(int)$taskId]);
     if (($task['assigned_to'] !== null && (int)$task['assigned_to'] === $me)
-        || tasks_steps_participated($evs[(int)$taskId], $me)) {
+        || tasks_steps_participated($evs[(int)$taskId], $me) || fuel_verify_participated($db, $taskId, $me)) {
         return tasks_err(403, 'δεν μπορείτε να παρακάμψετε εργασία στην οποία συμμετέχετε');
     }
-    $cur = tasks_steps_current($def, $task, $evs[(int)$taskId]);
+    $cur = $def === null ? null : tasks_steps_current($def, $task, $evs[(int)$taskId]);
 
     return tasks_close($db, $task, $me, 'admin_override', $reason,
-                       ['step' => $cur === null ? null : $cur['step_code'], 'reason' => $reason]);
+                       ['step' => $cur === null ? null : $cur['step_code'], 'reason' => $reason], $now);
 }
 
 /**

@@ -1,8 +1,11 @@
 <?php
-// tasks_lib.php | v1.8 | 21-10-2026
-// v1.8: ζώνη ώρας (απόφαση 21/10, time_lib.php). Οι στιγμές της βάσης (UTC)
+// tasks_lib.php | v1.9 | 21-10-2026
+// v1.9: ζώνη ώρας (απόφαση 21/10, time_lib.php). Οι στιγμές της βάσης (UTC)
 //       φεύγουν σε ώρα Αθήνας: created_at / closed_at της εργασίας και του
 //       chain, at των ειδοποιήσεων, created_at του ιστορικού. Το due_at όπως είναι.
+// v1.8: ΕΠΑΛΗΘΕΥΤΗΣ (fuel_verify_lib.php). Η λίστα περνά από τη
+//       fuel_verify_list (καθαρισμός payload, `verifier`)· το done στο
+//       verify με ενεργό επαληθευτή απαντά 409 (vf = use_verifier).
 // v1.7: Α3, λωρίδα βημάτων (απόφαση 16/10). Το chain στέλνει και
 //       assigned_to, notices (ειδοποιήσεις από το ιστορικό, κενές ως τη
 //       Φάση Β) και, σε τύπους με βήματα, ό,τι και η γραμμή της λίστας
@@ -37,6 +40,7 @@
 require_once __DIR__ . '/time_lib.php';
 // Κάρτα βημάτων. Μόνο ορισμοί συναρτήσεων, τίποτα δεν εκτελείται.
 require_once __DIR__ . '/tasks_steps.php';
+require_once __DIR__ . '/fuel_verify_lib.php';
 
 // ─────────────────────────────────────────────────────────────────────
 // Κοινό SELECT. Το `locked` υπολογίζεται ΕΔΩ, στο SQL — ποτέ στον browser:
@@ -747,7 +751,10 @@ function tasks_list($db, $session, $perms, $view)
     // Τα βήματα προστίθενται ΜΟΝΟ σε τύπους με γραμμές στον 4a_task_steps·
     // κάθε άλλη εργασία επιστρέφεται χωρίς κανένα νέο κλειδί.
     $tasks = tasks_steps_attach($db, array_map('tasks_with_action', $st->fetchAll(PDO::FETCH_ASSOC)));
-    return ['ok' => true, 'code' => 200, 'error' => null, 'tasks' => tasks_chain($db, tasks_blocked_names($db, $tasks))];
+    // Επαληθευτής (fuel_verify_lib.php): καθαρισμός payload και `verifier`
+    // ΜΟΝΟ σε εβδομάδες με ενεργό επαληθευτή· αλλιώς οι εργασίες αθικτες.
+    return ['ok' => true, 'code' => 200, 'error' => null,
+            'tasks' => fuel_verify_list($db, $session, $perms, tasks_chain($db, tasks_blocked_names($db, $tasks)))];
 }
 
 /**
@@ -997,6 +1004,12 @@ function tasks_done($db, $session, $perms, $taskId, $note = null, $now = null)
 {
     list($task, $err) = tasks_guard_owner($db, $session, $perms, $taskId);
     if ($err) return $err;
+
+    // ΕΠΑΛΗΘΕΥΤΗΣ: το verify με ενεργό επαληθευτή κλείνει ΜΟΝΟ με όλες τις
+    // γραμμές σωστές (verify_submit) ή με παράκαμψη admin.
+    if (in_array((string)$task['task_code'], fuel_verify_types($db), true) && fuel_verify_active($db, $task)) {
+        return fuel_verify_err(409, 'use_verifier');
+    }
 
     // ΚΑΡΤΑ ΒΗΜΑΤΩΝ: η εργασία κλείνει ΜΟΝΟ από τα βήματά της (upload,
     // admin_override). Το γενικό «Ολοκλήρωση» δεν υπάρχει ούτε στον server.

@@ -1,5 +1,10 @@
 <?php
-// tasks.php | v1.4 | 16-10-2026
+// tasks.php | v1.5 | 19-10-2026
+// v1.5: ΕΠΑΛΗΘΕΥΤΗΣ (fuel_verify_lib.php): GET action=verify_form, POST
+//       verify_submit / verify_reset. Τα σφάλματά του φεύγουν με κωδικό `vf`
+//       (η οθόνη δείχνει το κείμενο από τον 4a_ui_texts) και, στο λάθος,
+//       `wrong` (ποιες γραμμές) και `total`. Το `task` κάθε απάντησης
+//       περνά από τον καθαρισμό payload του επαληθευτή.
 // v1.4: Φάση Α, Α2. Καμία νέα ενέργεια. Οι νέοι κανόνες (allow_release /
 //       allow_reject / allow_steal, close_from_week_start) ζουν στο
 //       tasks_lib.php / tasks_steps.php και φτάνουν εδώ ως 409 με μήνυμα.
@@ -12,7 +17,8 @@
 // tasks_lib.php ώστε να δοκιμάζεται χωρίς βάση και χωρίς HTTP.
 //
 // GET  ?view=mine|queue|all
-// POST {action: claim|release|done|na|assign|reject|steal|download|upload|admin_override|override_ack, id, ...}
+// GET  ?action=verify_form&id=
+// POST {action: claim|release|done|na|assign|reject|steal|download|upload|admin_override|override_ack|verify_submit|verify_reset, id, ...}
 error_reporting(E_ALL);
 ini_set('log_errors', 1);
 require_once 'config.php';
@@ -56,6 +62,16 @@ if ($method === 'GET') {
         $r = tasks_history($db, $session, $perms, $id);
         if (!$r['ok']) respond(['error' => $r['error']], $r['code']);
         respond(['ok' => true, 'events' => $r['events']]);
+    }
+
+    // Επαληθευτής: οι γραμμές και οι επιλογές, ΧΩΡΙΣ τη σωστή (εκτός αν ο
+    // χρήστης έχει το δικαίωμα fuel_verify_values).
+    if ($action === 'verify_form') {
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        if ($id <= 0) respond(['error' => 'λείπει το id της εργασίας'], 400);
+        $r = fuel_verify_form($db, $session, $perms, $id);
+        if (!$r['ok']) respond(['error' => $r['error']] + (isset($r['vf']) ? ['vf' => $r['vf']] : []), $r['code']);
+        respond(['ok' => true, 'form' => $r['form']]);
     }
 
     $view = isset($_GET['view']) ? $_GET['view'] : 'queue';
@@ -127,6 +143,13 @@ if ($method === 'POST') {
                                       isset($b['reason']) ? $b['reason'] : null); break;
         case 'override_ack':
             $r = tasks_override_ack($db, $session, $perms, $id); break;
+        // Επαληθευτής (fuel_verify_lib.php).
+        case 'verify_submit':
+            $r = fuel_verify_submit($db, $session, $perms, $id,
+                                    isset($b['answers']) && is_array($b['answers']) ? $b['answers'] : []); break;
+        case 'verify_reset':
+            $r = fuel_verify_reset($db, $session, $perms, $id,
+                                   isset($b['reason']) ? $b['reason'] : null); break;
         default:
             respond(['error' => 'άγνωστη ενέργεια'], 400);
     }
@@ -138,6 +161,8 @@ if ($method === 'POST') {
         $out = ['error' => $r['error']];
         // «ήδη κλειστή» (τύποι system): η οθόνη το δείχνει ως πληροφορία.
         if (!empty($r['already_closed'])) $out['already_closed'] = true;
+        // Επαληθευτής: κωδικός για το κείμενο της οθόνης, και ποιες γραμμές.
+        foreach (['vf', 'wrong', 'total'] as $k) if (isset($r[$k])) $out[$k] = $r[$k];
         if (!empty($r['locked'])) {
             $out['locked']     = true;
             $out['blocked_by'] = isset($r['blocked_by']) ? $r['blocked_by'] : null;
@@ -147,7 +172,7 @@ if ($method === 'POST') {
     // Το done/na προσθέτουν τι ξεκλείδωσε η πράξη. Οι άλλες ενέργειες δεν
     // ξεκλειδώνουν τίποτα, οπότε τα πεδία λείπουν εντελώς — η οθόνη δεν
     // πρέπει να δείχνει «Ξεκλείδωσαν 0» μετά από μια ανάληψη.
-    $out = ['ok' => true, 'task' => $r['task']];
+    $out = ['ok' => true, 'task' => fuel_verify_redact($db, $session, $perms, $r['task'])];
     if (isset($r['unlocked'])) {
         $out['unlocked']      = $r['unlocked'];
         $out['unlocked_mine'] = $r['unlocked_mine'];
