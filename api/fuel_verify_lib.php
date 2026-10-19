@@ -296,9 +296,19 @@ function fuel_verify_round_lines($db, $taskId, $round)
  */
 function fuel_verify_ensure($db, $task, $round, callable $rand)
 {
+    // ΠΡΟΣΤΑΣΙΑ 1: ο γύρος έχει ήδη κληρωθεί -> οι ΙΔΙΕΣ επιλογές, καμία νέα κλήρωση.
     $lines = fuel_verify_round_lines($db, $task['id'], $round);
     if ($lines) return [$lines, null];
+    return fuel_verify_draw_round($db, $task, $round, $rand);
+}
 
+/**
+ * Νέα κλήρωση ενός γύρου. ΠΡΟΣΤΑΣΙΑ 2: INSERT IGNORE στο UNIQUE
+ * task/round/check και ξανά ανάγνωση -> αν κάποιος άλλος (ταυτόχρονο
+ * άνοιγμα) πρόλαβε, μένουν οι ΔΙΚΕΣ ΤΟΥ επιλογές, όχι οι δικές μας.
+ */
+function fuel_verify_draw_round($db, $task, $round, callable $rand)
+{
     $s = fuel_verify_settings($db);
     if ($s === null || !$s['valid']) return [null, fuel_verify_err(409, 'config')];
     $checks = fuel_verify_checks($db, $task['task_code']);
@@ -611,13 +621,74 @@ function fuel_verify_info($db, $session, $perms, $task, array $events)
     $info  = ['round' => $state['round'], 'locked' => $state['locked'], 'override' => tasks_steps_override($events)];
     if (fuel_verify_can_see($perms)) {
         $w = $state['wrong'];
-        $info['alert'] = $w === null ? null : [
-            'at' => $w['created_at'], 'by' => $w['actor_name'],
-            'wrong' => is_array($w['meta']) && isset($w['meta']['wrong']) ? $w['meta']['wrong'] : [],
-            'total' => is_array($w['meta']) && isset($w['meta']['total']) ? (int)$w['meta']['total'] : null,
-        ];
+        $info['alert'] = null;
+        if ($w !== null) {
+            // Το alert υπάρχει ΜΟΝΟ με το δικαίωμα: εδώ και η τιμή που
+            // επιλέχθηκε και η αναμενόμενη ανά λάθος γραμμή (απόφαση 19/10).
+            $m     = is_array($w['meta']) ? $w['meta'] : [];
+            $round = isset($m['round']) ? (int)$m['round'] : $state['round'];
+            $vals  = fuel_verify_line_values($db, (int)$task['id'], $round);
+            $wrong = [];
+            foreach (isset($m['wrong']) && is_array($m['wrong']) ? $m['wrong'] : [] as $x) {
+                $cid = isset($x['check_id']) ? (int)$x['check_id'] : 0;
+                $wrong[] = $x + (isset($vals[$cid]) ? $vals[$cid] : ['picked' => null, 'expected' => null]);
+            }
+            $info['alert'] = ['at' => $w['created_at'], 'by' => $w['actor_name'], 'by_id' => (int)$w['actor_id'],
+                              'wrong' => $wrong, 'total' => isset($m['total']) ? (int)$m['total'] : null];
+        }
     }
     return $info;
+}
+
+/** Ανά γραμμή ενός γύρου: picked (η απάντηση) και expected (η σωστή), «ακέραιο.δδ». ΜΟΝΟ για χρήστη με το δικαίωμα. */
+function fuel_verify_line_values($db, $taskId, $round)
+{
+    $out = [];
+    $ans = fuel_verify_answers($db, $taskId, $round);
+    foreach (fuel_verify_round_lines($db, $taskId, $round) as $cid => $l) {
+        $out[$cid] = ['picked'   => isset($ans[$cid]) ? fuel_verify_fmt($ans[$cid]['chosen']) : null,
+                      'expected' => fuel_verify_fmt($l['correct'])];
+    }
+    return $out;
+}
+
+/**
+ * Το ιστορικό: στα γεγονότα verify_ok / verify_wrong το κλειδί `verify`
+ * {round, lines: [{client_code, station_country, zone, cms_service,
+ * fuel_type, fuel_label, ok}]}. ΜΟΝΟ με το δικαίωμα, ανά γραμμή, και τα
+ * picked / expected. Τα υπόλοιπα γεγονότα αθικτα.
+ */
+function fuel_verify_history($db, $perms, $taskId, array $events)
+{
+    $see = fuel_verify_can_see($perms);
+    $labels = null;
+    foreach ($events as $i => $e) {
+        if (!in_array($e['event'], ['verify_ok', 'verify_wrong'], true)) continue;
+        $m = is_string($e['meta']) ? json_decode($e['meta'], true) : $e['meta'];
+        if (!is_array($m) || !isset($m['round'])) continue;
+        $round = (int)$m['round'];
+        try {
+            $lines = fuel_verify_round_lines($db, $taskId, $round);
+            $ans   = fuel_verify_answers($db, $taskId, $round);
+        } catch (Exception $x) {
+            continue;                     // χωρίς πίνακες (rollback): το γεγονός μένει όπως είναι
+        }
+        if ($labels === null) $labels = fuel_verify_fuel_labels($db);
+        $out = [];
+        foreach ($lines as $cid => $l) {
+            $row = ['client_code' => $l['client_code'], 'station_country' => $l['station_country'], 'zone' => $l['zone'],
+                    'cms_service' => $l['cms_service'], 'fuel_type' => $l['fuel_type'],
+                    'fuel_label' => isset($labels[$l['fuel_type']]) ? $labels[$l['fuel_type']] : $l['fuel_type'],
+                    'ok' => isset($ans[$cid]) ? $ans[$cid]['ok'] : null];
+            if ($see) {
+                $row['picked']   = isset($ans[$cid]) ? fuel_verify_fmt($ans[$cid]['chosen']) : null;
+                $row['expected'] = fuel_verify_fmt($l['correct']);
+            }
+            $out[] = $row;
+        }
+        $events[$i]['verify'] = ['round' => $round, 'lines' => $out];
+    }
+    return $events;
 }
 
 /**

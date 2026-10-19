@@ -162,7 +162,7 @@ if ($method === 'POST') {
         // «ήδη κλειστή» (τύποι system): η οθόνη το δείχνει ως πληροφορία.
         if (!empty($r['already_closed'])) $out['already_closed'] = true;
         // Επαληθευτής: κωδικός για το κείμενο της οθόνης, και ποιες γραμμές.
-        foreach (['vf', 'wrong', 'total'] as $k) if (isset($r[$k])) $out[$k] = $r[$k];
+        foreach (['vf', 'wrong', 'total', 'n'] as $k) if (isset($r[$k])) $out[$k] = $r[$k];
         if (!empty($r['locked'])) {
             $out['locked']     = true;
             $out['blocked_by'] = isset($r['blocked_by']) ? $r['blocked_by'] : null;

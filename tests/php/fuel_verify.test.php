@@ -25,8 +25,10 @@ class TestPDO extends PDO
         $sql = preg_replace('/JSON_UNQUOTE\(JSON_EXTRACT\(([^()]*)\)\)/', 'json_extract($1)', $sql);
         return str_replace('NOW()', "datetime('now')", $sql);
     }
+    // Κάθε SQL που ετοιμάστηκε: για τα τεστ «καμία νέα κλήρωση».
+    public static $log = array();
     #[\ReturnTypeWillChange]
-    public function prepare($sql, $o = []) { return parent::prepare($this->fix($sql), $o); }
+    public function prepare($sql, $o = []) { self::$log[] = $sql; return parent::prepare($this->fix($sql), $o); }
     #[\ReturnTypeWillChange]
     public function query($sql, $m = null, ...$a) { return parent::query($this->fix($sql)); }
     #[\ReturnTypeWillChange]
@@ -444,6 +446,58 @@ ck('admin άλλος από τον ανάδοχο: κλείνει με admin_ove
    && ($eo = $ev($dbO, $vo)) && end($eo)['event'] === 'admin_override', json_encode($r));
 ck('κόκκινο σήμα: overrides_pending = 1 για άλλον admin', tasks_overrides_pending($dbO, $S(1), $ADM) === 1);
 ck('`verifier.override` στη λίστα', $byId(tasks_list($dbO, $S(1), $ADM, 'all')['tasks'], $vo)['verifier']['override']['actor_name'] === 'adm');
+
+// ═════════════════════════════════════════════════════════════════════
+echo "\n═══ Κάθε προστασία ΧΩΡΙΣ την άλλη (19/10) ═══\n";
+$insOpt = function () { return count(array_filter(TestPDO::$log, function ($q) { return stripos($q, 'INSERT') !== false && strpos($q, '4a_fuel_verify_options') !== false; })); };
+$dbP = fresh_db(); list($wp, $vp) = $weekChain($dbP, '2026-10-26', $P26, $P19);
+$tp = tasks_fetch_one($dbP, $vp);
+ck('πρώτο άνοιγμα: 4 γραμμές κληρώθηκαν', count(fuel_verify_ensure($dbP, $tp, 1, fuel_verify_rand())[0]) === 4);
+TestPDO::$log = array();
+list($l2) = fuel_verify_ensure($dbP, $tp, 1, fuel_verify_rand());
+ck('ΠΡΟΣΤΑΣΙΑ 1 (ανάγνωση πρώτα): δεύτερο άνοιγμα -> ΚΑΝΕΝΑ INSERT στις επιλογές', $insOpt() === 0, (string)$insOpt());
+$before = fuel_verify_round_lines($dbP, $vp, 1);
+list($l3, $e3) = fuel_verify_draw_round($dbP, $tp, 1, fuel_verify_rand());
+ck('ΠΡΟΣΤΑΣΙΑ 2 (INSERT IGNORE): ταυτόχρονη δεύτερη κλήρωση -> χωρίς σφάλμα, μένουν οι ΠΡΩΤΕΣ επιλογές',
+   $e3 === null && json_encode($l3) === json_encode($before) && $cnt($dbP, 'SELECT COUNT(*) FROM `4a_fuel_verify_options`') === 4, json_encode($e3));
+$rp = $rightOf(fuel_verify_form($dbP, $S(1), $ADM, $vp));
+$dbP->exec("INSERT INTO `4a_task_events` (`task_id`,`event`,`actor_id`,`note`,`meta`) VALUES ($vp,'verify_wrong',2,'x','{\"round\":1}')");
+ck('ΚΛΕΙΔΩΜΑ 1 (γεγονός verify_wrong): χωρίς απαντήσεις στον γύρο -> 409 locked', fuel_verify_submit($dbP, $S(2), $MGR, $vp, $rp, $MON)['vf'] === 'locked'
+   && $cnt($dbP, 'SELECT COUNT(*) FROM `4a_fuel_verify_answers`') === 0);
+$dbQ = fresh_db(); list($wq, $vq) = $weekChain($dbQ, '2026-10-26', $P26, $P19);
+$rq = $rightOf(fuel_verify_form($dbQ, $S(1), $ADM, $vq));
+$dbQ->exec("INSERT INTO `4a_fuel_verify_answers` (`task_id`,`round`,`check_id`,`chosen`,`is_correct`,`user_id`) VALUES ($vq,1,1,'1.00',0,2)");
+$rr = fuel_verify_submit($dbQ, $S(2), $MGR, $vq, $rq, $MON);
+ck('ΚΛΕΙΔΩΜΑ 2 (απαντήσεις στον γύρο): χωρίς γεγονός verify_wrong -> 409 locked, εργασία ανοιχτή', $rr['vf'] === 'locked'
+   && tasks_fetch_one($dbQ, $vq)['status'] === 'in_progress', json_encode($rr));
+
+// ═════════════════════════════════════════════════════════════════════
+echo "\n═══ «επιλέχθηκε / αναμενόμενη»: ΜΟΝΟ με το δικαίωμα (19/10) ═══\n";
+$aw = $byId(tasks_list($dbW, $S(1), $ADM, 'all')['tasks'], $vW);
+$hW = tasks_history($dbW, $S(1), $ADM, $vW)['events'];
+$hWm = tasks_history($dbW, $S(2), $MGR, $vW)['events'];
+$hv = array_values(array_filter($hW, function ($e) { return $e['event'] === 'verify_wrong'; }))[0]['verify'];
+ck('ιστορικό admin: verify_wrong με 4 γραμμές, η 3η ✗ με picked = η λάθος, expected 51.94', count($hv['lines']) === 4 && $hv['round'] === 1
+   && $hv['lines'][2]['ok'] === false && $hv['lines'][2]['picked'] === $wrongVal && $hv['lines'][2]['expected'] === '51.94'
+   && $hv['lines'][2]['fuel_label'] === 'Air Cyprus' && $hv['lines'][0]['ok'] === true, json_encode($hv));
+$hvm = array_values(array_filter($hWm, function ($e) { return $e['event'] === 'verify_wrong'; }))[0]['verify'];
+ck('ιστορικό manager: ίδιες γραμμές και ✓/✗, ΧΩΡΙΣ picked / expected', count($hvm['lines']) === 4 && $hvm['lines'][2]['ok'] === false
+   && !preg_match('/picked|expected/', json_encode($hvm)), json_encode($hvm));
+$hok = array_values(array_filter($hW, function ($e) { return $e['event'] === 'verify_ok'; }))[0]['verify'];
+ck('ιστορικό: και ο γύρος 2 (verify_ok) με τις δικές του γραμμές', $hok['round'] === 2 && count(array_filter($hok['lines'], function ($l) { return $l['ok'] === true; })) === 4);
+ck('ιστορικό: τα άλλα γεγονότα ΧΩΡΙΣ `verify`', !array_filter($hW, function ($e) { return !in_array($e['event'], array('verify_ok', 'verify_wrong'), true) && isset($e['verify']); }));
+$dbA = fresh_db(); list($wA, $vA) = $weekChain($dbA, '2026-10-26', $P26, $P19);
+$fA = fuel_verify_form($dbA, $S(1), $ADM, $vA); $aA = $rightOf($fA); $lA = $fA['form']['lines'][1];
+$pickA = current(array_diff($lA['options'], array($lA['expected']))); $aA[$lA['check_id']] = $pickA;
+fuel_verify_submit($dbA, $S(2), $MGR, $vA, $aA, $MON);
+$al = $byId(tasks_list($dbA, $S(1), $ADM, 'all')['tasks'], $vA)['verifier']['alert'];
+ck('κόκκινο σήμα admin: η λάθος γραμμή με picked / expected (40.75) και by_id', count($al['wrong']) === 1 && $al['wrong'][0]['picked'] === $pickA
+   && $al['wrong'][0]['expected'] === '40.75' && $al['by_id'] === 2, json_encode($al));
+$vmA = $byId(tasks_list($dbA, $S(2), $MGR, 'mine')['tasks'], $vA);
+ck('manager: ΚΑΜΙΑ τιμή του γύρου (picked / expected) σε λίστα ή ιστορικό', !preg_match('/picked|expected/', json_encode($vmA))
+   && !preg_match('/picked|expected/', json_encode(tasks_history($dbA, $S(2), $MGR, $vA))));
+$e400 = fuel_verify_reset($dbA, $S(1), $ADM, $vA, 'λίγο');
+ck('σφάλμα λόγου: το όριο ως `n` (για το κείμενο της οθόνης)', $e400['vf'] === 'reason' && $e400['n'] === 10, json_encode($e400));
 
 // ═════════════════════════════════════════════════════════════════════
 echo "\n═══ Φρένο χωρίς κώδικα: from_week -> 2026-11-02 (Ε5) ═══\n";

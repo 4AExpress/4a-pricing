@@ -1265,8 +1265,11 @@ function tasks_history($db, $session, $perms, $taskId)
                          ORDER BY e.`id`');
     $st->execute([(int)$taskId]);
     $events = $st->fetchAll(PDO::FETCH_ASSOC);
+    // Ώρα Αθήνας ΠΡΙΝ από τον επαληθευτή: οι γραμμές του κρατούν την ίδια ώρα.
     foreach ($events as $i => $e) $events[$i]['created_at'] = time_db_to_local($e['created_at']);
-    return ['ok' => true, 'code' => 200, 'error' => null, 'events' => $events];
+    // Επαληθευτής: γραμμές ανά υποβολή (τιμές ΜΟΝΟ με το δικαίωμα).
+    return ['ok' => true, 'code' => 200, 'error' => null,
+            'events' => fuel_verify_history($db, $perms, (int)$taskId, $events)];
 }
 
 /**
