@@ -197,7 +197,14 @@ ck('ρυθμίσεις: options 4 · near_deltas 0.25/0.50/0.75/1.00 · from_wee
 $db = fresh_db();
 $s = fuel_verify_settings($db);
 ck('οι ρυθμίσεις του migration περνούν την επικύρωση', $s['valid'] === true && $s['options'] === 4 && $s['near_deltas'] === array(25, 50, 75, 100)
-   && $s['other_type'] === array('AIR' => 'ROAD', 'ROAD' => 'AIR', 'AIR_CY' => 'AIR') && $s['max_draws'] === 50, json_encode($s));
+   && $s['other_type'] === array('AIR' => 'ROAD', 'ROAD' => 'AIR', 'AIR_CY' => 'AIR') && $s['max_draws'] === 50
+   && $s['reason_min'] === 10 && $s['reason_max'] === 500, json_encode($s));
+ck('7 ρυθμίσεις στο migration', count($SEED_SETTINGS) === 7, json_encode(array_keys($SEED_SETTINGS)));
+foreach (array('reason_min', 'reason_max', 'max_draws', 'near_deltas', 'options', 'from_week') as $k) {
+    $dbk = fresh_db(); $dbk->exec("DELETE FROM `4a_fuel_verify_settings` WHERE `k` = '$k'");
+    ck("χωρίς τη ρύθμιση $k: μη έγκυρες (fail closed, κανένα όριο από τον κώδικα)", fuel_verify_settings($dbk)['valid'] === false);
+}
+ck('κανένα σταθερό όριο λόγου στη βιβλιοθήκη', !preg_match('/mb_strlen\([^)]*\)\s*[<>]=?\s*\d/', file_get_contents(__DIR__ . '/../../api/fuel_verify_lib.php')));
 ck('κανένα κείμενο τιμής (π.χ. 49.00) ή κωδικός πελάτη μέσα στη βιβλιοθήκη',
    !preg_match('/1731000|40006012|\b49\.00\b|S1003|S1010|S1027|S1012/', file_get_contents(__DIR__ . '/../../api/fuel_verify_lib.php')));
 $rb = file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-23a_fuel_verify.rollback.sql');
@@ -396,7 +403,11 @@ ck('ιστορικό: verify_wrong με ποιος/πότε', count(array_filter
 
 echo "\n═══ Επαναφορά από admin (Ε3): νέος γύρος, νέα κλήρωση ═══\n";
 ck('manager: 403 vf=admin', fuel_verify_reset($dbW, $S(2), $MGR, $vW, 'έλεγξα το CMS ξανά')['vf'] === 'admin');
-ck('λόγος < 10 χαρακτήρες: 400 vf=reason', fuel_verify_reset($dbW, $S(1), $ADM, $vW, 'σύντομο')['vf'] === 'reason');
+ck('λόγος < 10 χαρακτήρες: 400 vf=reason «τουλάχιστον 10»', ($r = fuel_verify_reset($dbW, $S(1), $ADM, $vW, 'σύντομο')) && $r['vf'] === 'reason'
+   && $r['error'] === 'απαιτείται λόγος, τουλάχιστον 10 χαρακτήρες', json_encode($r));
+$dbW->exec("UPDATE `4a_fuel_verify_settings` SET `v` = '30' WHERE `k` = 'reason_min'");
+ck('reason_min = 30 στη βάση: λόγος 20 χαρακτήρων απορρίπτεται «τουλάχιστον 30»', fuel_verify_reset($dbW, $S(1), $ADM, $vW, 'έλεγχος είκοσι χαρ.')['error'] === 'απαιτείται λόγος, τουλάχιστον 30 χαρακτήρες');
+$dbW->exec("UPDATE `4a_fuel_verify_settings` SET `v` = '10' WHERE `k` = 'reason_min'");
 $r = fuel_verify_reset($dbW, $S(1), $ADM, $vW, 'ξανανέβηκε το Air Cyprus στο CMS');
 $e = $ev($dbW, $vW); $last = end($e);
 ck('επαναφορά: γεγονός verify_reset με τον λόγο, round 1 -> 2', $r['ok'] && $last['event'] === 'verify_reset' && $last['note'] === 'ξανανέβηκε το Air Cyprus στο CMS'
@@ -421,6 +432,9 @@ ck('...άλλος admin: can_reset true', fuel_verify_form($dbR, $S(9), $ADM, $v
 echo "\n═══ Παράκαμψη admin στο verify (Ε4) ═══\n";
 ck('όποιος υπέβαλε απαντήσεις (u1) δεν κάνει παράκαμψη: 403', tasks_admin_override($dbR, $S(1), $ADM, $vR, 'λόγος παράκαμψης δοκιμής')['code'] === 403);
 ck('λόγος < 10: 400', tasks_admin_override($dbR, $S(9), $ADM, $vR, 'σύντομο')['code'] === 400);
+$dbR->exec("UPDATE `4a_fuel_verify_settings` SET `v` = '50' WHERE `k` = 'reason_min'");
+ck('παράκαμψη στο verify: το όριο από τη ρύθμιση (reason_min = 50)', tasks_admin_override($dbR, $S(9), $ADM, $vR, 'το CMS δεν ανοίγει, ελέγχθηκε τηλεφωνικά')['error'] === 'απαιτείται λόγος, τουλάχιστον 50 χαρακτήρες');
+$dbR->exec("UPDATE `4a_fuel_verify_settings` SET `v` = '10' WHERE `k` = 'reason_min'");
 $dbO = fresh_db(); list($wo, $vo) = $weekChain($dbO, '2026-10-26', $P26);
 $r = tasks_admin_override($dbO, $S(9), $ADM, $vo, 'το CMS δεν ανοίγει, ελέγχθηκε τηλεφωνικά', $SUN);
 ck('παράκαμψη πριν τη Δευτέρα: Δ-Α8 (409), εργασία ανοιχτή', $r['code'] === 409 && $r['error'] === 'η επαλήθευση ανοίγει Δευ 26/10'

@@ -95,7 +95,9 @@ INSERT INTO `4a_fuel_verify_settings` (`k`, `v`, `note`) VALUES
   ('near_deltas', '0.25,0.50,0.75,1.00',     '(γ): απόσταση, τυχαία από τη λίστα, με τυχαίο πρόσημο'),
   ('other_type',  'AIR:ROAD,ROAD:AIR,AIR_CY:AIR', '(β): ο «άλλος» τύπος καυσίμου, ίδια εβδομάδα'),
   ('from_week',   '2026-10-26',              'verify με week_start πριν από αυτό: παλιά ροή (done)'),
-  ('max_draws',   '50',                      'όριο κληρώσεων της (γ) μέχρι 4 διαφορετικές τιμές')
+  ('max_draws',   '50',                      'όριο κληρώσεων της (γ) μέχρι 4 διαφορετικές τιμές'),
+  ('reason_min',  '10',                      'ελάχιστοι χαρακτήρες λόγου: επαναφορά και παράκαμψη στο verify'),
+  ('reason_max',  '500',                     'μέγιστοι χαρακτήρες λόγου (κόβεται)')
 ON DUPLICATE KEY UPDATE `k` = `k`;
 
 INSERT INTO `4a_fuel_verify_checks`
@@ -123,5 +125,5 @@ SELECT COUNT(*) AS `ασυμφωνίες_καταλόγου`
                       AND s.`fuel_type` = k.`fuel_type`
                       AND FIND_IN_SET(k.`zone`, s.`zones`) > 0);
 
--- Αναμενόμενο: 5 ρυθμίσεις
+-- Αναμενόμενο: 7 ρυθμίσεις
 SELECT `k`, `v` FROM `4a_fuel_verify_settings` ORDER BY `k`;

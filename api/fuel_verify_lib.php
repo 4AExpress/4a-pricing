@@ -50,7 +50,7 @@ if (!defined('FV_ERR')) {
         'wrong'      => 'κάποιες γραμμές δεν συμφωνούν με το CMS',
         'not_locked' => 'ο επαληθευτής δεν είναι κλειδωμένος',
         'reset_self' => 'την επαναφορά την κάνει άλλος διαχειριστής από αυτόν που απάντησε',
-        'reason'     => 'απαιτείται λόγος, τουλάχιστον 10 χαρακτήρες',
+        'reason'     => 'απαιτείται λόγος, τουλάχιστον {n} χαρακτήρες',
         'admin'      => 'μόνο διαχειριστής',
         'use_verifier' => 'η επαλήθευση κλείνει από τον επαληθευτή, όχι με «Ολοκλήρωση»',
         'no_download'  => 'το αρχείο CMS το κατεβάζει ο ανάδοχος του ανεβάσματος ή όποιος βλέπει τις αναμενόμενες τιμές',
@@ -61,7 +61,9 @@ if (!defined('FV_ERR')) {
 function fuel_verify_err($http, $vf, array $extra = [])
 {
     $msgs = json_decode(FV_ERR, true);
-    $e = tasks_err($http, isset($msgs[$vf]) ? $msgs[$vf] : $vf);
+    $m = isset($msgs[$vf]) ? $msgs[$vf] : $vf;
+    foreach ($extra as $k => $v) if (is_scalar($v)) $m = str_replace('{' . $k . '}', (string)$v, $m);
+    $e = tasks_err($http, $m);
     $e['vf'] = $vf;
     return $e + $extra;
 }
@@ -84,7 +86,9 @@ function fuel_verify_fmt($cents)
 /**
  * Οι ρυθμίσεις, επικυρωμένες. null = ΧΩΡΙΣ πίνακα (ανενεργός).
  * ['valid' => bool, 'options', 'near_deltas' (λεπτά), 'other_type' (map),
- *  'from_week' ('Y-m-d' ή null), 'max_draws']
+ *  'from_week' ('Y-m-d' ή null), 'max_draws', 'reason_min', 'reason_max']
+ * ΚΑΘΕ όριο έρχεται από εδώ (απόφαση 19/10)· ρύθμιση που λείπει ή δεν
+ * είναι έγκυρη -> valid = false (fail closed: κανένα όριο «από τον κώδικα»).
  */
 function fuel_verify_settings($db)
 {
@@ -93,9 +97,11 @@ function fuel_verify_settings($db)
     } catch (Exception $e) {
         return null;
     }
-    $s = ['valid' => true, 'options' => 0, 'near_deltas' => [], 'other_type' => [], 'from_week' => null, 'max_draws' => 0];
+    $s = ['valid' => true, 'options' => 0, 'near_deltas' => [], 'other_type' => [], 'from_week' => null, 'max_draws' => 0,
+          'reason_min' => 0, 'reason_max' => 0];
     $n = isset($rows['options']) ? trim((string)$rows['options']) : '';
-    if (preg_match('/^\d+$/', $n) && (int)$n >= 2 && (int)$n <= 8) $s['options'] = (int)$n; else $s['valid'] = false;
+    // Τουλάχιστον 2: η σωστή και μία λάθος (όριο της έννοιας, όχι ρύθμιση).
+    if (preg_match('/^\d+$/', $n) && (int)$n >= 2) $s['options'] = (int)$n; else $s['valid'] = false;
     foreach (explode(',', isset($rows['near_deltas']) ? (string)$rows['near_deltas'] : '') as $d) {
         $c = fuel_verify_cents($d);
         if ($c === null || $c <= 0) { $s['valid'] = false; continue; }
@@ -111,6 +117,11 @@ function fuel_verify_settings($db)
     if ($d && $d->format('Y-m-d') === $fw) $s['from_week'] = $fw; else $s['valid'] = false;
     $m = isset($rows['max_draws']) ? trim((string)$rows['max_draws']) : '';
     if (preg_match('/^\d+$/', $m) && (int)$m >= 1) $s['max_draws'] = (int)$m; else $s['valid'] = false;
+    foreach (['reason_min', 'reason_max'] as $k) {
+        $x = isset($rows[$k]) ? trim((string)$rows[$k]) : '';
+        if (preg_match('/^\d+$/', $x) && (int)$x >= 1) $s[$k] = (int)$x; else $s['valid'] = false;
+    }
+    if ($s['reason_max'] < $s['reason_min']) $s['valid'] = false;
     return $s;
 }
 
@@ -496,8 +507,8 @@ function fuel_verify_submit($db, $session, $perms, $taskId, $answers, $now = nul
 // ─────────────────────────────────────────────────────────────────────
 // ΕΠΑΝΑΦΟΡΑ — POST {action: verify_reset, id, reason}  (απόφαση Ε3)
 //
-// Μόνο διαχειριστής, ΑΛΛΟΣ από αυτόν που απάντησε λάθος, με λόγο >= 10
-// χαρακτήρες, μόνο σε κλειδωμένο επαληθευτή. Νέος γύρος: οι επιλογές
+// Μόνο διαχειριστής, ΑΛΛΟΣ από αυτόν που απάντησε λάθος, με λόγο >= reason_min
+// χαρακτήρες (ρύθμιση), μόνο σε κλειδωμένο επαληθευτή. Νέος γύρος: οι επιλογές
 // κληρώνονται ξανά στο επόμενο άνοιγμα.
 // ─────────────────────────────────────────────────────────────────────
 function fuel_verify_reset($db, $session, $perms, $taskId, $reason)
@@ -512,13 +523,26 @@ function fuel_verify_reset($db, $session, $perms, $taskId, $reason)
     $state = fuel_verify_state($evs[(int)$taskId]);
     if (!$state['locked']) return fuel_verify_err(409, 'not_locked');
     if ((int)$state['wrong']['actor_id'] === $me) return fuel_verify_err(403, 'reset_self');
-    $reason = trim((string)($reason === null ? '' : $reason));
-    if (mb_strlen($reason) < 10) return fuel_verify_err(400, 'reason');
-    if (mb_strlen($reason) > 500) $reason = mb_substr($reason, 0, 500);
+    list($reason, $err) = fuel_verify_reason($db, $reason);
+    if ($err) return $err;
 
     tasks_event($db, $taskId, 'verify_reset', $me, $reason,
                 ['from_round' => $state['round'], 'to_round' => $state['round'] + 1, 'reason' => $reason]);
     return tasks_okres($db, $taskId);
+}
+
+/**
+ * Ο λόγος (επαναφορά, παράκαμψη στο verify) με τα όρια της βάσης:
+ * [λόγος κομμένος στο reason_max, null] ή [null, σφάλμα].
+ */
+function fuel_verify_reason($db, $reason)
+{
+    $s = fuel_verify_settings($db);
+    if ($s === null || !$s['valid']) return [null, fuel_verify_err(409, 'config')];
+    $reason = trim((string)($reason === null ? '' : $reason));
+    if (mb_strlen($reason) < $s['reason_min']) return [null, fuel_verify_err(400, 'reason', ['n' => $s['reason_min']])];
+    if (mb_strlen($reason) > $s['reason_max']) $reason = mb_substr($reason, 0, $s['reason_max']);
+    return [$reason, null];
 }
 
 /** Υπέβαλε απαντήσεις ο χρήστης σε αυτή την εργασία (οποιονδήποτε γύρο); */

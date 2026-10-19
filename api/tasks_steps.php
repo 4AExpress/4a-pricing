@@ -507,9 +507,15 @@ function tasks_admin_override($db, $session, $perms, $taskId, $reason, $now = nu
         $b = $task['blocked_by_label'] !== null ? $task['blocked_by_label'] : $task['depends_on'];
         return tasks_err(409, 'κλειδωμένη — περιμένει: ' . $b);
     }
-    $reason = trim((string)($reason === null ? '' : $reason));
-    if (mb_strlen($reason) < 10) return tasks_err(400, 'απαιτείται λόγος, τουλάχιστον 10 χαρακτήρες');
-    if (mb_strlen($reason) > 500) $reason = mb_substr($reason, 0, 500);
+    if ($def === null) {
+        // Verify με επαληθευτή: τα όρια του λόγου από τις ρυθμίσεις του (19/10).
+        list($reason, $err) = fuel_verify_reason($db, $reason);
+        if ($err) return $err;
+    } else {
+        $reason = trim((string)($reason === null ? '' : $reason));
+        if (mb_strlen($reason) < 10) return tasks_err(400, 'απαιτείται λόγος, τουλάχιστον 10 χαρακτήρες');
+        if (mb_strlen($reason) > 500) $reason = mb_substr($reason, 0, 500);
+    }
 
     $evs = tasks_steps_events($db, [(int)$taskId]);
     if (($task['assigned_to'] !== null && (int)$task['assigned_to'] === $me)
