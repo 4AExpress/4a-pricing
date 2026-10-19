@@ -1,8 +1,10 @@
 -- =====================================================================
 --  rollback/2026-10-21a_ui_texts_fuel_card.rollback.sql
 --
---  ΑΝΤΙΣΤΡΟΦΟ του 2026-10-21a: σβήνει ΜΟΝΟ τα 35 νέα κλειδιά και
---  επαναφέρει τα 6 κείμενα κεφαλίδας στις τιμές του 2026-10-19b.
+--  ΑΝΤΙΣΤΡΟΦΟ του 2026-10-21a: σβήνει ΜΟΝΟ τα 35 νέα κλειδιά (tasks) και
+--  το κοινό btn_fuel_cms_download, και επαναφέρει τα 6 κείμενα κεφαλίδας
+--  στις τιμές του 2026-10-19b. ΠΡΟΣΟΧΗ: το frontend της 21a διαβάζει το
+--  btn_fuel_cms_download και ΧΩΡΙΣ βήματα — πρώτα επαναφορά του frontend.
 --
 --  Πριν από αυτό, αν η κάρτα είναι ενεργή (Α4) με το frontend της 21a:
 --  πρώτα το frontend, αλλιώς η οθόνη δείχνει [κλειδί].
@@ -21,6 +23,7 @@ DELETE FROM `4a_ui_texts`
                'color_fs_mark', 'color_fs_done_cap', 'color_fs_done_bg', 'color_fs_done_text',
                'color_fs_next_line', 'color_fs_next_num', 'color_fs_next_text', 'color_fs_next_bg',
                'color_fs_wrong', 'color_fs_wrong_bg', 'color_fs_btn');
+DELETE FROM `4a_ui_texts` WHERE `scope` = 'common' AND `k` = 'btn_fuel_cms_download';
 
 INSERT INTO `4a_ui_texts` (`scope`, `k`, `kind`, `text`) VALUES
   ('tasks',   'fuel_w_upload',       'text',  '◷ ① Ανέβασμα στο CMS · τώρα · έως {due}'),

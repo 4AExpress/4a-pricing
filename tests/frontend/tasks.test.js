@@ -1492,9 +1492,9 @@ console.log('\n═══ ΚΑΡΤΑ ΕΠΙΝΑΥΛΟΥ (19/10): γραμμές �
   ck('η σειρά των γραμμών είναι ΣΤΑΘΕΡΗ στον κώδικα ([2, 1, 0]), όχι ταξινόμηση κατά κατάσταση', /\[2, 1, 0\]\.map\(row\)/.test(grab('fuelStripHtml')) && !/const rank =/.test(grab('fuelStripHtml')));
 
   let r = rowsOf(H(0, 1, false));
-  ck('στάδιο 0, ανάδοχος ①: ① ▶ ΤΩΡΑ, οδηγία, κουμπί «⬇ Λήψη του αρχείου» -> stepDownload',
+  ck('στάδιο 0, ανάδοχος ①: ① ▶ ΤΩΡΑ, οδηγία, κουμπί «⬇ Λήψη αρχείου» -> stepDownload',
      r[0].cls === 'now' && r[0].html.includes('<span class="fs-tag now">▶ ΤΩΡΑ</span><span class="fs-text">Κατέβασε το αρχείο για το CMS.</span>')
-     && r[0].html.includes('<button class="btn fs-btn" onclick="stepDownload(90)">⬇ Λήψη του αρχείου</button>'), r[0].html);
+     && r[0].html.includes('<button class="btn fs-btn" onclick="stepDownload(90)">⬇ Λήψη αρχείου</button>'), r[0].html);
   ck('...② 🔒 ΠΕΡΙΜΕΝΕΙ «→ u1 · ανοίγει όταν γίνει το ① · έως Παρ 23/10 19:00» (όνομα έντονο), χωρίς κουμπί',
      r[1].cls === 'next' && r[1].html.includes('<span class="fs-tag next">🔒 ΠΕΡΙΜΕΝΕΙ</span>')
      && r[1].html.includes('→ <b>u1</b> · ανοίγει όταν γίνει το ① · έως Παρ 23/10 19:00') && !/<button/.test(r[1].html), r[1].html);

@@ -1737,7 +1737,7 @@ function taskRow(t){
   // Λήψη αρχείου CMS: ανάγνωση, όπως το άνοιγμα καρτέλας — φαίνεται σε
   // κάθε κατάσταση, και σε κλειδωμένη εργασία.
   if(fuelCmsAoa(payload)) acts += `<button class="btn btn-go" title="Download — Το αρχείο FuelChargeImport από το στιγμιότυπο της εργασίας"`+
-                                  ` onclick="downloadFuelCms(${t.id})">⬇ Λήψη αρχείου CMS</button>`;
+                                  ` onclick="downloadFuelCms(${t.id})">${escHtml(pageText('btn_fuel_cms_download'))}</button>`;
   if(locked){
     // ΜΟΝΟ το όνομα της εργασίας που περιμένει. Το «Περιμένει» το λέει
     // ήδη το badge, από τη βάση — εδώ θα ήταν η ίδια λέξη δύο φορές στην
