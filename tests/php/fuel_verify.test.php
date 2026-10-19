@@ -53,7 +53,9 @@ foreach ($ms as $m) $SEED_SETTINGS[$m[1]] = $m[2];
 
 $PAYLOAD = json_decode(file_get_contents(__DIR__ . '/../frontend/fuel_weekly_payload.fixture.json'), true);
 $week = function ($ws, $prices) use ($PAYLOAD) {
-    $p = $PAYLOAD; $p['week_start'] = $ws; $p['prices'] = $prices; return $p;
+    $p = $PAYLOAD; $p['week_start'] = $ws; $p['prices'] = $prices;
+    $p['week_end'] = (new DateTime($ws))->modify('+6 days')->format('Y-m-d');
+    return $p;
 };
 // Η εβδομάδα του επαληθευτή (26/10) και η προηγούμενη (19/10).
 $P19 = array('AIR' => '48.50', 'ROAD' => '40.75', 'AIR_CY' => '51.41', 'NONE' => null);
