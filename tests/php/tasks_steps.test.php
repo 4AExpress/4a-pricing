@@ -711,9 +711,11 @@ ck('tasks_type_flag: χωρίς τύπο -> η προεπιλογή', tasks_type
    && tasks_type_flag($db, 'δεν_υπάρχει', 'close_from_week_start') === 0);
 
 echo "\n═══ Migrations 2026-10-19a και 2026-10-19c: σχήμα, κανένα DDL στο λάθος σημείο, rollback συμμετρικό ═══\n";
-$M = function ($f) { return file_get_contents(__DIR__ . '/../../db/migrations/' . $f); };
-$m19a = $M('2026-10-19a_task_types_allow_actions.sql');  $r19a = $M('rollback/2026-10-19a_task_types_allow_actions.rollback.sql');
-$m19c = $M('2026-10-19c_task_types_close_from_week.sql'); $r19c = $M('rollback/2026-10-19c_task_types_close_from_week.rollback.sql');
+// Σταθερές διαδρομές αρχείων (όχι από μεταβλητή): μόνο αυτές ενσωματώνει το tools/bundle_php_tests.js (Β8 στον server).
+$m19a = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-19a_task_types_allow_actions.sql');
+$r19a = file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-19a_task_types_allow_actions.rollback.sql');
+$m19c = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-19c_task_types_close_from_week.sql');
+$r19c = file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-19c_task_types_close_from_week.rollback.sql');
 $noCom = function ($s) { return preg_replace('/^\s*--.*$/m', '', $s); };
 foreach (array('allow_release', 'allow_reject', 'allow_steal') as $col) {
     ck("19a: ADD $col TINYINT(1) NOT NULL DEFAULT 1, με φρουρό information_schema",
