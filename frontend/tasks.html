@@ -231,51 +231,62 @@
      εργασία και όχι ως κατάσταση αυτής. */
   .lockmsg { font-size: 11px; color: #999; white-space: nowrap; font-style: italic; }
   /* Φάση Α: βήμα της κάρτας που έγινε -> γκρι. Το ① ξαναπατιέται (ο server
-     γράφει file_viewed), το ② μετά το κλείσιμο είναι disabled. */
+     γράφει file_viewed), το ② είναι disabled αφού κλείσει. */
   .step-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
   .btn.btn-go.step-done { background: #f5f5f5; border-color: #ccc; color: #555; font-weight: 400; }
   .btn.btn-go.step-done:hover:not(:disabled) { background: #eee; }
 
-  /* ΛΩΡΙΔΑ ΒΗΜΑΤΩΝ (απόφαση 16/10, Πρόταση Β). Χρώματα από τη βάση μέσω
-     --fs-now / --fs-done / --fs-lock (fuelStripHtml)· εδώ μόνο εφεδρεία. */
+  /* ΚΑΡΤΑ ΕΠΙΝΑΥΛΟΥ (απόφαση 19/10). Χρώματα από τη βάση μέσω των --fs-*
+     (FS_COLORS, fuelStripHtml)· εδώ μόνο εφεδρεία. */
   .fstrip { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
   .fs-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
   .fs-row { display: flex; align-items: flex-start; gap: 10px; }
-  .fs-track { display: flex; flex: 1; min-width: 0; }
-  .fs-stp { flex: 1 1 0; }
-  .fs-stp.now { flex: 2 1 0; }
-  /* Έγινε: σκούρο γκρι, στενότερο, με ΠΡΑΣΙΝΟ κυκλάκι και λευκό ✓ (color_step_done_mark). */
-  .fs-stp.ok { flex: .8 1 0; background: var(--fs-done, #5a5d60); color: var(--fs-done-fg, #fff); border-color: var(--fs-done, #5a5d60); }
-  .fs-stp.ok .fs-lbl { color: var(--fs-done-fg, #fff); display: flex; align-items: center; gap: 6px; }
-  .fs-stp.ok .fs-lbl::before { content: "\2713"; flex: none; width: 16px; height: 16px; border-radius: 50%; background: var(--fs-mark, #2e7d32);
-                               color: #fff; font-size: 11px; line-height: 16px; text-align: center; letter-spacing: 0; }
-  .fs-stp.ok .sbtn.done { padding: 0; background: none; }
-  .fs-stp { border: 1px solid #d9dacd; background: #fff; color: #222; padding: 10px 12px; min-width: 0;
-            display: flex; flex-direction: column; gap: 6px; }
-  .fs-stp + .fs-stp { border-left: none; }
-  .fs-stp:first-child { border-radius: 6px 0 0 6px; }
-  .fs-stp:last-child  { border-radius: 0 6px 6px 0; }
-  .fs-stp.now { background: var(--fs-now, #fcff29); color: #000; }
-  .fs-lbl  { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #555; }
-  .fs-stp.now .fs-lbl, .fs-stp.now .fs-meta { color: #000; }
-  .fs-meta { font-size: 12px; color: #666; overflow-wrap: anywhere; }
-  .sbtn { align-self: flex-start; text-align: left; }
-  .sbtn.done { background: var(--fs-done, #5a5d60); color: var(--fs-done-fg, #fff); border-color: transparent; font-weight: 500; opacity: 1; }
-  .sbtn.done:disabled { cursor: default; }
-  .sbtn.done small { display: block; font-size: 11px; font-weight: 400; opacity: .9; }
-  .sbtn.lock { background: var(--fs-lock, #ececec); color: #666; border: 1px dashed #999; opacity: 1; }
-  .sstat { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
-  .sdot  { width: 9px; height: 9px; border-radius: 50%; background: #e0a800; flex: none; }
+  /* ΚΑΡΤΑ ΕΠΙΝΑΥΛΟΥ (απόφαση 19/10). Χρώματα από τη βάση (FS_COLORS)· εδώ μόνο εφεδρεία. */
+  .fs-bar { flex: 1; min-width: 0; display: flex; align-items: flex-start; background: var(--fs-bar-bg, #fffef0);
+            border-radius: 6px; padding: 10px 12px; }
+  .fs-node { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 150px; flex: none; text-align: center; }
+  .fs-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px; box-sizing: border-box; }
+  .fs-dot.done { background: var(--fs-done-dot, #e4e4e2); border: 2px solid var(--fs-done-line, #6b6e70); color: var(--fs-mark, #2b742f); font-size: 17px; font-weight: 900; }
+  .fs-dot.done::before, .fs-ok::before { content: "\2713"; }
+  .fs-dot.wrong::before { content: "\2717"; }
+  .fs-dot.now { width: 34px; height: 34px; background: var(--fs-now, #fcff29); border: 4px solid var(--fs-ink, #1e2022); color: var(--fs-ink, #1e2022);
+                box-shadow: 0 0 0 4px rgba(252,255,41,.45); }
+  .fs-dot.next { background: #fff; border: 2px solid var(--fs-next-line, #4f9fb0); color: var(--fs-next-num, #3f7f8d); }
+  .fs-dot.wrong { background: var(--fs-wrong, #cc0000); border: 2px solid var(--fs-wrong, #cc0000); color: #fff; }
+  .fs-link { flex: 1; height: 0; margin-top: 15px; border-top: 4px dashed var(--fs-next-line, #4f9fb0); }
+  .fs-link.done { border-top: 4px solid var(--fs-done-line, #6b6e70); }
+  .fs-cap { display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.3; }
+  .fs-cap-l { font-weight: 700; color: var(--fs-ink, #1e2022); }
+  .fs-node.done .fs-cap, .fs-node.done .fs-cap-l { color: var(--fs-done-cap, #737577); }
+  .fs-node.now .fs-cap-t { font-weight: 700; color: var(--fs-ink, #1e2022); }
+  .fs-node.next .fs-cap-t { color: var(--fs-next-text, #1d4f5a); }
+  .fs-steps { display: flex; flex-direction: column; gap: 6px; }
+  .fs-step { display: grid; grid-template-columns: 150px minmax(0,1fr) auto; gap: 10px; align-items: center;
+             padding: 9px 12px; border-radius: 6px; border: 1px solid #e0e0de; background: #fff; }
+  .fs-name { font-weight: 700; font-size: 13px; }
+  .fs-body { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 13px; min-width: 0; }
+  .fs-text { overflow-wrap: anywhere; }
+  .fs-tag { font-size: 10.5px; font-weight: 800; letter-spacing: .06em; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+  .fs-step.now { background: var(--fs-now, #fcff29); border: 3px solid var(--fs-ink, #1e2022); box-shadow: 0 2px 8px rgba(0,0,0,.18); color: var(--fs-ink, #1e2022); }
+  .fs-tag.now { background: var(--fs-ink, #1e2022); color: var(--fs-now, #fcff29); }
+  .fs-step.done { background: var(--fs-done-bg, #e9e9e7); color: var(--fs-done-text, #646667); border-color: var(--fs-done-bg, #e9e9e7); }
+  .fs-tag.done { background: var(--fs-done-dot, #e4e4e2); color: var(--fs-done-text, #646667); }
+  .fs-ok { color: var(--fs-mark, #2b742f); font-weight: 900; margin-right: 4px; }
+  .fs-step.next { background: var(--fs-next-bg, #e2f1f4); border: 1px dashed var(--fs-next-line, #4f9fb0); color: var(--fs-next-text, #1d4f5a); }
+  .fs-tag.next { background: #fff; border: 1px solid var(--fs-next-line, #4f9fb0); color: var(--fs-next-text, #1d4f5a); }
+  .fs-step.wrong { background: var(--fs-wrong-bg, #fde8e8); border: 3px solid var(--fs-wrong, #cc0000); color: var(--fs-ink, #1e2022); }
+  .fs-tag.wrong { background: var(--fs-wrong, #cc0000); color: #fff; }
+  .fs-btn { background: var(--fs-btn, #1f5fbf); color: #fff; border-color: var(--fs-btn, #1f5fbf); font-weight: 600; }
+  .fs-again { font-size: 11px; padding: 2px 8px; background: #fff; border: 1px solid #b9bbbd; color: #333; }
+  @media (max-width: 600px) {
+    .fs-step { grid-template-columns: minmax(0,1fr); }
+    .fs-node { width: auto; flex: 1; }
+  }
   .fs-notes { border: 1px solid #d9dacd; border-radius: 6px; padding: 8px 10px; background: #fafaf7; font-size: 12.5px; }
   .fs-notes-h { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #666; margin-bottom: 4px; }
   .fs-note { display: flex; flex-wrap: wrap; gap: 4px 10px; }
   .fs-note.none, .fs-at, .fs-to { color: #777; }
-  @media (max-width: 640px) {
-    .fs-track { flex-direction: column; }
-    .fs-stp + .fs-stp { border-left: 1px solid #d9dacd; border-top: none; }
-    .fs-stp:first-child { border-radius: 6px 6px 0 0; }
-    .fs-stp:last-child  { border-radius: 0 0 6px 6px; }
-  }
   /* Κόκκινο σήμα: κανένας δικαιούχος δεν έμεινε. Δεν είναι σφάλμα — είναι
      αίτημα προς άνθρωπο. Γι' αυτό μένει ορατό και στη γραμμή και στην ουρά. */
   .task.attn { background: #fff5f5; box-shadow: inset 3px 0 0 #cc0000; }
@@ -964,24 +975,25 @@ function fuelWeekInfo(items, now){
   const upDone = root.status === 'done';
   const verifyOpen = items.some(t => t !== root && t.status !== 'done' && t.status !== 'na');
   let key = null, alert = null, vars = {};
-  // ΕΝΕΡΓΗ εβδομάδα (Φάση Α): ΤΙ · ΑΠΟ ΠΟΤΕ · ΕΩΣ ΠΟΤΕ, ώρες από τα due_at.
-  //   ① ανοιχτή: fuel_w_upload, ή fuel_w_upload_late (κόκκινο) μετά τη λήξη
-  //   ② ανοιχτή: πριν τη Δευτέρα fuel_w_verify_wait, μετά fuel_w_verify_now
-  //              (πορτοκαλί), και fuel_w_verify_late (κόκκινο) μετά τη λήξη
+  // ΕΝΕΡΓΗ εβδομάδα (κάρτα 19/10): δεξιά στην κεφαλίδα «Τώρα: {βήμα} · έως …».
+  // Κεφαλίδα ΛΕΜΟΝΙ (alert null)· κόκκινο ΜΟΝΟ όταν πέρασε η προθεσμία.
+  //   ① ανοιχτό: fuel_w_download · ② ανοιχτό: fuel_w_upload · μετά τη λήξη fuel_w_upload_late
+  //   ③: πριν τη Δευτέρα fuel_w_verify_wait, μετά fuel_w_verify_now, μετά τη λήξη fuel_w_verify_late
   //   όλα κλειστά: fuel_w_done
   if(fuelActiveRoot(items) && phase !== 'older'){
     const ver = items.find(t => t !== root) || null;
     const verOpen = !!ver && ver.status !== 'done' && ver.status !== 'na';
     const past = s => (msLeft(s, now) ?? 0) < 0;
+    const dl = (Array.isArray(root.steps) ? root.steps : []).find(x => x.action === 'download');
     if(!upDone){
-      key = past(root.due_at) ? 'fuel_w_upload_late' : 'fuel_w_upload';
+      key = past(root.due_at) ? 'fuel_w_upload_late' : (dl && !dl.done) ? 'fuel_w_download' : 'fuel_w_upload';
       alert = key === 'fuel_w_upload_late' ? 'red' : null;
       vars.due = fmtDue(root.due_at, true);
     } else if(verOpen){
-      if(today < ws){ key = 'fuel_w_verify_wait'; alert = 'orange';
+      if(today < ws){ key = 'fuel_w_verify_wait';
                       vars.from = fmtDue(ws + ' 00:00', true).slice(0, 9); vars.time = dueClock(ver.due_at); }
       else if(past(ver.due_at)){ key = 'fuel_w_verify_late'; alert = 'red'; vars.due = fmtDue(ver.due_at, true); }
-      else { key = 'fuel_w_verify_now'; alert = 'orange'; vars.time = dueClock(ver.due_at); }
+      else { key = 'fuel_w_verify_now'; vars.time = dueClock(ver.due_at); }
     } else key = 'fuel_w_done';
     return { ws, phase, alert, key, text: pageText(key, vars) };
   }
@@ -1490,20 +1502,19 @@ function stepCardHtml(t){
   </div>${histHtml(t.id)}`;
 }
 
-// ═══ ΛΩΡΙΔΑ ΒΗΜΑΤΩΝ ΕΒΔΟΜΑΔΑΣ (απόφαση 16/10, Πρόταση Β) ═══════════════
-// Σε ΕΝΕΡΓΗ εβδομάδα επίναυλου η ομάδα δείχνει ΜΙΑ λωρίδα:
-//   ① Λήψη (ανάδοχος ①) → ② Ανέβασμα στο CMS (έως {due}) →
-//   ③ Επαλήθευση (ανάδοχος ③ · Δευ {week_start} 00:00–{ώρα})
+// ═══ ΚΑΡΤΑ ΕΠΙΝΑΥΛΟΥ (απόφαση 19/10, αντικαθιστά τη λωρίδα της 16/10) ═══
+// Σε ΕΝΕΡΓΗ εβδομάδα επίναυλου η ομάδα δείχνει, κάτω από την κεφαλίδα:
+//   ΜΠΑΡΑ ΠΡΟΟΔΟΥ  ① → ② → ③ αριστερά προς δεξιά (κύκλοι + γραμμή)
+//   ΓΡΑΜΜΕΣ        ΣΤΑΘΕΡΗ σειρά κάτω -> πάνω: ③ πάνω, ② μέση, ① κάτω
+//                  όνομα | ετικέτα + κείμενο | κουμπί
+//   ο πίνακας ποσοστών και «Ισχύς από · γραμμές» κάτω από τις γραμμές.
+// Καταστάσεις: ▶ ΤΩΡΑ (λεμονί) · 🔒 ΠΕΡΙΜΕΝΕΙ (γαλάζιο, «→ ποιος · ανοίγει ·
+// έως») · ✓ ΕΓΙΝΕ (γκρι, πράσινο ✓, «τι · πότε · ποιος») · ✗ ΛΑΘΟΣ (κόκκινο).
+// Κανόνες (phase5_plan.md #43): κανένα ✓ πάνω σε κουμπί· όχι η λέξη
+// «Ολοκλήρωση»· όλα τα κείμενα (fs_*, strip_l*) και τα χρώματα (FS_COLORS)
+// από τον 4a_ui_texts.
 // ΙΔΙΑ σε «Οι εργασίες μου», «Ουρά» και «Όλες»: όλα από ΟΛΗ την εβδομάδα
-// (weekItems / t.chain του server), ποτέ από όσες φαίνονται στην καρτέλα.
-// Τα κουμπιά εξαρτώνται ΜΟΝΟ από τον χρήστη.
-// Κανόνας εμφάνισης:
-//   ΚΑΤΑΣΤΑΣΗ           κείμενο με κουκκίδα, ποτέ σε σχήμα κουμπιού
-//   ΕΝΕΡΓΕΙΑ            έγχρωμο κουμπί (btn-go)
-//   ΕΓΙΝΕ               σκούρο γκρι κουμπί με ✓, ώρα και όνομα
-//   ΔΕΝ ΓΙΝΕΤΑΙ ΑΚΟΜΑ   διακεκομμένο, ανενεργό, με tooltip
-// Χρώματα από τον 4a_ui_texts (kind = color): τρέχον βήμα color_open_head,
-// έγινε color_step_done, κλειδωμένο color_step_locked. Κείμενα: strip_*.
+// (weekItems / t.chain του server). Τα κουμπιά εξαρτώνται ΜΟΝΟ από τον χρήστη.
 // Κανένα «Δεν εφαρμόζεται», «Απόρριψη», «Αφήνω»· Ανάθεση και Παράκαμψη ΜΟΝΟ
 // στο «⋯», για admin.
 
@@ -1537,78 +1548,73 @@ function fuelStripHtml(wk, root){
   const sDl    = steps.find(x => x.action === 'download') || null;
   const sUp    = steps.find(x => x.action === 'upload') || null;
   const dlDone = !!(sDl && sDl.done);
-  // 0: ① τώρα · 1: ② τώρα · 2: ③ τώρα · 3: όλα έγιναν
+  // 0: ① τώρα · 1: ② τώρα · 2: ③ ανοιχτό · 3: όλα έγιναν
   const stage  = !closed(root) ? (dlDone ? 1 : 0) : (ver && !closed(ver) ? 2 : 3);
-  const who    = t => t && t.assigned_name ? t.assigned_name : pageText('strip_unassigned');
   const ui     = root.ui;
+  const ws     = /^\d{4}-\d{2}-\d{2}$/.test(String(p.week_start || '')) ? p.week_start : null;
+  const monOpen = ws ? fmtDue(ws + ' 00:00', true) : '—';
+  const nameOf = t => t && t.assigned_name ? t.assigned_name : pageText('strip_unassigned');
+  const when   = at => at ? fmtDue(at, true) : '—';
+  const rc     = chainEntry(wk, root.id) || {};
+  const vc     = ver ? (chainEntry(wk, ver.id) || {}) : {};
+  // ① Λήψη: για όσους δέχεται ο server (ανάδοχος ①, ανάδοχος ③, admin). Κάθε λήψη καταγράφεται.
+  const canDl  = !!fuelCmsAoa(p) && (own(root) || own(ver) || isAdmin);
+  const dlTip  = uiText(ui, 'tip_redownload');
+  const btn    = (text, click, title) => `<button class="btn fs-btn"${title ? ` title="${escHtml(title)}"` : ''} onclick="${click}">${escHtml(text)}</button>`;
 
-  const lbl    = x => x ? `${x.button_icon ? escHtml(x.button_icon) + ' ' : ''}${escHtml(x.button_label || '')}` : '';
-  const doneBtn = (text, at, by, title, click) =>
-    `<button class="btn sbtn done" title="${escHtml(title)}"${click ? ` onclick="${click}"` : ' disabled'}>`+
-    `${escHtml(text)}<small>${escHtml(pageText('strip_when', { at: fmtDue(at, true), name: by || '—' }))}</small></button>`;
-  const lockBtn = (html, title) => `<button class="btn sbtn lock" title="${escHtml(title)}" disabled>${html}</button>`;
-  const actBtn  = (html, click) => `<button class="btn btn-go sbtn" onclick="${click}">${html}</button>`;
-  // Το τρέχον βήμα όταν ΔΕΝ το κάνει ο χρήστης: κατάσταση, όχι κουμπί.
-  const stat    = t => `<span class="sstat"><span class="sdot"></span>${escHtml(t && t.assigned_name
-                    ? pageText('strip_who', { name: t.assigned_name }) : pageText('strip_wait_assign'))}</span>`;
-  const cell    = (cls, label, meta, body) =>
-    `<div class="fs-stp ${cls}"><div class="fs-lbl">${escHtml(label)}</div>`+
-    (cls === 'ok' ? '' : `<div class="fs-meta">${escHtml(meta)}</div>`) + `${body}</div>`;
+  // ΚΑΤΑΣΤΑΣΗ κάθε βήματος (απόφαση 19/10): done · now · next (· wrong, επαληθευτής).
+  // Παλιά ροή (#76/#87): ρίζα κλειστή χωρίς γεγονός λήψης -> το ① έγινε, χωρίς ώρα.
+  const S = [
+    (dlDone || closed(root)) ? 'done' : 'now',
+    closed(root) ? 'done' : stage === 1 ? 'now' : 'next',
+    !ver ? 'next' : closed(ver) ? 'done' : (stage === 2 && !(ws && today < ws)) ? 'now' : 'next'];
+  const D = [
+    { label: pageText('strip_l1'), who: root, due: root.due_at, after: null, opens: null,
+      at: sDl && sDl.done_at, done: pageText('fs_d1', { at: when(sDl && sDl.done_at), name: (sDl && sDl.done_by) || '—' }),
+      hint: pageText('fs_h1'), act: own(root) && open(root) && canDl ? btn(pageText('fs_b1'), `stepDownload(${root.id})`) : '',
+      again: canDl ? `<button class="btn fs-again" title="${escHtml(dlTip)}" onclick="stepDownload(${root.id})">${escHtml(pageText('fs_again'))}</button>` : '' },
+    { label: pageText('strip_l2'), who: root, due: root.due_at, after: '①', opens: null,
+      at: (sUp && sUp.done_at) || rc.closed_at || root.closed_at,
+      done: pageText('fs_d2', { at: when((sUp && sUp.done_at) || rc.closed_at || root.closed_at), name: (sUp && sUp.done_by) || rc.closed_by_name || '—' }),
+      hint: pageText('fs_h2'), act: own(root) && open(root) ? btn(pageText('fs_b2'), `openUpload(${root.id})`) : '', again: '' },
+    { label: pageText('strip_l3'), who: ver, due: ver ? ver.due_at : null, after: null, opens: monOpen,
+      at: vc.closed_at || (ver && ver.closed_at),
+      done: pageText('fs_d3', { at: when(vc.closed_at || (ver && ver.closed_at)), name: vc.closed_by_name || '—' }),
+      hint: pageText('fs_h3'), act: ver && own(ver) && open(ver) ? btn(pageText('fs_b3'), `act(${ver.id},'done')`) : '', again: '' }];
+  // «→ {ποιος} · {πότε ανοίγει}»: πότε = μετά το προηγούμενο, ή Δευ 00:00 για το ③.
+  const from = d => d.opens || pageText('fs_after', { n: d.after });
+  // Το όνομα έντονο: το κείμενο της βάσης χωρίζεται στο {name}.
+  const boldName = (key, d) => pageText(key, { from: from(d), due: when(d.due) }).split('{name}')
+    .map(escHtml).join(`<b>${escHtml(nameOf(d.who))}</b>`);
 
-  // ① Λήψη: πατήσιμη ΠΑΝΤΑ (και μετά την Ολοκλήρωση) για όσους δέχεται ο
-  // server: ανάδοχος ①, ανάδοχος ③, admin. Κάθε λήψη καταγράφεται, δεν αλλάζει βήμα.
-  const canDl = !!fuelCmsAoa(p) && (own(root) || own(ver) || isAdmin);
-  let b1;
-  if(dlDone)
-    b1 = doneBtn(pageText('strip_d1'), sDl.done_at, sDl.done_by, uiText(ui, 'tip_redownload'), canDl ? `stepDownload(${root.id})` : '');
-  else if(closed(root))
-    // Παλιά ροή (π.χ. #76/#87): έκλεισε χωρίς γεγονός λήψης. Το ① δεν εκκρεμεί:
-    // γκρι, χωρίς ✓ (δεν καταγράφηκε λήψη), ξανακατεβαίνει όπως κάθε κλειστή.
-    b1 = canDl ? `<button class="btn sbtn done" title="${escHtml(uiText(ui, 'tip_redownload'))}" onclick="stepDownload(${root.id})">${lbl(sDl)}</button>` : '';
-  else if(stage === 0 && !(own(root) && open(root)))
-    b1 = stat(root);
-  else
-    b1 = canDl ? actBtn(lbl(sDl), `stepDownload(${root.id})`) : stat(root);
+  // ── ΜΠΑΡΑ ΠΡΟΟΔΟΥ: ① ② ③ αριστερά -> δεξιά ──
+  // ✓ / ✗ των κύκλων: σύμβολα του CSS (::before), όχι κείμενο. Αριθμός ①②③ στο τώρα / ακολουθεί.
+  const node = (d, s, i) => {
+    const dot = s === 'done' || s === 'wrong' ? `<span class="fs-dot ${s}"></span>`
+              : `<span class="fs-dot ${s}">${'①②③'[i]}</span>`;
+    const cap = s === 'done' ? `<span class="fs-cap-t">${escHtml(when(d.at))}</span>`
+              : s === 'now'  ? `<span class="fs-cap-t">${escHtml(pageText('fs_now_bar', { due: when(d.due) }))}</span>`
+              :                `<span class="fs-cap-t">${boldName('fs_next_bar', d)}</span>`;
+    return `<div class="fs-node ${s}">${dot}<div class="fs-cap"><span class="fs-cap-l">${escHtml(d.label)}</span>${cap}</div></div>`;
+  };
+  const bar = `<div class="fs-bar">` + D.map((d, i) => node(d, S[i], i) +
+    (i < 2 ? `<span class="fs-link${S[i] === 'done' ? ' done' : ''}"></span>` : '')).join('') + `</div>`;
 
-  // ② Ανέβασμα στο CMS: «Ολοκλήρωση» ΜΙΑ φορά, μόνο από τον ανάδοχο ①.
-  const rc = chainEntry(wk, root.id) || {};
-  let b2;
-  if(closed(root))
-    b2 = doneBtn(pageText('strip_upload_done'), (sUp && sUp.done_at) || rc.closed_at || root.closed_at,
-                 (sUp && sUp.done_by) || rc.closed_by_name, uiText(ui, 'tip_upload_done'), '');
-  else if(stage === 1)
-    b2 = own(root) && open(root) ? actBtn(lbl(sUp), `openUpload(${root.id})`) : stat(root);
-  else
-    b2 = lockBtn(lbl(sUp), pageText('strip_tip_locked'));
-
-  // ③ Επαλήθευση: ανοίγει Δευτέρα 00:00 (ο server αρνείται νωρίτερα, Δ-Α8).
-  const ws = /^\d{4}-\d{2}-\d{2}$/.test(String(p.week_start || '')) ? p.week_start : null;
-  const mon = ws ? fmtDue(ws + ' 00:00', true).slice(0, 9) : '—';
-  const b3lbl = escHtml(pageText('strip_b3'));
-  let b3;
-  if(!ver) b3 = '';
-  else if(closed(ver)){
-    const vc = chainEntry(wk, ver.id) || {};
-    b3 = doneBtn(pageText('strip_d3'), vc.closed_at || ver.closed_at, vc.closed_by_name, pageText('strip_tip_done'), '');
-  } else if(stage < 2)
-    b3 = lockBtn(b3lbl, pageText('strip_tip_locked'));
-  else if(ws && today < ws)
-    b3 = lockBtn(b3lbl, pageText('strip_tip_monday', { date: ws.slice(8, 10) + '/' + ws.slice(5, 7) }));
-  else
-    b3 = own(ver) && open(ver) ? actBtn(b3lbl, `act(${ver.id},'done')`) : stat(ver);
-
-  const st = i => i === stage ? 'now' : i < stage ? 'ok' : 'lock';
-  // ΚΑΝΟΝΑΣ UI (19/10): ό,τι γίνεται ΤΩΡΑ πάνω-αριστερά, ό,τι έγινε δεξιά. Η σειρά
-  // βγαίνει από την κατάσταση κάθε βήματος (now → lock → ok, σταθερή μέσα σε κάθε
-  // ομάδα), όχι από θέσεις στον κώδικα· τα ①②③ μένουν πάνω σε κάθε κελί.
-  // Λεμονί = κάνε το τώρα · ανοιχτό γκρι διακεκομμένο = έρχεται · σκούρο γκρι + πράσινο ✓ = έγινε.
-  const cells = [
-    [st(0) === 'lock' ? 'lock' : (dlDone || closed(root)) ? 'ok' : st(0), pageText('strip_l1'), who(root), b1],
-    [st(1), pageText('strip_l2'), pageText('strip_m2', { due: fmtDue(root.due_at, true) }), b2],
-    [ver ? st(2) : 'lock', pageText('strip_l3'), ver ? pageText('strip_m3', { name: who(ver), from: mon, time: dueClock(ver.due_at) }) : '—', b3]];
-  const rank = { now: 0, lock: 1, ok: 2 };
-  const track = cells.map((c, i) => [c, i]).sort((a, b) => (rank[a[0][0]] - rank[b[0][0]]) || (a[1] - b[1]))
-                     .map(([c]) => cell(c[0], c[1], c[2], c[3])).join('');
+  // ── ΓΡΑΜΜΕΣ: ΣΤΑΘΕΡΗ σειρά κάτω -> πάνω (③ πάνω, ② μέση, ① κάτω), ΠΟΤΕ δεν αλλάζουν θέση ──
+  const tag = s => s === 'done' ? `<span class="fs-tag done"><span class="fs-ok"></span>${escHtml(pageText('fs_tag_done'))}</span>`
+                 : s === 'now'  ? `<span class="fs-tag now">${escHtml(pageText('fs_tag_now'))}</span>`
+                 : s === 'wrong'? `<span class="fs-tag wrong">${escHtml(pageText('fs_tag_wrong'))}</span>`
+                 :                `<span class="fs-tag next">${escHtml(pageText('fs_tag_wait'))}</span>`;
+  const row = i => {
+    const d = D[i], s = S[i];
+    const text = s === 'done' ? escHtml(d.done)
+               : s === 'now'  ? escHtml(d.act ? d.hint : pageText('strip_who', { name: nameOf(d.who) }))
+               :                boldName('fs_next_row', d);
+    const act  = s === 'done' ? d.again : s === 'now' ? d.act : '';
+    return `<div class="fs-step ${s}"><div class="fs-name">${escHtml(d.label)}</div>` +
+           `<div class="fs-body">${tag(s)}<span class="fs-text">${text}</span></div><div class="fs-act">${act}</div></div>`;
+  };
+  const rows = `<div class="fs-steps">${[2, 1, 0].map(row).join('')}</div>`;
 
   // 📧 Ειδοποιήσεις: από το ιστορικό (chain.notices), κενό ως τη Φάση Β.
   const notes = wk.flatMap(t => { const c = chainEntry(wk, t.id); return c && Array.isArray(c.notices) ? c.notices : []; })
@@ -1627,15 +1633,22 @@ function fuelStripHtml(wk, root){
       (canAck ? ` <button class="btn btn-ov" title="${escHtml(uiText(ui, 'tip_ack'))}" onclick="overrideAck(${root.id})">${escHtml(uiText(ui, 'ov_ack'))}</button>` : '') +
       `</div>` : '';
 
-  const style = stripColorVar('--fs-now', 'color_open_head') + stripColorVar('--fs-done', 'color_step_done') +
-                stripColorVar('--fs-lock', 'color_step_locked') + stripColorVar('--fs-mark', 'color_step_done_mark') +
-                (/^#[0-9a-f]{6}$/i.test(pageText('color_step_done')) ? `--fs-done-fg:${textOn(pageText('color_step_done'))};` : '');
+  // Χρώματα ΜΟΝΟ από τη βάση (kind = color)· χωρίς κλειδί, το CSS κρατά την εφεδρεία του.
+  const style = FS_COLORS.map(([v, k]) => stripColorVar(v, k)).join('');
   return `<div class="fstrip"${style ? ` style="${style}"` : ''}>
-    <div class="fs-row"><div class="fs-track">${track}</div>${fuelStripMenu(root, ver)}</div>
+    <div class="fs-row">${bar}${fuelStripMenu(root, ver)}</div>
+    ${rows}
     <div class="fs-top">${fuelFactsHtml(Object.assign({}, root, { due_at: null }), p)}</div>
     ${ovHtml}${notesHtml}
   </div>${histHtml(root.id)}${ver ? histHtml(ver.id) : ''}`;
 }
+// Μεταβλητή CSS -> κλειδί χρώματος στον 4a_ui_texts (migrations 2026-10-15b / 19b / 21a).
+const FS_COLORS = [['--fs-now', 'color_open_head'], ['--fs-bar-bg', 'color_fs_bar_bg'], ['--fs-ink', 'color_fs_ink'],
+  ['--fs-done-dot', 'color_fs_done_dot'], ['--fs-done-line', 'color_fs_done_line'], ['--fs-mark', 'color_fs_mark'],
+  ['--fs-done-cap', 'color_fs_done_cap'], ['--fs-done-bg', 'color_fs_done_bg'], ['--fs-done-text', 'color_fs_done_text'],
+  ['--fs-next-line', 'color_fs_next_line'], ['--fs-next-num', 'color_fs_next_num'], ['--fs-next-text', 'color_fs_next_text'],
+  ['--fs-next-bg', 'color_fs_next_bg'], ['--fs-wrong', 'color_fs_wrong'], ['--fs-wrong-bg', 'color_fs_wrong_bg'],
+  ['--fs-btn', 'color_fs_btn']];
 
 // Το «⋯» της λωρίδας: Ανάθεση ①/③ και Παράκαμψη ΜΟΝΟ για admin, ιστορικό για όλους.
 function fuelStripMenu(root, ver){
