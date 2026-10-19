@@ -53,8 +53,11 @@ foreach ($ms as $m) $SEED_SETTINGS[$m[1]] = $m[2];
 
 $PAYLOAD = json_decode(file_get_contents(__DIR__ . '/../frontend/fuel_weekly_payload.fixture.json'), true);
 $week = function ($ws, $prices) use ($PAYLOAD) {
+    // Όπως η fuel_weekly_payload(): εβδομάδα, ισχύς και η στήλη EffectiveDate του αρχείου από το week_start.
     $p = $PAYLOAD; $p['week_start'] = $ws; $p['prices'] = $prices;
     $p['week_end'] = (new DateTime($ws))->modify('+6 days')->format('Y-m-d');
+    $p['effective_date'] = fuel_effective_date($ws);
+    foreach ($p['file']['rows'] as $i => $r) if ($i > 0) $p['file']['rows'][$i][8] = $p['effective_date'];
     return $p;
 };
 // Η εβδομάδα του επαληθευτή (26/10) και η προηγούμενη (19/10).
@@ -104,10 +107,11 @@ function fresh_db($withVerifier = true)
         ('fuel_weekly','step','download',10,'download','downloaded',0,'Αναμονή λήψης','Λήψη','⬇','Λήψη'),
         ('fuel_weekly','step','upload',20,'upload','uploaded',0,'Αναμονή ανεβάσματος','Ολοκλήρωση','✓','Ανέβηκε'),
         ('fuel_weekly','step','uploaded',30,NULL,NULL,1,'Ανέβηκε',NULL,NULL,NULL)");
-    $db->exec("INSERT INTO `4a_task_types` (`code`,`label`,`sort_order`,`kind`,`depends_on`,`exclude_prev_assignee`,`close_from_week_start`) VALUES
-        ('open_code','Άνοιγμα κωδικού',10,'client',NULL,0,0),
-        ('fuel_weekly','Γενικός επίναυλος εβδομάδας — αρχείο CMS',900,'system',NULL,0,0),
-        ('fuel_weekly_verify','Έλεγχος γενικού επίναυλου στο CMS',910,'system','fuel_weekly',1,1)");
+    // icon / title_template όπως το migration 2026-10-08a.
+    $db->exec("INSERT INTO `4a_task_types` (`code`,`label`,`sort_order`,`kind`,`depends_on`,`exclude_prev_assignee`,`close_from_week_start`,`icon`,`title_template`) VALUES
+        ('open_code','Άνοιγμα κωδικού',10,'client',NULL,0,0,NULL,NULL),
+        ('fuel_weekly','Γενικός επίναυλος εβδομάδας — αρχείο CMS',900,'system',NULL,0,0,'⛽','Γενικός επίναυλος {week} — αρχείο CMS'),
+        ('fuel_weekly_verify','Έλεγχος γενικού επίναυλου στο CMS',910,'system','fuel_weekly',1,1,'⛽','Έλεγχος γενικού επίναυλου {week} στο CMS')");
     $db->exec("INSERT INTO `4a_fuel_types` VALUES ('AIR','Αεροπορικός','Air','air',1,10,1),('ROAD','Οδικός','Road','road',1,20,1),
         ('AIR_CY','Air Cyprus','Air Cyprus','air',1.06,30,1),('NONE','Χωρίς επίναυλο','No fuel surcharge',NULL,NULL,40,1)");
     // 1, 9 διαχειριστές · 2, 3 managers. Δεξιότητες BOTH στους 1, 2, 3.
@@ -160,13 +164,21 @@ $seq = function (array $vals) { $i = 0; return function ($n) use (&$i, $vals) { 
  * στον u$verWho, in_progress. Η προηγούμενη εβδομάδα ($prev) ως ιστορικό.
  */
 $weekChain = function ($db, $ws, $prices, $prev = null, $rootWho = 3, $verWho = 2) use ($week, $S, $ADM, $NUMS) {
+    // Προθεσμίες όπως ο κανόνας του τύπου (2026-10-14b): ① Παρ πριν 19:00, ③ Δευ 17:00.
+    $due = function ($d, $off, $t) { return (new DateTime($d))->modify("$off days")->format('Y-m-d') . ' ' . $t; };
     if ($prev !== null) {
+        // Η προηγούμενη εβδομάδα κλειστή με την ΠΑΛΙΑ ροή (όπως οι #87/#88): γεγονός done, χωρίς λήψη.
         $pws = (new DateTime($ws))->modify('-7 days')->format('Y-m-d');
-        tasks_create_system($db, 'fuel_weekly', 'fuel:' . $pws, $week($pws, $prev), 'BOTH', $pws . ' 17:00:00');
-        $db->exec("UPDATE `4a_tasks` SET `status` = 'done' WHERE `subject_key` = 'fuel:$pws'");
+        $pw = (int)tasks_create_system($db, 'fuel_weekly', 'fuel:' . $pws, $week($pws, $prev), 'BOTH', $due($pws, -3, '19:00:00'))['task_id'];
+        $pv = (int)tasks_create_system($db, 'fuel_weekly_verify', 'fuel:' . $pws, $week($pws, $prev), 'BOTH', $due($pws, 0, '17:00:00'))['task_id'];
+        $pwc = $due($pws, -3, '07:47:25'); $pvc = $due($pws, 0, '09:13:28');
+        $db->exec("UPDATE `4a_tasks` SET `status` = 'done', `assigned_to` = $rootWho, `closed_by` = $rootWho, `closed_at` = '$pwc' WHERE `id` = $pw");
+        $db->exec("UPDATE `4a_tasks` SET `status` = 'done', `assigned_to` = $verWho, `closed_by` = $verWho, `closed_at` = '$pvc' WHERE `id` = $pv");
+        $db->exec("INSERT INTO `4a_task_events` (`task_id`,`event`,`actor_id`,`note`,`created_at`) VALUES
+                     ($pw,'done',$rootWho,'ολοκληρώθηκε','$pwc'), ($pv,'done',$verWho,'ολοκληρώθηκε','$pvc')");
     }
-    $w = (int)tasks_create_system($db, 'fuel_weekly', 'fuel:' . $ws, $week($ws, $prices), 'BOTH', $ws . ' 17:00:00')['task_id'];
-    $v = (int)tasks_create_system($db, 'fuel_weekly_verify', 'fuel:' . $ws, $week($ws, $prices), 'BOTH', $ws . ' 17:00:00')['task_id'];
+    $w = (int)tasks_create_system($db, 'fuel_weekly', 'fuel:' . $ws, $week($ws, $prices), 'BOTH', $due($ws, -3, '19:00:00'))['task_id'];
+    $v = (int)tasks_create_system($db, 'fuel_weekly_verify', 'fuel:' . $ws, $week($ws, $prices), 'BOTH', $due($ws, 0, '17:00:00'))['task_id'];
     $db->exec("UPDATE `4a_tasks` SET `assigned_to` = $rootWho, `status` = 'in_progress' WHERE `id` = $w");
     $P = array('role' => 'manager', 'pricelist_scope' => 'GR', 'permissions' => array());
     tasks_download($db, $S($rootWho), $P, $w);
