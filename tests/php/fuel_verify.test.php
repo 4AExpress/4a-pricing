@@ -468,10 +468,12 @@ ck('ΚΛΕΙΔΩΜΑ 1 (γεγονός verify_wrong): χωρίς απαντήσ�
    && $cnt($dbP, 'SELECT COUNT(*) FROM `4a_fuel_verify_answers`') === 0);
 $dbQ = fresh_db(); list($wq, $vq) = $weekChain($dbQ, '2026-10-26', $P26, $P19);
 $rq = $rightOf(fuel_verify_form($dbQ, $S(1), $ADM, $vq));
-$dbQ->exec("INSERT INTO `4a_fuel_verify_answers` (`task_id`,`round`,`check_id`,`chosen`,`is_correct`,`user_id`) VALUES ($vq,1,1,'1.00',0,2)");
+// Η απάντηση στην ΤΕΛΕΥΤΑΙΑ γραμμή: χωρίς τον έλεγχο, οι 1–3 θα γράφονταν πριν από τη σύγκρουση του UNIQUE (μερική εγγραφή).
+$lastCid = max(array_keys($rq));
+$dbQ->exec("INSERT INTO `4a_fuel_verify_answers` (`task_id`,`round`,`check_id`,`chosen`,`is_correct`,`user_id`) VALUES ($vq,1,$lastCid,'1.00',0,2)");
 $rr = fuel_verify_submit($dbQ, $S(2), $MGR, $vq, $rq, $MON);
-ck('ΚΛΕΙΔΩΜΑ 2 (απαντήσεις στον γύρο): χωρίς γεγονός verify_wrong -> 409 locked, εργασία ανοιχτή', $rr['vf'] === 'locked'
-   && tasks_fetch_one($dbQ, $vq)['status'] === 'in_progress', json_encode($rr));
+ck('ΚΛΕΙΔΩΜΑ 2 (απαντήσεις στον γύρο): χωρίς γεγονός verify_wrong -> 409 locked, εργασία ανοιχτή, ΚΑΜΙΑ νέα απάντηση', $rr['vf'] === 'locked'
+   && tasks_fetch_one($dbQ, $vq)['status'] === 'in_progress' && $cnt($dbQ, 'SELECT COUNT(*) FROM `4a_fuel_verify_answers`') === 1, json_encode($rr));
 
 // ═════════════════════════════════════════════════════════════════════
 echo "\n═══ «επιλέχθηκε / αναμενόμενη»: ΜΟΝΟ με το δικαίωμα (19/10) ═══\n";
