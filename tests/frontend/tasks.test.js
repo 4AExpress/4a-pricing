@@ -15,7 +15,8 @@ const NAVCHIP_SRC = fs.readFileSync('frontend/nav-chip.js', 'utf8');
 // αυτό που θα δώσει η βάση, και κάθε κλειδί του κώδικα πρέπει να υπάρχει εκεί.
 const UITEXTS_SRC = fs.readFileSync('frontend/ui-texts.js', 'utf8');
 // Α2 (16/10): και τα 9 κείμενα της εβδομάδας του migration 2026-10-19b.
-const UI_MIGS = ['db/migrations/2026-10-15b_ui_texts.sql', 'db/migrations/2026-10-19b_ui_texts_fuel_week.sql'];
+const UI_MIGS = ['db/migrations/2026-10-15b_ui_texts.sql', 'db/migrations/2026-10-19b_ui_texts_fuel_week.sql',
+                 'db/migrations/2026-10-21a_ui_texts_step_done_mark.sql'];
 const UI_MIG = UI_MIGS.join(' + ');
 const MIG_TEXTS = (() => {
   const out = {};
@@ -1419,8 +1420,12 @@ const stripOf = (ts, now, view, me, admin, texts) => {
   const i = h.indexOf('<div class="fstrip"');
   return i < 0 ? null : h.slice(i, h.indexOf('</div><!--fs-end-->', i) >= 0 ? h.indexOf('</div><!--fs-end-->', i) : h.length);
 };
-const cellsOf = h => [...h.matchAll(/<div class="fs-stp ([a-z]+)">([\s\S]*?)(?=<div class="fs-stp |<\/div>\s*<\/div>\s*(?:<div class="step-ov|<div class="fs-notes))/g)]
-  .map(m => ({ cls: m[1], html: m[2] }));
+// Τα κελιά της λωρίδας ΜΕ ΤΗ ΣΕΙΡΑ ΤΗΣ ΟΘΟΝΗΣ (κανόνας UI 19/10: now → lock → ok)…
+const cellsInDom = h => { const a = h.indexOf('<div class="fs-track">'), b = h.indexOf('<details class="step-more">', a);
+  return a < 0 ? [] : h.slice(a + 22, b).split('<div class="fs-stp ').slice(1)
+    .map(x => { const m = /^([a-z]+)">([\s\S]*)$/.exec(x); return { cls: m[1], html: m[2], n: '①②③'.indexOf(m[2].charAt(m[2].indexOf('fs-lbl">') + 8)) }; }); };
+// …και ανά ΒΗΜΑ (c[0] = ①, c[1] = ②, c[2] = ③), για τους ελέγχους περιεχομένου.
+const cellsOf = h => cellsInDom(h).sort((x, y) => x.n - y.n);
 const STAGE_NOW = { 0: '2026-10-22 08:00:00', 1: '2026-10-22 10:00:00', 2: '2026-10-24 10:00:00', 3: '2026-10-26 18:00:00' };
 
 console.log('\n═══ Α3 λωρίδα: ΙΔΙΑ σε mine / queue / all, για κάθε στάδιο και κάθε χρήστη ═══');
@@ -1544,8 +1549,8 @@ console.log('\n═══ Α3 λωρίδα: «⋯», ειδοποιήσεις, χ
      && h.indexOf('Πεμ 22/10 19:00') < h.indexOf('Παρ 23/10 18:13'), h);
 
   h = stripOf(stripWeek(1), STAGE_NOW[1], 'all', 1, false);
-  ck('χρώματα από τη βάση: τρέχον = color_open_head, έγινε = color_step_done (λευκά γράμματα), κλειδωμένο = color_step_locked',
-     h.startsWith('<div class="fstrip" style="--fs-now:#FCFF29;--fs-done:#5a5d60;--fs-lock:#ececec;--fs-done-fg:#fff;">'), h.slice(0, 140));
+  ck('χρώματα από τη βάση: τρέχον = color_open_head, έγινε = color_step_done (λευκά γράμματα) + πράσινο ✓ = color_step_done_mark, κλειδωμένο = color_step_locked',
+     h.startsWith('<div class="fstrip" style="--fs-now:#FCFF29;--fs-done:#5a5d60;--fs-lock:#ececec;--fs-mark:#2e7d32;--fs-done-fg:#fff;">'), h.slice(0, 160));
   h = stripOf(stripWeek(1), STAGE_NOW[1], 'all', 1, false, false);
   ck('...κείμενα που δεν φορτώθηκαν: κανένα inline χρώμα (το CSS κρατά την εφεδρεία), [κλειδί] στα κείμενα',
      h.startsWith('<div class="fstrip">') && h.includes('[strip_l1]'), h.slice(0, 80));
@@ -1555,8 +1560,8 @@ console.log('\n═══ Α3 λωρίδα: «⋯», ειδοποιήσεις, χ
   ck(`αντίθεση: λευκό σε color_step_done ${ratio('#ffffff', '#5a5d60').toFixed(1)}:1, #666 σε color_step_locked ${ratio('#666666', '#ececec').toFixed(1)}:1 (≥ 4.5)`,
      ratio('#ffffff', MIG_TEXTS.tasks.color_step_done) >= 4.5 && ratio('#666666', MIG_TEXTS.tasks.color_step_locked) >= 4.5);
   const css = src.slice(src.indexOf('.fs-track {'), src.indexOf('/* Κόκκινο σήμα'));
-  ck('κινητό (≤ 640px): τα 3 βήματα στοιβάζονται κάθετα', /@media \(max-width: 640px\) \{\s*\.fs-track \{ grid-template-columns: minmax\(0,1fr\); \}/.test(css)
-     && /\.fs-track \{ display: grid; grid-template-columns: repeat\(3, minmax\(0,1fr\)\); \}/.test(css));
+  ck('κινητό (≤ 640px): τα 3 βήματα στοιβάζονται κάθετα', /@media \(max-width: 640px\) \{\s*\.fs-track \{ flex-direction: column; \}/.test(css)
+     && /\.fs-track \{ display: flex; flex: 1; min-width: 0; \}/.test(css));
   const keys = [...new Set([...['fuelStripHtml', 'fuelStripMenu', 'stripColorVar'].map(grab).join('\n').matchAll(/pageText\('(\w+)'/g)].map(m => m[1]))];
   ck(`κάθε pageText της λωρίδας (${keys.length}) έχει κλειδί στο seed του 19b ή 15b`, keys.length >= 20 && keys.every(k => k in MIG_TEXTS.tasks), keys.filter(k => !(k in MIG_TEXTS.tasks)).join(','));
 }
@@ -1581,6 +1586,43 @@ console.log('\n═══ Α3 λωρίδα: ΧΩΡΙΣ step (παλιά ροή) �
   ck('εβδομάδα χωρίς step: γραμμές, όχι λωρίδα', stripOf(withChain(old), '2026-10-16 12:00:00', 'all', 9, true) === null);
   ck('taskRow χωρίς τίποτα από την παλιά γραμμή verify του Α3 (η λωρίδα αντικαθιστά τις γραμμές)',
      /^function taskRow\(t\)\{/.test(grab('taskRow')) && !/verifyActive|fuel_verify_|fuelActiveRoot|weekItems/.test(grab('taskRow')));
+}
+
+console.log('\n═══ ΚΑΝΟΝΑΣ UI (19/10): ό,τι γίνεται ΤΩΡΑ πάνω-αριστερά, ό,τι έγινε δεξιά ═══');
+{
+  const order = (stage, now, me, o) => cellsInDom(stripOf(stripWeek(stage, o), now || STAGE_NOW[stage], 'all', me, false));
+  const seq = c => c.map(x => '①②③'[x.n] + ':' + x.cls).join(' ');
+  ck('στάδιο 0: ① τρέχον → ② ③ κλειδωμένα', seq(order(0, null, 1)) === '①:now ②:lock ③:lock', seq(order(0, null, 1)));
+  ck('στάδιο 1: ② τρέχον → ③ κλειδωμένο → ① ολοκληρωμένο (δεξιά)', seq(order(1, null, 1)) === '②:now ③:lock ①:ok', seq(order(1, null, 1)));
+  ck('στάδιο 2: ③ τρέχον → ① ② ολοκληρωμένα, με τη σειρά τους', seq(order(2, '2026-10-26 09:00:00', 2)) === '③:now ①:ok ②:ok', seq(order(2, '2026-10-26 09:00:00', 2)));
+  ck('στάδιο 3: όλα ολοκληρωμένα, ① ② ③', seq(order(3, null, 1)) === '①:ok ②:ok ③:ok', seq(order(3, null, 1)));
+  ck('η σειρά βγαίνει από την κατάσταση (rank now/lock/ok), καμία σταθερή θέση στον κώδικα',
+     /const rank = \{ now: 0, lock: 1, ok: 2 \}/.test(grab('fuelStripHtml')) && /\.sort\(/.test(grab('fuelStripHtml')));
+  const done = order(2, '2026-10-26 09:00:00', 2).filter(x => x.cls === 'ok');
+  ck('ολοκληρωμένο: ΜΟΝΟ «✓ τι · πότε · ποιος», χωρίς τη γραμμή meta', done.length === 2 && done.every(x => !x.html.includes('fs-meta') && x.html.includes('<small>')));
+  ck('τα ①②③ μένουν πάνω σε κάθε κελί', order(1, null, 1).every(x => x.n >= 0));
+  const h = stripOf(stripWeek(1), STAGE_NOW[1], 'all', 1, false);
+  ck('στάδιο 1: το ② τρέχον δείχνει την προθεσμία της ΡΙΖΑΣ «έως Παρ 23/10 19:00» (όχι του verify)',
+     cellsOf(h)[1].cls === 'now' && cellsOf(h)[1].html.includes('<div class="fs-meta">έως Παρ 23/10 19:00</div>'), cellsOf(h)[1].html);
+  ck('η λωρίδα ΠΑΝΩ από τον πίνακα ποσοστών (fs-row πριν από fs-top), «⋯» δίπλα της',
+     h.indexOf('<div class="fs-row">') >= 0 && h.indexOf('<div class="fs-row">') < h.indexOf('<div class="fs-top">')
+     && h.indexOf('<details class="step-more">') < h.indexOf('<div class="fs-top">'));
+  const css = src.slice(src.indexOf('<style>'), src.indexOf('</style>'));
+  ck('CSS: τρέχον μεγαλύτερο (flex 2), ολοκληρωμένα στενότερα (flex .8) σε σκούρο γκρι', /\.fs-stp\.now \{ flex: 2 1 0; \}/.test(css)
+     && /\.fs-stp\.ok \{ flex: \.8 1 0; background: var\(--fs-done, #5a5d60\)/.test(css));
+  ck('έγινε: πράσινο κυκλάκι με λευκό ✓ από τη βάση (--fs-mark = color_step_done_mark)',
+     /\.fs-stp\.ok \.fs-lbl::before \{ content: "\\2713";[^}]*background: var\(--fs-mark, #2e7d32\);[^}]*color: #fff;/.test(css)
+     && h.includes('--fs-mark:#2e7d32;'));
+  const lum = c => { const n = parseInt(c.slice(1), 16); return [n >> 16, n >> 8 & 255, n & 255].map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; })
+    .reduce((a, v, i) => a + v * [.2126, .7152, .0722][i], 0); };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  ck('αντίθεση λευκού ✓ σε color_step_done_mark ≥ 4.5:1', ratio('#ffffff', MIG_TEXTS.tasks.color_step_done_mark) >= 4.5, ratio('#ffffff', MIG_TEXTS.tasks.color_step_done_mark).toFixed(2));
+  // (δ) 19/10: κλειστή ρίζα χωρίς γεγονός λήψης (παλιά ροή, π.χ. #76/#87).
+  const old = stripWeek(3); old[0] = Object.assign({}, old[0], { steps: STEPS_AT(false, false) });
+  const ho = stripOf(withChain(old.map(t => { const x = Object.assign({}, t); delete x.chain; return x; })), STAGE_NOW[3], 'all', 9, true);
+  const c1 = cellsOf(ho)[0];
+  ck('παλιά ροή (κλειστή, χωρίς λήψη): ① ΟΧΙ μπλε «Λήψη» — ολοκληρωμένο, γκρι, χωρίς ✓, ξανακατεβαίνει',
+     c1.cls === 'ok' && !/btn-go/.test(c1.html) && /class="btn sbtn done"[^>]*onclick="stepDownload\(90\)"/.test(c1.html) && !c1.html.includes('✓'), c1.html);
 }
 
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);

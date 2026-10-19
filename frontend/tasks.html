@@ -240,7 +240,16 @@
      --fs-now / --fs-done / --fs-lock (fuelStripHtml)· εδώ μόνο εφεδρεία. */
   .fstrip { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
   .fs-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-  .fs-track { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .fs-row { display: flex; align-items: flex-start; gap: 10px; }
+  .fs-track { display: flex; flex: 1; min-width: 0; }
+  .fs-stp { flex: 1 1 0; }
+  .fs-stp.now { flex: 2 1 0; }
+  /* Έγινε: σκούρο γκρι, στενότερο, με ΠΡΑΣΙΝΟ κυκλάκι και λευκό ✓ (color_step_done_mark). */
+  .fs-stp.ok { flex: .8 1 0; background: var(--fs-done, #5a5d60); color: var(--fs-done-fg, #fff); border-color: var(--fs-done, #5a5d60); }
+  .fs-stp.ok .fs-lbl { color: var(--fs-done-fg, #fff); display: flex; align-items: center; gap: 6px; }
+  .fs-stp.ok .fs-lbl::before { content: "\2713"; flex: none; width: 16px; height: 16px; border-radius: 50%; background: var(--fs-mark, #2e7d32);
+                               color: #fff; font-size: 11px; line-height: 16px; text-align: center; letter-spacing: 0; }
+  .fs-stp.ok .sbtn.done { padding: 0; background: none; }
   .fs-stp { border: 1px solid #d9dacd; background: #fff; color: #222; padding: 10px 12px; min-width: 0;
             display: flex; flex-direction: column; gap: 6px; }
   .fs-stp + .fs-stp { border-left: none; }
@@ -262,7 +271,7 @@
   .fs-note { display: flex; flex-wrap: wrap; gap: 4px 10px; }
   .fs-note.none, .fs-at, .fs-to { color: #777; }
   @media (max-width: 640px) {
-    .fs-track { grid-template-columns: minmax(0,1fr); }
+    .fs-track { flex-direction: column; }
     .fs-stp + .fs-stp { border-left: 1px solid #d9dacd; border-top: none; }
     .fs-stp:first-child { border-radius: 6px 6px 0 0; }
     .fs-stp:last-child  { border-radius: 0 0 6px 6px; }
@@ -1544,7 +1553,7 @@ function fuelStripHtml(wk, root){
                     ? pageText('strip_who', { name: t.assigned_name }) : pageText('strip_wait_assign'))}</span>`;
   const cell    = (cls, label, meta, body) =>
     `<div class="fs-stp ${cls}"><div class="fs-lbl">${escHtml(label)}</div>`+
-    `<div class="fs-meta">${escHtml(meta)}</div>${body}</div>`;
+    (cls === 'ok' ? '' : `<div class="fs-meta">${escHtml(meta)}</div>`) + `${body}</div>`;
 
   // ① Λήψη: πατήσιμη ΠΑΝΤΑ (και μετά την Ολοκλήρωση) για όσους δέχεται ο
   // server: ανάδοχος ①, ανάδοχος ③, admin. Κάθε λήψη καταγράφεται, δεν αλλάζει βήμα.
@@ -1552,6 +1561,10 @@ function fuelStripHtml(wk, root){
   let b1;
   if(dlDone)
     b1 = doneBtn(pageText('strip_d1'), sDl.done_at, sDl.done_by, uiText(ui, 'tip_redownload'), canDl ? `stepDownload(${root.id})` : '');
+  else if(closed(root))
+    // Παλιά ροή (π.χ. #76/#87): έκλεισε χωρίς γεγονός λήψης. Το ① δεν εκκρεμεί:
+    // γκρι, χωρίς ✓ (δεν καταγράφηκε λήψη), ξανακατεβαίνει όπως κάθε κλειστή.
+    b1 = canDl ? `<button class="btn sbtn done" title="${escHtml(uiText(ui, 'tip_redownload'))}" onclick="stepDownload(${root.id})">${lbl(sDl)}</button>` : '';
   else if(stage === 0 && !(own(root) && open(root)))
     b1 = stat(root);
   else
@@ -1585,11 +1598,17 @@ function fuelStripHtml(wk, root){
     b3 = own(ver) && open(ver) ? actBtn(b3lbl, `act(${ver.id},'done')`) : stat(ver);
 
   const st = i => i === stage ? 'now' : i < stage ? 'ok' : 'lock';
-  const track =
-    cell(st(0) === 'lock' ? 'lock' : dlDone ? 'ok' : st(0), pageText('strip_l1'), who(root), b1) +
-    cell(st(1), pageText('strip_l2'), pageText('strip_m2', { due: fmtDue(root.due_at, true) }), b2) +
-    cell(ver ? st(2) : 'lock', pageText('strip_l3'),
-         ver ? pageText('strip_m3', { name: who(ver), from: mon, time: dueClock(ver.due_at) }) : '—', b3);
+  // ΚΑΝΟΝΑΣ UI (19/10): ό,τι γίνεται ΤΩΡΑ πάνω-αριστερά, ό,τι έγινε δεξιά. Η σειρά
+  // βγαίνει από την κατάσταση κάθε βήματος (now → lock → ok, σταθερή μέσα σε κάθε
+  // ομάδα), όχι από θέσεις στον κώδικα· τα ①②③ μένουν πάνω σε κάθε κελί.
+  // Λεμονί = κάνε το τώρα · ανοιχτό γκρι διακεκομμένο = έρχεται · σκούρο γκρι + πράσινο ✓ = έγινε.
+  const cells = [
+    [st(0) === 'lock' ? 'lock' : (dlDone || closed(root)) ? 'ok' : st(0), pageText('strip_l1'), who(root), b1],
+    [st(1), pageText('strip_l2'), pageText('strip_m2', { due: fmtDue(root.due_at, true) }), b2],
+    [ver ? st(2) : 'lock', pageText('strip_l3'), ver ? pageText('strip_m3', { name: who(ver), from: mon, time: dueClock(ver.due_at) }) : '—', b3]];
+  const rank = { now: 0, lock: 1, ok: 2 };
+  const track = cells.map((c, i) => [c, i]).sort((a, b) => (rank[a[0][0]] - rank[b[0][0]]) || (a[1] - b[1]))
+                     .map(([c]) => cell(c[0], c[1], c[2], c[3])).join('');
 
   // 📧 Ειδοποιήσεις: από το ιστορικό (chain.notices), κενό ως τη Φάση Β.
   const notes = wk.flatMap(t => { const c = chainEntry(wk, t.id); return c && Array.isArray(c.notices) ? c.notices : []; })
@@ -1609,11 +1628,11 @@ function fuelStripHtml(wk, root){
       `</div>` : '';
 
   const style = stripColorVar('--fs-now', 'color_open_head') + stripColorVar('--fs-done', 'color_step_done') +
-                stripColorVar('--fs-lock', 'color_step_locked') +
+                stripColorVar('--fs-lock', 'color_step_locked') + stripColorVar('--fs-mark', 'color_step_done_mark') +
                 (/^#[0-9a-f]{6}$/i.test(pageText('color_step_done')) ? `--fs-done-fg:${textOn(pageText('color_step_done'))};` : '');
   return `<div class="fstrip"${style ? ` style="${style}"` : ''}>
-    <div class="fs-top">${fuelFactsHtml(Object.assign({}, root, { due_at: null }), p)}${fuelStripMenu(root, ver)}</div>
-    <div class="fs-track">${track}</div>
+    <div class="fs-row"><div class="fs-track">${track}</div>${fuelStripMenu(root, ver)}</div>
+    <div class="fs-top">${fuelFactsHtml(Object.assign({}, root, { due_at: null }), p)}</div>
     ${ovHtml}${notesHtml}
   </div>${histHtml(root.id)}${ver ? histHtml(ver.id) : ''}`;
 }
