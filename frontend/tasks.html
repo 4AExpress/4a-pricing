@@ -290,6 +290,8 @@
   .fs-tag.next { background: #fff; border: 1px solid var(--fs-next-line, #4f9fb0); color: var(--fs-next-text, #1d4f5a); }
   .fs-step.wrong { background: var(--fs-wrong-bg, #fde8e8); border: 3px solid var(--fs-wrong, #cc0000); color: var(--fs-ink, #1e2022); }
   .fs-tag.wrong { background: var(--fs-wrong, #cc0000); color: #fff; }
+  .fs-vf { grid-column: 1 / -1; }
+  .fs-vf .vf-alert, .fs-vf .step-ov { margin: 0; }
   .fs-btn { background: var(--fs-btn, #1f5fbf); color: #fff; border-color: var(--fs-btn, #1f5fbf); font-weight: 600; }
   .fs-again { font-size: 11px; padding: 2px 8px; background: #fff; border: 1px solid #b9bbbd; color: #333; }
   @media (max-width: 600px) {
@@ -360,6 +362,38 @@
                             border-radius: 9px; background: #fff3e0; color: #e65100;
                             border: 1px solid #ffcc80; white-space: nowrap; }
   .hist-empty { color: #bbb; padding: 8px 0; }
+  .hist-what .vf-hl { display: block; font-size: 11px; color: #555; padding-left: 10px; }
+  .hist-what .vf-hl.bad { color: var(--vf-wrong, #c62828); }
+
+  /* ΕΠΑΛΗΘΕΥΤΗΣ (fuel_weekly_verify). Χρώματα από τον 4a_ui_texts (color_vf_*). */
+  .modal.vf { max-width: 760px; max-height: calc(100vh - 32px); overflow-y: auto; }
+  .vf-hint { font-size: 13px; color: #333; margin-bottom: 10px; }
+  .vf-locked { background: #ffebee; border-left: 4px solid var(--vf-wrong, #c62828); border-radius: 6px;
+               padding: 8px 10px; font-size: 13px; color: var(--vf-wrong, #c62828); font-weight: 600; margin-bottom: 10px; }
+  .vf-head, .vf-row { display: grid; grid-template-columns: 90px 70px 70px 110px minmax(0,1fr); gap: 8px; align-items: center; }
+  .vf-head { font-size: 11px; font-weight: 700; color: #777; text-transform: uppercase; padding: 0 0 4px; border-bottom: 1px solid #eee; }
+  .vf-row { padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+  .vf-row.bad { background: #fff5f5; }
+  .vf-opts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .vf-opt { border: 1px solid #ccc; background: #fff; border-radius: 6px; padding: 6px 10px; font-size: 13px;
+            font-family: inherit; cursor: pointer; min-width: 64px; }
+  .vf-opt.on { border-color: var(--vf-pick, #1565c0); background: var(--vf-pick, #1565c0); color: #fff; font-weight: 700; }
+  .vf-opt:disabled { cursor: default; }
+  .vf-mark { font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .vf-mark.ok { color: var(--vf-ok, #2e7d32); }
+  .vf-mark.bad { color: var(--vf-wrong, #c62828); }
+  .vf-exp { font-size: 11px; color: #555; width: 100%; }
+  .vf-gate { font-size: 12px; color: #777; align-self: center; }
+  .vf-alert { border: 1px solid #ef9a9a; border-left: 4px solid var(--vf-wrong, #cc0000); background: #ffebee; border-radius: 6px;
+              padding: 8px 10px; font-size: 13px; color: var(--vf-wrong, #cc0000); }
+  .vf-alert .vf-al-h { font-weight: 700; }
+  .vf-alert .vf-al-line { font-size: 12px; color: #333; margin-top: 2px; }
+  .vf-alert .btn { margin-top: 6px; }
+  @media (max-width: 640px) {
+    .vf-head { display: none; }
+    .vf-row { grid-template-columns: repeat(4, auto); }
+    .vf-row .vf-opts { grid-column: 1 / -1; }
+  }
 
   .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex;
               align-items: center; justify-content: center; z-index: 900; padding: 16px; }
@@ -766,9 +800,12 @@ async function toggleHist(id){
 // απενεργοποιηθεί αργότερα, το tasks_history τον φέρνει ούτως ή άλλως
 // (LEFT JOIN χωρίς φίλτρο active) — δείχνουμε την ετικέτα με ένδειξη ότι
 // δεν χρησιμοποιείται πλέον. Αν λείπει εντελώς, πέφτουμε στον κωδικό.
+// Γεγονότα του επαληθευτή -> κλειδί κειμένου στον 4a_ui_texts (τα EV_LABELS μένουν ως έχουν, Π1β).
+// Το admin_override (και του ③) δεν είχε ετικέτα: έδειχνε τον κωδικό.
+const VF_EV = { verify_ok: 'vf_ev_ok', verify_wrong: 'vf_ev_wrong', verify_reset: 'vf_ev_reset', admin_override: 'vf_ev_override' };
 function histWhat(e){
   const meta = e.meta ? (typeof e.meta==='string' ? (()=>{try{return JSON.parse(e.meta);}catch(x){return null;}})() : e.meta) : null;
-  let s = `<span class="ev">${escHtml(EV_LABELS[e.event]||e.event)}</span>`;
+  let s = `<span class="ev">${escHtml(VF_EV[e.event] ? pageText(VF_EV[e.event]) : (EV_LABELS[e.event]||e.event))}</span>`;
   if(e.event==='rejected'){
     const lbl = e.reason_label || (meta && meta.reason_code) || '—';
     s += ' — ' + escHtml(lbl) + (Number(e.reason_active)===0 ? ' <span class="note">(ανενεργός λόγος)</span>' : '');
@@ -777,6 +814,9 @@ function histWhat(e){
   if(meta && meta.after_steal === true)
     s += ' <span class="after-steal" title="Commitment — Είχε αναλάβει την εργασία από συνάδελφο και δεν την ολοκλήρωσε">μετά από ανάληψη συναδέλφου</span>';
   if(e.note) s += ` <span class="note">· ${escHtml(e.note)}</span>`;
+  // Επαληθευτής: μία γραμμή ανά γραμμή ελέγχου (picked / expected ΜΟΝΟ αν τα έστειλε ο server).
+  if(e.verify && Array.isArray(e.verify.lines))
+    s += e.verify.lines.map(l => `<span class="vf-hl${l.ok === false ? ' bad' : ''}">${escHtml(vfLineText('vf_hist_line', l))}</span>`).join('');
   return s;
 }
 
@@ -992,6 +1032,7 @@ function fuelWeekInfo(items, now){
   // Κεφαλίδα ΛΕΜΟΝΙ (alert null)· κόκκινο ΜΟΝΟ όταν πέρασε η προθεσμία.
   //   ① ανοιχτό: fuel_w_download · ② ανοιχτό: fuel_w_upload · μετά τη λήξη fuel_w_upload_late
   //   ③: πριν τη Δευτέρα fuel_w_verify_wait, μετά fuel_w_verify_now, μετά τη λήξη fuel_w_verify_late
+  //      κλειδωμένο μετά από λάθος (επαληθευτής): fuel_w_wrong, κόκκινο
   //   όλα κλειστά: fuel_w_done
   if(fuelActiveRoot(items) && phase !== 'older'){
     const ver = items.find(t => t !== root) || null;
@@ -1003,7 +1044,9 @@ function fuelWeekInfo(items, now){
       alert = key === 'fuel_w_upload_late' ? 'red' : null;
       vars.due = fmtDue(root.due_at, true);
     } else if(verOpen){
-      if(today < ws){ key = 'fuel_w_verify_wait';
+      const vi = vfInfo(items, ver);
+      if(vi && vi.locked){ key = 'fuel_w_wrong'; alert = 'red'; }
+      else if(today < ws){ key = 'fuel_w_verify_wait';
                       vars.from = fmtDue(ws + ' 00:00', true).slice(0, 9); vars.time = dueClock(ver.due_at); }
       else if(past(ver.due_at)){ key = 'fuel_w_verify_late'; alert = 'red'; vars.due = fmtDue(ver.due_at, true); }
       else { key = 'fuel_w_verify_now'; vars.time = dueClock(ver.due_at); }
@@ -1572,20 +1615,23 @@ function fuelStripHtml(wk, root){
   const vc     = ver ? (chainEntry(wk, ver.id) || {}) : {};
   // ① Λήψη: για όσους δέχεται ο server (ανάδοχος ①, ανάδοχος ③, admin). Κάθε λήψη καταγράφεται.
   const canDl  = !!fuelCmsAoa(p) && (own(root) || own(ver) || isAdmin);
-  const dlTip  = uiText(ui, 'tip_redownload');
+  // Επαληθευτής (Ε2): χωρίς το δικαίωμα ο server δεν στέλνει το αρχείο.
+  const vi     = vfInfo(wk, ver);
+  const dlTip  = vi && !fuelCmsAoa(p) ? pageText('vf_tip_dl_locked') : uiText(ui, 'tip_redownload');
   const btn    = (text, click, title) => `<button class="btn fs-btn"${title ? ` title="${escHtml(title)}"` : ''} onclick="${click}">${escHtml(text)}</button>`;
 
-  // ΚΑΤΑΣΤΑΣΗ κάθε βήματος (απόφαση 19/10): done · now · next (· wrong, επαληθευτής).
+  // ΚΑΤΑΣΤΑΣΗ κάθε βήματος (απόφαση 19/10): done · now · next · wrong (③ κλειδωμένο μετά από λάθος).
   // Παλιά ροή (#76/#87): ρίζα κλειστή χωρίς γεγονός λήψης -> το ① έγινε, χωρίς ώρα.
   const S = [
     (dlDone || closed(root)) ? 'done' : 'now',
     closed(root) ? 'done' : stage === 1 ? 'now' : 'next',
-    !ver ? 'next' : closed(ver) ? 'done' : (stage === 2 && !(ws && today < ws)) ? 'now' : 'next'];
+    !ver ? 'next' : closed(ver) ? 'done' : (stage === 2 && !(ws && today < ws)) ? (vi && vi.locked ? 'wrong' : 'now') : 'next'];
   const D = [
     { label: pageText('strip_l1'), who: root, due: root.due_at, after: null, opens: null,
       at: sDl && sDl.done_at, done: pageText('fs_d1', { at: when(sDl && sDl.done_at), name: (sDl && sDl.done_by) || '—' }),
       hint: pageText('fs_h1'), act: own(root) && open(root) && canDl ? btn(pageText('fs_b1'), `stepDownload(${root.id})`) : '',
-      again: canDl ? `<button class="btn fs-again" title="${escHtml(dlTip)}" onclick="stepDownload(${root.id})">${escHtml(pageText('fs_again'))}</button>` : '' },
+      again: canDl ? `<button class="btn fs-again" title="${escHtml(dlTip)}" onclick="stepDownload(${root.id})">${escHtml(pageText('fs_again'))}</button>`
+           : vi && !fuelCmsAoa(p) ? `<button class="btn fs-again" title="${escHtml(dlTip)}" disabled>${escHtml(pageText('fs_again'))}</button>` : '' },
     { label: pageText('strip_l2'), who: root, due: root.due_at, after: '①', opens: null,
       at: (sUp && sUp.done_at) || rc.closed_at || root.closed_at,
       done: pageText('fs_d2', { at: when((sUp && sUp.done_at) || rc.closed_at || root.closed_at), name: (sUp && sUp.done_by) || rc.closed_by_name || '—' }),
@@ -1593,7 +1639,8 @@ function fuelStripHtml(wk, root){
     { label: pageText('strip_l3'), who: ver, due: ver ? ver.due_at : null, after: null, opens: monOpen,
       at: vc.closed_at || (ver && ver.closed_at),
       done: pageText('fs_d3', { at: when(vc.closed_at || (ver && ver.closed_at)), name: vc.closed_by_name || '—' }),
-      hint: pageText('fs_h3'), act: ver && own(ver) && open(ver) ? btn(pageText('fs_b3'), `act(${ver.id},'done')`) : '', again: '' }];
+      hint: pageText('fs_h3'), act: ver && own(ver) && open(ver) ? btn(pageText('fs_b3'), vi ? `openVerifier(${ver.id})` : `act(${ver.id},'done')`) : '', again: '',
+      wrong: pageText('vf_strip_locked') }];
   // «→ {ποιος} · {πότε ανοίγει}»: πότε = μετά το προηγούμενο, ή Δευ 00:00 για το ③.
   const from = d => d.opens || pageText('fs_after', { n: d.after });
   // Το όνομα έντονο: το κείμενο της βάσης χωρίζεται στο {name}.
@@ -1625,10 +1672,14 @@ function fuelStripHtml(wk, root){
     const text = s === 'done' ? escHtml(d.done)
                : s === 'now'  ? escHtml(d.act ? d.hint : d.who && d.who.assigned_name ? pageText('strip_who', { name: d.who.assigned_name })
                                                                      : pageText('strip_who_none'))
+               : s === 'wrong'? escHtml(d.wrong)
                :                boldName('fs_next_row', d);
     const act  = s === 'done' ? d.again : s === 'now' ? d.act : '';
+    // ③: κόκκινο σήμα (n/total, «επιλέχθηκε / αναμενόμενη» μόνο με δικαίωμα, ↺ Επαναφορά admin) και παράκαμψη ΜΕΣΑ στη γραμμή.
+    const vf   = i === 2 && vi ? vfAlertHtml(ver, vi) : '';
     return `<div class="fs-step ${s}"><div class="fs-name">${escHtml(d.label)}</div>` +
-           `<div class="fs-body">${tag(s)}<span class="fs-text">${text}</span></div><div class="fs-act">${act}</div></div>`;
+           `<div class="fs-body">${tag(s)}<span class="fs-text">${text}</span></div><div class="fs-act">${act}</div>` +
+           (vf ? `<div class="fs-vf">${vf}</div>` : '') + `</div>`;
   };
   const rows = `<div class="fs-steps">${[2, 1, 0].map(row).join('')}</div>`;
 
@@ -1677,12 +1728,169 @@ function fuelStripMenu(root, ver){
     items.push(`<button class="btn btn-ov" title="${escHtml(uiText(root.ui, 'tip_override'))}" onclick="openOverride(${root.id})">${escHtml(uiText(root.ui, 'menu_override'))}</button>`);
   if(isAdmin && ver && !closed(ver))
     items.push(`<button class="btn btn-asg" title="${escHtml(TIPS.assign)}" onclick="assign(${ver.id})">${escHtml(pageText('strip_menu_assign', { n: '③' }))}</button>`);
+  // Επαληθευτής (Ε4): παράκαμψη admin και στο ③, όχι από τον ανάδοχό του.
+  if(isAdmin && ver && !closed(ver) && vfInfo([], ver) && Number(ver.assigned_to) !== me)
+    items.push(`<button class="btn btn-ov" onclick="openVfOverride(${ver.id})">${escHtml(pageText('vf_ov_btn'))}</button>`);
   for(const [t, n] of [[root, '①'], [ver, '③']]) if(t)
     items.push(`<button class="btn btn-hist" title="${escHtml(TIPS.hist)}" onclick="toggleHist(${t.id})">${histOpen.has(t.id)?'▾':'▸'} ${escHtml(pageText('strip_menu_hist', { n }))}</button>`);
   return `<details class="step-more"><summary title="${escHtml(uiText(root.ui,'tip_more'))}" aria-label="${escHtml(uiText(root.ui,'tip_more'))}">⋯</summary>`+
          `<div class="step-menu">${items.join('')}</div></details>`;
 }
 // ═══ τέλος λωρίδας ═══════════════════════════════════════════════════════
+
+// ═══ ΕΠΑΛΗΘΕΥΤΗΣ fuel_weekly_verify (api/fuel_verify_lib.php, 19/10) ═══════
+// Ο server στέλνει `verifier` ΜΟΝΟ όταν ο επαληθευτής είναι ενεργός για την
+// εβδομάδα· αλλιώς τίποτα δεν αλλάζει (το ③ κλείνει με act(…,'done')).
+// Η σωστή τιμή ΔΕΝ υπάρχει στον browser: μόνο το `expected` / `picked`, που
+// ο server στέλνει ΜΟΝΟ με το δικαίωμα fuel_verify_values. Όλα τα κείμενα
+// από τον 4a_ui_texts (vf_*), και τα σφάλματα από τον κωδικό `vf` του server.
+function vfInfo(wk, ver){
+  if(!ver) return null;
+  if(ver.verifier) return ver.verifier;
+  const c = chainEntry(wk, ver.id);
+  return c && c.verifier ? c.verifier : null;
+}
+// «26/10–01/11»: week_end από το payload, αλλιώς Δευτέρα + 6.
+function vfWeekLabel(p, ws){ return /^\d{4}-\d{2}-\d{2}$/.test(String(ws || '')) ? fmtWeekRange(ws, p.week_end || addDaysISO(ws, 6)) : ''; }
+function vfDate(ws){ return /^\d{4}-\d{2}-\d{2}$/.test(String(ws || '')) ? ws.slice(8, 10) + '/' + ws.slice(5, 7) : ''; }
+function vfLineText(key, l){
+  return pageText(key, { mark: l.ok === true ? pageText('vf_line_ok') : l.ok === false ? pageText('vf_line_wrong') : '', client: l.client_code, station: l.station_country,
+                         zone: l.zone, service: l.cms_service, type: l.fuel_label || l.fuel_type }) +
+         (l.picked !== undefined && l.expected !== undefined
+           ? pageText('vf_line_values', { picked: l.picked === null ? '—' : l.picked, expected: l.expected }) : '');
+}
+// Το κόκκινο σήμα (alert ΜΟΝΟ με το δικαίωμα) και η παράκαμψη στο ③.
+function vfAlertHtml(ver, vi){
+  const me = currentUser ? Number(currentUser.id) : NaN;
+  let h = '';
+  const a = vi.alert;
+  if(a){
+    const self = Number(a.by_id) === me;
+    h += `<div class="vf-alert"><div class="vf-al-h">${escHtml(pageText('vf_alert', { n: (a.wrong || []).length, total: a.total, at: fmtDue(a.at, true), name: a.by || '' }))}</div>` +
+         (a.wrong || []).map(l => `<div class="vf-al-line">${escHtml(vfLineText('vf_alert_line', l))}</div>`).join('') +
+         (isAdmin ? (self ? `<button class="btn btn-ov" title="${escHtml(pageText('vf_tip_reset_self'))}" disabled>${escHtml(pageText('vf_reset_btn'))}</button>`
+                          : `<button class="btn btn-ov" title="${escHtml(pageText('vf_tip_reset'))}" onclick="openVfReset(${ver.id})">${escHtml(pageText('vf_reset_btn'))}</button>`) : '') +
+         `</div>`;
+  }
+  const ov = vi.override;
+  if(ov && !ov.acked){
+    const canAck = isAdmin && Number(ov.actor_id) !== me;
+    h += `<div class="step-ov">${escHtml(pageText('vf_ov_box', { name: ov.actor_name || '', at: fmtDue(ov.at, true) }))}` +
+         (canAck ? ` <button class="btn btn-ov" title="${escHtml(pageText('vf_tip_ack'))}" onclick="overrideAck(${ver.id})">${escHtml(pageText('vf_ov_ack'))}</button>` : '') +
+         `</div>`;
+  }
+  return h;
+}
+// Το παράθυρο του επαληθευτή: f = form του server, pick = check_id -> τιμή, msg = μήνυμα.
+function vfFormHtml(f, t, pick, msg){
+  const p = taskPayload(t) || {};
+  const ws = f.week_start || p.week_start || '';
+  const week = vfWeekLabel(p, ws);
+  const style = stripColorVar('--vf-wrong', 'color_vf_wrong') + stripColorVar('--vf-ok', 'color_vf_ok') + stripColorVar('--vf-pick', 'color_vf_pick');
+  const head = `<div class="vf-head"><span>${escHtml(pageText('vf_col_client'))}</span><span>${escHtml(pageText('vf_col_zone'))}</span>` +
+               `<span>${escHtml(pageText('vf_col_service'))}</span><span>${escHtml(pageText('vf_col_type'))}</span><span>${escHtml(pageText('vf_col_pick'))}</span></div>`;
+  const rows = (f.lines || []).map(l => {
+    const a = l.answer || null;
+    const chosen = a ? a.chosen : (pick || {})[l.check_id];
+    const opts = (l.options || []).map(v => `<button type="button" class="vf-opt${v === chosen ? ' on' : ''}" aria-pressed="${v === chosen}"` +
+      (f.can_submit ? ` onclick="vfChoose(${Number(l.check_id)},'${escHtml(v)}')"` : ' disabled') + `>${escHtml(pageText('vf_option', { value: v }))}</button>`).join('');
+    const mark = a ? `<span class="vf-mark ${a.ok ? 'ok' : 'bad'}">${escHtml(pageText(a.ok ? 'vf_line_ok' : 'vf_line_wrong'))}</span>` : '';
+    const exp = l.expected !== undefined ? `<div class="vf-exp">${escHtml(pageText('vf_expected', { value: l.expected }))}</div>` : '';
+    return `<div class="vf-row${a && !a.ok ? ' bad' : ''}"><span>${escHtml(l.client_code)}</span>` +
+           `<span>${escHtml(pageText('vf_zone', { station: l.station_country, zone: l.zone }))}</span>` +
+           `<span>${escHtml(l.cms_service)}</span><span>${escHtml(l.fuel_label || l.fuel_type)}</span>` +
+           `<div class="vf-opts">${opts}${mark}${exp}</div></div>`;
+  }).join('');
+  const locked = f.locked ? `<div class="vf-locked">${escHtml(pageText('vf_locked', { at: fmtDue(f.wrong_at, true), name: f.wrong_by || '' }))}</div>` : '';
+  const send = f.can_submit
+    ? `<button class="btn btn-go" title="${escHtml(pageText('vf_tip_send'))}" onclick="vfSend()">${escHtml(pageText('vf_send'))}</button>`
+    : (f.gate && !f.closed && !f.locked ? `<span class="vf-gate">${escHtml(pageText('vf_gate', { date: vfDate(ws) }))}</span>` : '');
+  return `<div class="modal-bg" onclick="if(event.target===this)closeVerifier()">
+      <div class="modal vf" role="dialog" aria-modal="true" aria-label="${escHtml(pageText('vf_title', { week }))}"${style ? ` style="${style}"` : ''}>
+        <h3>${escHtml(pageText('vf_title', { week }))}</h3>
+        <div class="sub">${t ? taskTitle(t) : ''}</div>
+        <div class="vf-hint">${escHtml(pageText('vf_hint', { date: vfDate(ws) }))}</div>
+        ${locked}${head}${rows}
+        <div id="vf-msg" class="msg">${escHtml(msg || '')}</div>
+        <div class="modal-acts"><button class="btn btn-rel" onclick="closeVerifier()">${escHtml(pageText('vf_cancel'))}</button>${send}</div>
+      </div>
+    </div>`;
+}
+// Κωδικός `vf` του server -> κλειδί κειμένου. Άγνωστος κωδικός: το μήνυμα του server.
+const VF_ERR = { off: 'vf_err_off', config: 'vf_err_config', no_prices: 'vf_err_no_prices', draw: 'vf_err_draw',
+  forbidden: 'vf_err_forbidden', owner: 'vf_err_owner', locked: 'vf_err_locked', reload: 'vf_err_reload',
+  incomplete: 'vf_err_incomplete', bad_value: 'vf_err_bad_value', not_locked: 'vf_err_not_locked',
+  reset_self: 'vf_err_reset_self', reason: 'vf_err_reason', admin: 'vf_err_admin',
+  use_verifier: 'vf_err_use_verifier', no_download: 'vf_err_no_download' };
+function vfErrText(d, status){ return d && VF_ERR[d.vf] ? pageText(VF_ERR[d.vf], { n: d.n }) : ((d && d.error) || `HTTP ${status}`); }
+
+let vfId = null, vfForm = null, vfPick = {}, vfMsg = '';
+async function openVerifier(id){ vfId = id; vfPick = {}; vfMsg = ''; await vfLoad(); }
+async function vfLoad(){
+  const r = await apiFetch(`${API}/tasks.php?action=verify_form&id=${vfId}&v=${Date.now()}`);
+  const d = await r.json().catch(() => null);
+  if(!r.ok || !d || d.ok !== true){ const id = vfId; closeVerifier(); showErr(vfErrText(d, r.status)); return id; }
+  vfForm = d.form; vfRender();
+}
+function vfRender(){ document.getElementById('modals').innerHTML = vfFormHtml(vfForm, taskById(vfId), vfPick, vfMsg); }
+function vfChoose(cid, v){ vfPick[cid] = v; vfMsg = ''; vfRender(); }
+function closeVerifier(){ vfId = null; vfForm = null; vfPick = {}; vfMsg = ''; document.getElementById('modals').innerHTML = ''; load(); }
+async function vfSend(){
+  const f = vfForm; if(!f) return;
+  if((f.lines || []).some(l => !vfPick[l.check_id])){ vfMsg = pageText('vf_err_incomplete'); vfRender(); return; }
+  const r = await post({ action: 'verify_submit', id: vfId, answers: vfPick }, true);
+  const t = taskById(vfId);
+  if(!r.ok && r.data && r.data.already_closed){ closeVerifier(); showAlreadyClosed(t); return; }
+  // Λάθος: ο server κατέγραψε verify_wrong και κλείδωσε. Ξανά η φόρμα, με ✓/✗ ανά γραμμή.
+  if(!r.ok && r.data && r.data.vf === 'wrong'){
+    vfMsg = pageText('vf_wrong', { n: (r.data.wrong || []).length, total: r.data.total }); vfPick = {}; await vfLoad(); return;
+  }
+  if(!r.ok){ vfMsg = vfErrText(r.data, r.status); vfRender(); return; }
+  const p = taskPayload(t) || {};
+  const msg = pageText('vf_done', { week: vfWeekLabel(p, f.week_start || p.week_start), total: (f.lines || []).length });
+  closeVerifier();
+  showOk(`<div class="okmsg-main">${escHtml(msg)}</div><button class="okmsg-x" aria-label="${escHtml(pageText('vf_cancel'))}" onclick="hideOk()">✕</button>`);
+}
+
+/* --- επαναφορά επαληθευτή (admin, Ε3) και παράκαμψη στο ③ (Ε4): υποχρεωτικός λόγος --- */
+let vfActId = null, vfAct = null;
+function vfReasonHtml(t, act){
+  const ov = act === 'admin_override';
+  return `<div class="modal-bg" onclick="if(event.target===this)closeVfAct()">
+      <div class="modal" role="dialog" aria-modal="true" aria-label="${escHtml(pageText(ov ? 'vf_ov_title' : 'vf_reset_title'))}">
+        <h3>${escHtml(pageText(ov ? 'vf_ov_title' : 'vf_reset_title'))}</h3>
+        <div class="sub">${t ? taskTitle(t) : ''}</div>
+        <div class="cd-hint">${escHtml(pageText(ov ? 'vf_ov_warn' : 'vf_reset_hint'))}</div>
+        <label for="vf-reason">${escHtml(pageText('vf_reason'))}</label>
+        <textarea id="vf-reason"></textarea>
+        <div id="vf-act-msg" class="msg"></div>
+        <div class="modal-acts">
+          <button class="btn btn-rel" onclick="closeVfAct()">${escHtml(pageText('vf_cancel'))}</button>
+          <button class="btn btn-ov" onclick="sendVfAct()">${escHtml(pageText(ov ? 'vf_ov_send' : 'vf_reset_send'))}</button>
+        </div>
+      </div>
+    </div>`;
+}
+function openVfAct(id, act){
+  vfActId = id; vfAct = act;
+  document.getElementById('modals').innerHTML = vfReasonHtml(taskById(id), act);
+  const el = document.getElementById('vf-reason'); if(el) el.focus();
+}
+function openVfReset(id){ openVfAct(id, 'verify_reset'); }
+function openVfOverride(id){ openVfAct(id, 'admin_override'); }
+function closeVfAct(){ vfActId = null; vfAct = null; document.getElementById('modals').innerHTML = ''; }
+async function sendVfAct(){
+  const t = taskById(vfActId), act = vfAct;
+  // Το όριο του λόγου το ξέρει ΜΟΝΟ ο server (ρύθμιση reason_min): εδώ κανένας έλεγχος μήκους.
+  const r = await post({ action: act, id: vfActId, reason: document.getElementById('vf-reason').value.trim() }, true);
+  if(!r.ok && r.data && r.data.already_closed){ closeVfAct(); showAlreadyClosed(t); return; }
+  if(!r.ok){ document.getElementById('vf-act-msg').textContent = vfErrText(r.data, r.status); return; }
+  closeVfAct();
+  if(act === 'admin_override') showOk(closeMsg('done', r.data));
+  if(typeof window.tasksBadgeRefresh === 'function') window.tasksBadgeRefresh();
+  load();
+}
+// ═══ τέλος επαληθευτή ════════════════════════════════════════════════════
 
 // Ζωντανός έλεγχος του Merge Result, ΙΔΙΟΣ κανόνας με τον server (Π):
 // κλείνει ΜΟΝΟ αν Total = γραμμές ΚΑΙ Exception = 0. Οι προειδοποιήσεις

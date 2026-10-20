@@ -20,7 +20,9 @@ const UI_MIGS = ['db/migrations/2026-10-15b_ui_texts.sql', 'db/migrations/2026-1
                  // 20/10: «αδιάθετ…» -> «μη ανατεθειμέν…» (2 κείμενα· νικά το 15b / 19b, ίδια σειρά με τη βάση).
                  'db/migrations/2026-10-22b_ui_texts_unassigned.sql',
                  // 21/10: «ακολουθεί / ΠΕΡΙΜΕΝΕΙ» λιλά (4 χρώματα του 21a, νικά το 21a).
-                 'db/migrations/2026-10-22c_ui_texts_fuel_next_purple.sql'];
+                 'db/migrations/2026-10-22c_ui_texts_fuel_next_purple.sql',
+                 // Επαληθευτής (19/10): 62 κλειδιά vf_* / color_vf_* (2026-10-23c).
+                 'db/migrations/2026-10-23c_ui_texts_verifier.sql'];
 const UI_MIG = UI_MIGS.join(' + ');
 // MIG_KINDS: kind ανά κλειδί (text | color). Το τεστ διαρροής ελέγχει ΜΟΝΟ
 // κείμενα: ένα χρώμα της βάσης μπορεί να συμπίπτει με το CSS της σελίδας
@@ -88,7 +90,7 @@ function env(opts){
     'let FUEL_TYPES = ' + JSON.stringify(opts.fuelTypes === undefined ? DB_FUEL_TYPES : opts.fuelTypes) + ';',
     'const histOpen = new Map(); const grpOpen = new Map();',
     grabConst('TIPS'), grabConst('ACTION_URL_OK'), grabConst('FUEL_CMS_HEADER'), grabConst('GR_DAY3'),
-    grab('escHtml'), grab('textOn'), grab('stBadge'), grab('whoCell'), grab('histHtml'), grab('histWhat'),
+    grab('escHtml'), grab('textOn'), grab('stBadge'), grab('whoCell'), grab('histHtml'), grabConst('VF_EV'), grab('histWhat'),
     grab('canOpen'), grab('actionBtn'), grab('summaryHtml'),
     grab('fmtWeekRange'), grab('taskTitle'), grab('closedColor'), grab('closedGroupStyle'), grab('renderLegend'),
     grab('taskPayload'), grab('fuelCmsAoa'), grab('fuelCmsWorkbook'), grab('fmtDue'),
@@ -97,12 +99,13 @@ function env(opts){
     grabConst('STEP_UI_KEYS'), grab('uiText'),
     grab('stepTimelineHtml'), grab('stepMoreHtml'), grab('stepBtnHtml'), grab('stepCardHtml'), grab('uploadCheck'),
     grab('taskById'), grab('chainEntry'), grab('stripColorVar'), grabConst('FS_COLORS'), grab('fuelStripHtml'), grab('fuelStripMenu'),
+    grab('vfInfo'), grab('vfWeekLabel'), grab('vfDate'), grab('vfLineText'), grab('vfAlertHtml'), grab('vfFormHtml'), grabConst('VF_ERR'), grab('vfErrText'), grab('vfReasonHtml'),
     grabConst('UI_SCOPES'), grab('pageText'), grabConst('OVERDUE_COLOR'), grabConst('TONE_MIX'), grabConst('TONE_MIX_STRONG'),
     grab('tint'), grab('groupTone'), grab('addDaysISO'), grab('fuelActiveRoot'), grab('weekItems'), grab('dueClock'), grab('fuelWeekInfo'), grab('fuelStateHtml'),
     grab('grpIsOpen'), grab('grpTogHtml'), grab('groupHtml'),
     grab('taskRow'), grab('clientChipHtml'), grab('tabFromQuery'), grab('anchorFromHash'), grab('render'),
     'return { clientChipHtml, NavChip, tabFromQuery, anchorFromHash, render, renderLegend, closedGroupStyle, taskRow, fuelCmsAoa, fuelCmsWorkbook, fmtDue, fuelFactsHtml, fuelColumns,',
-    '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS, fuelStripHtml, fuelStripMenu, taskById, chainEntry,',
+    '         stepCardHtml, stepTimelineHtml, stepMoreHtml, uploadCheck, uiText, STEP_UI_KEYS, fuelStripHtml, fuelStripMenu, taskById, chainEntry, vfInfo, vfAlertHtml, vfFormHtml, vfErrText, vfReasonHtml, vfLineText, histWhat,',
     '         msLeft, fmtLeft, dueState, dueHtml, refreshDues, setTasks: ts => { lastTasks = ts; }, taskPayload, fmtWeekRange, taskTitle,',
     '         tint, groupTone, groupHtml, grpOpen, fuelWeekInfo, fuelStateHtml, fuelActiveRoot, weekItems, dueClock, pageText, UI_SCOPES, UiTexts };'
   ].join('\n');
@@ -1309,7 +1312,7 @@ console.log('\n═══ Α3 ενδείξεις: ΤΙ · ΑΠΟ ΠΟΤΕ · ΕΩ
      && api.fuelStateHtml(I(activeWeek('done', 'done'), '2026-10-26 18:00:00')).includes('class="grp-state plain"'));
   const keys = [...grab('fuelWeekInfo').matchAll(/'(fuel_w_\w+)'/g)].map(m => m[1]);
   ck(`κάθε κλειδί fuel_w_* της fuelWeekInfo (${new Set(keys).size}) υπάρχει στο seed (19b + 21a)`,
-     new Set(keys).size === 7 && keys.every(k => MIG_TEXTS.tasks && k in MIG_TEXTS.tasks), keys.join(','));
+     new Set(keys).size === 8 && keys.every(k => MIG_TEXTS.tasks && k in MIG_TEXTS.tasks), keys.join(','));
   const code = ['fuelWeekInfo', 'fuelActiveRoot', 'dueClock', 'taskRow', 'stepCardHtml', 'stepBtnHtml', 'stepMoreHtml', 'fuelStripHtml', 'fuelStripMenu']
     .map(grab).join('\n').replace(/^\s*\/\/.*$/gm, '');
   ck('ΚΑΝΕΝΑ «19:00» ή «17:00» γραμμένο στον κώδικα (φρουρός)', !/\b(19|17):00\b/.test(code));
@@ -1767,6 +1770,163 @@ console.log('\n═══ Α4γ (21/10): «ακολουθεί / ΠΕΡΙΜΕΝΕ�
   ck('γραφικά ≥ 3:1: ' + gfx.map(([n, a, b]) => n + ' ' + ratio(a, b).toFixed(2)).join(' · '), gfx.every(([, a, b]) => ratio(a, b) >= 3));
   ck('το μωβ της «Μη ανατεθειμένη» (4a_task_statuses) και της ετικέτας ΣΥΣΤΗΜΑ ΔΕΝ αλλάζουν', !/4a_task_statuses|sys/i.test(m22c.replace(/^--.*$/mg, ''))
      && /\.sys-tag \{[^}]*background: #4527a0;/.test(src));
+}
+
+// ═════════════════════════════════════════════════════════════════════
+// ΕΠΑΛΗΘΕΥΤΗΣ (api/fuel_verify_lib.php, 19/10). Ο server στέλνει `verifier`
+// στο verify ΜΟΝΟ όταν ο επαληθευτής είναι ενεργός· `alert`, `expected`,
+// `picked` ΜΟΝΟ με το δικαίωμα fuel_verify_values.
+const VF_LINES = [
+  { check_id: 1, client_code: '1731000', station_country: 'GR', cms_service: 'S1003', zone: 'Z1', fuel_type: 'AIR', fuel_label: 'Αεροπορικός', options: ['48.50', '49.00', '40.75', '49.25'] },
+  { check_id: 2, client_code: '1731000', station_country: 'GR', cms_service: 'S1010', zone: 'Z1', fuel_type: 'ROAD', fuel_label: 'Οδικός', options: ['40.75', '49.00', '41.50', '40.25'] },
+  { check_id: 3, client_code: '1731000', station_country: 'GR', cms_service: 'S1027', zone: 'Z9', fuel_type: 'AIR_CY', fuel_label: 'Air Cyprus', options: ['51.41', '51.94', '49.00', '52.69'] },
+  { check_id: 4, client_code: '40006012', station_country: 'CY', cms_service: 'S1012', zone: 'Z1', fuel_type: 'AIR', fuel_label: 'Αεροπορικός', options: ['49.00', '48.50', '40.75', '48.25'] }];
+const VF_EXP = { 1: '49.00', 2: '40.75', 3: '51.94', 4: '49.00' };
+const vfForm = (o) => Object.assign({ task_id: 91, week_start: '2026-10-26', round: 1, locked: false, closed: false, show_expected: false,
+  gate: null, can_submit: true, can_reset: false, wrong_by: null, wrong_at: null, lines: VF_LINES.map(l => Object.assign({}, l)) }, o || {});
+const withExp = f => Object.assign(f, { show_expected: true, lines: f.lines.map(l => Object.assign(l, { expected: VF_EXP[l.check_id] })) });
+const vfWeek = (stage, vi, o) => {
+  const ts = stripWeek(stage, o);
+  return ts.map(t => Object.assign({}, t, t.task_code === 'fuel_weekly_verify' ? { verifier: vi } : {},
+    { chain: t.chain.map(c => c.task_code === 'fuel_weekly_verify' ? Object.assign({}, c, { verifier: vi }) : c) }));
+};
+
+console.log('\n═══ Επαληθευτής: ③ της λωρίδας ═══');
+{
+  const S = (ts, now, me, admin, view) => stripOf(ts, now, view || 'all', me, admin);
+  const vi0 = { round: 1, locked: false, override: null };
+  let h = S(vfWeek(2, vi0), '2026-10-26 09:00:00', 2, false);
+  ck('ενεργός: ο ανάδοχος ③ πατά «🔍 Επαλήθευση» -> openVerifier (όχι act done)', h.includes('onclick="openVerifier(91)"') && !h.includes("act(91,'done')"), h);
+  ck('χωρίς `verifier` (ανενεργός): όπως πριν, act(91,\'done\')', S(stripWeek(2), '2026-10-26 09:00:00', 2, false).includes("act(91,'done')"));
+  h = S(vfWeek(2, vi0), '2026-10-24 10:00:00', 2, false);
+  ck('πριν τη Δευτέρα: γραμμή ③ «ακολουθεί» με «ανοίγει Δευ 26/10 00:00» (Δ-Α8), κανένα openVerifier',
+     /<div class="fs-step next"><div class="fs-name">③[^]*?ανοίγει Δευ 26\/10 00:00/.test(h) && !h.includes('openVerifier'), h);
+  const viL = { round: 1, locked: true, override: null };
+  h = S(vfWeek(2, viL), '2026-10-26 11:00:00', 2, false);
+  ck('κλειδωμένος: ③ «🔒 Κλειδωμένο · περιμένει διαχειριστή», ΚΑΝΕΝΑ κουμπί', h.includes('🔒 Κλειδωμένο · περιμένει διαχειριστή') && !h.includes('openVerifier'));
+  ck('...ο manager (χωρίς δικαίωμα, χωρίς alert): κανένα κόκκινο σήμα, καμία τιμή', !h.includes('vf-alert') && !/\d\d\.\d\d%/.test(h));
+  const viA = { round: 1, locked: true, override: null, alert: { at: '2026-10-26 10:41:00', by: 'u2', by_id: 2, total: 4,
+    wrong: [{ check_id: 3, client_code: '1731000', station_country: 'GR', cms_service: 'S1027', zone: 'Z9', fuel_type: 'AIR_CY', fuel_label: 'Air Cyprus', picked: '52.69', expected: '51.94' }] } };
+  h = S(vfWeek(2, viA), '2026-10-26 11:00:00', 9, true);
+  ck('admin: κόκκινο σήμα «✗ Λάθος επαλήθευση 1/4 · Δευ 26/10 10:41 · u2»', h.includes('✗ Λάθος επαλήθευση 1/4 · Δευ 26/10 10:41 · u2'), h);
+  ck('...η λάθος γραμμή με τύπο και «επιλέχθηκε 52.69% · αναμενόμενη 51.94%»',
+     h.includes('1731000 · GR-Z9 · S1027 · Air Cyprus · επιλέχθηκε 52.69% · αναμενόμενη 51.94%'), h);
+  ck('...και «↺ Επαναφορά επαληθευτή…» -> openVfReset(91)', h.includes('onclick="openVfReset(91)"') && h.includes('↺ Επαναφορά επαληθευτή…'));
+  // ΚΑΡΤΑ 19/10: το ③ σε «wrong» — μπάρα ✗, γραμμή «✗ ΛΑΘΟΣ», σήμα ΜΕΣΑ στη γραμμή ③, κεφαλίδα κόκκινη.
+  {
+    const r = rowsOf(h), nd = nodesOf(h);
+    ck('κάρτα, κλειδωμένο: κόμβος ③ «wrong» με ✗ του CSS (κενό span), ① ② «done»',
+       nd.length === 3 && nd[2].cls === 'wrong' && nd[2].html.startsWith('<span class="fs-dot wrong"></span>') && nd[0].cls === 'done' && nd[1].cls === 'done', nd.map(x => x.cls).join(','));
+    ck('...γραμμή ③ «wrong» με «✗ ΛΑΘΟΣ» και «🔒 Κλειδωμένο · περιμένει διαχειριστή», ΠΑΝΩ (σειρά ③②①)',
+       rowsInDom(h)[0].n === 2 && r[2].cls === 'wrong' && r[2].html.includes('<span class="fs-tag wrong">✗ ΛΑΘΟΣ</span>') && r[2].html.includes('🔒 Κλειδωμένο · περιμένει διαχειριστή'));
+    ck('...το κόκκινο σήμα (1/4, «επιλέχθηκε / αναμενόμενη», ↺ Επαναφορά) ΜΕΣΑ στη γραμμή ③, όχι στις ② ①',
+       r[2].html.includes('<div class="fs-vf"><div class="vf-alert">') && r[2].html.includes('✗ Λάθος επαλήθευση 1/4') && r[2].html.includes('αναμενόμενη 51.94%')
+       && r[2].html.includes('openVfReset(91)') && !r[0].html.includes('vf-alert') && !r[1].html.includes('vf-alert')
+       && (h.match(/class="vf-alert"/g) || []).length === 1);
+    const { api: wa } = env({ statuses: ST_DB, now: '2026-10-26 11:00:00', userId: 2, admin: false });
+    const wi = wa.fuelWeekInfo(vfWeek(2, viL), '2026-10-26 11:00:00'), wo = wa.fuelWeekInfo(vfWeek(2, vi0), '2026-10-26 11:00:00');
+    ck('...κεφαλίδα εβδομάδας: «✗ Λάθος στην ③ Επαλήθευση» (fuel_w_wrong) σε κόκκινο πλακίδιο· χωρίς κλείδωμα fuel_w_verify_now',
+       wi.key === 'fuel_w_wrong' && wi.alert === 'red' && wi.text === '✗ Λάθος στην ③ Επαλήθευση'
+       && wa.fuelStateHtml(wi).includes('background:#cc0000;') && wo.key === 'fuel_w_verify_now' && wo.alert === null, JSON.stringify(wi));
+    const hm = S(vfWeek(2, viL), '2026-10-26 11:00:00', 2, false), rm = rowsOf(hm);
+    ck('...manager: ίδια «wrong» γραμμή, ΧΩΡΙΣ σήμα και χωρίς τιμές', rm[2].cls === 'wrong' && !hm.includes('fs-vf') && !/\d\d\.\d\d%/.test(hm));
+    ck('...μόνο μία διάταξη: καμία παλιά λωρίδα (strack/scell) στην κάρτα', !/class="(strack|scell|sbtn|sstat)/.test(h + hm));
+  }
+  const hs = S(vfWeek(2, Object.assign({}, viA, { alert: Object.assign({}, viA.alert, { by_id: 9 }) })), '2026-10-26 11:00:00', 9, true);
+  ck('admin που απάντησε ο ίδιος: επαναφορά ανενεργή, tooltip «άλλος διαχειριστής»', !hs.includes('openVfReset') && hs.includes('Την επαναφορά την κάνει άλλος διαχειριστής από αυτόν που απάντησε'));
+  ck('ΙΔΙΑ λωρίδα σε «Οι εργασίες μου» και «Όλες» του αναδόχου ③ (κλειδωμένος)',
+     S(vfWeek(2, viL), '2026-10-26 11:00:00', 2, false, 'mine') === S(vfWeek(2, viL), '2026-10-26 11:00:00', 2, false, 'all'));
+  h = S(vfWeek(2, vi0), '2026-10-26 09:00:00', 9, true);
+  ck('«⋯» admin (όχι ανάδοχος ③): «Παράκαμψη (admin)…» -> openVfOverride(91)', h.includes('onclick="openVfOverride(91)"'));
+  ck('«⋯» του αναδόχου ③ / χωρίς verifier: καμία παράκαμψη ③', !S(vfWeek(2, vi0), '2026-10-26 09:00:00', 2, true).includes('openVfOverride')
+     && !S(stripWeek(2), '2026-10-26 09:00:00', 9, true).includes('openVfOverride'));
+  const viO = { round: 1, locked: false, override: { event_id: 7, actor_id: 9, actor_name: 'adm', at: '2026-10-26 12:00:00', acked: false } };
+  h = S(vfWeek(2, viO), '2026-10-26 12:30:00', 1, true);
+  ck('παράκαμψη ③: «Παράκαμψη από adm · Δευ 26/10 12:00» + «Το είδα» για ΑΛΛΟΝ admin', h.includes('Παράκαμψη από adm · Δευ 26/10 12:00') && h.includes('onclick="overrideAck(91)"'));
+  ck('...όχι «Το είδα» για τον ίδιο', !S(vfWeek(2, viO), '2026-10-26 12:30:00', 9, true).includes('overrideAck(91)'));
+  // Ε2: χωρίς δικαίωμα ο server δεν στέλνει τιμές/αρχείο -> το ① γκρι, με tooltip.
+  const red = vfWeek(2, vi0).map(t => Object.assign({}, t, { payload: JSON.stringify((({ prices, source, file, ...r }) => r)(JSON.parse(t.payload))) }));
+  h = S(red, '2026-10-26 09:00:00', 2, false);
+  ck('① χωρίς αρχείο (Ε2): ανενεργό, tooltip «Download — Δεν έχεις δικαίωμα λήψης αυτού του αρχείου»',
+     h.includes('title="Download — Δεν έχεις δικαίωμα λήψης αυτού του αρχείου" disabled') && !h.includes('stepDownload'), h);
+}
+
+console.log('\n═══ Επαληθευτής: το παράθυρο ═══');
+{
+  const { api } = env({ statuses: ST_DB, now: '2026-10-26 09:00:00', userId: 2, admin: false });
+  const t = stripWeek(2)[1];
+  let h = api.vfFormHtml(vfForm(), t, {}, '');
+  ck('τίτλος «🔍 Επαλήθευση επίναυλου 26/10–01/11 στο CMS»', h.includes('<h3>🔍 Επαλήθευση επίναυλου 26/10–01/11 στο CMS</h3>'), h.slice(0, 600));
+  ck('οδηγία με «από 26/10 και μετά» (Price Calculator)', h.includes('Στο Price Calculator του CMS έλεγξε κάθε γραμμή με ημερομηνία από 26/10 και μετά'));
+  ck('4 γραμμές, 4 επιλογές η καθεμία, με «%»', (h.match(/class="vf-row/g) || []).length === 4 && (h.match(/class="vf-opt[ "]/g) || []).length === 16 && h.includes('>49.00%</button>'));
+  ck('γραμμή: 1731000 · GR-Z1 · S1003 · Αεροπορικός', /<span>1731000<\/span><span>GR-Z1<\/span><span>S1003<\/span><span>Αεροπορικός<\/span>/.test(h));
+  ck('manager: ΚΑΜΙΑ «αναμενόμενη»', !h.includes('αναμενόμενη'));
+  ck('επιλογή -> vfChoose(1,\'49.00\'), «Υποβολή» με tooltip μίας προσπάθειας', h.includes("onclick=\"vfChoose(1,'49.00')\"")
+     && h.includes('title="Submit — Ελέγχει όλες τις γραμμές μαζί. Μία προσπάθεια: αν κάτι είναι λάθος, ο επαληθευτής κλειδώνει" onclick="vfSend()"'));
+  ck('η επιλογή του χρήστη τονίζεται (on, aria-pressed)', api.vfFormHtml(vfForm(), t, { 1: '49.25' }, '').includes('class="vf-opt on" aria-pressed="true" onclick="vfChoose(1,\'49.25\')"'));
+  h = api.vfFormHtml(withExp(vfForm()), t, {}, '');
+  ck('admin (show_expected): «αναμενόμενη: 49.00%» κάτω από τις επιλογές', h.includes('<div class="vf-exp">αναμενόμενη: 49.00%</div>') && (h.match(/αναμενόμενη:/g) || []).length === 4);
+  h = api.vfFormHtml(vfForm({ can_submit: false, gate: 'η επαλήθευση ανοίγει Δευ 26/10' }), t, {}, '');
+  ck('πριν τη Δευτέρα: χωρίς «Υποβολή», «Η υποβολή ανοίγει Δευ 26/10 00:00», επιλογές ανενεργές',
+     !h.includes('vfSend()') && h.includes('Η υποβολή ανοίγει Δευ 26/10 00:00') && !h.includes('vfChoose('));
+  const lk = vfForm({ locked: true, can_submit: false, wrong_by: 'u2', wrong_at: '2026-10-26 10:41:00',
+    lines: VF_LINES.map(l => Object.assign({}, l, { answer: { chosen: l.check_id === 3 ? '52.69' : VF_EXP[l.check_id], ok: l.check_id !== 3 } })) });
+  h = api.vfFormHtml(lk, t, {}, 'x');
+  ck('μετά από λάθος: «🔒 Κλειδωμένος μετά από λάθος · Δευ 26/10 10:41 · u2 …», καμία υποβολή', h.includes('🔒 Κλειδωμένος μετά από λάθος · Δευ 26/10 10:41 · u2') && !h.includes('vfSend()'));
+  ck('...✗ ΜΟΝΟ στη γραμμή 3 (Ε3: ποιες), ✓ στις άλλες', (h.match(/vf-mark bad">✗ δεν συμφωνεί/g) || []).length === 1 && (h.match(/vf-mark ok">✓ σωστή/g) || []).length === 3
+     && /class="vf-row bad"><span>1731000<\/span><span>GR-Z9<\/span>/.test(h));
+  ck('...χωρίς expected: δεν φαίνεται ποια είναι η σωστή', !h.includes('αναμενόμενη'));
+  ck('χρώματα από τη βάση στο παράθυρο (--vf-wrong #cc0000, --vf-ok, --vf-pick)', h.includes('--vf-wrong:#cc0000;--vf-ok:#2e7d32;--vf-pick:#1565c0;'));
+  ck('σφάλμα με κωδικό -> κείμενο της βάσης, {n} από τον server', api.vfErrText({ vf: 'reason', n: 10, error: 'x' }, 400) === 'Γράψε λόγο, τουλάχιστον 10 χαρακτήρες'
+     && api.vfErrText({ vf: 'no_download' }, 403) === 'Δεν έχεις δικαίωμα λήψης αυτού του αρχείου'
+     && api.vfErrText({ vf: 'άγνωστο', error: 'μήνυμα server' }, 409) === 'μήνυμα server');
+  h = api.vfReasonHtml(t, 'verify_reset');
+  ck('επαναφορά: τίτλος, οδηγία, «Λόγος (υποχρεωτικός)», «Επαναφορά», ΚΑΝΕΝΑΣ έλεγχος μήκους στον browser',
+     h.includes('<h3>Επαναφορά επαληθευτή</h3>') && h.includes('Λόγος (υποχρεωτικός)') && h.includes('>Επαναφορά</button>') && !/length\s*</.test(grab('sendVfAct')));
+  ck('παράκαμψη ③: «Παράκαμψη επαλήθευσης» και η προειδοποίηση', api.vfReasonHtml(t, 'admin_override').includes('Η επαλήθευση κλείνει χωρίς τον έλεγχο στο CMS.'));
+}
+
+console.log('\n═══ Επαληθευτής: ιστορικό ═══');
+{
+  const { api } = env({});
+  const line = (o) => Object.assign({ client_code: '1731000', station_country: 'GR', zone: 'Z9', cms_service: 'S1027', fuel_type: 'AIR_CY', fuel_label: 'Air Cyprus', ok: false }, o);
+  const ev = (lines) => ({ event: 'verify_wrong', note: 'επαλήθευση: 1 από 4 λάθος', meta: '{"round":1}', verify: { round: 1, lines } });
+  let h = api.histWhat(ev([line({ picked: '52.69', expected: '51.94' })]));
+  ck('admin: «επαλήθευση: λάθος» + «✗ δεν συμφωνεί 1731000 · GR-Z9 · S1027 · Air Cyprus · επιλέχθηκε 52.69% · αναμενόμενη 51.94%»',
+     h.includes('<span class="ev">επαλήθευση: λάθος</span>') && h.includes('✗ δεν συμφωνεί 1731000 · GR-Z9 · S1027 · Air Cyprus · επιλέχθηκε 52.69% · αναμενόμενη 51.94%'), h);
+  h = api.histWhat(ev([line({})]));
+  ck('manager (χωρίς picked/expected από τον server): ίδια γραμμή ΧΩΡΙΣ τιμές', h.includes('✗ δεν συμφωνεί 1731000 · GR-Z9 · S1027 · Air Cyprus</span>') && !h.includes('επιλέχθηκε'));
+  ck('verify_ok / verify_reset: ετικέτες της βάσης', api.histWhat({ event: 'verify_ok' }).includes('επαλήθευση: όλες σωστές')
+     && api.histWhat({ event: 'verify_reset', note: 'ξανανέβηκε' }).includes('επαναφορά επαληθευτή'));
+  ck('τα παλιά γεγονότα όπως πριν (EV_LABELS, εδώ κενό στο περιβάλλον του τεστ)', api.histWhat({ event: 'done' }) === '<span class="ev">done</span>');
+  ck('admin_override: «παράκαμψη από διαχειριστή» (έδειχνε τον κωδικό)', api.histWhat({ event: 'admin_override' }) === '<span class="ev">παράκαμψη από διαχειριστή</span>');
+}
+
+console.log('\n═══ Επαληθευτής: κλειδιά και κωδικοί ═══');
+{
+  const fvErr = fs.readFileSync('api/fuel_verify_lib.php', 'utf8');
+  const codes = [...fvErr.slice(fvErr.indexOf("define('FV_ERR'"), fvErr.indexOf('], JSON_UNESCAPED_UNICODE')).matchAll(/'(\w+)'\s*=>/g)].map(m => m[1]);
+  const VF_ERR = new Function(grabConst('VF_ERR') + '\nreturn VF_ERR;')();
+  const VF_EV = new Function(grabConst('VF_EV') + '\nreturn VF_EV;')();
+  const errCodes = codes.filter(c => c !== 'wrong');
+  ck(`κάθε κωδικός vf του server (${errCodes.length} + wrong) έχει κλειδί στην οθόνη (VF_ERR, wrong -> vf_wrong στο vfSend)`, codes.length === 17
+     && errCodes.every(c => VF_ERR[c] === 'vf_err_' + c) && grab('vfSend').includes("r.data.vf === 'wrong'") && grab('vfSend').includes("pageText('vf_wrong'"), errCodes.filter(c => !VF_ERR[c]).join(','));
+  ck('κάθε κλειδί VF_ERR / VF_EV υπάρχει στο seed του 23c', [...Object.values(VF_ERR), ...Object.values(VF_EV)].every(k => k in MIG_TEXTS.tasks));
+  const mig = fs.readFileSync('db/migrations/2026-10-23c_ui_texts_verifier.sql', 'utf8');
+  const keys = [...mig.matchAll(/\('tasks',\s*'(\w+)',/g)].map(m => m[1]);
+  const used = new Set([...[grab('vfFormHtml'), grab('vfAlertHtml'), grab('vfReasonHtml'), grab('vfLineText'), grab('fuelStripHtml'),
+    grab('fuelStripMenu'), grab('vfSend'), grab('vfDate'), grab('histWhat')].join('\n').matchAll(/'(vf_\w+|color_vf_\w+)'/g)].map(m => m[1])
+    .concat(Object.values(VF_ERR), Object.values(VF_EV)));
+  ck(`23c: ${keys.length} κλειδιά, κάθε κλειδί χρησιμοποιείται από την οθόνη`, keys.length === 62 && keys.every(k => used.has(k)), keys.filter(k => !used.has(k)).join(','));
+  const rb = fs.readFileSync('db/migrations/rollback/2026-10-23c_ui_texts_verifier.rollback.sql', 'utf8');
+  ck('rollback 23c: σβήνει ΑΚΡΙΒΩΣ τα ίδια κλειδιά', keys.every(k => rb.includes("'" + k + "'")) && (rb.match(/'(vf_\w+|color_vf_\w+)'/g) || []).length === 62);
+  const hex = h => { const n = parseInt(h.slice(1), 16), c = [n >> 16, n >> 8 & 255, n & 255].map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; });
+    return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+  const ratio = (a, b) => { const x = hex(a), y = hex(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+  ck('αντίθεση ≥ 4.5:1: color_vf_wrong / _ok σε λευκό, λευκό σε color_vf_pick',
+     ['color_vf_wrong', 'color_vf_ok'].every(k => ratio(MIG_TEXTS.tasks[k], '#ffffff') >= 4.5) && ratio('#ffffff', MIG_TEXTS.tasks.color_vf_pick) >= 4.5,
+     ['color_vf_wrong', 'color_vf_ok', 'color_vf_pick'].map(k => k + ' ' + ratio(MIG_TEXTS.tasks[k], '#ffffff').toFixed(2)).join(' · '));
+  ck('η σωστή τιμή ΠΟΤΕ στον κώδικα: καμία σύγκριση επιλογής με expected στο vfSend', !/expected/.test(grab('vfSend')));
 }
 
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);

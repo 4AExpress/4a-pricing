@@ -628,10 +628,13 @@ function fuel_verify_info($db, $session, $perms, $task, array $events)
             $m     = is_array($w['meta']) ? $w['meta'] : [];
             $round = isset($m['round']) ? (int)$m['round'] : $state['round'];
             $vals  = fuel_verify_line_values($db, (int)$task['id'], $round);
+            $lbl   = fuel_verify_fuel_labels($db);
             $wrong = [];
             foreach (isset($m['wrong']) && is_array($m['wrong']) ? $m['wrong'] : [] as $x) {
                 $cid = isset($x['check_id']) ? (int)$x['check_id'] : 0;
-                $wrong[] = $x + (isset($vals[$cid]) ? $vals[$cid] : ['picked' => null, 'expected' => null]);
+                $ft  = isset($x['fuel_type']) ? (string)$x['fuel_type'] : '';
+                $wrong[] = $x + ['fuel_label' => isset($lbl[$ft]) ? $lbl[$ft] : $ft]
+                              + (isset($vals[$cid]) ? $vals[$cid] : ['picked' => null, 'expected' => null]);
             }
             $info['alert'] = ['at' => $w['created_at'], 'by' => $w['actor_name'], 'by_id' => (int)$w['actor_id'],
                               'wrong' => $wrong, 'total' => isset($m['total']) ? (int)$m['total'] : null];

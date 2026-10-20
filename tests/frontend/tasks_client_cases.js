@@ -40,6 +40,6 @@ const FUNCS = ['escHtml', 'textOn', 'stBadge', 'whoCell', 'histHtml', 'histWhat'
   'fmtWeekRange', 'taskTitle', 'closedColor', 'closedGroupStyle', 'taskPayload', 'fuelCmsAoa', 'fuelCmsWorkbook',
   'fmtDue', 'athensNow', 'normDateTime', 'isPastDue', 'fmtLeft', 'dueState', 'dueHtml', 'fuelColumns', 'fuelFactsHtml',
   'msLeft', 'pageText', 'tint', 'groupTone', 'addDaysISO', 'fuelActiveRoot', 'weekItems', 'dueClock', 'fuelWeekInfo', 'fuelStateHtml', 'grpIsOpen', 'grpTogHtml', 'groupHtml',
-  'uiText', 'taskById', 'chainEntry', 'stripColorVar', 'fuelStripHtml', 'fuelStripMenu',
+  'uiText', 'taskById', 'chainEntry', 'stripColorVar', 'vfInfo', 'vfWeekLabel', 'vfDate', 'vfLineText', 'vfAlertHtml', 'fuelStripHtml', 'fuelStripMenu',
   'taskRow', 'clientChipHtml', 'render'];
 module.exports = { STATUSES, TASKS, FUNCS };
