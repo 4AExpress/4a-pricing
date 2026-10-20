@@ -852,7 +852,13 @@ console.log('\n═══ [+]/[−] ανά ομάδα, ΚΑΙ για πελάτε
 }
 
 // ── Εβδομάδες επίναυλου: σειρά, ένδειξη, κόκκινο/πορτοκαλί (13-10-2026) ──
-const wkPay = ws => Object.assign({}, PAYLOAD, { week_start: ws, week_end: '' });
+// Ισχύς όπως τη γράφει ο server (fuel_lib.php fuel_effective_date): dd-Mon-yyyy από το week_start,
+// και στο payload και στη στήλη EffectiveDate του αρχείου. week_end = '' όπως πριν (golden).
+const effDate = ws => ws.slice(8, 10) + '-' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(ws.slice(5, 7)) - 1] + '-' + ws.slice(0, 4);
+// FROZEN_PAY: ΜΟΝΟ για το golden της πύλης Α3 (tasks_fuel_gate.golden.json, πριν το Α3): ισχύς του fixture όπως ήταν.
+let FROZEN_PAY = false;
+const wkPay = ws => FROZEN_PAY ? Object.assign({}, PAYLOAD, { week_start: ws, week_end: '' }) : Object.assign({}, PAYLOAD, { week_start: ws, week_end: '', effective_date: effDate(ws),
+  file: Object.assign({}, PAYLOAD.file, { rows: PAYLOAD.file.rows.map((r, i) => i ? r.slice(0, 8).concat([effDate(ws)]) : r) }) });
 // Μια εβδομάδα: ανέβασμα (ρίζα) + επαλήθευση, με προθεσμία Παρ πριν το week_start 17:00.
 const fuelWeek = (id, ws, up, ver, extra) => {
   const due = addDays(ws, -3) + ' 17:00:00';
@@ -1202,6 +1208,7 @@ for (const now of ['2026-10-13 12:00:00', '2026-10-23 10:00:00', '2026-10-24 10:
     for (const view of ['all', 'mine', 'queue']) GATE_RUNS.push({ now, who, userId, admin, view });
 const gateHtml = withStep => {
   const out = {};
+  FROZEN_PAY = true;
   for (const g of GATE_RUNS) {
     const { api, els } = env({ statuses: ST_DB, now: g.now, userId: g.userId, admin: g.admin, view: g.view });
     const ts = gateWeeks();
@@ -1211,6 +1218,7 @@ const gateHtml = withStep => {
     api.render(ts);
     out[`${g.now} ${g.who} ${g.view}`] = els.list.innerHTML;
   }
+  FROZEN_PAY = false;
   return out;
 };
 console.log('\n═══ Α3 πύλη: χωρίς step στη ρίζα, η λίστα ΙΔΙΑ με πριν από το Α3 (golden) ═══');
@@ -1446,6 +1454,16 @@ const rowsInDom = h => partsOf(h, 'fs-step', '<div class="fs-top">');
 const rowsOf = h => rowsInDom(h).slice().sort((x, y) => x.n - y.n);        // r[0] = ①, r[1] = ②, r[2] = ③
 const nodesOf = h => partsOf(h, 'fs-node', '<details class="step-more">');
 const STAGE_NOW = { 0: '2026-10-22 08:00:00', 1: '2026-10-22 10:00:00', 2: '2026-10-24 10:00:00', 3: '2026-10-26 18:00:00' };
+
+console.log('\n═══ Fixtures: ισχύς = week_start της εβδομάδας (όπως fuel_effective_date του server) ═══');
+{
+  const h = stripOf(stripWeek(2), STAGE_NOW[2], 'all', 9, true);
+  const p = wkPay('2026-10-26');
+  ck('εβδομάδα 26/10–01/11: «Ισχύς από 26-Oct-2026» στην κάρτα, ΟΧΙ 12-Oct-2026', h.includes('Ισχύς από <b>26-Oct-2026</b>') && !h.includes('12-Oct-2026'), (h.match(/Ισχύς από <b>[^<]*/) || [''])[0]);
+  ck('...και στη στήλη EffectiveDate κάθε γραμμής του αρχείου (κεφαλίδα ίδια)',
+     p.file.rows.slice(1).every(r => r[8] === '26-Oct-2026') && p.file.rows[0][8] === 'EffectiveDate' && PAYLOAD.file.rows[1][8] === '12-Oct-2026');
+  ck('effDate: 2026-01-05 -> 05-Jan-2026, 2026-11-02 -> 02-Nov-2026', effDate('2026-01-05') === '05-Jan-2026' && effDate('2026-11-02') === '02-Nov-2026');
+}
 
 console.log('\n═══ Α3 λωρίδα: ΙΔΙΑ σε mine / queue / all, για κάθε στάδιο και κάθε χρήστη ═══');
 {
