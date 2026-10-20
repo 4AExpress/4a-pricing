@@ -751,5 +751,120 @@ ck('οι προεπιλογές του κώδικα = του migration (allow_* 
    $flags === array('allow_na' => 1, 'allow_release' => 1, 'allow_reject' => 1, 'allow_steal' => 1, 'close_from_week_start' => 0));
 ck('κανένα ; ή \' μέσα σε σχόλιο (ο διαχωρισμός του Β4)', !preg_match("/^\\s*--[^\\n]*[;']/m", $m19a . $r19a . $m19c . $r19c));
 
+// ═════════════════════════════════════════════════════════════════════
+// Α4 (22/10): migration 2026-10-22a, ΕΝΕΡΓΟΠΟΙΗΣΗ του fuel_weekly. Το ΠΡΑΓΜΑΤΙΚΟ
+// αρχείο, με τον διαχωρισμό του runner, σε βάση όπως το live μετά το Α2 (19a/19c).
+// ═════════════════════════════════════════════════════════════════════
+echo "\n═══ Migration 2026-10-22a (Α4): το αρχείο ═══\n";
+$m22 = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-22a_fuel_weekly_activate.sql');
+$r22 = file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-22a_fuel_weekly_activate.rollback.sql');
+// Οι εντολές όπως τις χωρίζει ο runner του Β4: εκτός σχολίων, ; έξω από '…'.
+$stmts = function ($sql) {
+    $keep = array(); foreach (explode("\n", $sql) as $l) if (!preg_match('/^\s*--/', $l)) $keep[] = $l;
+    $txt = implode("\n", $keep); $out = array(); $cur = ''; $inq = false;
+    for ($i = 0, $n = strlen($txt); $i < $n; $i++) { $c = $txt[$i]; if ($c === "'") $inq = !$inq;
+        if ($c === ';' && !$inq) { if (trim($cur) !== '') $out[] = trim($cur); $cur = ''; continue; } $cur .= $c; }
+    if (trim($cur) !== '') $out[] = trim($cur);
+    return $out;
+};
+// MySQL -> SQLite ΜΟΝΟ για το INSERT … ON DUPLICATE KEY UPDATE `step_code` = `step_code` (= OR IGNORE).
+$run22 = function ($db, $sql) use ($stmts) {
+    $sel = array();
+    foreach ($stmts($sql) as $s) {
+        if (preg_match('/^SET NAMES/i', $s)) continue;
+        if (preg_match('/^INSERT INTO/i', $s)) {
+            $s = preg_replace('/\s*ON DUPLICATE KEY UPDATE `step_code` = `step_code`\s*$/', '', $s, 1, $n);
+            if ($n !== 1) throw new Exception('INSERT χωρίς ON DUPLICATE');
+            $db->exec(preg_replace('/^INSERT INTO/i', 'INSERT OR IGNORE INTO', $s));
+        } elseif (preg_match('/^SELECT/i', $s)) $sel[] = $db->query($s)->fetchAll(PDO::FETCH_NUM);
+        else $db->exec($s);
+    }
+    return $sel;
+};
+ck('22a: ΚΑΝΕΝΑ DDL, καμία εργασία / γεγονός / κείμενο σελίδας',
+   preg_match('/\b(CREATE|ALTER|DROP|TRUNCATE)\b/i', $noCom($m22 . $r22)) === 0
+   && preg_match('/`4a_(tasks|task_events|ui_texts)`/', $noCom($m22 . $r22)) === 0);
+ck('22a: κανένα ; ή \' μέσα σε σχόλιο, καμία γραμμή «SQL;» (runner του Β4)',
+   !preg_match("/^\\s*--[^\\n]*[;']/m", $m22 . $r22) && !preg_match('/^SQL;$/m', $m22 . $r22));
+ck('22a: 7 εντολές (SET, 2 INSERT, UPDATE, 3 SELECT) · rollback 5 (SET, DELETE, UPDATE, 2 SELECT)',
+   count($stmts($m22)) === 7 && count($stmts($r22)) === 5);
+preg_match_all("/\\('fuel_weekly', 'ui', '(\\w+)',\\s*'([^']*)'\\)/u", $m22, $um, PREG_SET_ORDER);
+$ui22 = array(); foreach ($um as $x) $ui22[$x[1]] = $x[2];
+ck('22a: 29 κείμενα kind = ui, κανένα κενό', count($ui22) === 29 && !in_array('', $ui22, true), (string)count($ui22));
+ck('22a: menu_view / tip_view ΕΚΤΟΣ (ο κώδικας δεν τα διαβάζει)', !isset($ui22['menu_view']) && !isset($ui22['tip_view']));
+$tips = array_filter($ui22, function ($k) { return strpos($k, 'tip_') === 0; }, ARRAY_FILTER_USE_KEY);
+ck('22a: κάθε tooltip (7) «αγγλικός όρος — ελληνική εξήγηση», κανένα ✓ / ✗', count($tips) === 7
+   && !array_filter($tips, function ($t) { return !preg_match('/^[A-Z][A-Za-z ]+ — \p{Greek}/u', $t) || preg_match('/[✓✗]/u', $t); }), implode(' | ', $tips));
+ck('22a: τα 3 νέα tooltip (20/10)',
+   $ui22['tip_redownload'] === 'Download again — Κατεβάζει ξανά το αρχείο. Καταγράφεται, δεν αλλάζει το βήμα'
+   && $ui22['tip_upload_wait'] === 'Confirm upload — Επιβεβαιώνει το ανέβασμα στο CMS. Ανοίγει μετά τη λήψη του αρχείου'
+   && $ui22['tip_upload_done'] === 'Confirm upload — Επιβεβαιώνει το ανέβασμα στο CMS. Έγινε ήδη, δεν ξαναγίνεται');
+
+echo "\n═══ Migration 2026-10-22a (Α4): εφαρμογή σε βάση όπως το live ═══\n";
+$a4 = function () use ($cols) {
+    $db = fresh_db('empty'); $cols($db);
+    // Το UNIQUE του 2026-10-12b (uq_task_kind_step): χωρίς αυτό το «idempotent» δεν ελέγχεται.
+    $db->exec('CREATE UNIQUE INDEX `uq_task_kind_step` ON `4a_task_steps` (`task_code`, `kind`, `step_code`)');
+    $db->exec("UPDATE `4a_task_types` SET `close_from_week_start` = 1 WHERE `code` = 'fuel_weekly_verify'");
+    return $db;
+};
+$db = $a4();
+$sel = $run22($db, $m22);
+ck('ανά kind: event 4 · step 3 · ui 29 · σύνολο 36', $sel[0] === array(array('event', 4), array('step', 3), array('ui', 29)) && $sel[1] === array(array(36)), json_encode($sel));
+ck('σημαίες: fuel_weekly 0 0 0 0 0 · fuel_weekly_verify 0 0 0 0 1 (Δ-Α8 μένει)',
+   $sel[2] === array(array('fuel_weekly', 0, 0, 0, 0, 0), array('fuel_weekly_verify', 0, 0, 0, 0, 1)), json_encode($sel[2]));
+ck('ΚΑΝΕΝΑ βήμα για το fuel_weekly_verify ή άλλον τύπο',
+   (int)$db->query("SELECT COUNT(*) FROM `4a_task_steps` WHERE `task_code` <> 'fuel_weekly'")->fetchColumn() === 0);
+// Η ΔΟΜΗ των βημάτων = του fixture 'fuel' πάνω στο οποίο τρέχουν όλα τα τεστ λογικής αυτού του αρχείου.
+$shape = function ($d) {
+    return $d->query("SELECT `kind`, `step_code`, `sort_order`, `action`, `done_event`, `is_final`, `alert` FROM `4a_task_steps`
+                       WHERE `kind` = 'step' OR `step_code` IN ('upload_failed', 'admin_override', 'done') ORDER BY `kind`, `step_code`")->fetchAll(PDO::FETCH_NUM);
+};
+$fx = fresh_db('fuel');
+$sx = $shape($fx); $s22 = $shape($db);
+// Μόνη διαφορά: upload_failed κόκκινο (✏️ 14/10)· στο fixture όχι.
+foreach ($sx as $i => $r) if ($r[1] === 'upload_failed') $sx[$i][6] = 1;
+ck('δομή βημάτων (sort, action, done_event, is_final) = του fixture «fuel» των τεστ (upload_failed κόκκινο, ✏️ 14/10)', $sx == $s22, json_encode(array($sx, $s22)));
+$run22($db, $m22);
+ck('ξανά το 22a: ΙΔΙΟ (idempotent)', (int)$db->query('SELECT COUNT(*) FROM `4a_task_steps`')->fetchColumn() === 36);
+$rs = $run22($db, $r22);
+ck('rollback: 0 γραμμές, allow_* = 1, close_from_week_start του verify μένει 1',
+   $rs[0] === array(array(0)) && $rs[1] === array(array('fuel_weekly', 1, 1, 1, 1, 0), array('fuel_weekly_verify', 1, 1, 1, 1, 1)), json_encode($rs));
+$run22($db, $r22);
+ck('ξανά το rollback: ΙΔΙΟ (idempotent)', (int)$db->query('SELECT COUNT(*) FROM `4a_task_steps`')->fetchColumn() === 0);
+
+echo "\n═══ Α4 πάνω στο ΠΡΑΓΜΑΤΙΚΟ seed: η εβδομάδα που υπάρχει ήδη (#109) ═══\n";
+// Όπως το live: η εβδομάδα φτιάχτηκε ΠΡΙΝ από τα βήματα, ρίζα in_progress στον 1, verify open.
+$db = $a4();
+$w = (int)tasks_create_system($db, 'fuel_weekly', 'fuel:2026-10-26', $PAYLOAD, 'BOTH', '2026-10-23 19:00:00')['task_id'];
+$v = (int)tasks_create_system($db, 'fuel_weekly_verify', 'fuel:2026-10-26', $PAYLOAD, 'BOTH', '2026-10-26 17:00:00')['task_id'];
+$db->exec("UPDATE `4a_tasks` SET `assigned_to` = 1, `status` = 'in_progress' WHERE `id` = $w");
+$db->exec("UPDATE `4a_tasks` SET `assigned_to` = NULL, `status` = 'open' WHERE `id` = $v");
+ck('ΠΡΙΝ το Α4: λήψη -> 409, ΚΑΝΕΝΑ γεγονός (το παλιό κουμπί δεν μετρά ως ①)',
+   tasks_download($db, $S(1), $A, $w)['code'] === 409 && !array_filter($events($db, $w), function ($e) { return in_array($e['event'], array('downloaded', 'file_viewed'), true); }));
+$run22($db, $m22);
+$t = $listOne($db, 1, $A, $w);
+ck('ΜΕΤΑ: ① ΤΩΡΑ (step download), τίποτα «έγινε», κανένα γεγονός βήματος',
+   $t['step']['code'] === 'download' && !array_filter($t['steps'], function ($x) { return $x['done']; }) && $t['timeline'] === array(), json_encode($t['step']));
+ck('...τα κείμενα από το 22a: «Αναμονή λήψης αρχείου» · 29 κείμενα κάρτας', $t['step']['status_label'] === 'Αναμονή λήψης αρχείου' && count((array)$t['ui']) === 29);
+ck('...allow όλα false', $t['allow'] === array('na' => false, 'release' => false, 'reject' => false, 'steal' => false), json_encode($t['allow']));
+ck('γενικό «Ολοκλήρωση» και «Αφήνω» -> 409, και στο verify «Αφήνω»/«Δεν εφαρμόζεται» -> 409',
+   tasks_done($db, $S(1), $A, $w)['code'] === 409 && tasks_release($db, $S(1), $A, $w)['code'] === 409
+   && tasks_na($db, $S(2), $A, $v, 'x')['code'] === 409);
+ck('λήψη από admin που ΔΕΝ είναι ανάδοχος: file_viewed, το ① μένει', tasks_download($db, $S(9), $A, $w)['event'] === 'file_viewed'
+   && $listOne($db, 1, $A, $w)['step']['code'] === 'download');
+// Β3γ: ανάθεση ΠΡΙΝ το Β4 στον 2 (= «Κατερίνα»)· εδώ μετά, ίδιο αποτέλεσμα για τα βήματα.
+ck('ανάθεση από admin -> in_progress στον νέο ανάδοχο, ① ΤΩΡΑ ακόμα', tasks_assign($db, $S(9), $A, $w, 2)['ok'] === true
+   && $listOne($db, 2, $A, $w)['step']['code'] === 'download');
+ck('ο ΠΑΛΙΟΣ ανάδοχος (1) κατεβάζει μετά την ανάθεση: file_viewed, το ① μένει', tasks_download($db, $S(1), $A, $w)['event'] === 'file_viewed'
+   && $listOne($db, 2, $A, $w)['step']['code'] === 'download');
+ck('ο νέος ανάδοχος κατεβάζει: downloaded, ② ΤΩΡΑ', tasks_download($db, $S(2), $A, $w)['event'] === 'downloaded'
+   && $listOne($db, 2, $A, $w)['step']['code'] === 'upload');
+ck('② με τα 4 νούμερα: κλείνει (uploaded), ③ ξεκλειδώνει', tasks_upload($db, $S(2), $A, $w, $NUMS)['ok'] === true
+   && $row($db, $w)['status'] === 'done' && (int)tasks_fetch_one($db, $v)['locked'] === 0);
+$run22($db, $r22);
+ck('rollback μετά: η κλειστή μένει κλειστή, τα γεγονότα μένουν', $row($db, $w)['status'] === 'done'
+   && count(array_filter($events($db, $w), function ($e) { return in_array($e['event'], array('downloaded', 'uploaded'), true); })) === 2);
+
 printf("\n═══ ΣΥΝΟΛΟ: %d OK, %d ΛΑΘΟΣ ═══\n\n", $pass, $fail);
 exit($fail ? 1 : 0);

@@ -712,6 +712,11 @@ console.log('\n═══ Κάρτα βημάτων: κείμενα από τη �
   ck('κάθε uiText(…, κλειδί) του κώδικα είναι στο STEP_UI_KEYS, και αντίστροφα', JSON.stringify(used) === JSON.stringify(keys),
      'κώδικας: ' + used.join(',') + ' | λίστα: ' + keys.join(','));
   ck('το UI των τεστ καλύπτει ΟΛΑ τα κλειδιά', keys.every(k => typeof UI[k] === 'string'), keys.filter(k => typeof UI[k] !== 'string').join(','));
+  // Α4 (22/10): το migration ενεργοποίησης γράφει ΑΚΡΙΒΩΣ τα STEP_UI_KEYS (κανένα [κλειδί], κανένα περιττό).
+  const m22 = fs.readFileSync('db/migrations/2026-10-22a_fuel_weekly_activate.sql', 'utf8');
+  const ui22 = [...m22.matchAll(/\('fuel_weekly', 'ui', '(\w+)',\s*'([^']*)'\)/g)].map(m => m[1]).sort();
+  ck(`22a: τα ${ui22.length} κείμενα kind = ui = STEP_UI_KEYS του κώδικα (ούτε λείπει ούτε περισσεύει)`, JSON.stringify(ui22) === JSON.stringify(keys),
+     'λείπουν: ' + keys.filter(k => !ui22.includes(k)).join(',') + ' | περισσεύουν: ' + ui22.filter(k => !keys.includes(k)).join(','));
   const other = Object.assign({}, UI, { h_do: 'ΑΛΛΟ ΚΕΙΜΕΝΟ', menu_override: 'Άλλη παράκαμψη' });
   const h = api.taskRow(stepTask(STEP.download, { ui: other }));
   ck('το κείμενο αλλάζει ΜΟΝΟ από τη βάση', h.includes('ΑΛΛΟ ΚΕΙΜΕΝΟ') && h.includes('Άλλη παράκαμψη') && !h.includes('ΤΙ ΠΡΕΠΕΙ ΝΑ ΚΑΝΕΙΣ'));
