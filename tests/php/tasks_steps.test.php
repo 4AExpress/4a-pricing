@@ -794,11 +794,11 @@ ck('22a: 29 κείμενα kind = ui, κανένα κενό', count($ui22) === 2
 ck('22a: menu_view / tip_view ΕΚΤΟΣ (ο κώδικας δεν τα διαβάζει)', !isset($ui22['menu_view']) && !isset($ui22['tip_view']));
 $tips = array_filter($ui22, function ($k) { return strpos($k, 'tip_') === 0; }, ARRAY_FILTER_USE_KEY);
 ck('22a: κάθε tooltip (7) «αγγλικός όρος — ελληνική εξήγηση», κανένα ✓ / ✗', count($tips) === 7
-   && !array_filter($tips, function ($t) { return !preg_match('/^[A-Z][A-Za-z ]+ — \p{Greek}/u', $t) || preg_match('/[✓✗]/u', $t); }), implode(' | ', $tips));
-ck('22a: τα 3 νέα tooltip (20/10)',
-   $ui22['tip_redownload'] === 'Download again — Κατεβάζει ξανά το αρχείο. Καταγράφεται, δεν αλλάζει το βήμα'
-   && $ui22['tip_upload_wait'] === 'Confirm upload — Επιβεβαιώνει το ανέβασμα στο CMS. Ανοίγει μετά τη λήψη του αρχείου'
-   && $ui22['tip_upload_done'] === 'Confirm upload — Επιβεβαιώνει το ανέβασμα στο CMS. Έγινε ήδη, δεν ξαναγίνεται');
+   && !array_filter($tips, function ($t) { return !preg_match('/^[A-Z][A-Za-z -]+ — \p{Greek}/u', $t) || preg_match('/[✓✗]/u', $t); }), implode(' | ', $tips));
+ck('22a: τα 3 νέα tooltip (τελικά κείμενα 20/10)',
+   $ui22['tip_redownload'] === 'Re-download — Κατεβάζει ξανά το ίδιο αρχείο. Καταγράφεται στο ιστορικό· το βήμα μένει «έγινε».'
+   && $ui22['tip_upload_wait'] === 'Confirm upload — Η πλατφόρμα δεν ανεβάζει το αρχείο. Πάτα το αφού το ανεβάσεις εσύ στο CMS.'
+   && $ui22['tip_upload_done'] === 'Uploaded — Δηλώθηκε ότι ανέβηκε στο CMS. Δεν χρειάζεται να ξαναγίνει.');
 
 echo "\n═══ Migration 2026-10-22a (Α4): εφαρμογή σε βάση όπως το live ═══\n";
 $a4 = function () use ($cols) {

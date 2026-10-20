@@ -9,8 +9,8 @@
 --     kind event  upload_failed (κόκκινο) · admin_override (κόκκινο) ·
 --                 override_acknowledged · done (παλιά ροή)
 --     kind ui     29 κείμενα της κάρτας = STEP_UI_KEYS του frontend/tasks.html
---     Κείμενα: K4a_review_1014.md (εγκρίθηκαν 14/10). Τρία tooltip ΝΕΑ (20/10,
---     κανόνας: αγγλικός όρος — τι κάνει το κουμπί, κανένα σύμβολο):
+--     Κείμενα: K4a_review_1014.md (εγκρίθηκαν 14/10). Τρία tooltip ΝΕΑ, τελικά
+--     κείμενα του Απόστολου 20/10 (αγγλικός όρος — τι κάνει το κουμπί):
 --     tip_redownload, tip_upload_wait, tip_upload_done.
 --     menu_view / tip_view (14/10) ΔΕΝ μπαίνουν: ο κώδικας δεν τα διαβάζει πια.
 --  2. 4a_task_types: allow_na = allow_release = allow_reject = allow_steal = 0
@@ -51,9 +51,9 @@ INSERT INTO `4a_task_steps` (`task_code`, `kind`, `step_code`, `text`) VALUES
   ('fuel_weekly', 'ui', 'who',             'Το κάνει: {name}'),
   ('fuel_weekly', 'ui', 'menu_override',   'Παράκαμψη (admin)…'),
   ('fuel_weekly', 'ui', 'tip_override',    'Override — Κλείνει την εργασία χωρίς τα βήματά της, με υποχρεωτικό λόγο. Καταγράφεται και οι άλλοι διαχειριστές βλέπουν κόκκινο σήμα'),
-  ('fuel_weekly', 'ui', 'tip_redownload',  'Download again — Κατεβάζει ξανά το αρχείο. Καταγράφεται, δεν αλλάζει το βήμα'),
-  ('fuel_weekly', 'ui', 'tip_upload_wait', 'Confirm upload — Επιβεβαιώνει το ανέβασμα στο CMS. Ανοίγει μετά τη λήψη του αρχείου'),
-  ('fuel_weekly', 'ui', 'tip_upload_done', 'Confirm upload — Επιβεβαιώνει το ανέβασμα στο CMS. Έγινε ήδη, δεν ξαναγίνεται'),
+  ('fuel_weekly', 'ui', 'tip_redownload',  'Re-download — Κατεβάζει ξανά το ίδιο αρχείο. Καταγράφεται στο ιστορικό· το βήμα μένει «έγινε».'),
+  ('fuel_weekly', 'ui', 'tip_upload_wait', 'Confirm upload — Η πλατφόρμα δεν ανεβάζει το αρχείο. Πάτα το αφού το ανεβάσεις εσύ στο CMS.'),
+  ('fuel_weekly', 'ui', 'tip_upload_done', 'Uploaded — Δηλώθηκε ότι ανέβηκε στο CMS. Δεν χρειάζεται να ξαναγίνει.'),
   ('fuel_weekly', 'ui', 'tip_more',        'More — Υπόλοιπες ενέργειες'),
   ('fuel_weekly', 'ui', 'ov_box',          'Παράκαμψη από {name} · {at}'),
   ('fuel_weekly', 'ui', 'ov_ack',          'Το είδα'),
