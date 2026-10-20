@@ -19,10 +19,19 @@ require_once __DIR__ . '/../../api/fuel_lib.php';
 
 class TestPDO extends PDO
 {
+    // Σταθερό ρολόι ('Y-m-d H:i:s'), ΜΟΝΟ όταν το ζητά το τεστ: NOW() και CURRENT_TIMESTAMP (και
+    // στις προεπιλογές των πινάκων) γίνονται αυτή η χρονοσφραγίδα, ώστε δύο δοκιμαστικές βάσεις
+    // να συγκρίνονται byte-προς-byte ΜΑΖΙ με τις ώρες τους (20/10: χωρίς αυτό 3/200 αποτυχίες).
+    // null = το πραγματικό «τώρα», όπως πριν. Ίδιο με το tasks_steps.test.php.
+    public $clock = null;
     private function fix($sql)
     {
         $sql = preg_replace('/\bINSERT\s+IGNORE\b/i', 'INSERT OR IGNORE', $sql);
         $sql = preg_replace('/JSON_UNQUOTE\(JSON_EXTRACT\(([^()]*)\)\)/', 'json_extract($1)', $sql);
+        if ($this->clock !== null) {
+            $q = "'" . $this->clock . "'";
+            return str_replace(array('NOW()', 'CURRENT_TIMESTAMP'), array($q, $q), $sql);
+        }
         return str_replace('NOW()', "datetime('now')", $sql);
     }
     // Κάθε SQL που ετοιμάστηκε: για τα τεστ «καμία νέα κλήρωση».
@@ -64,10 +73,11 @@ $week = function ($ws, $prices) use ($PAYLOAD) {
 $P19 = array('AIR' => '48.50', 'ROAD' => '40.75', 'AIR_CY' => '51.41', 'NONE' => null);
 $P26 = array('AIR' => '49.00', 'ROAD' => '40.75', 'AIR_CY' => '51.94', 'NONE' => null);
 
-function fresh_db($withVerifier = true)
+function fresh_db($withVerifier = true, $clock = null)
 {
     global $SEED_CHECKS, $SEED_SETTINGS;
     $db = new TestPDO('sqlite::memory:');
+    $db->clock = $clock;   // ΠΡΙΝ από τους πίνακες: πιάνει και τις προεπιλογές τους
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     foreach (array(
         'CREATE TABLE `4a_clients` (`id` INTEGER PRIMARY KEY, `name` TEXT, `country` TEXT, `account` TEXT,
@@ -264,14 +274,15 @@ ck('η σωστή ΔΕΝ είναι η μόνη τιμή με «γείτονα»
 // ═════════════════════════════════════════════════════════════════════
 echo "\n═══ ΑΝΕΝΕΡΓΟΣ: χωρίς πίνακες, ή εβδομάδα πριν το from_week ═══\n";
 $lists = array();
+// Σταθερό ρολόι και στις δύο βάσεις: σύγκριση ΟΛΩΝ των πεδίων, και των ωρών.
+$CLOCK = '2026-10-20 12:00:00';
 foreach (array(false, true) as $with) {
-    $db = fresh_db($with);
+    $db = fresh_db($with, $CLOCK);
     list($w, $v) = $weekChain($db, '2026-10-19', $P19);
-    $l = tasks_list($db, $S(1), $ADM, 'all')['tasks'];
-    foreach ($l as $i => $t) unset($l[$i]['created_at']);
-    $lists[] = json_encode($l, JSON_UNESCAPED_UNICODE);
+    $lists[] = json_encode(tasks_list($db, $S(1), $ADM, 'all')['tasks'], JSON_UNESCAPED_UNICODE);
 }
 ck('εβδομάδα 19/10 (< from_week): λίστα ΙΔΙΑ byte-προς-byte με και χωρίς πίνακες επαληθευτή', $lists[0] === $lists[1]);
+ck('...ΜΑΖΙ με τις ώρες (σταθερό ρολόι): created_at μέσα στη σύγκριση', strpos($lists[1], '"created_at":"' . $CLOCK . '"') !== false);
 ck('...κανένα `verifier`, και τα prices στη θέση τους', strpos($lists[1], '"verifier"') === false && strpos($lists[1], 'prices') !== false);
 $db = fresh_db(true);
 list($w, $v) = $weekChain($db, '2026-10-19', $P19);
