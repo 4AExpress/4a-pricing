@@ -1812,6 +1812,17 @@ console.log('\n═══ Επαληθευτής: ③ της λωρίδας ═�
   ck('...η λάθος γραμμή με τύπο και «επιλέχθηκε 52.69% · αναμενόμενη 51.94%»',
      h.includes('1731000 · GR-Z9 · S1027 · Air Cyprus · επιλέχθηκε 52.69% · αναμενόμενη 51.94%'), h);
   ck('...και «↺ Επαναφορά επαληθευτή…» -> openVfReset(91)', h.includes('onclick="openVfReset(91)"') && h.includes('↺ Επαναφορά επαληθευτή…'));
+  // ③ ΕΓΙΝΕ (20/10): «Επαληθεύτηκε n/total · …» από το verifier.passed του server.
+  {
+    const r3 = (ts, me, admin) => rowsOf(S(ts, '2026-10-26 18:00:00', me, admin))[2];
+    const viP = { round: 1, locked: false, override: null, passed: { n: 4, total: 4 } };
+    ck('③ ΕΓΙΝΕ με επαληθευτή: «Επαληθεύτηκε 4/4 · Δευ 26/10 10:30 · u2» (admin και manager)',
+       r3(vfWeek(3, viP), 9, true).cls === 'done' && r3(vfWeek(3, viP), 9, true).html.includes('Επαληθεύτηκε 4/4 · Δευ 26/10 10:30 · u2')
+       && r3(vfWeek(3, viP), 2, false).html.includes('Επαληθεύτηκε 4/4 · Δευ 26/10 10:30 · u2'), r3(vfWeek(3, viP), 9, true).html);
+    ck('...χωρίς επαληθευτή, ή κλεισμένο με παράκαμψη (passed null): «Επαληθεύτηκε · Δευ 26/10 10:30 · u2» όπως πριν',
+       r3(stripWeek(3), 9, true).html.includes('Επαληθεύτηκε · Δευ 26/10 10:30 · u2')
+       && r3(vfWeek(3, Object.assign({}, viP, { passed: null })), 9, true).html.includes('Επαληθεύτηκε · Δευ 26/10 10:30 · u2'));
+  }
   // ΚΑΡΤΑ 19/10: το ③ σε «wrong» — μπάρα ✗, γραμμή «✗ ΛΑΘΟΣ», σήμα ΜΕΣΑ στη γραμμή ③, κεφαλίδα κόκκινη.
   {
     const r = rowsOf(h), nd = nodesOf(h);
@@ -1917,9 +1928,9 @@ console.log('\n═══ Επαληθευτής: κλειδιά και κωδι�
   const used = new Set([...[grab('vfFormHtml'), grab('vfAlertHtml'), grab('vfReasonHtml'), grab('vfLineText'), grab('fuelStripHtml'),
     grab('fuelStripMenu'), grab('vfSend'), grab('vfDate'), grab('histWhat')].join('\n').matchAll(/'(vf_\w+|color_vf_\w+)'/g)].map(m => m[1])
     .concat(Object.values(VF_ERR), Object.values(VF_EV)));
-  ck(`23c: ${keys.length} κλειδιά, κάθε κλειδί χρησιμοποιείται από την οθόνη`, keys.length === 62 && keys.every(k => used.has(k)), keys.filter(k => !used.has(k)).join(','));
+  ck(`23c: ${keys.length} κλειδιά, κάθε κλειδί χρησιμοποιείται από την οθόνη`, keys.length === 63 && keys.every(k => used.has(k)), keys.filter(k => !used.has(k)).join(','));
   const rb = fs.readFileSync('db/migrations/rollback/2026-10-23c_ui_texts_verifier.rollback.sql', 'utf8');
-  ck('rollback 23c: σβήνει ΑΚΡΙΒΩΣ τα ίδια κλειδιά', keys.every(k => rb.includes("'" + k + "'")) && (rb.match(/'(vf_\w+|color_vf_\w+)'/g) || []).length === 62);
+  ck('rollback 23c: σβήνει ΑΚΡΙΒΩΣ τα ίδια κλειδιά', keys.every(k => rb.includes("'" + k + "'")) && (rb.match(/'(vf_\w+|color_vf_\w+)'/g) || []).length === 63);
   const hex = h => { const n = parseInt(h.slice(1), 16), c = [n >> 16, n >> 8 & 255, n & 255].map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; });
     return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
   const ratio = (a, b) => { const x = hex(a), y = hex(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };

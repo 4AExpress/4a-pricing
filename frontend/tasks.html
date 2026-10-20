@@ -1638,7 +1638,9 @@ function fuelStripHtml(wk, root){
       hint: pageText('fs_h2'), act: own(root) && open(root) ? btn(pageText('fs_b2'), `openUpload(${root.id})`) : '', again: '' },
     { label: pageText('strip_l3'), who: ver, due: ver ? ver.due_at : null, after: null, opens: monOpen,
       at: vc.closed_at || (ver && ver.closed_at),
-      done: pageText('fs_d3', { at: when(vc.closed_at || (ver && ver.closed_at)), name: vc.closed_by_name || '—' }),
+      // Με επαληθευτή: «Επαληθεύτηκε n/total» από το verify_ok του server· χωρίς (ή με παράκαμψη): fs_d3.
+      done: pageText(vi && vi.passed ? 'vf_d3_ok' : 'fs_d3', Object.assign({ at: when(vc.closed_at || (ver && ver.closed_at)), name: vc.closed_by_name || '—' },
+                     vi && vi.passed ? { n: vi.passed.n, total: vi.passed.total } : {})),
       hint: pageText('fs_h3'), act: ver && own(ver) && open(ver) ? btn(pageText('fs_b3'), vi ? `openVerifier(${ver.id})` : `act(${ver.id},'done')`) : '', again: '',
       wrong: pageText('vf_strip_locked') }];
   // «→ {ποιος} · {πότε ανοίγει}»: πότε = μετά το προηγούμενο, ή Δευ 00:00 για το ③.

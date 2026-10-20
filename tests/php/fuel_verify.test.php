@@ -380,6 +380,10 @@ ck('γεγονός verify_ok «επαλήθευση στο CMS: 4/4 σωστές
 $m = json_decode($last['meta'], true);
 ck('meta: round 1, total 4, wrong [], 4 γραμμές ok — ΧΩΡΙΣ τιμές', $m['round'] === 1 && $m['total'] === 4 && $m['wrong'] === array()
    && count(array_filter($m['lines'], function ($l) { return $l['ok'] === true; })) === 4 && !preg_match('/\d+\.\d\d/', $last['meta']), $last['meta']);
+$pa = $byId(tasks_list($dbOk, $S(1), $ADM, 'all')['tasks'], $vO)['verifier'];
+$pm = fuel_verify_info($dbOk, $S(2), $MGR, tasks_fetch_one($dbOk, $vO), tasks_steps_events($dbOk, array((int)$vO))[(int)$vO]);   // κλειστή: όχι στο «mine»
+ck('`verifier.passed` {n 4, total 4} από το verify_ok, ΙΔΙΟ για admin και manager (πλήθη, καμία τιμή)',
+   $pa['passed'] === array('n' => 4, 'total' => 4) && $pm['passed'] === array('n' => 4, 'total' => 4), json_encode(array($pa, $pm)));
 ck('4 απαντήσεις: ποιος, γραμμή, τιμή, σωστή', $cnt($dbOk, 'SELECT COUNT(*) FROM `4a_fuel_verify_answers` WHERE `is_correct` = 1 AND `user_id` = 2 AND `round` = 1') === 4);
 ck('ξανά υποβολή σε κλειστή: 409 ήδη κλειστή', !empty(fuel_verify_submit($dbOk, $S(2), $MGR, $vO, $rO, $MON)['already_closed']));
 $fc = fuel_verify_form($dbOk, $S(2), $MGR, $vO);
@@ -414,6 +418,7 @@ ck('admin: κόκκινο σήμα (alert) με γραμμή, τύπο, ποιο
    && $vi['alert']['wrong'][0]['fuel_type'] === 'AIR_CY' && $vi['alert']['at'] !== null, json_encode($vi));
 $vm = $byId(tasks_list($dbW, $S(2), $MGR, 'mine')['tasks'], $vW)['verifier'];
 ck('manager: locked true, ΧΩΡΙΣ alert', $vm['locked'] === true && !array_key_exists('alert', $vm));
+ck('μετά από λάθος: `passed` null (admin και manager)', array_key_exists('passed', $vi) && $vi['passed'] === null && $vm['passed'] === null);
 $h = tasks_history($dbW, $S(1), $ADM, $vW);
 ck('ιστορικό: verify_wrong με ποιος/πότε', count(array_filter($h['events'], function ($x) { return $x['event'] === 'verify_wrong' && $x['actor_name'] === 'u2'; })) === 1);
 
@@ -501,6 +506,7 @@ ck('ιστορικό manager: ίδιες γραμμές και ✓/✗, ΧΩΡΙ
    && !preg_match('/picked|expected/', json_encode($hvm)), json_encode($hvm));
 $hok = array_values(array_filter($hW, function ($e) { return $e['event'] === 'verify_ok'; }))[0]['verify'];
 ck('ιστορικό: και ο γύρος 2 (verify_ok) με τις δικές του γραμμές', $hok['round'] === 2 && count(array_filter($hok['lines'], function ($l) { return $l['ok'] === true; })) === 4);
+ck('γύρος 2 σωστός μετά την επαναφορά: `passed` {n 4, total 4}', $aw['verifier']['passed'] === array('n' => 4, 'total' => 4), json_encode($aw['verifier']));
 ck('ιστορικό: τα άλλα γεγονότα ΧΩΡΙΣ `verify`', !array_filter($hW, function ($e) { return !in_array($e['event'], array('verify_ok', 'verify_wrong'), true) && isset($e['verify']); }));
 $dbA = fresh_db(); list($wA, $vA) = $weekChain($dbA, '2026-10-26', $P26, $P19);
 $fA = fuel_verify_form($dbA, $S(1), $ADM, $vA); $aA = $rightOf($fA); $lA = $fA['form']['lines'][1];

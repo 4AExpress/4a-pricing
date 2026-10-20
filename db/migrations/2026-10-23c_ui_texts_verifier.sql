@@ -52,6 +52,7 @@ INSERT INTO `4a_ui_texts` (`scope`, `k`, `kind`, `text`) VALUES
   ('tasks',   'vf_wrong',            'text',  '✗ {n} από {total} γραμμές δεν συμφωνούν με το CMS. Ο επαληθευτής κλείδωσε και περιμένει διαχειριστή.'),
   ('tasks',   'vf_locked',           'text',  '🔒 Κλειδωμένος μετά από λάθος · {at} · {name} · περιμένει επαναφορά από διαχειριστή'),
   ('tasks',   'vf_strip_locked',     'text',  '🔒 Κλειδωμένο · περιμένει διαχειριστή'),
+  ('tasks',   'vf_d3_ok',            'text',  'Επαληθεύτηκε {n}/{total} · {at} · {name}'),
   ('tasks',   'vf_alert',            'text',  '✗ Λάθος επαλήθευση {n}/{total} · {at} · {name}'),
   ('tasks',   'vf_alert_line',       'text',  '{client} · {station}-{zone} · {service} · {type}'),
   ('tasks',   'vf_line_values',      'text',  ' · επιλέχθηκε {picked}% · αναμενόμενη {expected}%'),
@@ -97,14 +98,14 @@ INSERT INTO `4a_ui_texts` (`scope`, `k`, `kind`, `text`) VALUES
 ON DUPLICATE KEY UPDATE `k` = `k`;
 
 -- ── Επαλήθευση ────────────────────────────────────────────────────────
--- Αναμενόμενο: 62
+-- Αναμενόμενο: 63
 SELECT COUNT(*) AS `νέα_κλειδιά`
   FROM `4a_ui_texts`
  WHERE `scope` = 'tasks'
    AND `k` IN ('vf_title', 'vf_hint', 'vf_col_client', 'vf_col_zone', 'vf_col_service', 'vf_col_type',
                'vf_col_pick', 'vf_zone', 'vf_option', 'vf_expected', 'vf_send', 'vf_cancel',
                'vf_tip_send', 'vf_gate', 'vf_line_ok', 'vf_line_wrong', 'vf_done', 'vf_wrong',
-               'vf_locked', 'vf_strip_locked', 'vf_alert', 'vf_alert_line', 'vf_line_values',
+               'vf_locked', 'vf_strip_locked', 'vf_d3_ok', 'vf_alert', 'vf_alert_line', 'vf_line_values',
                'vf_tip_dl_locked', 'vf_reset_btn', 'vf_tip_reset', 'vf_reset_title', 'vf_reset_hint',
                'vf_reason', 'vf_reset_send', 'vf_tip_reset_self', 'vf_ov_btn', 'vf_ov_title',
                'vf_ov_warn', 'vf_ov_send', 'vf_ov_box', 'vf_ov_ack', 'vf_tip_ack', 'vf_ev_ok',
@@ -115,6 +116,6 @@ SELECT COUNT(*) AS `νέα_κλειδιά`
                'vf_err_use_verifier', 'vf_err_no_download', 'color_vf_wrong', 'color_vf_ok',
                'color_vf_pick');
 
--- Αναμενόμενο (μετά τα 15b και 19b): clients 2 · common 2 · tasks 105
+-- Αναμενόμενο (μετά τα 15b, 19b και 21a): clients 2 · common 3 · tasks 141
 SELECT `scope`, COUNT(*) AS `κλειδιά`
   FROM `4a_ui_texts` GROUP BY `scope` ORDER BY `scope`;

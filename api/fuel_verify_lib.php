@@ -618,7 +618,14 @@ function fuel_verify_info($db, $session, $perms, $task, array $events)
 {
     if (!in_array((string)$task['task_code'], fuel_verify_types($db), true) || !fuel_verify_active($db, $task)) return null;
     $state = fuel_verify_state($events);
-    $info  = ['round' => $state['round'], 'locked' => $state['locked'], 'override' => tasks_steps_override($events)];
+    $info  = ['round' => $state['round'], 'locked' => $state['locked'], 'override' => tasks_steps_override($events), 'passed' => null];
+    // ③ ΕΓΙΝΕ: «Επαληθεύτηκε n/total» από το ΤΕΛΕΥΤΑΙΟ verify_ok (πλήθη, καμία τιμή: για όλους).
+    foreach ($events as $e) {
+        if ($e['event'] !== 'verify_ok') continue;
+        $m = is_array($e['meta']) ? $e['meta'] : [];
+        $t = isset($m['total']) ? (int)$m['total'] : 0;
+        $info['passed'] = $t > 0 ? ['n' => $t - (isset($m['wrong']) && is_array($m['wrong']) ? count($m['wrong']) : 0), 'total' => $t] : null;
+    }
     if (fuel_verify_can_see($perms)) {
         $w = $state['wrong'];
         $info['alert'] = null;
