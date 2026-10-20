@@ -21,11 +21,20 @@ require_once __DIR__ . '/../../api/fuel_lib.php';
 
 class TestPDO extends PDO
 {
+    // Σταθερό ρολόι ('Y-m-d H:i:s'), ΜΟΝΟ όταν το ζητά το τεστ: NOW() και CURRENT_TIMESTAMP (και
+    // στις προεπιλογές των πινάκων) γίνονται αυτή η χρονοσφραγίδα. Έτσι δύο δοκιμαστικές βάσεις
+    // συγκρίνονται byte-προς-byte ΜΑΖΙ με τις ώρες τους (20/10: χωρίς αυτό, 4/200 αποτυχίες όταν
+    // οι δύο βάσεις έπεφταν σε διαφορετικό δευτερόλεπτο). null = το πραγματικό «τώρα», όπως πριν.
+    public $clock = null;
     private function fix($sql)
     {
         $sql = preg_replace('/\bINSERT\s+IGNORE\b/i', 'INSERT OR IGNORE', $sql);
         // tasks_held_by_steal (release/reject): η json_extract της SQLite δίνει ήδη χωρίς εισαγωγικά.
         $sql = preg_replace('/JSON_UNQUOTE\(JSON_EXTRACT\(([^()]*)\)\)/', 'json_extract($1)', $sql);
+        if ($this->clock !== null) {
+            $q = "'" . $this->clock . "'";
+            return str_replace(array('NOW()', 'CURRENT_TIMESTAMP'), array($q, $q), $sql);
+        }
         return str_replace('NOW()', "datetime('now')", $sql);
     }
     #[\ReturnTypeWillChange]
@@ -49,10 +58,13 @@ $PAYLOAD = json_decode(file_get_contents(__DIR__ . '/../frontend/fuel_weekly_pay
 /**
  * $steps: null = ΧΩΡΙΣ πίνακα 4a_task_steps (ο κώδικας πριν από το migration),
  *         'empty' = πίνακας άδειος, 'fuel' = βήματα για το fuel_weekly.
+ * $clock: σταθερό ρολόι του TestPDO (βλ. εκεί), ΠΡΙΝ από τους πίνακες ώστε να πιάνει και τις
+ *         προεπιλογές τους. null = το πραγματικό «τώρα».
  */
-function fresh_db($steps)
+function fresh_db($steps, $clock = null)
 {
     $db = new TestPDO('sqlite::memory:');
+    $db->clock = $clock;
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     foreach (array(
         'CREATE TABLE `4a_clients` (`id` INTEGER PRIMARY KEY, `name` TEXT, `country` TEXT, `account` TEXT,
@@ -150,15 +162,15 @@ $NUMS = array('total' => 69, 'merge' => 0, 'updated' => 69, 'exception' => 0);
 // ═════════════════════════════════════════════════════════════════════
 echo "\n═══ ΑΝΕΝΕΡΓΟ: λίστα ΙΔΙΑ με και χωρίς πίνακα βημάτων ═══\n";
 $lists = array();
+// Σταθερό ρολόι για ΚΑΘΕ σύγκριση δύο δοκιμαστικών βάσεων: ίδιες ώρες, άρα σύγκριση ΟΛΩΝ των πεδίων.
+$CLOCK = '2026-10-20 12:00:00';
 foreach (array(null, 'empty') as $mode) {
-    $db = fresh_db($mode);
+    $db = fresh_db($mode, $CLOCK);
     mt_srand(1);
     list($w, $v, $c, $doer) = $chain($db);
     // Ο ανάδοχος είναι τυχαίος: τον σταθεροποιούμε για να συγκριθούν οι λίστες.
     $db->exec("UPDATE `4a_tasks` SET `assigned_to` = 1 WHERE `id` = $w");
-    $l = tasks_list($db, $S(1), $A, 'all')['tasks'];
-    foreach ($l as $i => $t) unset($l[$i]['created_at']);
-    $lists[] = json_encode($l, JSON_UNESCAPED_UNICODE);
+    $lists[] = json_encode(tasks_list($db, $S(1), $A, 'all')['tasks'], JSON_UNESCAPED_UNICODE);
 }
 ck('tasks_list: χωρίς πίνακα === πίνακας άδειος (byte-προς-byte)', $lists[0] === $lists[1]);
 ck('tasks_list: κανένα step / timeline / override', strpos($lists[1], '"step"') === false
@@ -618,7 +630,6 @@ $clientJson = function ($db) use ($S, $A) {
     foreach (array('all', 'queue') as $view) {
         foreach (tasks_list($db, $S(1), $A, $view)['tasks'] as $t) {
             if ($t['client_id'] === null) continue;
-            unset($t['created_at']);
             $out[] = $t;
         }
     }
@@ -650,15 +661,17 @@ $scenario = function ($db) use ($S, $P, $chain, $reasons) {
     $r[] = tasks_claim($db, $S(4), $P, $cr);                // κλειστή -> 409
     return array_map(function ($x) { return $x['code']; }, $r);
 };
-$old = fresh_db(null);
+$old = fresh_db(null, $CLOCK);
 $codesOld = $scenario($old);
-$new = fresh_db('fuel'); $cols($new);
+$new = fresh_db('fuel', $CLOCK); $cols($new);
 $new->exec("UPDATE `4a_task_types` SET `allow_release` = 0, `allow_reject` = 0, `allow_steal` = 0, `close_from_week_start` = 0 WHERE `code` = 'fuel_weekly'");
 $new->exec("UPDATE `4a_task_types` SET `close_from_week_start` = 1 WHERE `code` = 'fuel_weekly_verify'");
 $codesNew = $scenario($new);
 ck('14 ενέργειες πελάτη: ίδιοι κωδικοί απάντησης, 12 επιτυχίες και 2 «ήδη κλειστή»',
    $codesOld === $codesNew && $codesOld === array(200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 409, 409), json_encode(array($codesOld, $codesNew)));
 ck('...το JSON των εργασιών πελάτη ΙΔΙΟ byte-προς-byte (all + queue)', $clientJson($old) === $clientJson($new));
+ck('...ΜΑΖΙ με τις ώρες (σταθερό ρολόι): created_at και closed_at μέσα στη σύγκριση',
+   strpos($clientJson($new), '"created_at":"' . $CLOCK . '"') !== false && strpos($clientJson($new), '"closed_at":"' . $CLOCK . '"') !== false);
 ck('...και περιέχει κλειδωμένη εργασία πελάτη ή κλειστές (σενάριο με ουσία)', strpos($clientJson($new), '"status":"done"') !== false);
 
 echo "\n═══ Δ-Α8: verify ΔΕΝ κλείνει πριν από Δευ 00:00 (Αθήνα) του week_start ═══\n";
