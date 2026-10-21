@@ -10,7 +10,7 @@
 --  (4a_task_events) ΜΕΝΟΥΝ.
 --
 --  Γρήγορο φρένο ΧΩΡΙΣ rollback: UPDATE `4a_fuel_verify_settings`
---  SET `v` = '<επόμενη Δευτέρα>' WHERE `k` = 'from_week'.
+--  SET `v` = «επόμενη Δευτέρα» WHERE `k` = «from_week» (τα «» = εισαγωγικά SQL).
 --
 --  MySQL 8.4.6. Idempotent.
 -- =====================================================================

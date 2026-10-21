@@ -582,5 +582,13 @@ ck('from_week: εβδομάδα = from_week -> ενεργός, εβδομάδα 
 ck('ο κώδικας: from_week μέσω time_cmp / time_instant, όχι σύγκριση κειμένου', preg_match('/function fuel_verify_active\(.*?\n}\n/s', file_get_contents(__DIR__ . '/../../api/fuel_verify_lib.php'), $m)
    && strpos($m[0], 'time_cmp(time_instant(') !== false && strpos($m[0], '$ws >= $s[\'from_week\']') === false);
 
+echo "\n═══ Migrations 23a–23c και rollback: χτίζονται από τον runner του Β4 ═══\n";
+// Ο runner χωρίζει ανά «;» έξω από '…': ; ή ' μέσα σε σχόλιο τον σταματά (build_mig.sh, εύρημα 21/10 στο rollback 23a).
+foreach (array('2026-10-23a_fuel_verify', '2026-10-23b_fuel_verify_values_perm', '2026-10-23c_ui_texts_verifier') as $mg) {
+    $sql = file_get_contents(__DIR__ . '/../../db/migrations/' . $mg . '.sql') . "\n"
+         . file_get_contents(__DIR__ . '/../../db/migrations/rollback/' . $mg . '.rollback.sql');
+    ck("$mg (+ rollback): κανένα ; ή ' μέσα σε σχόλιο", !preg_match("/^\\s*--[^\\n]*[;']/m", $sql));
+}
+
 echo "\n═══ ΣΥΝΟΛΟ: $pass OK, $fail ΛΑΘΟΣ ═══\n";
 exit($fail ? 1 : 0);
