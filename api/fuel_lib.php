@@ -18,6 +18,9 @@
  * υπολογισμού, ώστε να δοκιμάζονται χωρίς σύνδεση.
  */
 
+// Προθεσμίες σε ώρα Αθήνας: η ζώνη από ΜΙΑ πηγή (time_lib.php, 21/10).
+require_once __DIR__ . '/time_lib.php';
+
 if (!function_exists('fuel_round')) {
 
 /**
@@ -410,7 +413,7 @@ function fuel_cache_load($readRow, $fetch, $write, $log)
  */
 function fuel_effective_date($weekStart)
 {
-    $d = DateTime::createFromFormat('!Y-m-d', (string)$weekStart, new DateTimeZone('UTC'));
+    $d = DateTime::createFromFormat('!Y-m-d', (string)$weekStart, new DateTimeZone(TIME_LOCAL_TZ));   // ημερολογιακή ημέρα Αθήνας
     if (!$d || $d->format('Y-m-d') !== $weekStart) return null;
     return $d->format('d-M-Y');
 }
@@ -426,7 +429,7 @@ function fuel_effective_date($weekStart)
  */
 function fuel_weekly_due_at($weekStart, $offsetDays, $time)
 {
-    $tz = new DateTimeZone('Europe/Athens');
+    $tz = new DateTimeZone(TIME_LOCAL_TZ);   // time_lib.php: προθεσμίες = ώρα Αθήνας
     $d  = DateTime::createFromFormat('!Y-m-d', (string)$weekStart, $tz);
     if (!$d || $d->format('Y-m-d') !== $weekStart) return null;
     if ($offsetDays === null || !preg_match('/^-?\d{1,3}$/', trim((string)$offsetDays))) return null;

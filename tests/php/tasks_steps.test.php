@@ -557,9 +557,10 @@ $all = tasks_list($db, $S(9), $A, 'all')['tasks'];
 ck('«Οι εργασίες μου» του άλλου: μόνο το verify, αλλά chain ΙΔΙΟ με την «Όλες»',
    count($mine) === 1 && (int)$mine[0]['id'] === $v && $mine[0]['chain'] === $byId($all, $v)['chain'], json_encode($mine[0]['chain'] ?? null));
 $r0 = $mine[0]['chain'][0];
-ck("...ρίζα done, closed_by_name = u$doer, closed_at από τη βάση (για «✓ ① Ανέβηκε από …»)",
+ck("...ρίζα done, closed_by_name = u$doer, closed_at = της βάσης (UTC) σε ώρα Αθήνας (για «✓ ① Ανέβηκε από …»)",
    $r0['status'] === 'done' && $r0['closed_by_name'] === 'u' . $doer && $r0['closed_at'] !== null
-   && $r0['closed_at'] === $db->query("SELECT `closed_at` FROM `4a_tasks` WHERE `id` = $w")->fetchColumn(), json_encode($r0));
+   && $r0['closed_at'] === time_db_to_local($db->query("SELECT `closed_at` FROM `4a_tasks` WHERE `id` = $w")->fetchColumn())
+   && $r0['closed_at'] !== $db->query("SELECT `closed_at` FROM `4a_tasks` WHERE `id` = $w")->fetchColumn(), json_encode($r0));
 ck('...το verify ξεκλείδωσε και στο chain', $mine[0]['chain'][1]['locked'] === 0 && (int)$mine[0]['locked'] === 0);
 $db->exec("UPDATE `4a_tasks` SET `status` = 'na' WHERE `id` = $w");
 ck('ρίζα «na»: το verify μένει ξεκλείδωτο στο chain (κανόνας της tasks_base_sql)',
@@ -586,10 +587,11 @@ ck('πριν τη λήψη: done_at / done_by null', $t['steps'][0]['done_at'] =
 tasks_download($db, $S($doer), $PU($doer), $w);
 $evAt = $db->query("SELECT `created_at` FROM `4a_task_events` WHERE `task_id` = $w AND `event` = 'downloaded'")->fetchColumn();
 $t = $listOne($db, 1, $A, $w);
-ck("μετά τη λήψη: done_at = ώρα του downloaded, done_by = u$doer", $t['steps'][0]['done'] === true && $t['steps'][0]['done_at'] === $evAt
+ck("μετά τη λήψη: done_at = ώρα του downloaded (UTC -> Αθήνα), done_by = u$doer", $t['steps'][0]['done'] === true && $t['steps'][0]['done_at'] === time_db_to_local($evAt)
+   && $t['steps'][0]['done_at'] !== $evAt
    && $t['steps'][0]['done_by'] === 'u' . $doer && $t['steps'][1]['done_at'] === null, json_encode($t['steps'][0]));
 tasks_download($db, $S($doer), $PU($doer), $w);
-ck('ξανά-λήψη (file_viewed): το done_at ΔΕΝ αλλάζει', $listOne($db, 1, $A, $w)['steps'][0]['done_at'] === $evAt);
+ck('ξανά-λήψη (file_viewed): το done_at ΔΕΝ αλλάζει', $listOne($db, 1, $A, $w)['steps'][0]['done_at'] === time_db_to_local($evAt));
 $db->exec("INSERT INTO `4a_task_events` (`task_id`,`event`,`actor_id`,`note`,`meta`) VALUES ($w,'downloaded',$other,'καθυστερημένη','{\"occurred_at\":\"2026-10-10 08:00:00\"}')");
 $t = $listOne($db, 1, $A, $w);
 ck('καθυστερημένη καταγραφή: done_at = occurred_at (όπως το χρονολόγιο), το τελευταίο γεγονός', $t['steps'][0]['done_at'] === '2026-10-10 08:00:00' && $t['steps'][0]['done_by'] === 'u' . $other, json_encode($t['steps'][0]));
@@ -670,8 +672,9 @@ $codesNew = $scenario($new);
 ck('14 ενέργειες πελάτη: ίδιοι κωδικοί απάντησης, 12 επιτυχίες και 2 «ήδη κλειστή»',
    $codesOld === $codesNew && $codesOld === array(200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 409, 409), json_encode(array($codesOld, $codesNew)));
 ck('...το JSON των εργασιών πελάτη ΙΔΙΟ byte-προς-byte (all + queue)', $clientJson($old) === $clientJson($new));
-ck('...ΜΑΖΙ με τις ώρες (σταθερό ρολόι): created_at και closed_at μέσα στη σύγκριση',
-   strpos($clientJson($new), '"created_at":"' . $CLOCK . '"') !== false && strpos($clientJson($new), '"closed_at":"' . $CLOCK . '"') !== false);
+ck('...ΜΑΖΙ με τις ώρες (σταθερό ρολόι, UTC στη βάση -> Αθήνα στο JSON): created_at και closed_at μέσα στη σύγκριση',
+   strpos($clientJson($new), '"created_at":"' . time_db_to_local($CLOCK) . '"') !== false && strpos($clientJson($new), '"closed_at":"' . time_db_to_local($CLOCK) . '"') !== false
+   && time_db_to_local($CLOCK) === '2026-10-20 15:00:00');
 ck('...και περιέχει κλειδωμένη εργασία πελάτη ή κλειστές (σενάριο με ουσία)', strpos($clientJson($new), '"status":"done"') !== false);
 
 echo "\n═══ Δ-Α8: verify ΔΕΝ κλείνει πριν από Δευ 00:00 (Αθήνα) του week_start ═══\n";
@@ -680,32 +683,32 @@ $gateDb = function ($withFlag) use ($cols, $chain, $S, $PU) {
     $db = fresh_db('empty'); $cols($db);
     if ($withFlag) $db->exec("UPDATE `4a_task_types` SET `close_from_week_start` = 1 WHERE `code` = 'fuel_weekly_verify'");
     list($w, $v, $c, $doer, $other) = $chain($db);
-    tasks_done($db, $S($doer), $PU($doer), $w, null, '2026-10-09 18:00:00');
+    tasks_done($db, $S($doer), $PU($doer), $w, null, '2026-10-09 15:00:00');
     return array($db, $w, $v, $doer, $other);
 };
 list($db, $w, $v, $doer, $other) = $gateDb(true);
 ck('η ρίζα (fuel_weekly, σημαία 0) έκλεισε την Παρασκευή κανονικά', $row($db, $w)['status'] === 'done');
 ck("το verify ξεκλείδωσε και πήγε στον άλλον ($other)", (int)$row($db, $v)['assigned_to'] === $other && $row($db, $v)['status'] === 'in_progress');
 $before = array($row($db, $v), $events($db, $v));
-$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-11 23:59:59');
-ck('done Κυρ 11/10 23:59:59 -> 409 «η επαλήθευση ανοίγει Δευ 12/10»', $r['code'] === 409 && $r['error'] === 'η επαλήθευση ανοίγει Δευ 12/10', $r['code'] . ' ' . $r['error']);
-$r = tasks_na($db, $S($other), $PU($other), $v, 'δοκιμή', '2026-10-09 18:05:00');
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-11 20:59:59');
+ck('done Κυρ 11/10 23:59:59 Αθήνας (20:59:59 UTC) -> 409 «η επαλήθευση ανοίγει Δευ 12/10»', $r['code'] === 409 && $r['error'] === 'η επαλήθευση ανοίγει Δευ 12/10', $r['code'] . ' ' . $r['error']);
+$r = tasks_na($db, $S($other), $PU($other), $v, 'δοκιμή', '2026-10-09 15:05:00');
 ck('na Παρ 09/10 -> 409, ίδιο μήνυμα', $r['code'] === 409 && $r['error'] === 'η επαλήθευση ανοίγει Δευ 12/10', $r['code'] . ' ' . $r['error']);
-$r = tasks_done($db, $S(9), $A, $v, null, '2026-10-10 12:00:00');
+$r = tasks_done($db, $S(9), $A, $v, null, '2026-10-10 09:00:00');
 ck('admin -> 409 κι αυτός (καμία παράκαμψη)', $r['code'] === 409);
 ck('...καμία αλλαγή στο 4a_tasks, κανένα γεγονός', array($row($db, $v), $events($db, $v)) === $before);
-$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-12 00:00:00');
-ck('done Δευ 12/10 00:00:00 -> κλείνει', $r['ok'] === true && $row($db, $v)['status'] === 'done', $r['code'] . ' ' . $r['error']);
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-11 21:00:00');
+ck('done Δευ 12/10 00:00:00 Αθήνας (Κυρ 21:00:00 UTC) -> κλείνει', $r['ok'] === true && $row($db, $v)['status'] === 'done', $r['code'] . ' ' . $r['error']);
 list($db, $w, $v, $doer, $other) = $gateDb(true);
-$r = tasks_na($db, $S($other), $PU($other), $v, 'δοκιμή', '2026-10-12 09:00:00');
+$r = tasks_na($db, $S($other), $PU($other), $v, 'δοκιμή', '2026-10-12 06:00:00');
 ck('na Δευ 12/10 09:00 -> κλείνει', $r['ok'] === true && $row($db, $v)['status'] === 'na', $r['code'] . ' ' . $r['error']);
 list($db, $w, $v, $doer, $other) = $gateDb(false);
-$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-09 18:05:00');
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-09 15:05:00');
 ck('σημαία 0: done την Παρασκευή, όπως σήμερα', $r['ok'] === true, $r['code'] . ' ' . $r['error']);
 $db = fresh_db('empty');   // χωρίς στήλη: όπως σήμερα
 list($w, $v, $c, $doer, $other) = $chain($db);
 tasks_done($db, $S($doer), $PU($doer), $w);
-$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-09 18:05:00');
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-09 15:05:00');
 ck('χωρίς στήλη close_from_week_start: done όπως σήμερα', $r['ok'] === true, $r['code'] . ' ' . $r['error']);
 list($db, $w, $v, $doer, $other) = $gateDb(true);
 $r = tasks_done($db, $S($other), $PU($other), $v);
@@ -715,8 +718,47 @@ $db->exec("UPDATE `4a_tasks` SET `payload` = '{\"kind\":\"fuel_weekly\",\"week_s
 $r = tasks_done($db, $S($other), $PU($other), $v);
 ck('πραγματική ώρα, week_start 2099-01-05 -> 409 «…Δευ 05/01»', $r['code'] === 409 && $r['error'] === 'η επαλήθευση ανοίγει Δευ 05/01', $r['code'] . ' ' . $r['error']);
 $db->exec("UPDATE `4a_tasks` SET `payload` = '{\"kind\":\"fuel_weekly\"}' WHERE `id` = $v");
-$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-09 18:05:00');
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-09 15:05:00');
 ck('σημαία 1 χωρίς week_start: FAIL OPEN, κλείνει (δεν κλειδώνει για πάντα)', $r['ok'] === true, $r['code'] . ' ' . $r['error']);
+echo "\n═══ Ζώνη ώρας (21/10): Δ-Α8 πριν / μετά την αλλαγή ώρας 25/10 03:00 ═══\n";
+// Εβδομάδα 26/10: Δευ 26/10 00:00 Αθήνας = Κυρ 25/10 22:00 UTC (ΗΔΗ UTC+2).
+// Με σταθερό +3 το όριο θα έπεφτε 21:00 UTC: ο έλεγχος 21:30 UTC το πιάνει.
+list($db, $w, $v, $doer, $other) = $gateDb(true);
+$db->exec("UPDATE `4a_tasks` SET `payload` = '{\"kind\":\"fuel_weekly\",\"week_start\":\"2026-10-26\"}' WHERE `id` = $v");
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-25 21:30:00');
+ck('εβδομάδα 26/10: Κυρ 25/10 21:30 UTC (= 23:30 Αθήνας, UTC+2) -> 409 «…Δευ 26/10» (σταθερό +3 θα άφηνε)', $r['code'] === 409 && $r['error'] === 'η επαλήθευση ανοίγει Δευ 26/10', $r['code'] . ' ' . $r['error']);
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-25 21:59:59');
+ck('...21:59:59 UTC (23:59:59 Αθήνας) -> 409', $r['code'] === 409, $r['code'] . ' ' . $r['error']);
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-25 22:00:00');
+ck('...22:00:00 UTC = Δευ 26/10 00:00 Αθήνας -> κλείνει', $r['ok'] === true, $r['code'] . ' ' . $r['error']);
+list($db, $w, $v, $doer, $other) = $gateDb(true);
+$db->exec("UPDATE `4a_tasks` SET `payload` = '{\"kind\":\"fuel_weekly\",\"week_start\":\"2026-10-19\"}' WHERE `id` = $v");
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-18 20:59:59');
+ck('εβδομάδα 19/10 (πριν την αλλαγή, UTC+3): Κυρ 18/10 20:59:59 UTC -> 409', $r['code'] === 409, $r['code'] . ' ' . $r['error']);
+$r = tasks_done($db, $S($other), $PU($other), $v, null, '2026-10-18 21:00:00');
+ck('...21:00:00 UTC = Δευ 19/10 00:00 Αθήνας -> κλείνει', $r['ok'] === true, $r['code'] . ' ' . $r['error']);
+ck('ο κώδικας του Δ-Α8 ΔΕΝ συγκρίνει μόνος του ώρες: μόνο time_reached_local', preg_match('/function tasks_close_gate\(.*?\n}\n/s', file_get_contents(__DIR__ . '/../../api/tasks_steps.php'), $m)
+   && strpos($m[0], 'time_reached_local(') !== false && !preg_match('/new DateTime\(|>=|<=|strtotime/', $m[0]));
+echo "\n═══ Ζώνη ώρας (21/10): εκπρόθεσμο ② — κλείσιμο 20:30 Αθήνας, προθεσμία 19:00 ═══\n";
+// Σταθερό ρολόι = ό,τι γράφει η MySQL του server (UTC): 23/10 17:30 UTC = 20:30 Αθήνας (EEST).
+$db = fresh_db('empty', '2026-10-23 17:30:00');
+list($w, $v, $c, $doer, $other) = $chain($db);
+$db->exec("UPDATE `4a_tasks` SET `due_at` = '2026-10-23 19:00:00' WHERE `id` = $w");
+tasks_done($db, $S($doer), $PU($doer), $w);
+$raw = $db->query("SELECT `closed_at` FROM `4a_tasks` WHERE `id` = $w")->fetchColumn();
+$ch = $byId(tasks_list($db, $S(9), $A, 'all')['tasks'], $v)['chain'][0];
+ck('η βάση γράφει UTC: closed_at = 2026-10-23 17:30:00', $raw === '2026-10-23 17:30:00', $raw);
+ck('το API στέλνει ώρα Αθήνας: chain.closed_at = 2026-10-23 20:30:00 (όχι 17:30)', $ch['closed_at'] === '2026-10-23 20:30:00', json_encode($ch));
+ck('...το due_at φεύγει ΟΠΩΣ είναι (ήδη Αθήνα): 2026-10-23 19:00:00', $ch['due_at'] === '2026-10-23 19:00:00');
+ck('...και στην εργασία της λίστας: closed_at 20:30, created_at σε Αθήνα', ($t = $listOne($db, 9, $A, $w)) && $t['closed_at'] === '2026-10-23 20:30:00' && $t['created_at'] === '2026-10-23 20:30:00', json_encode($t ? array($t['created_at'], $t['closed_at']) : null));
+ck('εκπρόθεσμο μέσω της κοινής συνάρτησης: time_db_after_local(βάση, due) = true', time_db_after_local($raw, '2026-10-23 19:00:00') === true);
+$db->exec('CREATE TABLE IF NOT EXISTS `4a_task_reject_reasons` (`code` TEXT PRIMARY KEY, `label` TEXT, `active` INTEGER)');   // το ιστορικό τον ενώνει
+$h = tasks_history($db, $S(9), $A, $w);
+ck('ιστορικό: κάθε created_at σε ώρα Αθήνας (20:30:00)', $h['ok'] === true && count($h['events']) >= 2 && count(array_filter($h['events'], function ($e) { return $e['created_at'] !== '2026-10-23 20:30:00'; })) === 0, json_encode(array_column($h['events'], 'created_at')));
+$db = fresh_db('fuel', '2026-10-26 08:45:00');
+list($w, $v, $c, $doer, $other) = $chain($db);
+tasks_download($db, $S($doer), $PU($doer), $w);
+ck('ΜΕΤΑ την αλλαγή ώρας: λήψη 26/10 08:45 UTC -> done_at 10:45 (UTC+2)', $listOne($db, 1, $A, $w)['steps'][0]['done_at'] === '2026-10-26 10:45:00', json_encode($listOne($db, 1, $A, $w)['steps'][0]));
 $db = fresh_db('empty'); $cols($db);
 ck('tasks_type_flag: άγνωστη σημαία -> εξαίρεση (ποτέ όνομα στήλης από τον χρήστη)', (function () use ($db) {
     try { tasks_type_flag($db, 'fuel_weekly', 'code` FROM x --'); return false; } catch (InvalidArgumentException $e) { return true; } })());

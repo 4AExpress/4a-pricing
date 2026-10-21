@@ -29,6 +29,8 @@ pytest tests/test_cod.py::test_case2_calculate_flat_min_fee -v
 
 Migrations (`db/migrations/`) εφαρμόζονται πριν από το SCP του κώδικα που τα χρειάζεται. Τα endpoints ΔΕΝ εκτελούν DDL. Στοιχεία πρόσβασης στον server (host, χρήστης, θύρα, διαδρομές) ΔΕΝ γράφονται σε κανένα αρχείο του repo.
 
+**Ζώνη ώρας** (από 21-10-2026). Γεγονότα / `created_at` / `closed_at` = UTC στη βάση (η σύνδεση MySQL είναι SYSTEM = UTC, και η PHP UTC) · προθεσμίες (`due_at`, «Δευ 00:00» του week_start) = ώρα Αθήνας · συγκρίσεις ΜΟΝΟ μέσω της κοινής συνάρτησης (`api/time_lib.php`: `time_now`, `time_reached_local`, `time_db_after_local`, `time_local_today`). Το API στέλνει τις στιγμές ήδη σε ώρα Αθήνας (`time_db_to_local`)· το frontend δεν μετατρέπει. Ποτέ σταθερό +2/+3 (αλλαγή ώρας), ποτέ σύγκριση κειμένου ανάμεσα σε UTC και Αθήνα.
+
 **Τέλη γραμμών**: `.gitattributes` με `* text=auto eol=lf`. Repo, δίσκος και server είναι όλα LF, άρα το md5 του δίσκου = του blob = του server.
 
 There is no build step, no bundler, no transpiler. Frontend is plain HTML/JS served directly from GitHub Pages at `https://4aexpress.github.io/4a-pricing/frontend/`.

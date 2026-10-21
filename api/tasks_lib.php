@@ -1,5 +1,8 @@
 <?php
-// tasks_lib.php | v1.7 | 16-10-2026
+// tasks_lib.php | v1.8 | 21-10-2026
+// v1.8: ζώνη ώρας (απόφαση 21/10, time_lib.php). Οι στιγμές της βάσης (UTC)
+//       φεύγουν σε ώρα Αθήνας: created_at / closed_at της εργασίας και του
+//       chain, at των ειδοποιήσεων, created_at του ιστορικού. Το due_at όπως είναι.
 // v1.7: Α3, λωρίδα βημάτων (απόφαση 16/10). Το chain στέλνει και
 //       assigned_to, notices (ειδοποιήσεις από το ιστορικό, κενές ως τη
 //       Φάση Β) και, σε τύπους με βήματα, ό,τι και η γραμμή της λίστας
@@ -30,6 +33,8 @@
 // ΚΑΘΕ ΣΥΝΑΡΤΗΣΗ ΕΝΕΡΓΕΙΑΣ επιστρέφει:
 //   ['ok' => bool, 'code' => int (HTTP), 'error' => ?string, 'task' => ?array]
 
+// Ζώνη ώρας: ΜΙΑ πηγή για κάθε «τώρα», σύγκριση και μετατροπή (21/10).
+require_once __DIR__ . '/time_lib.php';
 // Κάρτα βημάτων. Μόνο ορισμοί συναρτήσεων, τίποτα δεν εκτελείται.
 require_once __DIR__ . '/tasks_steps.php';
 
@@ -391,6 +396,8 @@ function tasks_with_action($task)
     // της ετοιμότητα από κλειδί που δεν ξέρει να διαβάσει.
     unset($task['action_url'], $task['action_label'], $task['action_module'],
           $task['ready_check']);
+    // Στιγμές της βάσης (UTC) -> ώρα Αθήνας για την οθόνη· το due_at είναι ήδη Αθήνα.
+    foreach (['created_at', 'closed_at'] as $k) if (array_key_exists($k, $task)) $task[$k] = time_db_to_local($task[$k]);
     return $task;
 }
 
@@ -832,7 +839,7 @@ function tasks_chain($db, array $tasks)
             'depends_on'     => $r['depends_on'],
             'status'         => $r['status'],
             'due_at'         => $r['due_at'],
-            'closed_at'      => $r['closed_at'],
+            'closed_at'      => time_db_to_local($r['closed_at']),
             'locked'         => $r['depends_on'] !== null && !isset($closed[$r['dedupe_key'] . "\n" . $r['depends_on']]) ? 1 : 0,
             'assigned_name'  => $r['assigned_name'],
             'closed_by_name' => $r['closed_by_name'],
@@ -877,7 +884,7 @@ function tasks_chain_notices($db, array $ids)
     }
     foreach ($rows as $e) {
         $m = $e['meta'] !== null ? json_decode($e['meta'], true) : null;
-        $out[(int)$e['task_id']][] = ['at' => $e['created_at'], 'what' => $e['note'],
+        $out[(int)$e['task_id']][] = ['at' => time_db_to_local($e['created_at']), 'what' => $e['note'],
                                       'to' => is_array($m) && isset($m['to']) && is_string($m['to']) ? $m['to'] : null];
     }
     return $out;
@@ -1244,8 +1251,9 @@ function tasks_history($db, $session, $perms, $taskId)
                          WHERE e.`task_id` = ?
                          ORDER BY e.`id`');
     $st->execute([(int)$taskId]);
-    return ['ok' => true, 'code' => 200, 'error' => null,
-            'events' => $st->fetchAll(PDO::FETCH_ASSOC)];
+    $events = $st->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($events as $i => $e) $events[$i]['created_at'] = time_db_to_local($e['created_at']);
+    return ['ok' => true, 'code' => 200, 'error' => null, 'events' => $events];
 }
 
 /**

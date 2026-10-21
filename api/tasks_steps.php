@@ -1,5 +1,10 @@
 <?php
-// tasks_steps.php | v1.2 | 16-10-2026
+// tasks_steps.php | v1.3 | 21-10-2026
+// v1.3: ζώνη ώρας (απόφαση 21/10, time_lib.php). done_at των βημάτων, at του
+//       χρονολογίου και της παράκαμψης σε ώρα Αθήνας (από UTC). Δ-Α8: το
+//       «Δευ 00:00 Αθήνας» μέσω time_reached_local· το $now των τεστ = UTC.
+//       meta.occurred_at (γεγονός εκ των υστέρων, γραμμένο από άνθρωπο) =
+//       ώρα Αθήνας, περνά όπως είναι.
 // v1.2: Α3, λωρίδα βημάτων (απόφαση 16/10). Κάθε βήμα του `steps` στέλνει
 //       και done_at / done_by: πότε και από ποιον έγινε (το τελευταίο
 //       done_event μετά το reopened). Όταν δεν έγινε: null.
@@ -29,6 +34,8 @@
 // ΤΟ ΒΗΜΑ ΒΓΑΙΝΕΙ ΑΠΟ ΤΑ ΓΕΓΟΝΟΤΑ (4a_task_events), ποτέ από αποθηκευμένη
 // στήλη: κανένα UPDATE σε υπάρχουσα εργασία, και μια παλιά `done` χωρίς τα
 // νέα γεγονότα (η ιστορική εγγραφή 05–11/10) δείχνει απλώς το τελικό βήμα.
+
+require_once __DIR__ . '/time_lib.php';
 
 if (!function_exists('tasks_steps_load')) {
 
@@ -160,7 +167,7 @@ function tasks_steps_override(array $events)
     $ov = null;
     foreach ($events as $e) {
         if ($e['event'] === 'admin_override') $ov = ['event_id' => (int)$e['id'], 'actor_id' => (int)$e['actor_id'],
-                                                      'actor_name' => $e['actor_name'], 'at' => $e['created_at'],
+                                                      'actor_name' => $e['actor_name'], 'at' => time_db_to_local($e['created_at']),
                                                       'acked' => false, 'acked_by' => null];
         elseif ($e['event'] === 'override_acknowledged' && $ov !== null) {
             $ov['acked'] = true;
@@ -200,7 +207,7 @@ function tasks_steps_timeline(array $def, array $events)
             'label'  => $labels[$e['event']]['label'],
             'mark'   => $labels[$e['event']]['mark'],   // step = «✓», event = σκέτη γραμμή
             'alert'  => $labels[$e['event']]['alert'],
-            'at'     => $late ? $e['meta']['occurred_at'] : $e['created_at'],
+            'at'     => $late ? $e['meta']['occurred_at'] : time_db_to_local($e['created_at']),
             'late'   => $late,
             'actor'  => $e['actor_name'],
             'note'   => $e['note'],
@@ -232,7 +239,7 @@ function tasks_steps_list(array $def, array $events)
             'button_label' => $s['button_label'],
             'button_icon'  => $s['button_icon'],
             'done'         => $e !== null,
-            'done_at'      => $e === null ? null : ($late ? $e['meta']['occurred_at'] : $e['created_at']),
+            'done_at'      => $e === null ? null : ($late ? $e['meta']['occurred_at'] : time_db_to_local($e['created_at'])),
             'done_by'      => $e === null ? null : $e['actor_name'],
         ];
     }
@@ -601,9 +608,10 @@ function tasks_allow_na($db, $taskCode)
 // FAIL OPEN: σημαία 1 χωρίς έγκυρο week_start στο payload δεν κλειδώνει
 // την εργασία για πάντα· γράφεται στο error_log.
 //
-// $now: «Y-m-d H:i:s» ώρα Αθήνας, μόνο για τα τεστ. null = τώρα.
+// $now: «Y-m-d H:i:s» σε UTC (όπως η βάση), μόνο για τα τεστ. null = τώρα.
+// Η σύγκριση «τώρα ≥ Δευ 00:00 Αθήνας» γίνεται στο time_reached_local
+// (σωστή και μετά την αλλαγή ώρας 25/10).
 // ─────────────────────────────────────────────────────────────────────
-if (!defined('TASKS_LOCAL_TZ'))   define('TASKS_LOCAL_TZ', 'Europe/Athens');
 if (!defined('TASKS_CLOSE_FROM')) define('TASKS_CLOSE_FROM', 'η επαλήθευση ανοίγει Δευ {date}');
 
 /** null αν το κλείσιμο επιτρέπεται τώρα, αλλιώς το 409. */
@@ -612,14 +620,13 @@ function tasks_close_gate($db, $task, $now = null)
     if (tasks_type_flag($db, $task['task_code'], 'close_from_week_start') !== 1) return null;
     $p  = isset($task['payload']) && is_string($task['payload']) ? json_decode($task['payload'], true) : null;
     $ws = is_array($p) && isset($p['week_start']) ? (string)$p['week_start'] : '';
-    $tz = new DateTimeZone(TASKS_LOCAL_TZ);
+    $tz = new DateTimeZone(TIME_LOCAL_TZ);
     $from = DateTime::createFromFormat('!Y-m-d', $ws, $tz);
     if (!$from || $from->format('Y-m-d') !== $ws) {
         error_log('tasks_close_gate: εργασία #' . $task['id'] . ' χωρίς έγκυρο week_start');
         return null;
     }
-    $at = new DateTime($now === null ? 'now' : (string)$now, $tz);
-    if ($at >= $from) return null;
+    if (time_reached_local($ws . ' 00:00:00', $now)) return null;
     return tasks_err(409, str_replace('{date}', $from->format('d/m'), TASKS_CLOSE_FROM));
 }
 

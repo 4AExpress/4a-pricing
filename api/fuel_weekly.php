@@ -24,12 +24,10 @@ if (!defined('FUEL_WEEKLY_CACHE_URL')) {
            'https://raw.githubusercontent.com/4AExpress/4a-pricing/main/data/fuel_surcharge_cache.json');
 }
 
-/** Η σημερινή ημερομηνία στην Αθήνα, Y-m-d. */
+/** Η σημερινή ημερομηνία στην Αθήνα, Y-m-d. $now: UTC, μόνο για τα τεστ (time_lib.php). */
 function fuel_weekly_today_athens($now = null)
 {
-    $d = new DateTime($now === null ? 'now' : $now, new DateTimeZone('UTC'));
-    $d->setTimezone(new DateTimeZone('Europe/Athens'));
-    return $d->format('Y-m-d');
+    return time_local_today($now);
 }
 
 /**
@@ -133,7 +131,7 @@ function fuel_weekly_ensure(PDO $db, $cache, array $types, $todayAthens, $dryRun
  */
 function fuel_weekly_log_line(array $r, $nowUtc, $dryRun = false)
 {
-    $p = array(gmdate('Y-m-d\TH:i:s\Z', strtotime($nowUtc)) . ($dryRun ? ' ΔΟΚΙΜΗ' : ''));
+    $p = array(time_now($nowUtc)->format('Y-m-d\TH:i:s\Z') . ($dryRun ? ' ΔΟΚΙΜΗ' : ''));   // $nowUtc: UTC (time_lib.php)
     if ($r['invalid'] !== null) {
         $p[] = 'cache άκυρο: ' . $r['invalid'];
         return implode(' · ', $p);
