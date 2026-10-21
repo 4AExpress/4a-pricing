@@ -137,6 +137,41 @@ ck('rollback: DELETE ΜΟΝΟ των 29 κλειδιών του 19b, σε scope 
 ck('rollback: καμία άλλη εντολή αλλαγής',
    preg_match_all('/\b(DROP|DELETE|UPDATE|ALTER|INSERT)\b/', preg_replace('/^\s*--.*$/m', '', $rb19)) === 1);
 
+echo "\n═══ migration 2026-10-22b: ορολογία «μη ανατεθειμέν…» (απόφαση 20/10) ═══\n";
+$mig22 = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-22b_ui_texts_unassigned.sql');
+$rb22  = file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-22b_ui_texts_unassigned.rollback.sql');
+$tuples = function ($sql) {
+    preg_match_all("/\\(\\s*'([a-z_]+)',\\s*'(\\w+)',\\s*'(text|color)',\\s*'([^']*)'\\)/u", $sql, $mm, PREG_SET_ORDER);
+    $o = array();
+    foreach ($mm as $r) $o[$r[1] . '.' . $r[2]] = array($r[3], $r[4]);
+    return $o;
+};
+$NEW22 = array('tasks.mine_empty_queue' => array('text', '→ Δείτε την Ουρά μη ανατεθειμένων ({n})'),
+               'tasks.strip_unassigned' => array('text', 'μη ανατεθειμένο'),
+               // ΝΕΟ κλειδί (21/10): γραμμή ΤΩΡΑ όταν δεν υπάρχει ανάδοχος.
+               'tasks.strip_who_none'   => array('text', 'Μη ανατεθειμένο · περιμένει ανάθεση'));
+$OLD22 = array('tasks.mine_empty_queue' => array('text', '→ Δείτε την Ουρά αδιάθετων ({n})'),
+               'tasks.strip_unassigned' => array('text', 'αδιάθετο'));
+ck('22b: ΜΟΝΟ τα 3 κείμενα (2 αλλαγμένα + strip_who_none), με τα νέα', $tuples($mig22) === $NEW22, json_encode($tuples($mig22), JSON_UNESCAPED_UNICODE));
+ck('rollback: τα 2 αλλαγμένα κλειδιά, με τις τιμές των 15b / 19b', $tuples($rb22) === $OLD22);
+ck('rollback: σβήνει ΜΟΝΟ το νέο strip_who_none (ένα DELETE)',
+   strpos($rb22, "DELETE FROM `4a_ui_texts` WHERE `scope` = 'tasks' AND `k` = 'strip_who_none';") !== false
+   && preg_match_all('/DELETE\s+FROM/i', preg_replace('/^\s*--.*$/m', '', $rb22)) === 1);
+ck('strip_who_none: ΝΕΟ κλειδί (κανένα παλιό migration δεν το γράφει)', !isset($tuples($mig)['tasks.strip_who_none']) && !isset($tuples($mig19)['tasks.strip_who_none']));
+ck('οι παλιές τιμές του rollback = ό,τι έγραψαν τα 15b / 19b',
+   $tuples($mig)['tasks.mine_empty_queue'] === $OLD22['tasks.mine_empty_queue']
+   && $tuples($mig19)['tasks.strip_unassigned'] === $OLD22['tasks.strip_unassigned']);
+ck('22b: αντικατάσταση κειμένου (ON DUPLICATE KEY UPDATE text = VALUES(text)), κανένα DDL / DELETE',
+   strpos($mig22, 'ON DUPLICATE KEY UPDATE `text` = VALUES(`text`);') !== false
+   && preg_match('/\b(CREATE|ALTER|DROP)\b|REPLACE\s+INTO|DELETE\s+FROM/i', preg_replace('/^\s*--.*$/m', '', $mig22)) === 0);
+ck("22b: η ετικέτα της open -> «Μη ανατεθειμένη», rollback -> «Χωρίς ανάδοχο»",
+   strpos($mig22, "UPDATE `4a_task_statuses` SET `label` = 'Μη ανατεθειμένη' WHERE `code` = 'open';") !== false
+   && strpos($rb22, "UPDATE `4a_task_statuses` SET `label` = 'Χωρίς ανάδοχο' WHERE `code` = 'open';") !== false);
+ck('22b: μία INSERT και μία UPDATE, τίποτε άλλο που γράφει',
+   preg_match_all('/\b(INSERT|UPDATE|DELETE|DROP|ALTER)\b/', preg_replace(array('/^\s*--.*$/m', '/ON DUPLICATE KEY UPDATE/'), '', $mig22)) === 2);
+ck("κανένα ; ή ' μέσα σε σχόλιο (22b και rollback)", !preg_match("/^\\s*--[^\\n]*[;']/m", $mig22 . "\n" . $rb22));
+ck('22b: καμία παλιά λέξη στις τιμές που γράφει', !preg_match('/αδιάθετ|ανάδοχο/u', implode("\n", array_column($tuples($mig22), 1))));
+
 echo "\n═══ ui_texts_scopes: λευκή λίστα ═══\n";
 ck('«tasks,common» -> [tasks, common]', ui_texts_scopes('tasks,common') === array('tasks', 'common'));
 ck('κενά γύρω -> κόβονται', ui_texts_scopes(' tasks , common ') === array('tasks', 'common'));

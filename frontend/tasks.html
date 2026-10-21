@@ -29,6 +29,8 @@
          background: white; color: #555; cursor: pointer; font-family: inherit; }
   .tab.on { background: #cc0000; border-color: #cc0000; color: white; font-weight: 600; }
   .tab .cnt { font-size: 11px; opacity: .85; margin-left: 5px; }
+  /* Κινητό (20/10): 12px στα πλάγια, για να χωρά η «Ουρά μη ανατεθειμένων». */
+  @media (max-width: 600px) { .tab { padding: 8px 12px; } }
 
   /* Υπόμνημα: ΜΟΝΟ σχήμα εδώ. Ετικέτες, χρώματα, εικονίδια και σειρά
      έρχονται από τον 4a_task_statuses — μια νέα κατάσταση εμφανίζεται
@@ -238,6 +240,13 @@
 
   /* ΚΑΡΤΑ ΕΠΙΝΑΥΛΟΥ (απόφαση 19/10). Χρώματα από τη βάση μέσω των --fs-*
      (FS_COLORS, fuelStripHtml)· εδώ μόνο εφεδρεία. */
+  /* Σώμα της κάρτας ΛΕΥΚΟ (21/10): λεμονί ΜΟΝΟ η κεφαλίδα (tone) και η γραμμή ΤΩΡΑ.
+     Και στην κλειστή ομάδα: γκρι μόνο η κεφαλίδα, το σώμα με τα χρώματα του λευκού. */
+  .client-group.fuel-card > .grp-body { background: #fff; color: #222; }
+  .client-group.fuel-card > .grp-body .fuel-facts { color: #555; }
+  .client-group.fuel-card > .grp-body .fuel-facts b, .client-group.fuel-card > .grp-body .fuel-due { color: #222; }
+  .client-group.fuel-card > .grp-body .fuel-tbl th { background: #f5f5f5; color: #555; border-color: #d6d6d6; }
+  .client-group.fuel-card > .grp-body .fuel-tbl td { background: #fff; color: #222; border-color: #d6d6d6; }
   .fstrip { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 10px; }
   .fs-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
   .fs-row { display: flex; align-items: flex-start; gap: 10px; }
@@ -245,17 +254,21 @@
   .fs-bar { flex: 1; min-width: 0; display: flex; align-items: flex-start; background: var(--fs-bar-bg, #fffef0);
             border-radius: 6px; padding: 10px 12px; }
   .fs-node { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 150px; flex: none; text-align: center; }
-  .fs-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-weight: 700; font-size: 14px; box-sizing: border-box; }
-  .fs-dot.done { background: var(--fs-done-dot, #e4e4e2); border: 2px solid var(--fs-done-line, #6b6e70); color: var(--fs-mark, #2b742f); font-size: 17px; font-weight: 900; }
+  /* Μπάρα (21/10): κύκλοι 42px με παχύ περίγραμμα και έντονο νούμερο, ΟΛΟΙ ίδιου
+     μεγέθους (η γραμμή στο κέντρο τους). Γραμμή: ΣΥΝΕΧΗΣ και στα δύο. Ό,τι ΕΓΙΝΕ
+     ως το τελευταίο «έγινε» (κύκλοι + γραμμή) σε ΕΝΑ γκρι (color_fs_done_line)·
+     ό,τι μένει γαλάζιο (color_fs_next_line). */
+  .fs-dot { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 20px; line-height: 1; box-sizing: border-box; flex: none; }
+  .fs-dot.done { background: var(--fs-done-dot, #e4e4e2); border: 4px solid var(--fs-done-line, #6b6e70); color: var(--fs-mark, #2b742f); font-size: 22px; }
   .fs-dot.done::before, .fs-ok::before { content: "\2713"; }
   .fs-dot.wrong::before { content: "\2717"; }
-  .fs-dot.now { width: 34px; height: 34px; background: var(--fs-now, #fcff29); border: 4px solid var(--fs-ink, #1e2022); color: var(--fs-ink, #1e2022);
+  .fs-dot.now { background: var(--fs-now, #fcff29); border: 5px solid var(--fs-ink, #1e2022); color: var(--fs-ink, #1e2022);
                 box-shadow: 0 0 0 4px rgba(252,255,41,.45); }
-  .fs-dot.next { background: #fff; border: 2px solid var(--fs-next-line, #4f9fb0); color: var(--fs-next-num, #3f7f8d); }
-  .fs-dot.wrong { background: var(--fs-wrong, #cc0000); border: 2px solid var(--fs-wrong, #cc0000); color: #fff; }
-  .fs-link { flex: 1; height: 0; margin-top: 15px; border-top: 4px dashed var(--fs-next-line, #4f9fb0); }
-  .fs-link.done { border-top: 4px solid var(--fs-done-line, #6b6e70); }
+  .fs-dot.next { background: #fff; border: 4px solid var(--fs-next-line, #4f9fb0); color: var(--fs-next-num, #3f7f8d); }
+  .fs-dot.wrong { background: var(--fs-wrong, #cc0000); border: 4px solid var(--fs-wrong, #cc0000); color: #fff; }
+  .fs-link { flex: 1; min-width: 12px; height: 0; margin-top: 18px; border-top: 6px solid var(--fs-next-line, #4f9fb0); }
+  .fs-link.done { border-top-color: var(--fs-done-line, #6b6e70); }
   .fs-cap { display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.3; }
   .fs-cap-l { font-weight: 700; color: var(--fs-ink, #1e2022); }
   .fs-node.done .fs-cap, .fs-node.done .fs-cap-l { color: var(--fs-done-cap, #737577); }
@@ -447,14 +460,14 @@ let pendingAnchor = null;
 let lastTasks = [];
 const counts = { mine: null, queue: null, all: null };
 
-const VIEW_LABELS = { mine: '📋 Οι εργασίες μου', queue: '📥 Ουρά αδιάθετων', all: '🗂 Όλες' };
+const VIEW_LABELS = { mine: '📋 Οι εργασίες μου', queue: '📥 Ουρά μη ανατεθειμένων', all: '🗂 Όλες' };
 
 // Δίγλωσσα tooltips, μορφή «English — ελληνική εξήγηση». Ο αγγλικός όρος
 // πρώτος γιατί είναι αυτός που λέγεται προφορικά στο γραφείο· η ελληνική
 // φράση εξηγεί τι ΠΡΑΓΜΑΤΙΚΑ συμβαίνει στη βάση, όχι τι λέει το κουμπί.
 const VIEW_TIPS = {
   mine:  'My tasks — Όσες σας έχουν ανατεθεί και είναι σε εξέλιξη',
-  queue: 'Queue — Αδιάθετες εργασίες που ταιριάζουν στις δεξιότητές σας',
+  queue: 'Queue — Μη ανατεθειμένες εργασίες που ταιριάζουν στις δεξιότητές σας',
   all:   'All — Κάθε εργασία, όποιος κι αν την έχει. Μόνο για διαχειριστές'
 };
 const TIPS = {
@@ -600,7 +613,7 @@ async function load(){
     lastTasks = d.tasks || [];
     counts[view] = d.tasks.length;
     // «Οι εργασίες μου» άδεια: το πλήθος της Ουράς για το «Δείτε την Ουρά
-    // αδιάθετων ({n})». Ίδιο αίτημα με την καρτέλα, μόνο τότε.
+    // μη ανατεθειμένων ({n})». Ίδιο αίτημα με την καρτέλα, μόνο τότε.
     if(view==='mine' && !lastTasks.length) await loadQueueCount();
     renderTabs();
     // Οι ετικέτες των τύπων επίναυλου, μία φορά, μόνο αν υπάρχει εργασία επίναυλου.
@@ -610,7 +623,7 @@ async function load(){
   }catch(e){ showErr('Δεν έγινε σύνδεση με τον server — '+(e&&e.message?e.message:e)); }
 }
 
-// Το πλήθος της «Ουράς αδιάθετων» στο counts.queue. Αποτυχία: μένει ό,τι
+// Το πλήθος της «Ουράς μη ανατεθειμένων» στο counts.queue. Αποτυχία: μένει ό,τι
 // ήταν, χωρίς μήνυμα — είναι βοηθητικό νούμερο, όχι η λίστα του χρήστη.
 async function loadQueueCount(){
   try{
@@ -621,7 +634,7 @@ async function loadQueueCount(){
 }
 
 // Σύνοψη ανά άνθρωπο — μόνο στην «Όλες», όπου φαίνονται και οι ξένες.
-// «Σταύρος 3 · Εύα 2 · αδιάθετες 4»
+// «Σταύρος 3 · Εύα 2 · μη ανατεθειμένες 4»
 // Οι δοκιμαστικές ΔΕΝ μετριούνται μαζί με τις πραγματικές — αλλά ούτε
 // κρύβονται: πηγαίνουν σε δικό τους στοιχείο, εκτός αθροίσματος. Αν
 // φιλτράρονταν στο ερώτημα, ο διαχειριστής θα έχανε τη λίστα του
@@ -638,7 +651,7 @@ function summaryHtml(tasks){
   const parts = [...byWho.entries()]
     .sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0]))
     .map(([n,c]) => `<span class="who-n">${escHtml(n)} <b>${c}</b></span>`);
-  parts.push(`<span class="who-n unassigned">αδιάθετες <b>${unassigned}</b></span>`);
+  parts.push(`<span class="who-n unassigned">μη ανατεθειμένες <b>${unassigned}</b></span>`);
   if(demo) parts.push(`<span class="who-n demo-n" title="Demo — Εργασίες πελατών επίδειξης· δεν προσμετρώνται">`+
                       `επίδειξη <b>${demo}</b></span>`);
   return `<div class="summary"><span class="lbl">ΣΥΝΟΨΗ</span>${parts.join('<span style="color:#ddd;">·</span>')}</div>`;
@@ -650,7 +663,7 @@ function render(tasks){
   const el = document.getElementById('list');
   if(!tasks.length){
     const msg = view==='mine' ? 'Δεν έχετε εργασίες σε εξέλιξη.'
-              : view==='queue' ? 'Καμία αδιάθετη εργασία για τις δεξιότητές σας.'
+              : view==='queue' ? 'Καμία μη ανατεθειμένη εργασία για τις δεξιότητές σας.'
               : 'Καμία εργασία.';
     // «Οι εργασίες μου» άδεια: η επόμενη δουλειά είναι στην Ουρά.
     const toQueue = view==='mine'
@@ -677,11 +690,11 @@ function render(tasks){
     const wk = weekItems(g.items);
     const root = wk.find(t => t.depends_on === null) || g.items[0];
     // ΕΝΕΡΓΗ εβδομάδα (Φάση Α): ΜΙΑ λωρίδα βημάτων αντί για γραμμές, ίδια σε
-    // κάθε καρτέλα. Αλλιώς οι γραμμές, όπως πριν.
+    // κάθε καρτέλα. Αλλιώς οι γραμμές, όπως πριν. fuel-card: σώμα λευκό (21/10).
     const fa = fuelActiveRoot(wk);
     // Τίτλος της ομάδας = ο τίτλος του τύπου-ρίζας, με εικονίδιο και εβδομάδα
     // από τη βάση (taskTitle). Η εβδομάδα δεν ξαναγράφεται δίπλα.
-    return groupHtml('sys:' + k, 'client-group sys', g.items, `
+    return groupHtml('sys:' + k, 'client-group sys' + (fa ? ' fuel-card' : ''), g.items, `
         <span class="sys-tag" title="System — Εργασία χωρίς πελάτη, δημιουργείται από το σύστημα">ΣΥΣΤΗΜΑ</span>
         <span class="client-name">${taskTitle(root)}</span>
         <span class="flag ${escHtml(g.country)}">${escHtml(g.country)}</span>${info && info.text ? `
@@ -714,12 +727,12 @@ function render(tasks){
 }
 
 // Σε ΠΟΙΟΝ έχει ανατεθεί — σε ΟΛΕΣ τις καρτέλες, δίπλα στο badge.
-// Ανατεθειμένη -> όνομα. Αδιάθετη -> «—» μόνο στην «Όλες», ώστε η στήλη
-// να μένει ευθυγραμμισμένη· στην «Ουρά» είναι όλες αδιάθετες και μια
+// Ανατεθειμένη -> όνομα. Μη ανατεθειμένη -> «—» μόνο στην «Όλες», ώστε η στήλη
+// να μένει ευθυγραμμισμένη· στην «Ουρά» είναι όλες μη ανατεθειμένες και μια
 // στήλη γεμάτη παύλες δεν λέει τίποτα.
 function whoCell(t){
   if(t.assigned_name) return `<span class="who" title="ανάδοχος">${escHtml(t.assigned_name)}</span>`;
-  return view==='all' ? '<span class="who none" title="αδιάθετη">—</span>' : '';
+  return view==='all' ? '<span class="who none" title="μη ανατεθειμένη">—</span>' : '';
 }
 
 // Ιστορικό ΚΑΤ' ΑΠΑΙΤΗΣΗ: id -> 'loading' | πίνακας events. Ό,τι είναι εδώ
@@ -1460,7 +1473,7 @@ function stepCardHtml(t){
   const mine   = currentUser && Number(t.assigned_to)===Number(currentUser.id);
   const p      = taskPayload(t);
 
-  // ΤΑ κουμπιά των βημάτων, ΟΛΑ με τη σειρά, μόνο για τον ανάδοχο. Αδιάθετη:
+  // ΤΑ κουμπιά των βημάτων, ΟΛΑ με τη σειρά, μόνο για τον ανάδοχο. Μη ανατεθειμένη:
   // κανένα κουμπί — ανάδοχο ορίζει ο διαχειριστής με «Ανάθεση…» (Δ-Α2).
   const steps = Array.isArray(t.steps) ? t.steps : [];
   const btns = (mine && !locked)
@@ -1605,10 +1618,13 @@ function fuelStripHtml(wk, root){
                  : s === 'now'  ? `<span class="fs-tag now">${escHtml(pageText('fs_tag_now'))}</span>`
                  : s === 'wrong'? `<span class="fs-tag wrong">${escHtml(pageText('fs_tag_wrong'))}</span>`
                  :                `<span class="fs-tag next">${escHtml(pageText('fs_tag_wait'))}</span>`;
+  // ΤΩΡΑ χωρίς κουμπί: «Το κάνει: {όνομα}»· όταν δεν υπάρχει ανάδοχος ΟΧΙ «Το κάνει: μη ανατεθειμένο»
+  // αλλά δικό του κείμενο (strip_who_none, 22b).
   const row = i => {
     const d = D[i], s = S[i];
     const text = s === 'done' ? escHtml(d.done)
-               : s === 'now'  ? escHtml(d.act ? d.hint : pageText('strip_who', { name: nameOf(d.who) }))
+               : s === 'now'  ? escHtml(d.act ? d.hint : d.who && d.who.assigned_name ? pageText('strip_who', { name: d.who.assigned_name })
+                                                                     : pageText('strip_who_none'))
                :                boldName('fs_next_row', d);
     const act  = s === 'done' ? d.again : s === 'now' ? d.act : '';
     return `<div class="fs-step ${s}"><div class="fs-name">${escHtml(d.label)}</div>` +
@@ -1788,7 +1804,7 @@ function taskRow(t){
 }
 
 // Δίδυμο του steal: ίδια λέξη στο κουμπί, άλλο endpoint. Η ανάληψη
-// αδιάθετης δεν αφαιρεί τίποτα από κανέναν, άρα ΔΕΝ ζητά επιβεβαίωση.
+// μη ανατεθειμένης δεν αφαιρεί τίποτα από κανέναν, άρα ΔΕΝ ζητά επιβεβαίωση.
 async function claim(id){ if((await post({action:'claim', id})).ok) load(); }
 
 async function steal(id){
@@ -1890,7 +1906,7 @@ async function post(body, quiet){
 // είναι πρόσκληση, όχι αρπαγή.
 //
 // ΠΡΟΟΡΙΣΜΟΣ ΤΟΥ ΣΥΝΔΕΣΜΟΥ: αν κάποιες ανατέθηκαν σε ΕΣΕΝΑ, η ουρά ΔΕΝ
-// τις δείχνει — η ουρά είναι μόνο οι αδιάθετες. Θα ήταν σύνδεσμος που
+// τις δείχνει — η ουρά είναι μόνο οι μη ανατεθειμένες. Θα ήταν σύνδεσμος που
 // οδηγεί σε άδεια οθόνη. Γι' αυτό πάει στις «δικές μου» όταν υπάρχουν
 // δικές σου, και στην ουρά στις υπόλοιπες περιπτώσεις.
 function closeMsg(action, d){

@@ -141,7 +141,7 @@ $w = tasks_fetch_one($db, $r['actions'][0]['task_id']);
 $v = tasks_fetch_one($db, $r['actions'][1]['task_id']);
 ck('fuel_weekly: subject fuel:2026-10-12, BOTH, προθεσμία Παρ 19:00', $w['subject_key'] === 'fuel:2026-10-12' && $w['task_country'] === 'BOTH' && $w['due_at'] === '2026-10-09 19:00:00');
 ck('fuel_weekly: ανατέθηκε σε 1 ή 2', in_array((int)$w['assigned_to'], array(1, 2), true), $w['assigned_to']);
-ck('verify: κλειδωμένο, χωρίς ανάδοχο', (int)$v['locked'] === 1 && $v['assigned_to'] === null);
+ck('verify: κλειδωμένο, μη ανατεθειμένο', (int)$v['locked'] === 1 && $v['assigned_to'] === null);
 ck('verify: προθεσμία Δευ 17:00 της εβδομάδας ισχύος (2026-10-12 17:00:00)', $v['due_at'] === '2026-10-12 17:00:00', $v['due_at']);
 $p = json_decode($w['payload'], true);
 ck('payload: ισχύς 12-Oct-2026, 70 γραμμές αρχείου, AIR_CY 51.94', $p['effective_date'] === '12-Oct-2026' && count($p['file']['rows']) === 70 && $p['prices']['AIR_CY'] === '51.94');

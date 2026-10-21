@@ -100,7 +100,7 @@ ck('χρήστης 10 (GR): 403', $c10['code'] === 403, $c10['code'] . ' ' . $c1
 $c13 = tasks_claim($db, $S(13), $P('CY'), 1);
 ck('χρήστης 13 (CY): 403', $c13['code'] === 403, $c13['code'] . ' ' . $c13['error']);
 $after = tasks_fetch_one($db, 1);
-ck('η εργασία έμεινε αδιάθετη', $after['assigned_to'] === null);
+ck('η εργασία έμεινε μη ανατεθειμένη', $after['assigned_to'] === null);
 $c11 = tasks_claim($db, $S(11), $P('GR'), 1);
 ck('χρήστης 11 (BOTH): ανάληψη OK', $c11['ok'] === true, $c11['code'] . ' ' . $c11['error']);
 ck('ανάδοχος = 11', (int)tasks_fetch_one($db, 1)['assigned_to'] === 11);

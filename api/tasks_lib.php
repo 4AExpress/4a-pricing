@@ -357,7 +357,7 @@ function tasks_ready($task)
 //   1. κλειστή (done/na)  νικά τα πάντα — μια ολοκληρωμένη εργασία της
 //      οποίας η εξάρτηση ξανάνοιξε ΔΕΝ πρέπει να λέει «Περιμένει»
 //   2. κλειδωμένη         πριν από οτιδήποτε άλλο ανοιχτό
-//   3. αδιάθετη           «Χωρίς ανάδοχο»
+//   3. μη ανατεθειμένη    «Μη ανατεθειμένη»
 //   4. σε εξέλιξη + έτοιμη -> «Έτοιμη για ολοκλήρωση»
 //   5. αλλιώς το ίδιο το status (in_progress, paused)
 // ─────────────────────────────────────────────────────────────────────
@@ -746,7 +746,7 @@ function tasks_list($db, $session, $perms, $view)
 /**
  * «🔒 Περιμένει το ανέβασμα ({όνομα})» (Φάση Α): σε ΚΛΕΙΔΩΜΕΝΗ εργασία
  * ΣΥΣΤΗΜΑΤΟΣ, το όνομα του αναδόχου της εργασίας από την οποία εξαρτάται
- * (ίδιο dedupe_key, task_code = depends_on), ή null αν είναι αδιάθετη.
+ * (ίδιο dedupe_key, task_code = depends_on), ή null αν είναι μη ανατεθειμένη.
  * Η οθόνη δεν μπορεί να το βρει μόνη της: η ρίζα συχνά δεν είναι στη λίστα.
  *
  * Εργασίες ΠΕΛΑΤΗ και ξεκλείδωτες: ΚΑΝΕΝΑ νέο κλειδί, ώστε το JSON τους να
@@ -965,7 +965,7 @@ function tasks_release($db, $session, $perms, $taskId, $note = null)
     list($task, $err) = tasks_guard_owner($db, $session, $perms, $taskId);
     if ($err) return $err;
     if (!tasks_type_allows($db, $task['task_code'], 'allow_release')) return tasks_err(409, TASKS_NO_RELEASE);
-    if ($task['assigned_to'] === null) return tasks_err(409, 'η εργασία είναι ήδη αδιάθετη');
+    if ($task['assigned_to'] === null) return tasks_err(409, 'η εργασία είναι ήδη μη ανατεθειμένη');
 
     $me = (int)$session['id'];
     // Ίδια δέσμευση με την απόρριψη: αν την είχε τραβήξει, φαίνεται.
@@ -1079,11 +1079,11 @@ function tasks_reject($db, $session, $perms, $taskId, $reasonCode, $note = null)
     if (in_array($task['status'], ['done', 'na'], true)) {
         return tasks_err(409, 'η εργασία έχει ήδη κλείσει');
     }
-    // Αδιάθετη δεν απορρίπτεται ΠΟΤΕ, ούτε σε επίδειξη: δεν υπάρχει
+    // Μη ανατεθειμένη δεν απορρίπτεται ΠΟΤΕ, ούτε σε επίδειξη: δεν υπάρχει
     // απορρίπτων να γραφτεί στο 4a_task_rejections.
     if (!tasks_type_allows($db, $task['task_code'], 'allow_reject')) return tasks_err(409, TASKS_NO_REJECT);
     if ($task['assigned_to'] === null) {
-        return tasks_err(409, 'η εργασία είναι αδιάθετη — δεν απορρίπτεται');
+        return tasks_err(409, 'η εργασία είναι μη ανατεθειμένη — δεν απορρίπτεται');
     }
     // Σε ΠΡΑΓΜΑΤΙΚΟ πελάτη απορρίπτει μόνο ο ανάδοχος, χωρίς εξαίρεση
     // διαχειριστή: αν απέρριπτε «εκ μέρους» κάποιου, θα καταγραφόταν ο
@@ -1165,7 +1165,7 @@ function tasks_steal($db, $session, $perms, $taskId)
     }
     if (!tasks_type_allows($db, $task['task_code'], 'allow_steal')) return tasks_err(409, TASKS_NO_STEAL);
     if ($task['assigned_to'] === null) {
-        return tasks_err(409, 'η εργασία είναι αδιάθετη — κάντε ανάληψη');
+        return tasks_err(409, 'η εργασία είναι μη ανατεθειμένη — κάντε ανάληψη');
     }
     if ((int)$task['assigned_to'] === $me) {
         return tasks_err(409, 'η εργασία είναι ήδη δική σας');

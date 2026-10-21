@@ -16,7 +16,9 @@ const NAVCHIP_SRC = fs.readFileSync('frontend/nav-chip.js', 'utf8');
 const UITEXTS_SRC = fs.readFileSync('frontend/ui-texts.js', 'utf8');
 // Α2 (16/10): και τα 9 κείμενα της εβδομάδας του migration 2026-10-19b.
 const UI_MIGS = ['db/migrations/2026-10-15b_ui_texts.sql', 'db/migrations/2026-10-19b_ui_texts_fuel_week.sql',
-                 'db/migrations/2026-10-21a_ui_texts_fuel_card.sql'];
+                 'db/migrations/2026-10-21a_ui_texts_fuel_card.sql',
+                 // 20/10: «αδιάθετ…» -> «μη ανατεθειμέν…» (2 κείμενα· νικά το 15b / 19b, ίδια σειρά με τη βάση).
+                 'db/migrations/2026-10-22b_ui_texts_unassigned.sql'];
 const UI_MIG = UI_MIGS.join(' + ');
 // MIG_KINDS: kind ανά κλειδί (text | color). Το τεστ διαρροής ελέγχει ΜΟΝΟ
 // κείμενα: ένα χρώμα της βάσης μπορεί να συμπίπτει με το CSS της σελίδας
@@ -356,6 +358,15 @@ console.log('\n═══ Κάρτα επίναυλου μέσα στη λίστ�
 // tone open/late, το style με τα --tone-*, το κουμπί grp-tog και το
 // <div class="grp-body"> γύρω από τις γραμμές. Ό,τι μένει πρέπει να είναι
 // ΙΔΙΟ byte προς byte με το golden.
+// Ορολογία 20/10 («αδιάθετ…» -> «μη ανατεθειμέν…»): τα golden γράφτηκαν ΠΡΙΝ. oldWording()
+// γυρίζει πίσω ΜΟΝΟ τις δύο φράσεις της λίστας: το title της στήλης αναδόχου και τη
+// σύνοψη της «Όλες». Μετρά πόσες άλλαξε, ώστε ο έλεγχος να μην είναι κενός.
+let oldWordingN = 0;
+function oldWording(html) {
+  return html
+    .replace(/ title="μη ανατεθειμένη">—</g, () => (oldWordingN++, ' title="αδιάθετη">—<'))
+    .replace(/unassigned">μη ανατεθειμένες <b>/g, () => (oldWordingN++, 'unassigned">αδιάθετες <b>'));
+}
 function appearanceStrip(html) {
   return html
     .replace(/ tone (open|late)"/g, '"')
@@ -373,6 +384,7 @@ console.log('\n═══ Εργασίες ΠΕΛΑΤΗ: byte-προς-byte ίδ�
 {
   // tasks_client_rows.golden.json = η έξοδος του tasks.html στο 20588f5 (το
   // ζωντανό πριν από αυτή την αλλαγή) πάνω στις εργασίες του tasks_client_cases.js.
+  // 20/10: το golden ΔΕΝ άλλαξε. Η ορολογία γυρίζει πίσω με το oldWording() (δύο φράσεις).
   const cases = require(path.join(HERE, 'tasks_client_cases.js'));
   const golden = JSON.parse(fs.readFileSync(path.join(HERE, 'tasks_client_rows.golden.json'), 'utf8'));
   let rows = 0, diff = [], lists = 0, toned = 0;
@@ -387,12 +399,13 @@ console.log('\n═══ Εργασίες ΠΕΛΑΤΗ: byte-προς-byte ίδ�
       ...cases.FUNCS.filter(f => src.includes('function ' + f + '(')).map(grab),
       'return { render, taskRow };'].join('\n');
     const a = new Function('document', 'sessionStorage', 'EV_LABELS', code)(doc, { getItem: () => null }, {});
-    cases.TASKS.forEach((t, i) => { rows++; const got = a.taskRow(t); if (got !== golden[key].rows[i]) diff.push(`${key} #${t.id}`); });
+    cases.TASKS.forEach((t, i) => { rows++; const got = oldWording(a.taskRow(t)); if (got !== golden[key].rows[i]) diff.push(`${key} #${t.id}`); });
     a.render(cases.TASKS);
     lists++;
     if (els.list.innerHTML !== golden[key].list) toned++;
-    if (appearanceStrip(els.list.innerHTML) !== golden[key].list) diff.push(`${key} λίστα`);
+    if (appearanceStrip(oldWording(els.list.innerHTML)) !== golden[key].list) diff.push(`${key} λίστα`);
   }
+  ck('η ορολογία ΟΝΤΩΣ άλλαξε στις γραμμές πελάτη (oldWording όχι κενό)', oldWordingN > 0, String(oldWordingN));
   ck(`${rows} γραμμές πελάτη σε ${Object.keys(golden).length} συνδυασμούς προβολής/ρόλου: ΙΔΙΑ bytes, και οι ${lists} λίστες ΙΔΙΕΣ μετά το appearanceStrip()`,
      diff.length === 0, diff.join(', '));
   ck('η εμφάνιση ΟΝΤΩΣ άλλαξε (αλλιώς ο έλεγχος θα ήταν κενός)', toned === lists, `${toned}/${lists}`);
@@ -593,7 +606,7 @@ console.log('\n═══ Α3 κάρτα: ΔΥΟ κουμπιά με τη σει�
   const u3 = env({ userId: 3, admin: false }).api.taskRow(stepTask(STEP.upload, { steps: STEPS(true, false) }));
   ck('συνάδελφος: κανένα κουμπί βήματος, «Το κάνει: u1»', btns(u3).length === 0 && u3.includes('Το κάνει: u1'));
   const q = own.taskRow(stepTask(STEP.download, { status: 'open', assigned_to: null, assigned_name: null }));
-  ck('αδιάθετη: ΚΑΝΕΝΑ κουμπί, ούτε «Ανάληψη» (Δ-Α2: μόνο «Ανάθεση…» από admin)', btns(q).length === 0 && !q.includes('claim(76)'));
+  ck('μη ανατεθειμένη: ΚΑΝΕΝΑ κουμπί, ούτε «Ανάληψη» (Δ-Α2: μόνο «Ανάθεση…» από admin)', btns(q).length === 0 && !q.includes('claim(76)'));
   const lk = own.taskRow(stepTask(STEP.download, { locked: 1 }));
   ck('κλειδωμένη: κανένα κουμπί', btns(lk).length === 0 && lk.includes('🔒'));
   const x = '<img src=x onerror=alert(1)>';
@@ -606,7 +619,7 @@ console.log('\n═══ Α3 κάρτα: ΠΟΤΕ Δεν εφαρμόζεται 
   const NEVER = /Δεν εφαρμόζεται|Αφήνω|Αναλαμβάνω|Απόρριψη|Έτοιμη για ολοκλήρωση|>Ανάληψη<|Προβολή αρχείου|markNa\(|act\(76,'done'\)|act\(76,'release'\)|openReject\(|steal\(76\)|claim\(76\)/;
   const cases = [['πριν το ①', stepTask(STEP.download)], ['μετά το ①', stepTask(STEP.upload, { steps: STEPS(true, false) })],
                  ['κλειστή', stepTask(STEP.uploaded, { status: 'done', steps: STEPS(true, true) })],
-                 ['αδιάθετη', stepTask(STEP.download, { status: 'open', assigned_to: null, assigned_name: null })]];
+                 ['μη ανατεθειμένη', stepTask(STEP.download, { status: 'open', assigned_to: null, assigned_name: null })]];
   const bad = [];
   for (const [lbl, t] of cases)
     for (const [u, adm] of [[1, false], [1, true], [9, true], [3, false]]) {
@@ -629,7 +642,7 @@ console.log('\n═══ Α3 «⋯»: admin Ανάθεση + Παράκαμψη 
   ck('μη-admin ανάδοχος: μόνο ιστορικό', JSON.stringify(names(env({ userId: 1, admin: false }).api.taskRow(t))) === '["toggleHist"]');
   ck('μη-admin συνάδελφος: μόνο ιστορικό', JSON.stringify(names(env({ userId: 3, admin: false }).api.taskRow(t))) === '["toggleHist"]');
   const un = stepTask(STEP.download, { status: 'open', assigned_to: null, assigned_name: null });
-  ck('αδιάθετη, admin: «Ανάθεση…» (ο μόνος δρόμος, Δ-Α2)', names(env({ userId: 9, admin: true }).api.taskRow(un)).includes('assign'));
+  ck('μη ανατεθειμένη, admin: «Ανάθεση…» (ο μόνος δρόμος, Δ-Α2)', names(env({ userId: 9, admin: true }).api.taskRow(un)).includes('assign'));
   ck('κλειστή, admin: μόνο ιστορικό', JSON.stringify(names(env({ userId: 9, admin: true }).api.taskRow(
      stepTask(STEP.uploaded, { status: 'done', steps: STEPS(true, true) })))) === '["toggleHist"]');
   // Ο τύπος τα επιτρέπει (allow = 1): τα γενικά κουμπιά επιστρέφουν, ίδια με πριν.
@@ -1082,7 +1095,7 @@ console.log('\n═══ Καρτέλες: αριθμός μόνο στην κα
     return els.tabs.innerHTML; };
   const fresh = tab({ mine: null, queue: 7, all: null }, 'queue');
   ck('μετά από φόρτωση στην «Ουρά»: «Οι εργασίες μου» ΧΩΡΙΣ αριθμό, «Ουρά» με 7',
-     !/Οι εργασίες μου<span class="cnt">/.test(fresh) && /Ουρά αδιάθετων<span class="cnt">7<\/span>/.test(fresh), fresh);
+     !/Οι εργασίες μου<span class="cnt">/.test(fresh) && /Ουρά μη ανατεθειμένων<span class="cnt">7<\/span>/.test(fresh), fresh);
   const visited = tab({ mine: 4, queue: 7, all: null }, 'queue');
   ck('αφού ανοίξει η «Οι εργασίες μου»: κρατά τον αριθμό της (4)', /Οι εργασίες μου<span class="cnt">4<\/span>/.test(visited), visited);
   ck('ο αριθμός 0 φαίνεται ως 0, δεν κρύβεται', /<span class="cnt">0<\/span>/.test(tab({ mine: 0, queue: null, all: null }, 'mine')));
@@ -1106,11 +1119,11 @@ console.log('\n═══ (Α) ?tab=mine|queue, προεπιλογή «Οι ερ�
   const empty = v => { const e = env({ view: v }); e.api.render([]); return e.els.list.innerHTML; };
   const m = empty('mine');
   ck('άδεια «Οι εργασίες μου»: μήνυμα + σύνδεσμος στην Ουρά', m.includes('Δεν έχετε εργασίες σε εξέλιξη.') &&
-     m.includes('href="tasks.html?tab=queue"') && m.includes("switchView('queue')") && m.includes('→ Δείτε την Ουρά αδιάθετων'), m);
+     m.includes('href="tasks.html?tab=queue"') && m.includes("switchView('queue')") && m.includes('→ Δείτε την Ουρά μη ανατεθειμένων'), m);
   const withN = q => { const e = env({ view: 'mine', counts: { mine: 0, queue: q, all: null } }); e.api.render([]); return e.els.list.innerHTML; };
-  ck('«→ Δείτε την Ουρά αδιάθετων (7)»: το πλήθος της Ουράς', withN(7).includes('→ Δείτε την Ουρά αδιάθετων (7)'), withN(7));
-  ck('Ουρά 0 -> «(0)»', withN(0).includes('αδιάθετων (0)'));
-  ck('πλήθος άγνωστο -> «(–)», όχι «{n}»', withN(null).includes('αδιάθετων (–)') && !withN(null).includes('{n}'));
+  ck('«→ Δείτε την Ουρά μη ανατεθειμένων (7)»: το πλήθος της Ουράς', withN(7).includes('→ Δείτε την Ουρά μη ανατεθειμένων (7)'), withN(7));
+  ck('Ουρά 0 -> «(0)»', withN(0).includes('μη ανατεθειμένων (0)'));
+  ck('πλήθος άγνωστο -> «(–)», όχι «{n}»', withN(null).includes('μη ανατεθειμένων (–)') && !withN(null).includes('{n}'));
   ck('το load() φέρνει το πλήθος της Ουράς ΜΟΝΟ όταν η «Οι εργασίες μου» είναι άδεια',
      /if\(view==='mine' && !lastTasks\.length\) await loadQueueCount\(\);/.test(grab('load')) &&
      /view=queue/.test(grab('loadQueueCount')) && /counts\.queue = d\.tasks\.length/.test(grab('loadQueueCount')));
@@ -1229,16 +1242,18 @@ const gateHtml = withStep => {
 console.log('\n═══ Α3 πύλη: χωρίς step στη ρίζα, η λίστα ΙΔΙΑ με πριν από το Α3 (golden) ═══');
 if (process.env.GEN_FUEL_GATE_GOLDEN === '1') {
   const h = gateHtml(false), o = {};
-  for (const k of Object.keys(h)) o[k] = sha(h[k]);
+  for (const k of Object.keys(h)) o[k] = sha(oldWording(h[k]));
   fs.writeFileSync(GATE_GOLDEN, JSON.stringify(o, null, 1) + '\n');
   console.log('   γράφτηκε ' + GATE_GOLDEN);
 }
 {
   const golden = JSON.parse(fs.readFileSync(GATE_GOLDEN, 'utf8'));
   const got = gateHtml(false);
-  const diff = Object.keys(golden).filter(k => got[k] === undefined || sha(got[k]) !== golden[k]);
+  oldWordingN = 0;
+  const diff = Object.keys(golden).filter(k => got[k] === undefined || sha(oldWording(got[k])) !== golden[k]);
   ck(`${Object.keys(golden).length} λίστες (5 στιγμές × 4 χρήστες × 3 καρτέλες): ΙΔΙΕΣ bytes`,
      Object.keys(golden).length === GATE_RUNS.length && diff.length === 0, diff.slice(0, 3).join(' | '));
+  ck('πύλη: η ορολογία ΟΝΤΩΣ άλλαξε (oldWording όχι κενό)', oldWordingN > 0, String(oldWordingN));
 }
 
 // ── Α3: ενεργή εβδομάδα (η ρίζα έχει step, όπως μετά το Α4) ───────────────
@@ -1313,7 +1328,7 @@ console.log('\n═══ Α3 πύλη: ΜΕ step στη ρίζα η λίστα �
 // Α3, ΕΥΡΗΜΑ 16/10: η κεφαλίδα της εβδομάδας = κατάσταση ΟΛΗΣ της εβδομάδας
 // (t.chain από τον server), ΙΔΙΑ σε «Οι εργασίες μου», «Ουρά» και «Όλες».
 // Οι λίστες φιλτράρονται ΟΠΩΣ στο tasks_list (mine: δικές μου in_progress/
-// paused, queue: αδιάθετες open, all: όλες), και κάθε εργασία συστήματος
+// paused, queue: μη ανατεθειμένες open, all: όλες), και κάθε εργασία συστήματος
 // παίρνει chain ΟΠΩΣ στο tasks_chain.
 const withChain = ts => {
   const byKey = new Map();
@@ -1346,10 +1361,10 @@ const heads = html => {
 const UP_DONE = { status: 'done', assigned_to: 1, assigned_name: 'u1', closed_by_name: 'u1', closed_at: '2026-10-23 18:12:00' };
 const VER_U2 = { status: 'in_progress', assigned_to: 2, assigned_name: 'u2' };
 const WEEK_STATES = [
-  ['① σε εξέλιξη (u1), ② κλειδωμένο αδιάθετο', { status: 'in_progress', assigned_to: 1, assigned_name: 'u1' }, { status: 'open' }],
-  ['① αδιάθετο, ② κλειδωμένο αδιάθετο',         { status: 'open' }, { status: 'open' }],
+  ['① σε εξέλιξη (u1), ② κλειδωμένο μη ανατεθειμένο', { status: 'in_progress', assigned_to: 1, assigned_name: 'u1' }, { status: 'open' }],
+  ['① μη ανατεθειμένο, ② κλειδωμένο μη ανατεθειμένο',         { status: 'open' }, { status: 'open' }],
   ['① done (u1), ② σε εξέλιξη (u2)',            UP_DONE, VER_U2],
-  ['① done (u1), ② αδιάθετο',                   UP_DONE, { status: 'open' }],
+  ['① done (u1), ② μη ανατεθειμένο',                   UP_DONE, { status: 'open' }],
   ['① done, ② done',                            { status: 'done', assigned_to: 1, assigned_name: 'u1' }, { status: 'done', assigned_to: 2, assigned_name: 'u2' }],
   ['① na, ② σε εξέλιξη (u2)',                   { status: 'na', assigned_to: 1, assigned_name: 'u1' }, VER_U2],
 ];
@@ -1421,7 +1436,7 @@ const STEPS_AT = (d1, d2) => [
   { code: 'upload', action: 'upload', button_label: 'Ολοκλήρωση', button_icon: '✓', done: d2,
     done_at: d2 ? '2026-10-23 18:12:00' : null, done_by: d2 ? 'u1' : null }];
 // Μια ενεργή εβδομάδα σε στάδιο: 0 ① τώρα · 1 ② τώρα · 2 ③ τώρα · 3 όλα έγιναν.
-// rootWho / verWho: ανάδοχοι (null = αδιάθετη).
+// rootWho / verWho: ανάδοχοι (null = μη ανατεθειμένη).
 const stripWeek = (stage, o) => {
   o = o || {};
   const rootWho = o.rootWho === undefined ? 1 : o.rootWho, verWho = o.verWho === undefined ? 2 : o.verWho;
@@ -1491,8 +1506,8 @@ console.log('\n═══ Α3 λωρίδα: ΙΔΙΑ σε mine / queue / all, γ�
   }
   ck(`${compared} λωρίδες σε mine/queue: ΙΔΙΕΣ byte-προς-byte με την «Όλες» του ίδιου χρήστη`, compared >= 30 && bad.length === 0, bad.slice(0, 3).join(' | '));
   const mineU1 = stripOf(stripWeek(1), STAGE_NOW[1], 'mine', 1, false);
-  ck('② τώρα, «Οι εργασίες μου» του u1 (μόνο η ρίζα στη λίστα): ολόκληρη η κάρτα, και το ③ «→ αδιάθετο»',
-     mineU1 !== null && rowsOf(mineU1).length === 3 && rowsOf(mineU1)[2].html.includes('→ <b>αδιάθετο</b> · ανοίγει Δευ 26/10 00:00 · έως Δευ 26/10 17:00'),
+  ck('② τώρα, «Οι εργασίες μου» του u1 (μόνο η ρίζα στη λίστα): ολόκληρη η κάρτα, και το ③ «→ μη ανατεθειμένο»',
+     mineU1 !== null && rowsOf(mineU1).length === 3 && rowsOf(mineU1)[2].html.includes('→ <b>μη ανατεθειμένο</b> · ανοίγει Δευ 26/10 00:00 · έως Δευ 26/10 17:00'),
      String(mineU1 && rowsOf(mineU1).length));
   const mineU2s2 = stripOf(stripWeek(2), '2026-10-26 09:00:00', 'mine', 2, false);
   ck('③ τώρα, «Οι εργασίες μου» της u2 (μόνο το verify στη λίστα): 3 βήματα, ① και ② «έγινε» με τι · πότε · ποιος',
@@ -1509,9 +1524,9 @@ console.log('\n═══ ΚΑΡΤΑ ΕΠΙΝΑΥΛΟΥ (19/10): γραμμές �
   cases.forEach(([st, me, now], i) => ck(`γραμμές, στάδιο ${st} ${now.slice(5, 16)}: ${exp[i]} (ΠΟΤΕ δεν αλλάζουν θέση)`,
     seq(rowsInDom(H(st, me, me === 9, now))) === exp[i], seq(rowsInDom(H(st, me, me === 9, now)))));
   cases.forEach(([st, me, now]) => ck(`μπάρα, στάδιο ${st}: ① ② ③ από αριστερά`, nodesOf(H(st, me, me === 9, now)).map(x => x.n).join('') === '012'));
-  const links = h => [...h.matchAll(/<span class="fs-link( done)?"><\/span>/g)].map(m => m[1] ? 'γεμάτη' : 'διακεκομμένη').join(' ');
-  ck('γραμμή της μπάρας: γεμάτη μετά από «έγινε», αλλιώς διακεκομμένη', links(H(0, 1, false)) === 'διακεκομμένη διακεκομμένη'
-     && links(H(1, 1, false)) === 'γεμάτη διακεκομμένη' && links(H(3, 9, true)) === 'γεμάτη γεμάτη', links(H(1, 1, false)));
+  const links = h => [...h.matchAll(/<span class="fs-link( done)?"><\/span>/g)].map(m => m[1] ? 'γκρι' : 'γαλάζια').join(' ');
+  ck('γραμμή της μπάρας: γκρι μετά από «έγινε», αλλιώς γαλάζια (συνεχής, 21/10)', links(H(0, 1, false)) === 'γαλάζια γαλάζια'
+     && links(H(1, 1, false)) === 'γκρι γαλάζια' && links(H(3, 9, true)) === 'γκρι γκρι', links(H(1, 1, false)));
   ck('η σειρά των γραμμών είναι ΣΤΑΘΕΡΗ στον κώδικα ([2, 1, 0]), όχι ταξινόμηση κατά κατάσταση', /\[2, 1, 0\]\.map\(row\)/.test(grab('fuelStripHtml')) && !/const rank =/.test(grab('fuelStripHtml')));
 
   let r = rowsOf(H(0, 1, false));
@@ -1521,11 +1536,12 @@ console.log('\n═══ ΚΑΡΤΑ ΕΠΙΝΑΥΛΟΥ (19/10): γραμμές �
   ck('...② 🔒 ΠΕΡΙΜΕΝΕΙ «→ u1 · ανοίγει όταν γίνει το ① · έως Παρ 23/10 19:00» (όνομα έντονο), χωρίς κουμπί',
      r[1].cls === 'next' && r[1].html.includes('<span class="fs-tag next">🔒 ΠΕΡΙΜΕΝΕΙ</span>')
      && r[1].html.includes('→ <b>u1</b> · ανοίγει όταν γίνει το ① · έως Παρ 23/10 19:00') && !/<button/.test(r[1].html), r[1].html);
-  ck('...③ «→ αδιάθετο · ανοίγει Δευ 26/10 00:00 · έως Δευ 26/10 17:00»', r[2].html.includes('→ <b>αδιάθετο</b> · ανοίγει Δευ 26/10 00:00 · έως Δευ 26/10 17:00'), r[2].html);
+  ck('...③ «→ μη ανατεθειμένο · ανοίγει Δευ 26/10 00:00 · έως Δευ 26/10 17:00»', r[2].html.includes('→ <b>μη ανατεθειμένο</b> · ανοίγει Δευ 26/10 00:00 · έως Δευ 26/10 17:00'), r[2].html);
   r = rowsOf(H(0, 2, false));
   ck('στάδιο 0, άλλος χρήστης: ① ▶ ΤΩΡΑ «Το κάνει: u1», ΟΧΙ κουμπί', r[0].html.includes('Το κάνει: u1') && !/<button/.test(r[0].html), r[0].html);
   r = rowsOf(H(0, 9, true, STAGE_NOW[0], { rootWho: null }));
-  ck('στάδιο 0, ① αδιάθετο: «Το κάνει: αδιάθετο», κανένα κουμπί ούτε για admin', r[0].html.includes('Το κάνει: αδιάθετο') && !/<button/.test(r[0].html), r[0].html);
+  ck('στάδιο 0, ① μη ανατεθειμένο: «Μη ανατεθειμένο · περιμένει ανάθεση» (strip_who_none, 22b), ΟΧΙ «Το κάνει: …», κανένα κουμπί ούτε για admin',
+     r[0].html.includes('<span class="fs-text">Μη ανατεθειμένο · περιμένει ανάθεση</span>') && !r[0].html.includes('Το κάνει') && !/<button/.test(r[0].html), r[0].html);
 
   r = rowsOf(H(1, 1, false));
   ck('στάδιο 1: ① ✓ ΕΓΙΝΕ «Κατέβηκε · Πεμ 22/10 09:05 · u1» + μικρό «⬇ ξανά» (καταγράφεται)',
@@ -1535,9 +1551,9 @@ console.log('\n═══ ΚΑΡΤΑ ΕΠΙΝΑΥΛΟΥ (19/10): γραμμές �
      r[1].cls === 'now' && r[1].html.includes('Μπες στο CMS → Fuel Charge Import → ανέβασε το αρχείο. Μετά πάτα το κουμπί.')
      && r[1].html.includes('<button class="btn fs-btn" onclick="openUpload(90)">Δηλώνω: το ανέβασα στο CMS</button>'), r[1].html);
   const n1 = nodesOf(H(1, 1, false));
-  ck('μπάρα στάδιο 1: ① έγινε «Πεμ 22/10 09:05», ② «ΤΩΡΑ · έως Παρ 23/10 19:00», ③ «→ αδιάθετο · Δευ 26/10 00:00»',
+  ck('μπάρα στάδιο 1: ① έγινε «Πεμ 22/10 09:05», ② «ΤΩΡΑ · έως Παρ 23/10 19:00», ③ «→ μη ανατεθειμένο · Δευ 26/10 00:00»',
      n1[0].cls === 'done' && n1[0].html.includes('Πεμ 22/10 09:05') && n1[1].cls === 'now' && n1[1].html.includes('ΤΩΡΑ · έως Παρ 23/10 19:00')
-     && n1[2].cls === 'next' && n1[2].html.includes('→ <b>αδιάθετο</b> · Δευ 26/10 00:00'), n1.map(x => x.html).join(' | '));
+     && n1[2].cls === 'next' && n1[2].html.includes('→ <b>μη ανατεθειμένο</b> · Δευ 26/10 00:00'), n1.map(x => x.html).join(' | '));
   r = rowsOf(H(1, 2, false));
   ck('στάδιο 1, άλλος χρήστης: ② «Το κάνει: u1», κανένα κουμπί', r[1].html.includes('Το κάνει: u1') && !/<button/.test(r[1].html));
   r = rowsOf(H(1, 3, false));
@@ -1658,6 +1674,73 @@ console.log('\n═══ Α3 λωρίδα: ΧΩΡΙΣ step (παλιά ροή) �
      /^function taskRow\(t\)\{/.test(grab('taskRow')) && !/verifyActive|fuel_verify_|fuelActiveRoot|weekItems/.test(grab('taskRow')));
 }
 
+
+console.log('\n═══ Ορολογία (20/10): «μη ανατεθειμέν…», ΠΟΤΕ «αδιάθετ…» ή «Χωρίς ανάδοχο» ═══');
+{
+  const OLD = /αδιάθετ|Αδιάθετ|ΑΔΙΑΘΕΤ|[Χχ]ωρίς ανάδοχο/;
+  ck('tasks.html: καμία παλιά λέξη (κείμενα ΚΑΙ σχόλια)', !OLD.test(src), (src.match(OLD) || [''])[0]);
+  const eff = JSON.stringify(MIG_TEXTS);
+  ck('κείμενα της βάσης μετά το 22b: καμία παλιά λέξη', !OLD.test(eff), (eff.match(OLD) || [''])[0]);
+  ck('tasks.mine_empty_queue = «→ Δείτε την Ουρά μη ανατεθειμένων ({n})»', MIG_TEXTS.tasks.mine_empty_queue === '→ Δείτε την Ουρά μη ανατεθειμένων ({n})');
+  ck('tasks.strip_unassigned = «μη ανατεθειμένο»', MIG_TEXTS.tasks.strip_unassigned === 'μη ανατεθειμένο');
+  ck('καρτέλα: «📥 Ουρά μη ανατεθειμένων»', src.includes("queue: '📥 Ουρά μη ανατεθειμένων'"));
+  ck('tooltip καρτέλας: «Queue — Μη ανατεθειμένες εργασίες…»', src.includes("'Queue — Μη ανατεθειμένες εργασίες που ταιριάζουν στις δεξιότητές σας'"));
+  ck('σύνοψη «Όλες»: «μη ανατεθειμένες <b>n</b>»', src.includes('unassigned">μη ανατεθειμένες <b>${unassigned}</b>'));
+  ck('κενή «Ουρά»: «Καμία μη ανατεθειμένη εργασία…»', src.includes("'Καμία μη ανατεθειμένη εργασία για τις δεξιότητές σας.'"));
+  ck('στήλη αναδόχου στην «Όλες»: title «μη ανατεθειμένη»', src.includes('title="μη ανατεθειμένη">—'));
+  const m22b = fs.readFileSync('db/migrations/2026-10-22b_ui_texts_unassigned.sql', 'utf8');
+  ck('22b: ετικέτα της open = «Μη ανατεθειμένη» (υπόμνημα / badge)', m22b.includes("UPDATE `4a_task_statuses` SET `label` = 'Μη ανατεθειμένη' WHERE `code` = 'open';"));
+}
+
+console.log('\n═══ Α4β (21/10): μπάρα, σώμα κάρτας λευκό, «Μη ανατεθειμένο · περιμένει ανάθεση», καρτέλες στο κινητό ═══');
+{
+  // Ένας κανόνας CSS του tasks.html, αυτούσιος (επιλογέας στην αρχή της γραμμής).
+  const rule = sel => { const i = src.indexOf('\n  ' + sel + ' {'); if (i < 0) return '';
+    return src.slice(i + 3, src.indexOf('}', i) + 1); };
+  const H = (stage, me, admin, now, o) => stripOf(stripWeek(stage, o), now || STAGE_NOW[stage], 'all', me, admin);
+  const links = h => [...h.matchAll(/<span class="fs-link( done)?"><\/span>/g)].map(m => m[1] ? 'γκρι' : 'γαλάζια').join(' ');
+  ck('γραμμή μπάρας ① ΤΩΡΑ: γαλάζια γαλάζια', links(H(0, 1, false)) === 'γαλάζια γαλάζια', links(H(0, 1, false)));
+  ck('γραμμή μπάρας ② ΤΩΡΑ: ①→② γκρι, ②→③ γαλάζια', links(H(1, 1, false)) === 'γκρι γαλάζια', links(H(1, 1, false)));
+  ck('γραμμή μπάρας ③ ΤΩΡΑ (Δευ 09:00): ①→③ γκρι', links(H(2, 2, false, '2026-10-26 09:00:00')) === 'γκρι γκρι', links(H(2, 2, false, '2026-10-26 09:00:00')));
+  ck('γραμμή μπάρας όλα έγιναν: γκρι γκρι', links(H(3, 9, true)) === 'γκρι γκρι', links(H(3, 9, true)));
+  const lk = rule('.fs-link'), lkd = rule('.fs-link.done');
+  ck('.fs-link: ΣΥΝΕΧΗΣ γαλάζια 6px από τη βάση (--fs-next-line), καμία διακεκομμένη', /border-top: 6px solid var\(--fs-next-line, #4f9fb0\)/.test(lk) && !/dashed/.test(lk + lkd), lk);
+  ck('.fs-link.done: ΙΔΙΟ γκρι με το περίγραμμα των κύκλων «έγινε» (--fs-done-line)', /border-top-color: var\(--fs-done-line, #6b6e70\)/.test(lkd)
+     && /border: 4px solid var\(--fs-done-line, #6b6e70\)/.test(rule('.fs-dot.done')), lkd);
+  const dot = rule('.fs-dot');
+  ck('κύκλοι: 42px, νούμερο 20px / 900, ΙΔΙΟ μέγεθος σε κάθε κατάσταση', /width: 42px; height: 42px/.test(dot) && /font-weight: 900; font-size: 20px/.test(dot)
+     && ['.fs-dot.done', '.fs-dot.now', '.fs-dot.next', '.fs-dot.wrong'].every(s => !/width:|height:/.test(rule(s))), dot);
+  ck('περιγράμματα: έγινε / ακολουθεί / λάθος 4px, ΤΩΡΑ 5px', /border: 4px solid/.test(rule('.fs-dot.next')) && /border: 4px solid/.test(rule('.fs-dot.wrong'))
+     && /border: 5px solid var\(--fs-ink, #1e2022\)/.test(rule('.fs-dot.now')));
+  ck('η γραμμή στο ΚΕΝΤΡΟ των κύκλων: margin-top 18 + 6/2 = 42/2', /margin-top: 18px/.test(lk));
+  const bad = ['.fs-dot.done', '.fs-dot.now', '.fs-dot.next', '.fs-link', '.fs-link.done'].map(rule).join('\n')
+    .replace(/var\(--fs-[a-z-]+, #[0-9a-f]{6}\)/gi, '').match(/#[0-9a-f]{3,6}\b/gi) || [];
+  ck('χρώματα μπάρας από τη βάση (var(--fs-*)), εκτός από το λευκό του κύκλου «ακολουθεί»', bad.join() === '#fff', bad.join());
+
+  // Σώμα λευκό: η ενεργή εβδομάδα έχει fuel-card, η κεφαλίδα κρατά το λεμονί (tone open).
+  const { api, els } = env({ statuses: ST_DB, now: STAGE_NOW[0], userId: 1, admin: false, view: 'all' });
+  const ts0 = tabOf(stripWeek(0), 'all', 1); api.setTasks(ts0); api.render(ts0);
+  const g = /<div class="(client-group sys[^"]*)"[^>]*style="([^"]*)"/.exec(els.list.innerHTML) || [];
+  ck('ενεργή εβδομάδα: class «client-group sys fuel-card tone open», κεφαλίδα λεμονί (color_open_head)', g[1] === 'client-group sys fuel-card tone open'
+     && (g[2] || '').includes('--tone-bg:#fcff29'), (g[1] || '') + ' | ' + (g[2] || ''));
+  ck('σώμα ΛΕΥΚΟ: .client-group.fuel-card > .grp-body { background: #fff }', /background: #fff; color: #222;/.test(rule('.client-group.fuel-card > .grp-body')));
+  ck('λεμονί στο σώμα ΜΟΝΟ η γραμμή ΤΩΡΑ (.fs-step.now -> --fs-now)', /background: var\(--fs-now, #fcff29\)/.test(rule('.fs-step.now'))
+     && ['.fs-step', '.fs-step.done', '.fs-step.next', '.fstrip', '.fs-notes'].every(s => !/--fs-now|fcff29/i.test(rule(s))));
+  ck('κλειστή εβδομάδα: πίνακας ποσοστών με τα χρώματα του λευκού (όχι --closed-fg)', /background: #fff; color: #222; border-color: #d6d6d6;/.test(rule('.client-group.fuel-card > .grp-body .fuel-tbl td')));
+  ck('μη ενεργή εβδομάδα (golden): ΚΑΝΕΝΑ fuel-card', /'client-group sys' \+ \(fa \? ' fuel-card' : ''\)/.test(src));
+
+  // «Μη ανατεθειμένο · περιμένει ανάθεση» (νέο κλειδί, 22b).
+  ck('tasks.strip_who_none = «Μη ανατεθειμένο · περιμένει ανάθεση» (22b)', MIG_TEXTS.tasks.strip_who_none === 'Μη ανατεθειμένο · περιμένει ανάθεση');
+  const r3 = rowsOf(H(2, 9, true, '2026-10-26 09:00:00', { verWho: null }));
+  ck('③ ΤΩΡΑ μη ανατεθειμένο: «Μη ανατεθειμένο · περιμένει ανάθεση», ΟΧΙ «Το κάνει: μη ανατεθειμένο»', r3[2].cls === 'now'
+     && r3[2].html.includes('<span class="fs-text">Μη ανατεθειμένο · περιμένει ανάθεση</span>') && !r3[2].html.includes('Το κάνει'), r3[2].html);
+  const r3b = rowsOf(H(2, 9, true, '2026-10-26 09:00:00'));
+  ck('...με ανάδοχο: «Το κάνει: u2» (strip_who, αμετάβλητο)', r3b[2].html.includes('Το κάνει: u2') || /<button/.test(r3b[2].html), r3b[2].html);
+  const rb = fs.readFileSync('db/migrations/rollback/2026-10-22b_ui_texts_unassigned.rollback.sql', 'utf8');
+  ck('rollback 22b: σβήνει το strip_who_none', rb.includes("DELETE FROM `4a_ui_texts` WHERE `scope` = 'tasks' AND `k` = 'strip_who_none';"));
+
+  ck('καρτέλες στο κινητό: padding 8px 12px (max-width 600px)', src.includes('@media (max-width: 600px) { .tab { padding: 8px 12px; } }'));
+}
 
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);
 process.exit(fail ? 1 : 0);
