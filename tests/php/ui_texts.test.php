@@ -172,6 +172,21 @@ ck('22b: μία INSERT και μία UPDATE, τίποτε άλλο που γρά
 ck("κανένα ; ή ' μέσα σε σχόλιο (22b και rollback)", !preg_match("/^\\s*--[^\\n]*[;']/m", $mig22 . "\n" . $rb22));
 ck('22b: καμία παλιά λέξη στις τιμές που γράφει', !preg_match('/αδιάθετ|ανάδοχο/u', implode("\n", array_column($tuples($mig22), 1))));
 
+echo "\n═══ migration 2026-10-22c: «ακολουθεί» λιλά (απόφαση 21/10) ═══\n";
+$mig22c = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-22c_ui_texts_fuel_next_purple.sql');
+$rb22c  = file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-22c_ui_texts_fuel_next_purple.rollback.sql');
+$mig21a = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-21a_ui_texts_fuel_card.sql');
+$NEXT = array('tasks.color_fs_next_bg', 'tasks.color_fs_next_line', 'tasks.color_fs_next_text', 'tasks.color_fs_next_num');
+ck('22c: ΜΟΝΟ τα 4 χρώματα «ακολουθεί», kind color, #rrggbb',
+   array_keys($tuples($mig22c)) === $NEXT && count(array_filter($tuples($mig22c), function ($v) { return $v[0] === 'color' && preg_match('/^#[0-9a-f]{6}$/', $v[1]); })) === 4,
+   json_encode($tuples($mig22c), JSON_UNESCAPED_UNICODE));
+ck('22c: τα κλειδιά υπάρχουν ήδη στο 21a (κανένα νέο κλειδί)', count(array_intersect_key($tuples($mig21a), array_flip($NEXT))) === 4);
+ck('rollback 22c: ΑΚΡΙΒΩΣ οι τιμές του 21a', $tuples($rb22c) == array_intersect_key($tuples($mig21a), array_flip($NEXT)), json_encode($tuples($rb22c)));
+ck('22c και rollback: μία INSERT … ON DUPLICATE KEY UPDATE text = VALUES(text), κανένα DDL / DELETE / UPDATE',
+   preg_match_all('/\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE)\b/', preg_replace(array('/^\s*--.*$/m', '/ON DUPLICATE KEY UPDATE/'), '', $mig22c . "\n" . $rb22c)) === 2
+   && substr_count($mig22c . $rb22c, 'ON DUPLICATE KEY UPDATE `text` = VALUES(`text`);') === 2);
+ck("κανένα ; ή ' μέσα σε σχόλιο (22c και rollback)", !preg_match("/^\\s*--[^\\n]*[;']/m", $mig22c . "\n" . $rb22c));
+
 echo "\n═══ ui_texts_scopes: λευκή λίστα ═══\n";
 ck('«tasks,common» -> [tasks, common]', ui_texts_scopes('tasks,common') === array('tasks', 'common'));
 ck('κενά γύρω -> κόβονται', ui_texts_scopes(' tasks , common ') === array('tasks', 'common'));

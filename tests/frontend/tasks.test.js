@@ -18,7 +18,9 @@ const UITEXTS_SRC = fs.readFileSync('frontend/ui-texts.js', 'utf8');
 const UI_MIGS = ['db/migrations/2026-10-15b_ui_texts.sql', 'db/migrations/2026-10-19b_ui_texts_fuel_week.sql',
                  'db/migrations/2026-10-21a_ui_texts_fuel_card.sql',
                  // 20/10: «αδιάθετ…» -> «μη ανατεθειμέν…» (2 κείμενα· νικά το 15b / 19b, ίδια σειρά με τη βάση).
-                 'db/migrations/2026-10-22b_ui_texts_unassigned.sql'];
+                 'db/migrations/2026-10-22b_ui_texts_unassigned.sql',
+                 // 21/10: «ακολουθεί / ΠΕΡΙΜΕΝΕΙ» λιλά (4 χρώματα του 21a, νικά το 21a).
+                 'db/migrations/2026-10-22c_ui_texts_fuel_next_purple.sql'];
 const UI_MIG = UI_MIGS.join(' + ');
 // MIG_KINDS: kind ανά κλειδί (text | color). Το τεστ διαρροής ελέγχει ΜΟΝΟ
 // κείμενα: ένα χρώμα της βάσης μπορεί να συμπίπτει με το CSS της σελίδας
@@ -1704,7 +1706,7 @@ console.log('\n═══ Α4β (21/10): μπάρα, σώμα κάρτας λευ
   ck('γραμμή μπάρας ③ ΤΩΡΑ (Δευ 09:00): ①→③ γκρι', links(H(2, 2, false, '2026-10-26 09:00:00')) === 'γκρι γκρι', links(H(2, 2, false, '2026-10-26 09:00:00')));
   ck('γραμμή μπάρας όλα έγιναν: γκρι γκρι', links(H(3, 9, true)) === 'γκρι γκρι', links(H(3, 9, true)));
   const lk = rule('.fs-link'), lkd = rule('.fs-link.done');
-  ck('.fs-link: ΣΥΝΕΧΗΣ γαλάζια 6px από τη βάση (--fs-next-line), καμία διακεκομμένη', /border-top: 6px solid var\(--fs-next-line, #4f9fb0\)/.test(lk) && !/dashed/.test(lk + lkd), lk);
+  ck('.fs-link: ΣΥΝΕΧΗΣ 6px, χρώμα «ακολουθεί» από τη βάση (--fs-next-line), καμία διακεκομμένη', /border-top: 6px solid var\(--fs-next-line, #4f9fb0\)/.test(lk) && !/dashed/.test(lk + lkd), lk);
   ck('.fs-link.done: ΙΔΙΟ γκρι με το περίγραμμα των κύκλων «έγινε» (--fs-done-line)', /border-top-color: var\(--fs-done-line, #6b6e70\)/.test(lkd)
      && /border: 4px solid var\(--fs-done-line, #6b6e70\)/.test(rule('.fs-dot.done')), lkd);
   const dot = rule('.fs-dot');
@@ -1740,6 +1742,31 @@ console.log('\n═══ Α4β (21/10): μπάρα, σώμα κάρτας λευ
   ck('rollback 22b: σβήνει το strip_who_none', rb.includes("DELETE FROM `4a_ui_texts` WHERE `scope` = 'tasks' AND `k` = 'strip_who_none';"));
 
   ck('καρτέλες στο κινητό: padding 8px 12px (max-width 600px)', src.includes('@media (max-width: 600px) { .tab { padding: 8px 12px; } }'));
+}
+
+console.log('\n═══ Α4γ (21/10): «ακολουθεί / ΠΕΡΙΜΕΝΕΙ» λιλά, ΜΟΝΟ από τη βάση (22c) ═══');
+{
+  const C = k => MIG_TEXTS.tasks[k];
+  const NEW = { color_fs_next_bg: '#e3d9ef', color_fs_next_line: '#8e6fc4', color_fs_next_text: '#4b2f7a', color_fs_next_num: '#6b4fa3' };
+  ck('μετά το 22c: τα 4 χρώματα «ακολουθεί» λιλά', Object.entries(NEW).every(([k, v]) => C(k) === v), JSON.stringify(Object.keys(NEW).map(C)));
+  const h = stripOf(stripWeek(1), STAGE_NOW[1], 'all', 1, false);
+  ck('...και στο style της κάρτας (② ΤΩΡΑ): --fs-next-bg / -line / -text / -num', ['--fs-next-bg:#e3d9ef;', '--fs-next-line:#8e6fc4;', '--fs-next-text:#4b2f7a;', '--fs-next-num:#6b4fa3;'].every(x => h.includes(x)), h.slice(0, 400));
+  ck('κανένα λιλά στον κώδικα: η αλλαγή είναι ΜΟΝΟ στη βάση', !/#(e3d9ef|8e6fc4|4b2f7a|6b4fa3)/i.test(src));
+  const m22c = fs.readFileSync('db/migrations/2026-10-22c_ui_texts_fuel_next_purple.sql', 'utf8');
+  const tup = sql => [...sql.matchAll(/\(\s*'([a-z_]+)',\s*'(\w+)',\s*'(text|color)',\s*'([^']*)'\)/g)].map(m => m[2] + '=' + m[4]).sort().join(' ');
+  ck('22c: ΜΟΝΟ τα 4 κλειδιά «ακολουθεί», kind color', tup(m22c) === Object.entries(NEW).map(([k, v]) => k + '=' + v).sort().join(' ')
+     && [...m22c.matchAll(/'(text|color)',/g)].every(m => m[1] === 'color'), tup(m22c));
+  const lum = hex => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+                       return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const text = [['κείμενο γραμμής σε φόντο γραμμής', C('color_fs_next_text'), C('color_fs_next_bg')], ['ετικέτα «ΠΕΡΙΜΕΝΕΙ» (λευκό)', C('color_fs_next_text'), '#ffffff'],
+                ['«→ ποιος» στη μπάρα', C('color_fs_next_text'), C('color_fs_bar_bg')], ['νούμερο κύκλου (λευκό)', C('color_fs_next_num'), '#ffffff']];
+  const lowT = text.filter(([, a, b]) => ratio(a, b) < 4.5);
+  ck('αντίθεση κειμένου ≥ 4.5:1: ' + text.map(([n, a, b]) => n + ' ' + ratio(a, b).toFixed(2)).join(' · '), lowT.length === 0);
+  const gfx = [['περίγραμμα κύκλου σε λευκό', C('color_fs_next_line'), '#ffffff'], ['γραμμή μπάρας σε φόντο μπάρας', C('color_fs_next_line'), C('color_fs_bar_bg')]];
+  ck('γραφικά ≥ 3:1: ' + gfx.map(([n, a, b]) => n + ' ' + ratio(a, b).toFixed(2)).join(' · '), gfx.every(([, a, b]) => ratio(a, b) >= 3));
+  ck('το μωβ της «Μη ανατεθειμένη» (4a_task_statuses) και της ετικέτας ΣΥΣΤΗΜΑ ΔΕΝ αλλάζουν', !/4a_task_statuses|sys/i.test(m22c.replace(/^--.*$/mg, ''))
+     && /\.sys-tag \{[^}]*background: #4527a0;/.test(src));
 }
 
 console.log(`\n═══ ΣΥΝΟΛΟ: ${pass} OK, ${fail} ΛΑΘΟΣ ═══\n`);
