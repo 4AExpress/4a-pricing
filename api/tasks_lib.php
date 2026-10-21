@@ -999,7 +999,7 @@ function tasks_release($db, $session, $perms, $taskId, $note = null)
     return tasks_okres($db, $taskId);
 }
 
-// $now (done, na): «Y-m-d H:i:s» ώρα Αθήνας, ΜΟΝΟ για τα τεστ του Δ-Α8.
+// $now (done, na): «Y-m-d H:i:s» σε UTC (όπως η βάση, time_lib.php), ΜΟΝΟ για τα τεστ του Δ-Α8.
 function tasks_done($db, $session, $perms, $taskId, $note = null, $now = null)
 {
     list($task, $err) = tasks_guard_owner($db, $session, $perms, $taskId);

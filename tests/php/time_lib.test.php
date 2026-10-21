@@ -61,7 +61,7 @@ ck('άκυρο «τώρα» -> εξαίρεση (ποτέ σιωπηλά «τώ�
 echo "\n═══ ΜΙΑ πηγή: καμία άλλη ζώνη ή «τώρα» στον κώδικα των εργασιών ═══\n";
 // Από τη διαδρομή του time_lib.php: τοπικά το repo, στο bundle του Β8 τα ΑΝΕΒΑΣΜΕΝΑ αρχεία του server.
 $api = dirname(__DIR__ . '/../../api/time_lib.php') . '/';
-$files = array('tasks_lib.php', 'tasks_steps.php', 'tasks_create.php', 'tasks_system.php', 'tasks.php', 'fuel_weekly.php', 'fuel_lib.php');
+$files = array('tasks_lib.php', 'tasks_steps.php', 'tasks_create.php', 'tasks_system.php', 'tasks.php', 'fuel_weekly.php', 'fuel_lib.php', 'fuel_verify_lib.php');
 $hits = array();
 foreach ($files as $f) {
     $src = preg_replace('~^\s*(//|\*|/\*).*$~m', '', file_get_contents($api . $f));   // χωρίς σχόλια
@@ -72,7 +72,8 @@ ck('tasks_* / fuel_weekly / fuel_lib: καμία σταθερή ζώνη, καν
 ck("η ζώνη Αθήνας γράφεται ΜΟΝΟ στο time_lib.php", substr_count(file_get_contents($api . 'time_lib.php'), "'Europe/Athens'") === 1);
 $REQ = "~require_once _{2}DIR_{2} \\. '/time_lib\\.php';~";   // χωρίς τη λέξη αυτούσια: ο bundler του Β8 μετρά κάθε εμφάνισή της
 ck('tasks_lib / tasks_steps / fuel_lib φορτώνουν το time_lib.php', preg_match($REQ, file_get_contents($api . 'tasks_lib.php'))
-   && preg_match($REQ, file_get_contents($api . 'tasks_steps.php')) && preg_match($REQ, file_get_contents($api . 'fuel_lib.php')));
+   && preg_match($REQ, file_get_contents($api . 'tasks_steps.php')) && preg_match($REQ, file_get_contents($api . 'fuel_lib.php'))
+   && preg_match($REQ, file_get_contents($api . 'fuel_verify_lib.php')));
 
 echo "\n═══ migration 2026-10-22d: η αναδρομική εβδομάδα 05/10 (07h) σε UTC ═══\n";
 $mig = file_get_contents(__DIR__ . '/../../db/migrations/2026-10-22d_tz_fuel_week_1005_utc.sql');

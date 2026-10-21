@@ -1,5 +1,9 @@
 <?php
-// fuel_verify_lib.php | v1.0 | 19-10-2026
+// fuel_verify_lib.php | v1.1 | 21-10-2026
+// v1.1: ζώνη ώρας (σύμβαση 21/10, time_lib.php). Οι στιγμές της βάσης (UTC)
+//       φεύγουν σε ώρα Αθήνας: at των απαντήσεων, wrong_at, alert.at. Δ-Α8
+//       (tasks_close_gate) και from_week μέσω της κοινής συνάρτησης· το $now
+//       των τεστ = UTC. Ημερομηνίες εβδομάδας με ρητή ζώνη Αθήνας.
 // ΕΠΑΛΗΘΕΥΤΗΣ του fuel_weekly_verify (σχέδιο 4a-private/verifier_plan.md,
 // αποφάσεις 19/10). Migrations 2026-10-23a (πίνακες) και 2026-10-23b
 // (δικαίωμα fuel_verify_values).
@@ -27,6 +31,9 @@
 // τίποτα δεν εκτελείται κατά το include, δοκιμάζονται σε SQLite.
 // Η τυχαιότητα έρχεται από $rand(n) -> ακέραιος στο [0, n): random_int
 // στην παραγωγή, ορισμένη ακολουθία στα τεστ.
+
+// Ζώνη ώρας: ΜΙΑ πηγή (time_lib.php, 21/10).
+require_once __DIR__ . '/time_lib.php';
 
 if (!function_exists('fuel_verify_settings')) {
 
@@ -113,7 +120,7 @@ function fuel_verify_settings($db)
         if (count($p) === 2 && $p[0] !== '' && $p[1] !== '') $s['other_type'][trim($p[0])] = trim($p[1]);
     }
     $fw = isset($rows['from_week']) ? trim((string)$rows['from_week']) : '';
-    $d  = DateTime::createFromFormat('!Y-m-d', $fw);
+    $d  = DateTime::createFromFormat('!Y-m-d', $fw, new DateTimeZone(TIME_LOCAL_TZ));
     if ($d && $d->format('Y-m-d') === $fw) $s['from_week'] = $fw; else $s['valid'] = false;
     $m = isset($rows['max_draws']) ? trim((string)$rows['max_draws']) : '';
     if (preg_match('/^\d+$/', $m) && (int)$m >= 1) $s['max_draws'] = (int)$m; else $s['valid'] = false;
@@ -156,7 +163,7 @@ function fuel_verify_week($task)
 {
     $p  = isset($task['payload']) && is_string($task['payload']) ? json_decode($task['payload'], true) : null;
     $ws = is_array($p) && isset($p['week_start']) ? (string)$p['week_start'] : '';
-    $d  = DateTime::createFromFormat('!Y-m-d', $ws);
+    $d  = DateTime::createFromFormat('!Y-m-d', $ws, new DateTimeZone(TIME_LOCAL_TZ));
     return $d && $d->format('Y-m-d') === $ws ? $ws : null;
 }
 
@@ -189,7 +196,8 @@ function fuel_verify_active($db, $task)
     if (fuel_verify_type_for($db, $task['task_code']) === null) return false;
     if ($s['from_week'] === null) return true;
     $ws = fuel_verify_week($task);
-    return $ws === null || $ws >= $s['from_week'];
+    // Εβδομάδα από Δευ 00:00 (Αθήνα) του from_week και μετά: σύγκριση στιγμών, κοινή συνάρτηση.
+    return $ws === null || time_cmp(time_instant($ws . ' 00:00:00', 'local'), time_instant($s['from_week'] . ' 00:00:00', 'local')) >= 0;
 }
 
 /** Βλέπει τις αναμενόμενες τιμές; ΜΟΝΟ από το δικαίωμα, κανένας έλεγχος ρόλου. */
@@ -215,7 +223,7 @@ function fuel_verify_prev_prices($db, $task)
     $ws = fuel_verify_week($task);
     $sk = isset($task['subject_key']) ? (string)$task['subject_key'] : '';
     if ($ws === null || !preg_match('/^(.*)' . preg_quote($ws, '/') . '$/', $sk, $m)) return null;
-    $prev = (new DateTime($ws))->modify('-7 days')->format('Y-m-d');
+    $prev = time_instant($ws . ' 00:00:00', 'local')->modify('-7 days')->format('Y-m-d');
     $st = $db->prepare('SELECT `payload` FROM `4a_tasks` WHERE `client_id` IS NULL AND `subject_key` = ? ORDER BY `id`');
     $st->execute([$m[1] . $prev]);
     foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $pl) {
@@ -351,7 +359,7 @@ function fuel_verify_answers($db, $taskId, $round)
     $out = [];
     foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
         $out[(int)$r['check_id']] = ['chosen' => fuel_verify_cents((string)$r['chosen']), 'ok' => (int)$r['is_correct'] === 1,
-                                     'user_id' => (int)$r['user_id'], 'user_name' => $r['user_name'], 'at' => $r['created_at']];
+                                     'user_id' => (int)$r['user_id'], 'user_name' => $r['user_name'], 'at' => time_db_to_local($r['created_at'])];
     }
     return $out;
 }
@@ -448,7 +456,7 @@ function fuel_verify_form($db, $session, $perms, $taskId, $rand = null, $now = n
         'can_reset'     => $state['locked'] && !$closed && tasks_is_admin($perms)
                            && !($w !== null && (int)$w['actor_id'] === $me),
         'wrong_by'      => $w === null ? null : $w['actor_name'],
-        'wrong_at'      => $w === null ? null : $w['created_at'],
+        'wrong_at'      => $w === null ? null : time_db_to_local($w['created_at']),
         'lines'         => $out,
     ]];
 }
@@ -643,7 +651,7 @@ function fuel_verify_info($db, $session, $perms, $task, array $events)
                 $wrong[] = $x + ['fuel_label' => isset($lbl[$ft]) ? $lbl[$ft] : $ft]
                               + (isset($vals[$cid]) ? $vals[$cid] : ['picked' => null, 'expected' => null]);
             }
-            $info['alert'] = ['at' => $w['created_at'], 'by' => $w['actor_name'], 'by_id' => (int)$w['actor_id'],
+            $info['alert'] = ['at' => time_db_to_local($w['created_at']), 'by' => $w['actor_name'], 'by_id' => (int)$w['actor_id'],
                               'wrong' => $wrong, 'total' => isset($m['total']) ? (int)$m['total'] : null];
         }
     }

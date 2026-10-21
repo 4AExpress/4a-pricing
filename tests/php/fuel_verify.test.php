@@ -160,8 +160,10 @@ $MGR   = array('role' => 'manager', 'pricelist_scope' => 'GR', 'permissions' => 
 $MGRS  = array('role' => 'manager', 'pricelist_scope' => 'GR', 'permissions' => $SEE);
 $S = function ($id) { return array('id' => $id); };
 $NUMS = array('total' => 69, 'merge' => 0, 'updated' => 69, 'exception' => 0);
-$MON  = '2026-10-26 09:00:00';      // Δευτέρα της εβδομάδας: Δ-Α8 ανοιχτό
-$SUN  = '2026-10-25 23:59:59';      // ένα δευτερόλεπτο πριν
+// «Τώρα» των τεστ σε UTC (σύμβαση 21/10, time_lib.php). Δευ 26/10 00:00 Αθήνας (ΗΔΗ UTC+2) = Κυρ 25/10 22:00 UTC.
+$MON  = '2026-10-26 07:00:00';      // Δευ 26/10 09:00 Αθήνας: Δ-Α8 ανοιχτό
+$SUN  = '2026-10-25 21:59:59';      // Κυρ 25/10 23:59:59 Αθήνας: ένα δευτερόλεπτο πριν
+$MON0 = '2026-10-25 22:00:00';      // Δευ 26/10 00:00:00 Αθήνας ακριβώς
 $ev = function ($db, $id) {
     $st = $db->prepare('SELECT `event`, `actor_id`, `note`, `meta` FROM `4a_task_events` WHERE `task_id` = ? ORDER BY `id`');
     $st->execute(array($id)); return $st->fetchAll(PDO::FETCH_ASSOC);
@@ -282,7 +284,7 @@ foreach (array(false, true) as $with) {
     $lists[] = json_encode(tasks_list($db, $S(1), $ADM, 'all')['tasks'], JSON_UNESCAPED_UNICODE);
 }
 ck('εβδομάδα 19/10 (< from_week): λίστα ΙΔΙΑ byte-προς-byte με και χωρίς πίνακες επαληθευτή', $lists[0] === $lists[1]);
-ck('...ΜΑΖΙ με τις ώρες (σταθερό ρολόι): created_at μέσα στη σύγκριση', strpos($lists[1], '"created_at":"' . $CLOCK . '"') !== false);
+ck('...ΜΑΖΙ με τις ώρες (σταθερό ρολόι, UTC στη βάση -> Αθήνα στο JSON): created_at μέσα στη σύγκριση', strpos($lists[1], '"created_at":"' . time_db_to_local($CLOCK) . '"') !== false);
 ck('...κανένα `verifier`, και τα prices στη θέση τους', strpos($lists[1], '"verifier"') === false && strpos($lists[1], 'prices') !== false);
 $db = fresh_db(true);
 list($w, $v) = $weekChain($db, '2026-10-19', $P19);
@@ -366,7 +368,7 @@ echo "\n═══ Υποβολή: Δ-Α8 και έλεγχοι ΠΡΙΝ γραφ
 $right = $rightOf(fuel_verify_form($db, $S(1), $ADM, $v));
 $before = array($cnt($db, 'SELECT COUNT(*) FROM `4a_fuel_verify_answers`'), count($ev($db, $v)));
 $r = fuel_verify_submit($db, $S(2), $MGR, $v, $right, $SUN);
-ck('Κυρ 25/10 23:59:59: 409 «η επαλήθευση ανοίγει Δευ 26/10»', $r['code'] === 409 && $r['error'] === 'η επαλήθευση ανοίγει Δευ 26/10', json_encode($r));
+ck('Κυρ 25/10 23:59:59 Αθήνας (21:59:59 UTC): 409 «η επαλήθευση ανοίγει Δευ 26/10»', $r['code'] === 409 && $r['error'] === 'η επαλήθευση ανοίγει Δευ 26/10', json_encode($r));
 $r = fuel_verify_submit($db, $S(2), $MGR, $v, array_slice($right, 0, 3, true), $MON);
 ck('λείπει γραμμή: 400 vf=incomplete', $r['code'] === 400 && $r['vf'] === 'incomplete');
 $bv = $right; $bv[key($bv)] = '12.34';
@@ -540,6 +542,45 @@ ck('εβδομάδα 26/10: ανενεργός (vf=off), κανένα `verifier`
    fuel_verify_form($dbF, $S(2), $MGR, $vf)['vf'] === 'off' && !isset($byId(tasks_list($dbF, $S(1), $ADM, 'all')['tasks'], $vf)['verifier'])
    && tasks_done($dbF, $S(2), $MGR, $vf, null, $MON)['ok'] === true);
 ck('...και ο ανάδοχος verify κατεβάζει ξανά το αρχείο', tasks_download($dbF, $S(2), $MGR, $wf)['ok'] === true);
+
+// ═════════════════════════════════════════════════════════════════════
+echo "\n═══ Ζώνη ώρας (21/10): Δ-Α8 Δευ 26/10 00:00 Αθήνας = 25/10 22:00 UTC · ώρες σε Αθήνα · from_week ═══\n";
+$dbZ = fresh_db(); list($wZ, $vZ) = $weekChain($dbZ, '2026-10-26', $P26, $P19);
+$rZ = $rightOf(fuel_verify_form($dbZ, $S(1), $ADM, $vZ));
+ck('φόρμα 25/10 21:59:59 UTC: gate «…Δευ 26/10», can_submit false', ($f = fuel_verify_form($dbZ, $S(2), $MGR, $vZ, null, '2026-10-25 21:59:59'))
+   && $f['form']['gate'] === 'η επαλήθευση ανοίγει Δευ 26/10' && $f['form']['can_submit'] === false);
+ck('φόρμα 25/10 22:00:00 UTC: gate null, can_submit true', ($f = fuel_verify_form($dbZ, $S(2), $MGR, $vZ, null, $MON0)) && $f['form']['gate'] === null && $f['form']['can_submit'] === true);
+$r = fuel_verify_submit($dbZ, $S(2), $MGR, $vZ, $rZ, '2026-10-25 21:59:00');
+ck('υποβολή 25/10 21:59 UTC (23:59 Αθήνας) -> 409, τίποτα γραμμένο', $r['code'] === 409 && $r['error'] === 'η επαλήθευση ανοίγει Δευ 26/10'
+   && $cnt($dbZ, 'SELECT COUNT(*) FROM `4a_fuel_verify_answers`') === 0, json_encode($r));
+$r = fuel_verify_submit($dbZ, $S(2), $MGR, $vZ, $rZ, '2026-10-25 21:30:00');
+ck('...και 21:30 UTC (σταθερό +3 θα έλεγε 00:30 = ανοιχτό) -> 409', $r['code'] === 409, json_encode($r));
+$r = fuel_verify_submit($dbZ, $S(2), $MGR, $vZ, $rZ, $MON0);
+ck('υποβολή 25/10 22:00 UTC (= Δευ 00:00 Αθήνας) -> κλείνει (verify_ok)', $r['ok'] === true && tasks_fetch_one($dbZ, $vZ)['status'] === 'done', json_encode($r));
+// Στιγμές της βάσης (UTC) σε ώρα Αθήνας: σταθερό ρολόι 26/10 07:30 UTC = 09:30 Αθήνας (UTC+2).
+$dbT = fresh_db(true, '2026-10-26 07:30:00'); list($wT, $vT) = $weekChain($dbT, '2026-10-26', $P26, $P19);
+$fT = fuel_verify_form($dbT, $S(1), $ADM, $vT); $aT = $rightOf($fT);
+$lT = $fT['form']['lines'][2]; $aT[$lT['check_id']] = current(array_diff($lT['options'], array($lT['expected'])));
+fuel_verify_submit($dbT, $S(2), $MGR, $vT, $aT, $MON);
+ck('η βάση γράφει UTC: απάντηση 07:30:00', $dbT->query('SELECT MIN(`created_at`) FROM `4a_fuel_verify_answers`')->fetchColumn() === '2026-10-26 07:30:00');
+$fl = fuel_verify_form($dbT, $S(1), $ADM, $vT, null, $MON);
+ck('φόρμα: wrong_at = 09:30:00 Αθήνας (όχι 07:30)', $fl['form']['wrong_at'] === '2026-10-26 09:30:00', json_encode($fl['form']['wrong_at']));
+ck('fuel_verify_answers: at κάθε απάντησης = 09:30:00 Αθήνας', count(array_filter(fuel_verify_answers($dbT, $vT, 1), function ($a) { return $a['at'] !== '2026-10-26 09:30:00'; })) === 0,
+   json_encode(array_column(fuel_verify_answers($dbT, $vT, 1), 'at')));
+$dbT->exec('CREATE TABLE IF NOT EXISTS `4a_task_reject_reasons` (`code` TEXT PRIMARY KEY, `label` TEXT, `active` INTEGER)');
+$hT = tasks_history($dbT, $S(1), $ADM, $vT);
+$hw = array_values(array_filter($hT['events'], function ($e) { return $e['event'] === 'verify_wrong'; }));
+ck('ιστορικό: verify_wrong στις 09:30:00 Αθήνας, ΜΕ τις γραμμές του επαληθευτή (verify.lines)', $hT['ok'] === true && count($hw) === 1
+   && $hw[0]['created_at'] === '2026-10-26 09:30:00' && isset($hw[0]['verify']['lines']) && count($hw[0]['verify']['lines']) === 4, json_encode($hw));
+$viT = $byId(tasks_list($dbT, $S(1), $ADM, 'all')['tasks'], $vT)['verifier'];
+ck('λίστα (admin): alert.at = 09:30:00 Αθήνας', $viT['alert']['at'] === '2026-10-26 09:30:00', json_encode($viT['alert']['at']));
+// from_week: εβδομάδα ΙΣΗ με το from_week -> ενεργός· η προηγούμενη -> ανενεργός (σύγκριση στιγμών μέσω time_lib).
+$fwOf = function ($db) { return $db->query("SELECT `v` FROM `4a_fuel_verify_settings` WHERE `k` = 'from_week'")->fetchColumn(); };
+ck('from_week: εβδομάδα = from_week -> ενεργός, εβδομάδα − 7 -> ανενεργός', ($fw = $fwOf($dbT)) !== false
+   && fuel_verify_active($dbT, array('client_id' => null, 'task_code' => 'fuel_weekly_verify', 'payload' => json_encode(array('week_start' => $fw)))) === true
+   && fuel_verify_active($dbT, array('client_id' => null, 'task_code' => 'fuel_weekly_verify', 'payload' => json_encode(array('week_start' => time_instant($fw . ' 00:00:00', 'local')->modify('-7 days')->format('Y-m-d'))))) === false, (string)$fw);
+ck('ο κώδικας: from_week μέσω time_cmp / time_instant, όχι σύγκριση κειμένου', preg_match('/function fuel_verify_active\(.*?\n}\n/s', file_get_contents(__DIR__ . '/../../api/fuel_verify_lib.php'), $m)
+   && strpos($m[0], 'time_cmp(time_instant(') !== false && strpos($m[0], '$ws >= $s[\'from_week\']') === false);
 
 echo "\n═══ ΣΥΝΟΛΟ: $pass OK, $fail ΛΑΘΟΣ ═══\n";
 exit($fail ? 1 : 0);
