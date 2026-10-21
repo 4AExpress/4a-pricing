@@ -584,11 +584,16 @@ ck('ο κώδικας: from_week μέσω time_cmp / time_instant, όχι σύγ
 
 echo "\n═══ Migrations 23a–23c και rollback: χτίζονται από τον runner του Β4 ═══\n";
 // Ο runner χωρίζει ανά «;» έξω από '…': ; ή ' μέσα σε σχόλιο τον σταματά (build_mig.sh, εύρημα 21/10 στο rollback 23a).
-foreach (array('2026-10-23a_fuel_verify', '2026-10-23b_fuel_verify_values_perm', '2026-10-23c_ui_texts_verifier') as $mg) {
-    $sql = file_get_contents(__DIR__ . '/../../db/migrations/' . $mg . '.sql') . "\n"
-         . file_get_contents(__DIR__ . '/../../db/migrations/rollback/' . $mg . '.rollback.sql');
-    ck("$mg (+ rollback): κανένα ; ή ' μέσα σε σχόλιο", !preg_match("/^\\s*--[^\\n]*[;']/m", $sql));
-}
+// Σταθερές διαδρομές: ο bundler του Β8 ενσωματώνει ΜΟΝΟ ανάγνωση αρχείου με σταθερή διαδρομή.
+$MIG23 = array(
+    '2026-10-23a_fuel_verify' => file_get_contents(__DIR__ . '/../../db/migrations/2026-10-23a_fuel_verify.sql') . "\n"
+        . file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-23a_fuel_verify.rollback.sql'),
+    '2026-10-23b_fuel_verify_values_perm' => file_get_contents(__DIR__ . '/../../db/migrations/2026-10-23b_fuel_verify_values_perm.sql') . "\n"
+        . file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-23b_fuel_verify_values_perm.rollback.sql'),
+    '2026-10-23c_ui_texts_verifier' => file_get_contents(__DIR__ . '/../../db/migrations/2026-10-23c_ui_texts_verifier.sql') . "\n"
+        . file_get_contents(__DIR__ . '/../../db/migrations/rollback/2026-10-23c_ui_texts_verifier.rollback.sql'),
+);
+foreach ($MIG23 as $mg => $sql) ck("$mg (+ rollback): κανένα ; ή ' μέσα σε σχόλιο", !preg_match("/^\\s*--[^\\n]*[;']/m", $sql));
 
 echo "\n═══ ΣΥΝΟΛΟ: $pass OK, $fail ΛΑΘΟΣ ═══\n";
 exit($fail ? 1 : 0);
