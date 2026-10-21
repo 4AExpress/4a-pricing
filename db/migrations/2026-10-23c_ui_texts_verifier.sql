@@ -116,6 +116,6 @@ SELECT COUNT(*) AS `νέα_κλειδιά`
                'vf_err_use_verifier', 'vf_err_no_download', 'color_vf_wrong', 'color_vf_ok',
                'color_vf_pick');
 
--- Αναμενόμενο (μετά τα 15b, 19b και 21a): clients 2 · common 3 · tasks 141
+-- Αναμενόμενο (μετά τα 15b, 19b, 21a, 22b και 22c): clients 2 · common 3 · tasks 142 (79 + 63)
 SELECT `scope`, COUNT(*) AS `κλειδιά`
   FROM `4a_ui_texts` GROUP BY `scope` ORDER BY `scope`;
