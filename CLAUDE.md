@@ -16,6 +16,8 @@ pytest tests/test_cod.py::test_case2_calculate_flat_min_fee -v
 
 **Πρόσβαση σε server/βάση** (από 08-10-2026). Καμία σύνδεση σε server ή βάση χωρίς ρητή έγκριση του Απόστολου στην τρέχουσα συνομιλία. Σειρά: δείξε την εντολή/το script → περίμενε έγκριση → τρέξε. Ισχύει και για read-only ελέγχους και για κάθε βήμα του deploy.
 
+**Φύλακας read-only** (από 22-10-2026). Εξαίρεση στα παραπάνω: τα scripts ΜΟΝΟ ανάγνωσης τρέχουν χωρίς ερώτηση ΜΟΝΟ μέσω του `ro_run.sh` (εκτός repo), που δέχεται μόνο ό,τι είναι στο manifest του, με σωστό md5, και ό,τι περνά τον φύλακα. Τα αρχεία του φύλακα (`ro_run.sh`, `ro_guard.php`, `ro_manifest.txt`, `ro_ssh.env`) ΔΕΝ αλλάζουν ποτέ με εντολή shell (sed, echo >, cp κ.λπ.) — μόνο με Edit/Write, με ερώτηση, και με ρητή έγκριση του Απόστολου.
+
 **Deploy** — `api/` (PHP) deploy = SCP per file ΜΟΝΟ. `git push` ΔΕΝ ενημερώνει το backend (webhook νεκρός, server git παγωμένο, nested `api/.git`). Frontend = `git push` → GitHub Pages.
 
 **Κανόνας deploy backend** (από 07-10-2026). Ανεβαίνει ΜΟΝΟ ό,τι έχει γίνει commit, από το git, ΠΟΤΕ από τον δίσκο:
