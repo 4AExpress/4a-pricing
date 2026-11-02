@@ -1,5 +1,5 @@
 {
-  "fetched_at": "2026-11-01T11:37:18.437383",
+  "fetched_at": "2026-11-02T13:00:25.254215",
   "source": "https://mydhl.express.dhl/gr/el/ship/surcharges.html#/fuel_surcharge",
   "parse_warnings": [],
   "air": [
@@ -9,22 +9,22 @@
       "week_start": "2026-11-09",
       "week_end": "2026-11-15",
       "is_current": false,
-      "is_next": false
+      "is_next": true
     },
     {
       "week": "Νοέμβριος 2-8, 2026",
       "pct": 49.5,
       "week_start": "2026-11-02",
       "week_end": "2026-11-08",
-      "is_current": false,
-      "is_next": true
+      "is_current": true,
+      "is_next": false
     },
     {
       "week": "Οκτώβριος 26-Νοέμβριος 1, 2026",
       "pct": 49.25,
       "week_start": "2026-10-26",
       "week_end": "2026-11-01",
-      "is_current": true,
+      "is_current": false,
       "is_next": false
     },
     {
@@ -51,22 +51,22 @@
       "week_start": "2026-11-09",
       "week_end": "2026-11-15",
       "is_current": false,
-      "is_next": false
+      "is_next": true
     },
     {
       "week": "Νοέμβριος 2-8, 2026",
       "pct": 39.75,
       "week_start": "2026-11-02",
       "week_end": "2026-11-08",
-      "is_current": false,
-      "is_next": true
+      "is_current": true,
+      "is_next": false
     },
     {
       "week": "Οκτώβριος 26-Νοέμβριος 1, 2026",
       "pct": 40.0,
       "week_start": "2026-10-26",
       "week_end": "2026-11-01",
-      "is_current": true,
+      "is_current": false,
       "is_next": false
     },
     {
@@ -86,9 +86,9 @@
       "is_next": false
     }
   ],
-  "current_air": 49.25,
-  "current_road": 40.0,
-  "changed": false,
+  "current_air": 49.5,
+  "current_road": 39.75,
+  "changed": true,
   "previous_air": 49.25,
   "previous_road": 40.0
 }
