@@ -1,22 +1,38 @@
 {
-  "fetched_at": "2026-11-02T13:00:25.254215",
+  "fetched_at": "2026-11-17T10:14:52.383417",
   "source": "https://mydhl.express.dhl/gr/el/ship/surcharges.html#/fuel_surcharge",
   "parse_warnings": [],
   "air": [
+    {
+      "week": "Νοέμβριος 23-29, 2026",
+      "pct": 49.25,
+      "week_start": "2026-11-23",
+      "week_end": "2026-11-29",
+      "is_current": false,
+      "is_next": true
+    },
+    {
+      "week": "Νοέμβριος 16-22, 2026",
+      "pct": 50.0,
+      "week_start": "2026-11-16",
+      "week_end": "2026-11-22",
+      "is_current": true,
+      "is_next": false
+    },
     {
       "week": "Νοέμβριος 9-15, 2026",
       "pct": 50.0,
       "week_start": "2026-11-09",
       "week_end": "2026-11-15",
       "is_current": false,
-      "is_next": true
+      "is_next": false
     },
     {
       "week": "Νοέμβριος 2-8, 2026",
       "pct": 49.5,
       "week_start": "2026-11-02",
       "week_end": "2026-11-08",
-      "is_current": true,
+      "is_current": false,
       "is_next": false
     },
     {
@@ -26,39 +42,39 @@
       "week_end": "2026-11-01",
       "is_current": false,
       "is_next": false
-    },
-    {
-      "week": "Οκτώβριος 19-25, 2026",
-      "pct": 49.75,
-      "week_start": "2026-10-19",
-      "week_end": "2026-10-25",
-      "is_current": false,
-      "is_next": false
-    },
-    {
-      "week": "Οκτώβριος 12-18, 2026",
-      "pct": 49.0,
-      "week_start": "2026-10-12",
-      "week_end": "2026-10-18",
-      "is_current": false,
-      "is_next": false
     }
   ],
   "road": [
+    {
+      "week": "Νοέμβριος 23-29, 2026",
+      "pct": 39.25,
+      "week_start": "2026-11-23",
+      "week_end": "2026-11-29",
+      "is_current": false,
+      "is_next": true
+    },
+    {
+      "week": "Νοέμβριος 16-22, 2026",
+      "pct": 40.0,
+      "week_start": "2026-11-16",
+      "week_end": "2026-11-22",
+      "is_current": true,
+      "is_next": false
+    },
     {
       "week": "Νοέμβριος 9-15, 2026",
       "pct": 40.0,
       "week_start": "2026-11-09",
       "week_end": "2026-11-15",
       "is_current": false,
-      "is_next": true
+      "is_next": false
     },
     {
       "week": "Νοέμβριος 2-8, 2026",
       "pct": 39.75,
       "week_start": "2026-11-02",
       "week_end": "2026-11-08",
-      "is_current": true,
+      "is_current": false,
       "is_next": false
     },
     {
@@ -68,27 +84,11 @@
       "week_end": "2026-11-01",
       "is_current": false,
       "is_next": false
-    },
-    {
-      "week": "Οκτώβριος 19-25, 2026",
-      "pct": 40.75,
-      "week_start": "2026-10-19",
-      "week_end": "2026-10-25",
-      "is_current": false,
-      "is_next": false
-    },
-    {
-      "week": "Οκτώβριος 12-18, 2026",
-      "pct": 40.75,
-      "week_start": "2026-10-12",
-      "week_end": "2026-10-18",
-      "is_current": false,
-      "is_next": false
     }
   ],
-  "current_air": 49.5,
-  "current_road": 39.75,
+  "current_air": 50.0,
+  "current_road": 40.0,
   "changed": true,
-  "previous_air": 49.25,
-  "previous_road": 40.0
+  "previous_air": 49.5,
+  "previous_road": 39.75
 }
